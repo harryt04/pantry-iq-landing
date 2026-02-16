@@ -16,13 +16,6 @@ export const metadata: Metadata = {
   title: "PantryIQ",
   description:
     "Stop over-ordering. Reduce spoilage. Increase profits. Our restaurant forecasting software minimizes food waste and helps donate surplus to those in need.",
-  icons: {
-    icon: [
-      { url: "/favicon-16x16.png", sizes: "16x16", type: "image/png" },
-      { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
-    ],
-    apple: "/apple-touch-icon.png",
-  },
   manifest: "/site.webmanifest",
 };
 
@@ -33,6 +26,48 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        {/* Light mode favicons (dark icon on white) */}
+        <link
+          rel="icon"
+          type="image/png"
+          sizes="16x16"
+          href="/favicon-light/favicon-16x16.png"
+          media="(prefers-color-scheme: light)"
+        />
+        <link
+          rel="icon"
+          type="image/png"
+          sizes="32x32"
+          href="/favicon-light/favicon-32x32.png"
+          media="(prefers-color-scheme: light)"
+        />
+        <link
+          rel="apple-touch-icon"
+          href="/favicon-light/apple-touch-icon.png"
+          media="(prefers-color-scheme: light)"
+        />
+        {/* Dark mode favicons (white icon on dark) */}
+        <link
+          rel="icon"
+          type="image/png"
+          sizes="16x16"
+          href="/favicon/favicon-16x16.png"
+          media="(prefers-color-scheme: dark)"
+        />
+        <link
+          rel="icon"
+          type="image/png"
+          sizes="32x32"
+          href="/favicon/favicon-32x32.png"
+          media="(prefers-color-scheme: dark)"
+        />
+        <link
+          rel="apple-touch-icon"
+          href="/favicon/apple-touch-icon.png"
+          media="(prefers-color-scheme: dark)"
+        />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         {children}

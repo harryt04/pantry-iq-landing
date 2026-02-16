@@ -1,6 +1,6 @@
-This favicon was generated using the following graphics from Twitter Twemoji:
+This favicon was generated using the ChefHat icon from Lucide Icons:
 
-- Graphics Title: 1f371.svg
-- Graphics Author: Copyright 2020 Twitter, Inc and other contributors (https://github.com/twitter/twemoji)
-- Graphics Source: https://github.com/twitter/twemoji/blob/master/assets/svg/1f371.svg
-- Graphics License: CC-BY 4.0 (https://creativecommons.org/licenses/by/4.0/)
+- Graphics Title: chef-hat
+- Graphics Author: Lucide Contributors (https://github.com/lucide-icons/lucide)
+- Graphics Source: https://lucide.dev/icons/chef-hat
+- Graphics License: ISC License (https://github.com/lucide-icons/lucide/blob/main/LICENSE)
