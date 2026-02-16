@@ -2,6 +2,11 @@ import type { NextConfig } from 'next'
 
 const nextConfig: NextConfig = {
   devIndicators: false,
+  logging: {
+    fetches: {
+      fullUrl: true,
+    },
+  },
   async rewrites() {
     return [
       {
@@ -46,6 +51,8 @@ const nextConfig: NextConfig = {
       },
     ]
   },
+  // This is required to support PostHog trailing slash API requests
+  skipTrailingSlashRedirect: true,
 }
 
 export default nextConfig
