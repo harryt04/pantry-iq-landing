@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
+import { PostHog } from "posthog-node";
 
 export async function POST(request: NextRequest) {
   try {
+    const posthog = new PostHog(process.env.NEXT_PUBLIC_POSTHOG_KEY!, {
+      host: process.env.NEXT_PUBLIC_POSTHOG_HOST,
+    });
     const { email } = await request.json();
 
     if (!email || typeof email !== "string") {
@@ -18,6 +22,11 @@ export async function POST(request: NextRequest) {
     }
 
     // Forward to the external API
+    posthog.capture({
+      distinctId: email,
+      event: "launch-signup",
+    });
+    await posthog.shutdown();
     await fetch("https://harryt.dev/api/user", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
