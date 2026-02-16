@@ -1,36 +1,158 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# PantryIQ Landing Page
 
-## Getting Started
+Marketing landing page for PantryIQ - AI-powered restaurant forecasting software that minimizes food waste, optimizes inventory, and helps donate surplus food to those in need.
 
-First, run the development server:
+## 🚀 Tech Stack
+
+- **Framework:** Next.js 16 (App Router, Server-Side Rendering)
+- **Language:** TypeScript 5
+- **Styling:** Tailwind CSS v4
+- **UI Components:** shadcn/ui (New York style)
+- **Icons:** Lucide React
+- **Analytics:** PostHog
+- **Runtime:** Node.js 20+
+
+## ✨ Features
+
+- 📧 **Email Waitlist** - API endpoint (`/api/subscribe`) forwards signups to backend
+- 📊 **Analytics** - PostHog integration for user behavior tracking
+- 🎨 **Dark/Light Mode** - Automatic theme switching based on system preferences
+- 🎯 **Responsive Design** - Mobile-first approach with Tailwind CSS
+- 🚀 **SEO Optimized** - Server-side rendering for better search visibility
+- 🎨 **Custom Branding** - ChefHat favicon with adaptive colors for light/dark modes
+- ⚡ **Performance** - Static page generation with Next.js optimization
+
+## 📋 Prerequisites
+
+- Node.js >= 24
+- npm or yarn
+
+## 🛠️ Installation
 
 ```bash
+# Clone the repository
+git clone <repository-url>
+cd pantry-iq-landing
+
+# Install dependencies
+npm install
+
+# Run development server
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) to view the landing page.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 📁 Project Structure
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```
+pantry-iq-landing/
+├── app/
+│   ├── api/
+│   │   └── subscribe/
+│   │       └── route.ts          # Email signup API endpoint
+│   ├── layout.tsx                # Root layout with metadata
+│   ├── page.tsx                  # Home page
+│   ├── globals.css               # Global styles + Tailwind
+│   └── sitemap.ts                # Sitemap generation
+├── components/
+│   ├── ui/                       # shadcn/ui components
+│   └── landing-page.tsx          # Main landing page component
+├── lib/
+│   └── utils.ts                  # Utility functions
+├── public/
+│   ├── favicon/                  # Dark mode favicons
+│   └── favicon-light/            # Light mode favicons
+├── next.config.ts                # Next.js configuration
+└── package.json
+```
 
-## Learn More
+## 🔧 Available Scripts
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+# Development
+npm run dev          # Start dev server at localhost:3000
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+# Production
+npm run build        # Build for production
+npm run start        # Start production server
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+# Code Quality
+npm run lint         # Run ESLint
+```
 
-## Deploy on Vercel
+## 🌐 API Endpoints
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### POST `/api/subscribe`
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Accepts email signups and forwards to backend service.
+
+**Request Body:**
+
+```json
+{
+  "email": "user@example.com"
+}
+```
+
+**Response:**
+
+```json
+{
+  "message": "Successfully subscribed!"
+}
+```
+
+Email data is forwarded to `https://harryt.dev/api/user` with `usesApps: ["pantryiq"]`.
+
+## 📊 Analytics
+
+PostHog is configured to track:
+
+- `waitlist-form-submitted` - Successful email signups
+- `waitlist-form-error` - Form submission errors
+- `early-access-link-clicked` - CTA button clicks
+
+PostHog proxying is configured via Next.js rewrites to `/ingest/*` and `/ph/*`.
+
+## 🎨 Theming
+
+The landing page automatically adapts to system dark/light mode preferences:
+
+- CSS variables defined in `globals.css` with `@media (prefers-color-scheme: dark)`
+- Favicons switch between light and dark variants
+- Tailwind's `dark:` variants supported via custom variant configuration
+
+## 🚢 Deployment
+
+Configured for deployment on Fly.io:
+
+```bash
+# Build and deploy
+npm run build
+fly deploy
+```
+
+## 🔒 Environment Variables
+
+No environment variables required for basic functionality. PostHog analytics are initialized client-side with public keys.
+
+## 📝 Content Sections
+
+The landing page includes:
+
+1. **Hero** - Main value proposition with email signup
+2. **Problem** - Food waste statistics ($162B annually)
+3. **Features** - 6 AI capabilities (forecasting, inventory, menu intelligence, etc.)
+4. **How It Works** - 3-step process
+5. **Pricing** - $20/restaurant, $10/food truck (7-day free trial)
+6. **Mission** - Charitable donation coordination
+7. **Final CTA** - Secondary email signup
+
+## 🤝 Contributing
+
+This is a private repository for PantryIQ's marketing site. Contact the team for contribution guidelines.
+
+## 📄 License
+
+Proprietary - All rights reserved © 2026 PantryIQ
