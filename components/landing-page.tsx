@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
+import posthog from 'posthog-js'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -46,10 +47,19 @@ export function LandingPage() {
         throw new Error(data.error || 'Failed to subscribe')
       }
 
+      // Identify user and capture successful submission
+      posthog.identify(email, { email })
+      posthog.capture('waitlist-form-submitted', { email })
+
       setIsSubmitted(true)
       setEmail('')
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Something went wrong')
+      const errorMessage =
+        err instanceof Error ? err.message : 'Something went wrong'
+      posthog.capture('waitlist-form-error', {
+        error: errorMessage,
+      })
+      setError(errorMessage)
     } finally {
       setIsSubmitting(false)
     }
@@ -65,7 +75,12 @@ export function LandingPage() {
             <span className="text-2xl font-bold">PantryIQ</span>
           </div>
           <Button variant="outline" asChild>
-            <a href="#notify">Get Early Access</a>
+            <a
+              href="#notify"
+              onClick={() => posthog.capture('early-access-link-clicked')}
+            >
+              Get Early Access
+            </a>
           </Button>
         </div>
       </nav>

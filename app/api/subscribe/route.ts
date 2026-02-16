@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { PostHog } from 'posthog-node'
+import { getPostHogClient } from '@/lib/posthog-server'
 
 export async function POST(request: NextRequest) {
+  const posthog = getPostHogClient()
+
   try {
-    const posthog = new PostHog(process.env.NEXT_PUBLIC_POSTHOG_KEY!, {
-      host: process.env.NEXT_PUBLIC_POSTHOG_HOST,
-    })
     const { email } = await request.json()
 
     if (!email || typeof email !== 'string') {
@@ -21,10 +20,22 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Identify user on server side
+    posthog.identify({
+      distinctId: email,
+      properties: {
+        email,
+      },
+    })
+
     // Forward to the external API
     posthog.capture({
       distinctId: email,
       event: 'launch-signup',
+      properties: {
+        email,
+        source: 'api',
+      },
     })
     await posthog.shutdown()
     await fetch('https://harryt.dev/api/user', {
