@@ -11,7 +11,7 @@ const runningInProduction =
   process.env.NODE_ENV === 'production' && typeof window !== 'undefined'
 if (runningInProduction) {
   posthog.init(process.env.NEXT_PUBLIC_POSTHOG_KEY, {
-    api_host: '/ingest',
+    api_host: '/ph',
     ui_host: process.env.NEXT_PUBLIC_POSTHOG_HOST,
   })
 }

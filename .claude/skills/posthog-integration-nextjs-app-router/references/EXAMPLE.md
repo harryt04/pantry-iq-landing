@@ -85,7 +85,7 @@ instrumentation-client.ts      # Client-side PostHog initialization
 import posthog from 'posthog-js'
 
 posthog.init(process.env.NEXT_PUBLIC_POSTHOG_KEY!, {
-  api_host: '/ingest',
+  api_host: '/ph',
   ui_host: 'https://us.posthog.com',
   defaults: '2025-11-30',
   capture_exceptions: true,
@@ -171,7 +171,7 @@ NEXT_PUBLIC_POSTHOG_HOST=https://us.i.posthog.com
 import posthog from 'posthog-js'
 
 posthog.init(process.env.NEXT_PUBLIC_POSTHOG_KEY!, {
-  api_host: '/ingest',
+  api_host: '/ph',
   ui_host: 'https://us.posthog.com',
   // Include the defaults option as required by PostHog
   defaults: '2025-11-30',
