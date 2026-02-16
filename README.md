@@ -22,6 +22,4 @@ Marketing landing page for PantryIQ - AI-powered restaurant forecasting software
 - 🎨 **Custom Branding** - ChefHat favicon with adaptive colors for light/dark modes
 - ⚡ **Performance** - Static page generation with Next.js optimization
 
-## 📄 License
-
-Proprietary - All rights reserved © 2026 PantryIQ
+All rights reserved © 2026 PantryIQ
