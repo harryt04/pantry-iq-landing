@@ -4,11 +4,26 @@
 **Sibling doc:** `expected-ux-v2.md`  
 **Purpose:** Deep psychographic profiles of every realistic PantryIQ user type. Use these to pressure-test UX decisions, write copy that resonates, and ensure no user's workflow or mental model is designed around.
 
+## Character Key
+
+| Character | One-sentence summary |
+|---|---|
+| Ron Weasley | The scrappy owner-operator who runs on instinct, works nonstop, and needs plain-English proof before trusting a tool. |
+| Minerva McGonagall | The hands-off owner who wants a crisp, trustworthy snapshot of the business without getting dragged back into operations. |
+| Percy Weasley | The ambitious GM who wants data to back up decisions and make him look sharp in front of ownership. |
+| Severus Snape | The exacting chef who trusts craft over software and only believes data that respects kitchen reality. |
+| Kingsley Shacklebolt | The calm, capable beverage lead who wants solid variance and pour-cost proof, not generic restaurant analytics. |
+| George Weasley | The scrappy, mobile owner who needs fast event forecasting and quick ROI on every order. |
+| Hermione Granger | The highly analytical ghost-kitchen operator who challenges methodology and wants evidence, not fluff. |
+| Albus Dumbledore | The big-picture small-chain owner who needs consolidated visibility across managers and locations. |
+| Nymphadora Tonks | The flexible, event-driven operator who works in shifting conditions and needs pricing and ordering to stay nimble. |
+| Harry Potter | The high-stakes owner-operator at the center of multiple moving parts who needs one trustworthy view of the whole operation. |
+
 ---
 
 ## How to Use This Document
 
-Each persona is a composite archetype — not a real person, but a tight cluster of real behaviors, fears, and goals. When making a product or marketing decision, ask: *"How would Marco react to this? Would Diane even notice this feature exists?"*
+Each persona is a composite archetype — not a real person, but a tight cluster of real behaviors, fears, and goals. When making a product or marketing decision, ask: *"How would Ron react to this? Would McGonagall even notice this feature exists?"*
 
 Personas are organized by **role** first. Establishment-type context is woven in where it changes the psychographic profile meaningfully.
 
@@ -16,20 +31,20 @@ Personas are organized by **role** first. Establishment-type context is woven in
 
 ## Persona Index
 
-1. [Marco — The Scrappy Owner-Operator](#1-marco--the-scrappy-owner-operator)
-2. [Diane — The Hands-Off Owner](#2-diane--the-hands-off-owner)
-3. [Carlos — The General Manager](#3-carlos--the-general-manager)
-4. [Priya — The Chef / Kitchen Manager](#4-priya--the-chefkitchen-manager)
-5. [Jesse — The Bar Manager / Beverage Director](#5-jesse--the-bar-manager--beverage-director)
-6. [Theo — The Food Truck Owner](#6-theo--the-food-truck-owner)
-7. [Anika — The Ghost Kitchen Operator](#7-anika--the-ghost-kitchen-operator)
-8. [Ray — The Small Chain Owner](#8-ray--the-small-chain-owner)
-9. [Sofia — The Mobile Bar / Catering Operator](#9-sofia--the-mobile-bar--catering-operator)
-10. [Dom — The Gastropub Owner-Operator](#10-dom--the-gastropub-owner-operator)
+1. [Ron Weasley — The Scrappy Owner-Operator](#1-ron-weasley--the-scrappy-owner-operator)
+2. [Minerva McGonagall — The Hands-Off Owner](#2-minerva-mcgonagall--the-hands-off-owner)
+3. [Percy Weasley — The General Manager](#3-percy-weasley--the-general-manager)
+4. [Severus Snape — The Chef / Kitchen Manager](#4-severus-snape--the-chef--kitchen-manager)
+5. [Kingsley Shacklebolt — The Bar Manager / Beverage Director](#5-kingsley-shacklebolt--the-bar-manager--beverage-director)
+6. [George Weasley — The Food Truck Owner](#6-george-weasley--the-food-truck-owner)
+7. [Hermione Granger — The Ghost Kitchen Operator](#7-hermione-granger--the-ghost-kitchen-operator)
+8. [Albus Dumbledore — The Small Chain Owner](#8-albus-dumbledore--the-small-chain-owner)
+9. [Nymphadora Tonks — The Mobile Bar / Catering Operator](#9-nymphadora-tonks--the-mobile-bar--catering-operator)
+10. [Harry Potter — The Gastropub Owner-Operator](#10-harry-potter--the-gastropub-owner-operator)
 
 ---
 
-## 1. Marco — The Scrappy Owner-Operator
+## 1. Ron Weasley — The Scrappy Owner-Operator
 
 **Archetype:** The Restaurant Is My Life
 
@@ -44,7 +59,7 @@ Personas are organized by **role** first. Establishment-type context is woven in
 
 ### Psychographic Profile
 
-Marco opened his restaurant because he loves food and people — not because he loves spreadsheets. He is the first one in and the last one out. He texts his suppliers at 7am. He knows regulars by name and has a gut feeling about when lobster is moving slow — but he can't prove it.
+Ron opened his restaurant because he loves food and people — not because he loves spreadsheets. He is the first one in and the last one out. He texts his suppliers at 7am. He knows regulars by name and has a gut feeling about when lobster is moving slow — but he can't prove it.
 
 He operates on instinct and experience. He's been burned before: overordered before a slow week, ran out of a signature item on a Friday night, watched a full case of salmon go gray in the walk-in. Each of those moments cost him real money and he still thinks about them.
 
@@ -82,7 +97,7 @@ He wants a tool that makes him feel like he's getting smarter, not one that make
 
 ### How He'll Use PantryIQ
 
-Marco will log in primarily through the **Chat page**. He'll start by asking a specific question that's been bothering him — "why is my fish margin so low lately?" — and judge the product entirely on whether that first answer is useful and believable. If it shows its work, he trusts it. If it gives him a vague answer, he's gone.
+Ron will log in primarily through the **Chat page**. He'll start by asking a specific question that's been bothering him — "why is my fish margin so low lately?" — and judge the product entirely on whether that first answer is useful and believable. If it shows its work, he trusts it. If it gives him a vague answer, he's gone.
 
 Dashboard will pull him in once he trusts the chat. He'll check it a few times a week, not daily.
 
@@ -104,7 +119,7 @@ Import will be his biggest friction point. He needs it to be fast and forgiving 
 
 ---
 
-## 2. Diane — The Hands-Off Owner
+## 2. Minerva McGonagall — The Hands-Off Owner
 
 **Archetype:** I Own It, Someone Else Runs It
 
@@ -112,14 +127,14 @@ Import will be his biggest friction point. He needs it to be fast and forgiving 
 
 - Age: 45–65
 - Establishment: 1–3 locations, established restaurant or bar, higher revenue
-- Staff: Has a GM or kitchen manager; Diane is not in the kitchen daily
+- Staff: Has a GM or kitchen manager; McGonagall is not in the kitchen daily
 - Revenue: $1.5M–$5M/yr
 - Location: Established market, may have opened 10+ years ago
 - Tech: Comfortable with email and basic reports; delegates software decisions to GM
 
 ### Psychographic Profile
 
-Diane owns the business but runs it at arm's length. She might have another job or business. She checks in on numbers weekly or monthly, not daily. She trusts her GM to run operations and her accountant to watch the books.
+McGonagall owns the business but runs it at arm's length. She might have another job or business. She checks in on numbers weekly or monthly, not daily. She trusts her GM to run operations and her accountant to watch the books.
 
 What she cares about: is the business healthy? Are margins trending the right direction? Is her GM telling her the truth? She often suspects things are better or worse than she's being told — but she doesn't have an independent view into operations.
 
@@ -127,7 +142,7 @@ She doesn't want to become an operator again. She wants better visibility, not m
 
 Her biggest fear is a slow bleed — spoilage, theft, or margin erosion that nobody caught until the P&L told the story three months later.
 
-### A Day in Her Life
+### A Day in His Life
 
 Monday morning — opens her email, looks for anything urgent from her GM. Checks QuickBooks once a week. Has a standing 30-minute call with her GM on Tuesdays. Once a month, reviews the full P&L with her accountant and asks questions she doesn't always get clear answers to. She suspects her bar margins are worse than reported.
 
@@ -153,7 +168,7 @@ Monday morning — opens her email, looks for anything urgent from her GM. Check
 
 ### How She'll Use PantryIQ
 
-Diane will primarily use the **Dashboard** — probably on desktop, probably on a Monday morning. She may occasionally use Chat to ask a high-level question ("How are margins trending this quarter?") but she's not a power user.
+McGonagall will primarily use the **Dashboard** — probably on desktop, probably on a Monday morning. She may occasionally use Chat to ask a high-level question ("How are margins trending this quarter?") but she's not a power user.
 
 She may set up the account and then delegate data imports to her GM, which means the import flow needs to work for someone who isn't the account owner.
 
@@ -172,7 +187,7 @@ She may set up the account and then delegate data imports to her GM, which means
 
 ---
 
-## 3. Carlos — The General Manager
+## 3. Percy Weasley — The General Manager
 
 **Archetype:** Accountable Without Equity
 
@@ -186,13 +201,13 @@ She may set up the account and then delegate data imports to her GM, which means
 
 ### Psychographic Profile
 
-Carlos is good at his job and he knows it. He manages staff, keeps the owner happy, handles vendor relationships, and has a sixth sense for when things are about to go sideways. He cares about looking competent in front of his boss more than almost anything else.
+Percy is good at his job and he knows it. He manages staff, keeps the owner happy, handles vendor relationships, and has a sixth sense for when things are about to go sideways. He cares about looking competent in front of his boss more than almost anything else.
 
 His relationship with data is pragmatic: he'll use tools that help him do his job better and look smarter in front of ownership. He doesn't have strong ideological feelings about AI — he'll use it if it works.
 
-His tension with PantryIQ: he may be slightly threatened by a tool that gives his owner independent visibility into operations. If Diane can see spoilage data without talking to him, does that mean she's watching him more closely? This tension is real and must be acknowledged.
+His tension with PantryIQ: he may be slightly threatened by a tool that gives his owner independent visibility into operations. If McGonagall can see spoilage data without talking to him, does that mean she's watching him more closely? This tension is real and must be acknowledged.
 
-On the flip side, if Carlos is the one who brings PantryIQ to Diane and it makes him look sharp, he becomes a champion.
+On the flip side, if Percy is the one who brings PantryIQ to McGonagall and it makes him look sharp, he becomes a champion.
 
 ### A Day in His Life
 
@@ -220,14 +235,14 @@ Opens at 10am, reviews last night's close and any Square reports. Does a walk-in
 
 ### How He'll Use PantryIQ
 
-Carlos will be a **power user of both Dashboard and Chat**. He'll check the dashboard before his ownership calls. He'll use Chat to prep for hard conversations: "Why is our salmon margin down this week?" before his owner asks him the same question.
+Percy will be a **power user of both Dashboard and Chat**. He'll check the dashboard before his ownership calls. He'll use Chat to prep for hard conversations: "Why is our salmon margin down this week?" before his owner asks him the same question.
 
 He'll likely be the one setting up imports and maintaining data hygiene.
 
 ### UX Considerations
 
 - He needs confidence intervals and evidence — he won't trust a number without being able to explain it
-- "Show reasoning" is essential for Carlos — he needs to be able to parrot the logic to his boss
+- "Show reasoning" is essential for Percy — he needs to be able to parrot the logic to his boss
 - Dashboard should have enough detail to be operationally useful, not just executive-summary level
 - The ability to override AI assumptions (shelf life, par levels) is important to him — he knows his kitchen's quirks
 
@@ -239,7 +254,7 @@ He'll likely be the one setting up imports and maintaining data hygiene.
 
 ---
 
-## 4. Priya — The Chef / Kitchen Manager
+## 4. Severus Snape — The Chef / Kitchen Manager
 
 **Archetype:** I Run the Kitchen, Not a Spreadsheet
 
@@ -253,13 +268,13 @@ He'll likely be the one setting up imports and maintaining data hygiene.
 
 ### Psychographic Profile
 
-Priya's identity is tied to the quality of food coming out of her kitchen. Waste offends her on a professional level — not just financially, but philosophically. Throwing away good food because of bad planning feels like a failure of craft.
+Snape's identity is tied to the quality of food coming out of his kitchen. Waste offends him on a professional level — not just financially, but philosophically. Throwing away good food because of bad planning feels like a failure of craft.
 
 She is deeply skeptical of anything that feels like it was designed by someone who has never worked a line. She will spot bullshit immediately. If PantryIQ tells her lobster lasts 3 days and she knows her supplier delivers freshly-caught stock that lasts 5, she'll distrust every other number in the system.
 
 She doesn't want to be told how to run her kitchen by an algorithm. But she will use a tool that gives her better ammunition to push back on ownership when they try to cut her protein budget.
 
-Her relationship with data: she trusts her own observations. She'll believe data that confirms what she already suspects, and challenge data that doesn't. The "show reasoning" feature was basically designed for Priya.
+His relationship with data: he trusts his own observations. He'll believe data that confirms what he already suspects, and challenge data that doesn't. The "show reasoning" feature was basically designed for Snape.
 
 ### A Day in His Life
 
@@ -288,14 +303,14 @@ Arrives at 9am, does a walk-in inventory by hand and memory. Places supplier ord
 
 ### How She'll Use PantryIQ
 
-Priya is a **Chat-first user** with a very specific use case: she wants to ask about specific items. "How much halibut have we been selling lately?" "Am I ordering too much salmon?" She will not browse a dashboard.
+Snape is a **Chat-first user** with a very specific use case: he wants to ask about specific items. "How much halibut have we been selling lately?" "Am I ordering too much salmon?" He will not browse a dashboard.
 
-The ability to override shelf life assumptions mid-conversation is critical for Priya. She needs to feel like she's in control of the assumptions, not beholden to defaults.
+The ability to override shelf life assumptions mid-conversation is critical for Snape. He needs to feel like he's in control of the assumptions, not beholden to defaults.
 
 ### UX Considerations
 
 - Shelf life must be editable everywhere it appears — in settings, in chat, and mid-conversation
-- Confidence levels matter to Priya — she needs to know if the AI is guessing
+- Confidence levels matter to Snape — he needs to know if the AI is guessing
 - The "show reasoning" should show the actual data queries, not just a narrative — she wants to see the numbers, not a summary
 - Item-level deep dives (sell-through by item, spoilage per item) are her primary use case
 - She doesn't care about margin trends — she cares about waste
@@ -308,7 +323,7 @@ The ability to override shelf life assumptions mid-conversation is critical for 
 
 ---
 
-## 5. Jesse — The Bar Manager / Beverage Director
+## 5. Kingsley Shacklebolt — The Bar Manager / Beverage Director
 
 **Archetype:** The Inventory Is Different Here
 
@@ -322,13 +337,13 @@ The ability to override shelf life assumptions mid-conversation is critical for 
 
 ### Psychographic Profile
 
-Jesse's inventory world is fundamentally different from the kitchen. Spirits don't spoil (mostly), but draft beer does. Produce garnishes spoil fast. Wine by-the-glass has spoilage math. Variance between what's poured and what's sold — theft, overpouring, comps — is a constant problem.
+Kingsley's inventory world is fundamentally different from the kitchen. Spirits don't spoil (mostly), but draft beer does. Produce garnishes spoil fast. Wine by-the-glass has spoilage math. Variance between what's poured and what's sold — theft, overpouring, comps — is a constant problem.
 
-Jesse thinks in terms of **pour cost and variance**, not spoilage in the kitchen sense. She cares deeply about whether her bar is "running tight" — meaning pour cost is where it should be and there's no unexplained variance.
+Kingsley thinks in terms of **pour cost and variance**, not spoilage in the kitchen sense. He cares deeply about whether his bar is "running tight" — meaning pour cost is where it should be and there's no unexplained variance.
 
-She's suspicious of tools that don't understand the beverage world. If PantryIQ treats her spirits inventory the same way it treats salmon, it'll feel broken immediately.
+He is suspicious of tools that don't understand the beverage world. If PantryIQ treats his spirits inventory the same way it treats salmon, it'll feel broken immediately.
 
-She's entrepreneurial — if she can use better data to prove her program is profitable, she can get more budget for the wine list or a seasonal cocktail program she wants to run.
+He is entrepreneurial — if he can use better data to prove his program is profitable, he can get more budget for the wine list or a seasonal cocktail program he wants to run.
 
 ### A Day in Her Life
 
@@ -356,11 +371,11 @@ Comes in at noon, does a quick visual check of the bottle levels she tracks on a
 
 ### How She'll Use PantryIQ
 
-Jesse is a **mixed user** — she'll use Chat for specific item questions ("how is the Old Fashioned program trending?") and the dashboard for weekly pour cost summary. She's more data-sophisticated than most personas and will push the tool harder.
+Kingsley is a **mixed user** — he'll use Chat for specific item questions ("how is the Old Fashioned program trending?") and the dashboard for weekly pour cost summary. He's more data-sophisticated than most personas and will push the tool harder.
 
 ### UX Considerations
 
-- Category handling matters — she needs beverages to be first-class citizens, not an afterthought of the food inventory model
+- Category handling matters — he needs beverages to be first-class citizens, not an afterthought of the food inventory model
 - "By-the-glass" items need spoilage math that accounts for wine opened but not fully sold
 - Pour cost as a derived metric (cost / revenue per item) should be surfaceable in chat
 - Import needs to handle spirits in different units (bottles, cases, liters)
@@ -373,7 +388,7 @@ Jesse is a **mixed user** — she'll use Chat for specific item questions ("how 
 
 ---
 
-## 6. Theo — The Food Truck Owner
+## 6. George Weasley — The Food Truck Owner
 
 **Archetype:** High Volume, No Margin for Error
 
@@ -387,7 +402,7 @@ Jesse is a **mixed user** — she'll use Chat for specific item questions ("how 
 
 ### Psychographic Profile
 
-Theo runs lean. There is no walk-in to manage — he's working out of a truck, often prepping at a commissary kitchen. His inventory commitment happens at the beginning of each week or event, and whatever doesn't sell is either a loss or goes into next day's prep.
+George runs lean. There is no walk-in to manage — he's working out of a truck, often prepping at a commissary kitchen. His inventory commitment happens at the beginning of each week or event, and whatever doesn't sell is either a loss or goes into next day's prep.
 
 His spoilage problem is acute: he buys for anticipated demand based on the event or location, and if turnout is lower than expected, he eats the loss. His ordering math is basically event forecasting.
 
@@ -420,13 +435,13 @@ Tuesday morning: checks weekend events, estimates expected covers based on last 
 
 ### How He'll Use PantryIQ
 
-Theo is a **Chat-first, mobile-adjacent user**. He'll use chat to ask event-specific questions quickly. The dashboard is useful only if it loads fast and tells him something actionable in 30 seconds.
+George is a **Chat-first, mobile-adjacent user**. He'll use chat to ask event-specific questions quickly. The dashboard is useful only if it loads fast and tells him something actionable in 30 seconds.
 
 Import is a one-time-ish task — he'll upload his Square export and not think about it again for a while.
 
 ### UX Considerations
 
-- Mobile web experience matters for Theo (not native app, but responsive web)
+- Mobile web experience matters for George (not native app, but responsive web)
 - Chat needs to be fast — he's asking questions between orders or during commissary prep
 - The value proposition needs to be demonstrated quickly — he won't give the tool more than 2 weeks before deciding if it's worth it
 - Pricing sensitivity means the free trial or entry tier experience is critical for conversion
@@ -439,7 +454,7 @@ Import is a one-time-ish task — he'll upload his Square export and not think a
 
 ---
 
-## 7. Anika — The Ghost Kitchen Operator
+## 7. Hermione Granger — The Ghost Kitchen Operator
 
 **Archetype:** Data-Forward, No Front-of-House Sentimentality
 
@@ -453,7 +468,7 @@ Import is a one-time-ish task — he'll upload his Square export and not think a
 
 ### Psychographic Profile
 
-Anika built her business on data because she has to — there's no dining room atmosphere or loyal regulars to fall back on. Her reviews are her marketing. Her unit economics are everything.
+Hermione built her business on data because she has to — there's no dining room atmosphere or loyal regulars to fall back on. Her reviews are her marketing. Her unit economics are everything.
 
 She thinks in CAC, contribution margin, and delivery platform fees. She already has more data than she knows what to do with. She's not looking for more dashboards — she's looking for actionable signals from the data she already has.
 
@@ -488,13 +503,13 @@ Morning: reviews previous day's orders across all brands via Otter, notes demand
 
 ### How She'll Use PantryIQ
 
-Anika is a **Dashboard and Chat power user**. She'll set up her account carefully, import clean data, and then use both surfaces heavily. She'll push Chat hard — asking detailed, multi-step questions and following up aggressively.
+Hermione is a **Dashboard and Chat power user**. She'll set up her account carefully, import clean data, and then use both surfaces heavily. She'll push Chat hard — asking detailed, multi-step questions and following up aggressively.
 
 She'll expect to be able to export or act on data — she may be frustrated by MVP limitations here.
 
 ### UX Considerations
 
-- Evidence and reasoning transparency are non-negotiable for Anika — she will click "show reasoning" every time
+- Evidence and reasoning transparency are non-negotiable for Hermione — she will click "show reasoning" every time
 - The confidence scoring methodology needs to be explainable, not just a label
 - Multi-brand use within a single location needs to be at least possible (even if not elegantly supported in MVP)
 - She'll benefit most from anomaly detection — "this week's usage of salmon is 30% above what orders would predict"
@@ -507,21 +522,21 @@ She'll expect to be able to export or act on data — she may be frustrated by M
 
 ---
 
-## 8. Ray — The Small Chain Owner
+## 8. Albus Dumbledore — The Small Chain Owner
 
 **Archetype:** Scaling Without Losing Control
 
 ### Demographics / Context
 
 - Age: 40–58
-- Establishment: 2–5 locations of the same concept (or similar), all owned by Ray
+- Establishment: 2–5 locations of the same concept (or similar), all owned by Dumbledore
 - Revenue: $2M–$8M/yr across all locations
 - Tech: Moderate — probably using a mix of tools, maybe Toast enterprise, probably not consolidated
-- Staff: Multiple GMs, one per location; Ray is the operator above the operators
+- Staff: Multiple GMs, one per location; Dumbledore is the operator above the operators
 
 ### Psychographic Profile
 
-Ray has been successful enough to open multiple locations, which means he's now managing managers instead of managing kitchens. This creates a fundamental visibility problem: he can't be in three places at once, and each GM has their own way of doing things.
+Dumbledore has been successful enough to open multiple locations, which means he's now managing managers instead of managing kitchens. This creates a fundamental visibility problem: he can't be in three places at once, and each GM has their own way of doing things.
 
 He suspects there's significant inconsistency across locations — different spoilage rates, different ordering habits, different margin profiles — but he can't see it clearly. He's also not sure if that inconsistency is a problem or just the nature of different neighborhoods.
 
@@ -555,7 +570,7 @@ Monday: calls or texts each GM to get the weekend recap. Reviews Square reports 
 
 ### How He'll Use PantryIQ
 
-Ray is a **Dashboard-first user** who will check each location's dashboard independently (given MVP single-location scope). He'll use Chat occasionally for specific questions but primarily wants the dashboard to surface what needs his attention.
+Dumbledore is a **Dashboard-first user** who will check each location's dashboard independently (given MVP single-location scope). He'll use Chat occasionally for specific questions but primarily wants the dashboard to surface what needs his attention.
 
 He'll need the location-switching UX to be frictionless.
 
@@ -564,7 +579,7 @@ He'll need the location-switching UX to be frictionless.
 - Location picker must be prominent and fast — he's switching contexts frequently
 - Dashboard needs to be self-explanatory without requiring him to know the backstory of each location's data
 - Recommendation urgency framing ("act today" vs. "watch this") matters because he can't act on everything at once
-- Multi-location aggregation being V2 is a real gap for Ray — the MVP needs to feel like it's building toward that
+- Multi-location aggregation being V2 is a real gap for Dumbledore — the MVP needs to feel like it's building toward that
 
 ### Marketing Angle
 
@@ -574,7 +589,7 @@ He'll need the location-switching UX to be frictionless.
 
 ---
 
-## 9. Sofia — The Mobile Bar / Catering Operator
+## 9. Nymphadora Tonks — The Mobile Bar / Catering Operator
 
 **Archetype:** Event-Driven, Committed Orders, Zero Flexibility
 
@@ -588,7 +603,7 @@ He'll need the location-switching UX to be frictionless.
 
 ### Psychographic Profile
 
-Sofia's business is unlike any fixed-location restaurant. She commits to inventory before she knows exactly what will be consumed. Every event is its own P&L. She can't just push a special to move product — she buys for a specific event and what's left either rolls to the next event or goes to waste.
+Tonks's business is unlike any fixed-location restaurant. She commits to inventory before she knows exactly what will be consumed. Every event is its own P&L. She can't just push a special to move product — she buys for a specific event and what's left either rolls to the next event or goes to waste.
 
 Her spoilage profile is unusual: spirits don't spoil, but fresh ingredients (citrus, herbs, perishable mixers) do — and she commits to buying them a week out before she knows the final guest count. She's been burned by clients who promise 200 guests and deliver 120.
 
@@ -620,7 +635,7 @@ Gets a new event inquiry — 150-person wedding. Quotes based on gut and experie
 
 ### How She'll Use PantryIQ
 
-Sofia is a **Chat-heavy user with event-specific questions**. She'll import event data after each event (as a CSV or transaction history) and then ask retrospective questions: "How did my costs compare to my quote for last Saturday?" She'll also use Chat for forward-looking planning: "Based on past weddings, how much should I order for a 200-person event?"
+Tonks is a **Chat-heavy user with event-specific questions**. She'll import event data after each event (as a CSV or transaction history) and then ask retrospective questions: "How did my costs compare to my quote for last Saturday?" She'll also use Chat for forward-looking planning: "Based on past weddings, how much should I order for a 200-person event?"
 
 ### UX Considerations
 
@@ -637,7 +652,7 @@ Sofia is a **Chat-heavy user with event-specific questions**. She'll import even
 
 ---
 
-## 10. Dom — The Gastropub Owner-Operator
+## 10. Harry Potter — The Gastropub Owner-Operator
 
 **Archetype:** High Complexity, High Stakes
 
@@ -651,7 +666,7 @@ Sofia is a **Chat-heavy user with event-specific questions**. She'll import even
 
 ### Psychographic Profile
 
-Dom's operation is uniquely complex: he has a serious food program and a serious bar program, and they share kitchen resources, staff, and operational attention. His spoilage problems exist in both worlds and are hard to separate.
+Harry's operation is uniquely complex: he has a serious food program and a serious bar program, and they share kitchen resources, staff, and operational attention. His spoilage problems exist in both worlds and are hard to separate.
 
 He's been in the industry long enough to know that the margin is in the details. He's not satisfied with "roughly right" — he wants to know exactly where money is going. But he also knows that running a gastropub is an exercise in constant triage: there's always something more urgent than the data.
 
@@ -661,7 +676,7 @@ He's the type of operator who would genuinely use a sophisticated tool if it ear
 
 ### A Day in His Life
 
-Opens at 11am, does a walk-through of kitchen and bar. Catches up with both his kitchen manager and bar manager on what they need. Reviews last night's numbers in Toast. Has informal conversations about what's moving and what isn't. Does purchasing decisions by committee — he'll approve what Priya and Jesse are thinking rather than override them. Spends evenings on the floor, watching service, making mental notes about waste.
+Opens at 11am, does a walk-through of kitchen and bar. Catches up with both his kitchen manager and bar manager on what they need. Reviews last night's numbers in Toast. Has informal conversations about what's moving and what isn't. Does purchasing decisions by committee — he'll approve what Snape and Kingsley are thinking rather than override them. Spends evenings on the floor, watching service, making mental notes about waste.
 
 ### Current Pain Points
 
@@ -685,16 +700,16 @@ Opens at 11am, does a walk-through of kitchen and bar. Catches up with both his 
 
 ### How He'll Use PantryIQ
 
-Dom is a **balanced user** across Dashboard and Chat. He'll use the dashboard for his weekly review and Chat to answer specific cross-cutting questions. He'll likely set up PantryIQ himself and then give his managers visibility once he trusts it.
+Harry is a **balanced user** across Dashboard and Chat. He'll use the dashboard for his weekly review and Chat to answer specific cross-cutting questions. He'll likely set up PantryIQ himself and then give his managers visibility once he trusts it.
 
 He's the persona most likely to read the "show reasoning" section carefully and judge the tool on whether the logic holds up.
 
 ### UX Considerations
 
-- Cross-category analysis (food + beverage in the same query) is essential for Dom
+- Cross-category analysis (food + beverage in the same query) is essential for Harry
 - The dashboard needs to not force him to choose between food and bar — both need to be visible
 - "Show reasoning" needs to be rigorous enough that he'd feel comfortable forwarding it to his kitchen manager with a note
-- Confidence levels need to be well-calibrated — if the AI says "high confidence" and the number is wrong, Dom will never trust it again
+- Confidence levels need to be well-calibrated — if the AI says "high confidence" and the number is wrong, Harry will never trust it again
 
 ### Marketing Angle
 
