@@ -1,11 +1,6 @@
 # PantryIQ – Mom Test Interview Guide
 
-[[_TOC_]]
-
-**Owner:** CPO  
 **Purpose:** Deep discovery conversation with qualified prospects. Validates core product hypotheses, surfaces real pain, and determines willingness to pay — including under MVP constraints.  
-**Time:** 30–45 minutes  
-**Prerequisite:** Prospect has passed the screener (`customer-screener.md`)
 
 ---
 
@@ -302,30 +297,6 @@ Ask about each of the following only if relevant to their operation:
 **5.3** If we built the Square *(or their primary POS)* integration first and everything else was still CSV — would that be enough for you to get started?
 
 > This tests whether a single high-value integration removes the CSV barrier for most prospects.
-
----
-
-## OAuth Provider Tally Log
-
-Use this table to record responses across all interviews. One row per interview.
-
-| Interview # | Date | Operator Type | CSV Dealbreaker? | Would use CSV at early-adopter price? | Providers: Need | Providers: Want |
-|---|---|---|---|---|---|---|
-| 1 | | | | | | |
-| 2 | | | | | | |
-| 3 | | | | | | |
-| 4 | | | | | | |
-| 5 | | | | | | |
-| 6 | | | | | | |
-| 7 | | | | | | |
-| 8 | | | | | | |
-| 9 | | | | | | |
-| 10 | | | | | | |
-
-After 10 interviews, review this table and identify:
-1. What percentage of prospects said CSV is a dealbreaker?
-2. Which single OAuth provider, if built, would unblock the most "Need" prospects?
-3. How many prospects would commit at an early-adopter price with CSV-only?
 
 ---
 

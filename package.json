@@ -21,6 +21,7 @@
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
     "ciTests": "prettier --check . && npm run lint && tsc --noEmit && npm run build && npm run test:unit",
+    "ci": "npm run ciTests",
     "generate:test-csv": "ts-node scripts/generate-test-csv.ts",
     "generate:test-csv-faker": "ts-node scripts/generate-test-csv-faker.ts",
     "docker:build": "docker build -t pantryiq:latest ."
