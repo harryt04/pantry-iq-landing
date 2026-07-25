@@ -1,12 +1,50 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { db } from '@/db'
+import type { MockedFunction } from 'vitest'
 import {
   getHistoricalWeather,
   getForecast,
   getWeatherCacheStats,
 } from '@/lib/weather/client'
 
+// Unit tests must not touch real Postgres (CI runs unit tests before schema setup).
+vi.mock('@/db')
+vi.mock('drizzle-orm')
+
 // Mock fetch globally
 global.fetch = vi.fn()
+
+interface MockDb {
+  select: MockedFunction<() => any>
+  insert: MockedFunction<() => any>
+  delete: MockedFunction<() => any>
+}
+
+function mockEmptySelect() {
+  const typedDb = db as unknown as MockDb
+  const limit = vi.fn().mockResolvedValue([])
+  const where = vi.fn().mockReturnValue({ limit })
+  // getForecast uses select().from().where() without limit; also allow bare from()
+  const from = vi.fn().mockImplementation(() => {
+    const chain: any = Promise.resolve([])
+    chain.where = where
+    return chain
+  })
+  // where() may also be awaited directly (getForecast)
+  where.mockImplementation(() => {
+    const chain: any = Promise.resolve([])
+    chain.limit = limit
+    return chain
+  })
+  typedDb.select.mockReturnValue({ from })
+  typedDb.insert.mockReturnValue({
+    values: vi.fn().mockResolvedValue(undefined),
+  })
+  typedDb.delete.mockReturnValue({
+    where: vi.fn().mockResolvedValue(undefined),
+  })
+}
 
 describe('Weather Client', () => {
   const locationId = '550e8400-e29b-41d4-a716-446655440000'
@@ -15,6 +53,12 @@ describe('Weather Client', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
+    mockEmptySelect()
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+    global.fetch = vi.fn()
   })
 
   describe('getHistoricalWeather', () => {
@@ -168,8 +212,6 @@ describe('Weather Client', () => {
 
   describe('Weather Condition Mapping', () => {
     it('should recognize rain conditions', async () => {
-      // Test that rain is properly mapped
-      // This is tested internally by the client
       const result = await getHistoricalWeather(locationId, mockDate)
       expect(result).toBeDefined()
     })
@@ -322,23 +364,20 @@ describe('Weather Client', () => {
 
   describe('API timeout handling', () => {
     it('should timeout API requests that take too long', async () => {
-      // Create a promise that never resolves
+      // Never-resolving fetch; client should still settle via its own path
+      // (missing key / abort / graceful error) without hanging the suite.
       vi.mocked(global.fetch).mockImplementationOnce(
         () => new Promise(() => {}),
       )
 
-      const timeoutTest = (async () => {
-        const startTime = Date.now()
-        const result = await getHistoricalWeather(
-          locationId,
-          mockDate,
-          coordinates,
-        )
-        return { result, duration: Date.now() - startTime }
-      })()
+      const result = await getHistoricalWeather(
+        locationId,
+        mockDate,
+        coordinates,
+      )
 
-      // Should handle the timeout gracefully (either timeout or resolve with null)
-      await expect(timeoutTest).resolves.toBeDefined()
+      expect(result).toBeDefined()
+      expect(result.temperature).toBeNull()
     })
   })
 })
