@@ -1,7 +1,0 @@
-
-> pantry-iq-landing@0.1.0 test:unit
-> vitest --run tests/unit/csv-field-mapping-route.test.ts
-
-
- RUN  v4.1.4 /Users/harry/Documents/git/pantry-iq-landing
-
