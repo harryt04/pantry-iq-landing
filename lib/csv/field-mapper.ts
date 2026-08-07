@@ -18,11 +18,21 @@ export const STANDARD_FIELDS = [
   'qty',
   'revenue',
   'cost',
+  'unitCost',
+  'qtyOnHand',
+  'supplier',
+  'deliveryDate',
+  'snapshotType',
   'location',
   'source',
 ] as const
 
 export type StandardField = (typeof STANDARD_FIELDS)[number]
+
+export type ImportType =
+  | 'transactions'
+  | 'purchase_orders'
+  | 'inventory_snapshots'
 
 /**
  * Mapping type: source column name -> target standard field
@@ -79,6 +89,22 @@ const FALLBACK_PATTERNS: Record<string, StandardField> = {
   cost: 'cost',
   cogs: 'cost',
   expense: 'cost',
+
+  // Purchase order patterns
+  supplier: 'supplier',
+  vendor: 'supplier',
+  'delivery date': 'deliveryDate',
+  'expected delivery': 'deliveryDate',
+  'purchase unit cost': 'unitCost',
+
+  // Inventory snapshot patterns
+  'qty on hand': 'qtyOnHand',
+  'quantity on hand': 'qtyOnHand',
+  'on hand': 'qtyOnHand',
+  'on-hand': 'qtyOnHand',
+  inventory: 'qtyOnHand',
+  stock: 'qtyOnHand',
+  'snapshot type': 'snapshotType',
 
   // Location patterns
   'store name': 'location',
@@ -162,6 +188,7 @@ function isValidApiKey(apiKey?: string): boolean {
 export async function suggestMappings(
   headers: string[],
   sample: Record<string, string>[],
+  importType: ImportType = 'transactions',
 ): Promise<FieldMapping> {
   // Check which providers are available with VALID keys
   const hasOpenAI = isValidApiKey(process.env.OPENAI_API_KEY)
@@ -194,9 +221,9 @@ export async function suggestMappings(
         .join(', '),
     )
 
-    const prompt = `You are a data expert. Analyze these CSV column headers and suggest how they map to standard transaction fields.
+    const prompt = `You are a data expert. Analyze these CSV column headers and suggest how they map to standard ${importType} fields.
 
-Standard fields available: date, item, qty, revenue, cost, location, source
+Standard fields available: ${STANDARD_FIELDS.join(', ')}
 
 Column headers: ${headers.join(', ')}
 
@@ -318,21 +345,26 @@ export function normalizeValue(
   const trimmed = value.trim()
 
   switch (field) {
-    case 'date': {
+    case 'date':
+    case 'deliveryDate': {
       // Try to parse and normalize to ISO format
       const date = parseDate(trimmed)
       return date ? date.toISOString().split('T')[0] : null
     }
 
     case 'qty':
+    case 'qtyOnHand':
     case 'revenue':
-    case 'cost': {
+    case 'cost':
+    case 'unitCost': {
       // Parse as number
       const num = parseFloat(trimmed)
       return !isNaN(num) ? num : null
     }
 
     case 'item':
+    case 'supplier':
+    case 'snapshotType':
     case 'location':
     case 'source':
     default: {
@@ -388,7 +420,7 @@ function parseDate(dateString: string): Date | null {
 export function applyMapping(
   row: Record<string, string>,
   mapping: FieldMapping,
-): Record<StandardField, string | number | null> {
+): Partial<Record<StandardField, string | number | null>> {
   const normalized: Partial<Record<StandardField, string | number | null>> = {}
 
   for (const [sourceColumn, targetField] of Object.entries(mapping)) {
@@ -397,5 +429,5 @@ export function applyMapping(
     }
   }
 
-  return normalized as Record<StandardField, string | number | null>
+  return normalized
 }

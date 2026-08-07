@@ -19,11 +19,13 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Label } from '@/components/ui/label'
+import type { ImportType } from '@/components/import/csv-upload'
 
 interface FieldMappingUIProps {
   uploadId: string
   headers: string[]
   preview: Record<string, string>[]
+  importType?: ImportType
   onMappingConfirmed?: (mapping: Record<string, string | null>) => void
   onCancel?: () => void
 }
@@ -32,21 +34,41 @@ interface FieldMapping {
   [sourceColumn: string]: string | null
 }
 
-const STANDARD_FIELD_OPTIONS = [
+const COMMON_FIELD_OPTIONS = [
   { value: null, label: 'Skip this column' },
   { value: 'date', label: 'Date' },
   { value: 'item', label: 'Item/Product' },
-  { value: 'qty', label: 'Quantity' },
-  { value: 'revenue', label: 'Revenue/Sales' },
-  { value: 'cost', label: 'Cost' },
   { value: 'location', label: 'Location' },
   { value: 'source', label: 'Source' },
 ]
+
+const FIELD_OPTIONS_BY_IMPORT_TYPE = {
+  transactions: [
+    ...COMMON_FIELD_OPTIONS,
+    { value: 'qty', label: 'Quantity Sold' },
+    { value: 'revenue', label: 'Revenue/Sales' },
+    { value: 'cost', label: 'Cost' },
+  ],
+  purchase_orders: [
+    ...COMMON_FIELD_OPTIONS,
+    { value: 'qty', label: 'Quantity Ordered' },
+    { value: 'unitCost', label: 'Unit Cost' },
+    { value: 'cost', label: 'Unit Cost (legacy)' },
+    { value: 'supplier', label: 'Supplier/Vendor' },
+    { value: 'deliveryDate', label: 'Delivery Date' },
+  ],
+  inventory_snapshots: [
+    ...COMMON_FIELD_OPTIONS,
+    { value: 'qtyOnHand', label: 'Quantity On Hand' },
+    { value: 'snapshotType', label: 'Snapshot Type' },
+  ],
+} as const
 
 export function FieldMappingUI({
   uploadId,
   headers,
   preview,
+  importType = 'transactions',
   onMappingConfirmed,
   onCancel,
 }: FieldMappingUIProps) {
@@ -235,8 +257,8 @@ export function FieldMappingUI({
         <CardHeader>
           <CardTitle>Map Fields</CardTitle>
           <CardDescription>
-            Confirm how each CSV column maps to transaction fields. Required
-            fields are marked with *
+            Confirm how each CSV column maps to {importType.replace('_', ' ')}{' '}
+            fields. Required fields are marked with *
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -261,7 +283,7 @@ export function FieldMappingUI({
                       <SelectValue placeholder="Select a field" />
                     </SelectTrigger>
                     <SelectContent>
-                      {STANDARD_FIELD_OPTIONS.map((opt) => (
+                      {FIELD_OPTIONS_BY_IMPORT_TYPE[importType].map((opt) => (
                         <SelectItem
                           key={opt.value || 'skip'}
                           value={opt.value || 'skip'}

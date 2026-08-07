@@ -14,6 +14,7 @@ export const csvUploads = pgTable(
     id: uuid().primaryKey().defaultRandom(),
     locationId: uuid('locationId').notNull(),
     filename: text().notNull(),
+    importType: text('importType').notNull().default('transactions'),
     rowCount: integer('rowCount'),
     status: text().notNull().default('pending'),
     errorDetails: text('errorDetails'),

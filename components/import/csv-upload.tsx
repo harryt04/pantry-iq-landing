@@ -15,8 +15,14 @@ import { captureAnalyticsEvent } from '@/lib/analytics-utils'
 
 interface CSVUploadProps {
   locationId: string
+  importType?: ImportType
   onUploadComplete?: (data: UploadResult) => void
 }
+
+export type ImportType =
+  | 'transactions'
+  | 'purchase_orders'
+  | 'inventory_snapshots'
 
 interface UploadResult {
   uploadId: string
@@ -25,9 +31,14 @@ interface UploadResult {
   headers: string[]
   preview: Record<string, string>[]
   status: string
+  importType: ImportType
 }
 
-export function CSVUpload({ locationId, onUploadComplete }: CSVUploadProps) {
+export function CSVUpload({
+  locationId,
+  importType = 'transactions',
+  onUploadComplete,
+}: CSVUploadProps) {
   const [isDragging, setIsDragging] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -50,6 +61,7 @@ export function CSVUpload({ locationId, onUploadComplete }: CSVUploadProps) {
         const formData = new FormData()
         formData.append('file', file)
         formData.append('location_id', locationId)
+        formData.append('import_type', importType)
 
         const response = await fetch('/api/csv/upload', {
           method: 'POST',
@@ -77,7 +89,7 @@ export function CSVUpload({ locationId, onUploadComplete }: CSVUploadProps) {
         setIsUploading(false)
       }
     },
-    [locationId, onUploadComplete],
+    [importType, locationId, onUploadComplete],
   )
 
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
@@ -126,6 +138,7 @@ export function CSVUpload({ locationId, onUploadComplete }: CSVUploadProps) {
           uploadId={uploadResult.uploadId}
           headers={uploadResult.headers}
           preview={uploadResult.preview}
+          importType={importType}
           onCancel={() => {
             setShowFieldMapping(false)
             setUploadResult(null)

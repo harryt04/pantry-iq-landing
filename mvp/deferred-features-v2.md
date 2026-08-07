@@ -89,6 +89,17 @@ The MVP should first prove the value of the insights before building handoff and
 **What would validate it:**
 Users repeatedly ask to export data, recommendations, or analysis into spreadsheets or other systems.
 
+### 9. Chat-to-dashboard autonomous feedback loop
+
+**What it is:**
+During a chat conversation, the AI detects when the user reveals something dashboard-relevant — a cost correction, a shelf life adjustment, an operational pattern — and automatically writes it back to the location's data model, flagging the dashboard for recomputation. The AI presents what it intends to persist before writing ("I noted: salmon unit cost updated to $18/lb — does this look right?") and the user confirms with one tap.
+
+**Why deferred:**
+This is the most complex piece in the system. The AI deciding autonomously what is "dashboard-worthy" from freeform conversation is hard to get right. A false positive could silently corrupt dashboard recommendations, which directly contradicts the trust requirement. The right time to build this is after the core import → dashboard → chat loop is proven and user feedback indicates they want this level of integration.
+
+**What would validate it:**
+Beta users consistently reveal new facts or corrections in chat that they wish had updated their dashboard automatically, without being prompted.
+
 ### 8. More sophisticated onboarding and setup automation
 
 **Why deferred:**

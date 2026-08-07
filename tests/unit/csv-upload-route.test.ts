@@ -5,9 +5,24 @@ import { POST } from '@/app/api/csv/upload/route'
 import * as fs from 'fs'
 
 // Mock only the dependencies that don't use dynamic imports
+vi.mock('@/lib/auth', () => ({
+  auth: {
+    api: {
+      getSession: vi.fn().mockResolvedValue({
+        user: { id: 'test-user' },
+      }),
+    },
+  },
+}))
+
 vi.mock('@/db', () => ({
   db: {
     insert: vi.fn(),
+    select: vi.fn(() => ({
+      from: vi.fn(() => ({
+        where: vi.fn().mockResolvedValue([{ id: 'owned-location' }]),
+      })),
+    })),
   },
 }))
 
@@ -17,6 +32,7 @@ vi.mock('@/lib/csv/parser', () => ({
 
 import { db } from '@/db'
 import { parseCSV } from '@/lib/csv/parser'
+import { auth } from '@/lib/auth'
 
 /**
  * Helper to create a mock request with properly named files
@@ -60,6 +76,40 @@ describe('CSV Upload Route - POST /api/csv/upload', () => {
     if (fs.existsSync(TEST_UPLOAD_DIR)) {
       fs.rmSync(TEST_UPLOAD_DIR, { recursive: true, force: true })
     }
+  })
+
+  describe('authorization', () => {
+    it('should return 401 for an unauthenticated upload', async () => {
+      vi.mocked(auth.api.getSession).mockResolvedValueOnce(null)
+
+      const request = createFormDataRequest(
+        'sales.csv',
+        'date,item,qty\n2026-01-01,Salmon,1\n',
+        'loc-123',
+      )
+      const response = await POST(request)
+
+      expect(response.status).toBe(401)
+      expect(vi.mocked(db.insert)).not.toHaveBeenCalled()
+    })
+
+    it('should return 403 when the location is not owned by the user', async () => {
+      vi.mocked(db.select).mockReturnValueOnce({
+        from: vi.fn(() => ({
+          where: vi.fn().mockResolvedValue([]),
+        })),
+      } as any)
+
+      const request = createFormDataRequest(
+        'sales.csv',
+        'date,item,qty\n2026-01-01,Salmon,1\n',
+        'other-user-location',
+      )
+      const response = await POST(request)
+
+      expect(response.status).toBe(403)
+      expect(vi.mocked(db.insert)).not.toHaveBeenCalled()
+    })
   })
 
   // ============================================================================

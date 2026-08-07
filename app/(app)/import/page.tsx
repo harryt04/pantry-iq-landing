@@ -1,19 +1,22 @@
 'use client'
 
-import { useSearchParams } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Suspense } from 'react'
 import {
   Square as SquareIcon,
   Upload as UploadIcon,
   AlertCircle,
 } from 'lucide-react'
-import { CSVUpload } from '@/components/import/csv-upload'
+import { CSVUpload, type ImportType } from '@/components/import/csv-upload'
 import { SquareConnect } from '@/components/import/square-connect'
 import { LocationSelector } from '@/components/import/location-selector'
 
 function ImportContent() {
+  const router = useRouter()
   const searchParams = useSearchParams()
   const locationId = searchParams.get('location_id')
+  const importType = (searchParams.get('import_type') ||
+    'transactions') as ImportType
 
   if (!locationId) {
     return (
@@ -45,7 +48,24 @@ function ImportContent() {
           <UploadIcon className="h-5 w-5" />
           Manual CSV Upload
         </h2>
-        <CSVUpload locationId={locationId} />
+        <label className="mb-3 block text-sm font-medium" htmlFor="import-type">
+          What kind of data are you importing?
+        </label>
+        <select
+          id="import-type"
+          value={importType}
+          onChange={(event) => {
+            const params = new URLSearchParams(searchParams.toString())
+            params.set('import_type', event.target.value)
+            router.replace(`/import?${params.toString()}`)
+          }}
+          className="border-input bg-background mb-4 w-full rounded-md border px-3 py-2 text-sm"
+        >
+          <option value="transactions">Sales transactions</option>
+          <option value="purchase_orders">Purchase orders</option>
+          <option value="inventory_snapshots">Inventory snapshots</option>
+        </select>
+        <CSVUpload locationId={locationId} importType={importType} />
       </div>
     </div>
   )

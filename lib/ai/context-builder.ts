@@ -4,9 +4,17 @@
  */
 
 import { db } from '@/db'
-import { transactions, weather, placesCache } from '@/db/schema'
+import {
+  transactions,
+  weather,
+  placesCache,
+  purchaseOrders,
+  inventorySnapshots,
+  items,
+} from '@/db/schema'
 import { eq, gte, and } from 'drizzle-orm'
 import { ContextData } from './prompts'
+import { generateRecommendations } from '@/lib/recommendations/engine'
 
 /**
  * Build context data from various sources
@@ -29,6 +37,11 @@ export async function buildContextData(
       context.transactionSummary = transactionSummary
     }
 
+    const recommendationSummary = await buildRecommendationSummary(locationId)
+    if (recommendationSummary) {
+      context.recommendationSummary = recommendationSummary
+    }
+
     // Fetch weather data
     const weatherData = await buildWeatherData(locationId)
     if (weatherData) {
@@ -45,6 +58,50 @@ export async function buildContextData(
   } catch (error) {
     console.error('Error building context data:', error)
     return {}
+  }
+}
+
+async function buildRecommendationSummary(
+  locationId: string,
+): Promise<string | null> {
+  try {
+    const [transactionRows, purchaseRows, inventoryRows, itemRows] =
+      await Promise.all([
+        db
+          .select()
+          .from(transactions)
+          .where(eq(transactions.locationId, locationId)),
+        db
+          .select()
+          .from(purchaseOrders)
+          .where(eq(purchaseOrders.locationId, locationId)),
+        db
+          .select()
+          .from(inventorySnapshots)
+          .where(eq(inventorySnapshots.locationId, locationId)),
+        db.select().from(items).where(eq(items.locationId, locationId)),
+      ])
+
+    const result = generateRecommendations({
+      transactions: transactionRows,
+      purchases: purchaseRows,
+      inventory: inventoryRows,
+      items: itemRows,
+    })
+
+    if (result.recommendations.length === 0) return null
+
+    return [
+      `Estimated financial risk in surfaced signals: $${result.walletImpact.toFixed(2)}`,
+      `History available: ${result.historyWeeks.toFixed(1)} weeks`,
+      ...result.recommendations.map(
+        (recommendation) =>
+          `- ${recommendation.item}: ${recommendation.observation}. Suggested action: ${recommendation.suggestedAction}. Evidence: ${recommendation.evidence.sources.join(', ') || 'none'}.`,
+      ),
+    ].join('\n')
+  } catch (error) {
+    console.error('Error building recommendation context:', error)
+    return null
   }
 }
 

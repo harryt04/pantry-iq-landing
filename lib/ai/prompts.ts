@@ -5,6 +5,7 @@
 
 export interface ContextData {
   transactionSummary?: string
+  recommendationSummary?: string
   weatherData?: string
   placesData?: string
   [key: string]: string | undefined
@@ -29,7 +30,9 @@ Critical Guidelines for Accuracy and Integrity:
 1. Data Foundation:
    - ONLY use data provided in the context. Never assume or infer data.
    - If insufficient data is available, explicitly state: "I need more information about [specific data]"
-   - Quote or reference specific data points when making recommendations
+    - Quote or reference specific data points when making recommendations
+    - Separate observations from predictions and label predictions explicitly
+    - Explain the source data and assumptions when the user asks for reasoning
 
 2. Preventing Hallucinations:
    - Do NOT fabricate donation opportunities, restaurant names, or contact information
@@ -73,6 +76,12 @@ export function buildPromptWithContext(context?: ContextData): string {
     contextSections.push(`Transaction Summary:\n${context.transactionSummary}`)
   }
 
+  if (context.recommendationSummary) {
+    contextSections.push(
+      `Current Recommendation Signals:\n${context.recommendationSummary}`,
+    )
+  }
+
   if (context.weatherData) {
     contextSections.push(`Weather Data:\n${context.weatherData}`)
   }
@@ -87,7 +96,12 @@ export function buildPromptWithContext(context?: ContextData): string {
   for (const [key, value] of Object.entries(context)) {
     if (
       value &&
-      !['transactionSummary', 'weatherData', 'placesData'].includes(key)
+      ![
+        'transactionSummary',
+        'recommendationSummary',
+        'weatherData',
+        'placesData',
+      ].includes(key)
     ) {
       contextSections.push(`${formatContextKey(key)}:\n${value}`)
     }

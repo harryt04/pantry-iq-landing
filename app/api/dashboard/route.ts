@@ -7,8 +7,15 @@ import {
   csvUploads,
   posConnections,
   conversations,
+  items,
+  purchaseOrders,
+  inventorySnapshots,
 } from '@/db/schema'
 import { eq, and, count, desc, sql, inArray } from 'drizzle-orm'
+import {
+  generateRecommendations,
+  type Recommendation,
+} from '@/lib/recommendations/engine'
 
 interface DashboardData {
   locations: Array<{
@@ -31,6 +38,10 @@ interface DashboardData {
   }>
   totalLocations: number
   totalTransactions: number
+  selectedLocationId: string | null
+  walletImpact: number
+  historyWeeks: number
+  recommendations: Recommendation[]
 }
 
 // GET /api/dashboard - Get dashboard data for current user
@@ -49,6 +60,11 @@ export async function GET(req: NextRequest) {
       .select()
       .from(locations)
       .where(eq(locations.userId, session.user.id))
+
+    const requestedLocationId = new URL(req.url).searchParams.get('location_id')
+    const selectedLocation =
+      userLocations.find((location) => location.id === requestedLocationId) ||
+      userLocations[0]
 
     // Get user's location IDs for scoping queries
     const userLocationIds = userLocations.map((loc) => loc.id)
@@ -177,11 +193,55 @@ export async function GET(req: NextRequest) {
       0,
     )
 
+    let recommendations: Recommendation[] = []
+    let walletImpact = 0
+    let historyWeeks = 0
+
+    if (selectedLocation) {
+      const [
+        recommendationTransactions,
+        recommendationPurchases,
+        recommendationInventory,
+        itemDefinitions,
+      ] = await Promise.all([
+        db
+          .select()
+          .from(transactions)
+          .where(eq(transactions.locationId, selectedLocation.id)),
+        db
+          .select()
+          .from(purchaseOrders)
+          .where(eq(purchaseOrders.locationId, selectedLocation.id)),
+        db
+          .select()
+          .from(inventorySnapshots)
+          .where(eq(inventorySnapshots.locationId, selectedLocation.id)),
+        db
+          .select()
+          .from(items)
+          .where(eq(items.locationId, selectedLocation.id)),
+      ])
+
+      const result = generateRecommendations({
+        transactions: recommendationTransactions,
+        purchases: recommendationPurchases,
+        inventory: recommendationInventory,
+        items: itemDefinitions,
+      })
+      recommendations = result.recommendations
+      walletImpact = result.walletImpact
+      historyWeeks = result.historyWeeks
+    }
+
     const dashboardData: DashboardData = {
       locations: locationsData,
       recentCsvUploads,
       totalLocations: locationsData.length,
       totalTransactions,
+      selectedLocationId: selectedLocation?.id || null,
+      walletImpact,
+      historyWeeks,
+      recommendations,
     }
 
     return NextResponse.json(dashboardData, { status: 200 })

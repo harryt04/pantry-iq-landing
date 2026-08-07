@@ -126,7 +126,9 @@ export async function POST(
     const result = streamText({
       model,
       system: systemPrompt,
-      messages: [...messageHistory, { role: 'user', content: message }],
+      // The user message was persisted before history was loaded, so adding it
+      // again here would send the current turn to the model twice.
+      messages: messageHistory,
       temperature: 0.7,
     })
 

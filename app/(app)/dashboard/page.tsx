@@ -7,6 +7,8 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { ImportStatusCard } from '@/components/dashboard/import-status-card'
 import { LocationOverviewCard } from '@/components/dashboard/location-overview-card'
 import { QuickActionsCard } from '@/components/dashboard/quick-actions-card'
+import { RecommendationAlertsCard } from '@/components/dashboard/recommendation-alerts-card'
+import type { Recommendation } from '@/lib/recommendations/engine'
 
 interface DashboardData {
   locations: Array<{
@@ -29,6 +31,10 @@ interface DashboardData {
   }>
   totalLocations: number
   totalTransactions: number
+  selectedLocationId: string | null
+  walletImpact: number
+  historyWeeks: number
+  recommendations: Recommendation[]
 }
 
 interface PosConnection {
@@ -179,6 +185,17 @@ export default function DashboardPage() {
       {/* Main Content */}
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="space-y-6 lg:col-span-2">
+          <RecommendationAlertsCard
+            recommendations={dashboardData.recommendations}
+            walletImpact={dashboardData.walletImpact}
+            historyWeeks={dashboardData.historyWeeks}
+            locationId={dashboardData.selectedLocationId}
+            conversationId={
+              dashboardData.locations.find(
+                (location) => location.id === dashboardData.selectedLocationId,
+              )?.conversationId
+            }
+          />
           <LocationOverviewCard locations={dashboardData.locations} />
           <ImportStatusCard
             csvUploads={dashboardData.recentCsvUploads}

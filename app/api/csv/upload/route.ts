@@ -3,6 +3,9 @@ import { parseCSV } from '@/lib/csv/parser'
 import { writeCSVFile, ensureUploadDir } from '@/lib/csv/storage'
 import { db } from '@/db'
 import { csvUploads } from '@/db/schema/csv-uploads'
+import { locations } from '@/db/schema/locations'
+import { auth } from '@/lib/auth'
+import { and, eq } from 'drizzle-orm'
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024 // 50MB
 
@@ -24,6 +27,8 @@ export async function POST(request: NextRequest) {
     const formData = await request.formData()
     const file = formData.get('file') as File | null
     const locationId = formData.get('location_id') as string | null
+    const importType =
+      (formData.get('import_type') as string | null) || 'transactions'
 
     // Validate inputs
     if (!file) {
@@ -36,6 +41,17 @@ export async function POST(request: NextRequest) {
     if (!locationId) {
       return NextResponse.json(
         { error: 'Missing location_id in request' },
+        { status: 400 },
+      )
+    }
+
+    if (
+      !['transactions', 'purchase_orders', 'inventory_snapshots'].includes(
+        importType,
+      )
+    ) {
+      return NextResponse.json(
+        { error: 'Invalid import_type' },
         { status: 400 },
       )
     }
@@ -59,6 +75,25 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    const session = await auth.api.getSession({ headers: request.headers })
+    if (!session?.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const ownedLocation = await db
+      .select({ id: locations.id })
+      .from(locations)
+      .where(
+        and(
+          eq(locations.id, locationId),
+          eq(locations.userId, session.user.id),
+        ),
+      )
+
+    if (ownedLocation.length === 0) {
+      return NextResponse.json({ error: 'Access denied' }, { status: 403 })
+    }
+
     // Convert file to buffer
     const buffer = Buffer.from(await file.arrayBuffer())
 
@@ -71,6 +106,7 @@ export async function POST(request: NextRequest) {
       .values({
         locationId,
         filename: file.name,
+        importType,
         rowCount: parsed.totalRows,
         status: 'pending',
         fieldMapping: JSON.stringify({ headers: parsed.headers }),
@@ -93,6 +129,7 @@ export async function POST(request: NextRequest) {
         rowCount: parsed.totalRows,
         headers: parsed.headers,
         preview: parsed.rows,
+        importType: uploadRecord.importType,
         status: uploadRecord.status,
       },
       { status: 200 },

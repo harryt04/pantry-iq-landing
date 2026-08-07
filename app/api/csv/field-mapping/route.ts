@@ -10,7 +10,11 @@ import {
 import { db } from '@/db'
 import { csvUploads } from '@/db/schema/csv-uploads'
 import { transactions } from '@/db/schema/transactions'
-import { eq } from 'drizzle-orm'
+import { purchaseOrders } from '@/db/schema/purchase-orders'
+import { inventorySnapshots } from '@/db/schema/inventory-snapshots'
+import { locations } from '@/db/schema/locations'
+import { auth } from '@/lib/auth'
+import { and, eq } from 'drizzle-orm'
 
 interface FieldMappingRequest {
   uploadId: string
@@ -50,6 +54,14 @@ export async function POST(
   request: NextRequest,
 ): Promise<NextResponse<FieldMappingResponse>> {
   try {
+    const session = await auth.api.getSession({ headers: request.headers })
+    if (!session?.user) {
+      return NextResponse.json(
+        { success: false, message: 'Unauthorized' },
+        { status: 401 },
+      )
+    }
+
     const body: FieldMappingRequest = await request.json()
     const { uploadId, confirmedMapping } = body
 
@@ -74,6 +86,23 @@ export async function POST(
     }
 
     const upload = uploadRecords[0]
+
+    const ownedLocation = await db
+      .select({ id: locations.id })
+      .from(locations)
+      .where(
+        and(
+          eq(locations.id, upload.locationId),
+          eq(locations.userId, session.user.id),
+        ),
+      )
+
+    if (ownedLocation.length === 0) {
+      return NextResponse.json(
+        { success: false, message: 'Access denied' },
+        { status: 403 },
+      )
+    }
 
     // If no confirmed mapping provided, generate suggestions
     if (!confirmedMapping) {
@@ -115,6 +144,7 @@ export async function POST(
       const suggestedMapping = await suggestMappings(
         mappingData.headers || [],
         sampleData,
+        upload.importType as Parameters<typeof suggestMappings>[2],
       )
 
       return NextResponse.json(
@@ -128,7 +158,14 @@ export async function POST(
     }
 
     // Validate the confirmed mapping
-    const validationError = validateMapping(confirmedMapping)
+    const requiredFields =
+      upload.importType === 'inventory_snapshots'
+        ? ['item', 'date', 'qtyOnHand']
+        : ['item', 'date', 'qty']
+    const validationError = validateMapping(
+      confirmedMapping,
+      requiredFields as Parameters<typeof validateMapping>[1],
+    )
     if (validationError) {
       return NextResponse.json(
         { success: false, message: validationError },
@@ -201,17 +238,50 @@ export async function POST(
           continue
         }
 
-        // Insert transaction
-        await db.insert(transactions).values({
-          locationId: upload.locationId,
-          date: String(normalized.date),
-          item: String(normalized.item),
-          qty: String(normalized.qty),
-          revenue: normalized.revenue ? String(normalized.revenue) : null,
-          cost: normalized.cost ? String(normalized.cost) : null,
-          source: 'csv',
-          sourceId: uploadId,
-        })
+        if (upload.importType === 'transactions') {
+          await db.insert(transactions).values({
+            locationId: upload.locationId,
+            date: String(normalized.date),
+            item: String(normalized.item),
+            qty: String(normalized.qty),
+            revenue:
+              normalized.revenue != null ? String(normalized.revenue) : null,
+            cost: normalized.cost != null ? String(normalized.cost) : null,
+            source: 'csv',
+            sourceId: uploadId,
+          })
+        } else if (upload.importType === 'purchase_orders') {
+          const unitCost = normalized.unitCost ?? normalized.cost
+          await db.insert(purchaseOrders).values({
+            locationId: upload.locationId,
+            purchaseDate: String(normalized.date),
+            item: String(normalized.item),
+            qty: String(normalized.qty),
+            unitCost: unitCost != null ? String(unitCost) : null,
+            totalCost:
+              unitCost != null
+                ? String(Number(normalized.qty) * Number(unitCost))
+                : null,
+            supplier: normalized.supplier ? String(normalized.supplier) : null,
+            deliveryDate: normalized.deliveryDate
+              ? String(normalized.deliveryDate)
+              : null,
+            source: 'csv',
+            sourceId: uploadId,
+          })
+        } else if (upload.importType === 'inventory_snapshots') {
+          await db.insert(inventorySnapshots).values({
+            locationId: upload.locationId,
+            snapshotDate: String(normalized.date),
+            item: String(normalized.item),
+            qtyOnHand: String(normalized.qtyOnHand),
+            snapshotType: normalized.snapshotType
+              ? String(normalized.snapshotType)
+              : 'count',
+            source: 'csv',
+            sourceId: uploadId,
+          })
+        }
 
         successCount++
       } catch (error) {
@@ -274,6 +344,14 @@ export async function POST(
  */
 export async function GET(request: NextRequest): Promise<NextResponse> {
   try {
+    const session = await auth.api.getSession({ headers: request.headers })
+    if (!session?.user) {
+      return NextResponse.json(
+        { success: false, message: 'Unauthorized' },
+        { status: 401 },
+      )
+    }
+
     const { searchParams } = new URL(request.url)
     const uploadId = searchParams.get('uploadId')
 
@@ -297,6 +375,23 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     }
 
     const upload = uploadRecords[0]
+
+    const ownedLocation = await db
+      .select({ id: locations.id })
+      .from(locations)
+      .where(
+        and(
+          eq(locations.id, upload.locationId),
+          eq(locations.userId, session.user.id),
+        ),
+      )
+
+    if (ownedLocation.length === 0) {
+      return NextResponse.json(
+        { success: false, message: 'Access denied' },
+        { status: 403 },
+      )
+    }
 
     // If mapping already confirmed, return it
     if (upload.fieldMapping) {

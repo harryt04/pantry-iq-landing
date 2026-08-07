@@ -8,6 +8,11 @@ describe('Database Schema', () => {
       'posConnections',
       'csvUploads',
       'transactions',
+      'items',
+      'purchaseOrders',
+      'inventorySnapshots',
+      'recommendations',
+      'auditEvents',
       'weather',
       'placesCache',
       'conversations',
@@ -28,6 +33,11 @@ describe('Database Schema', () => {
     expect(exportedTables).toContain('posConnections')
     expect(exportedTables).toContain('csvUploads')
     expect(exportedTables).toContain('transactions')
+    expect(exportedTables).toContain('items')
+    expect(exportedTables).toContain('purchaseOrders')
+    expect(exportedTables).toContain('inventorySnapshots')
+    expect(exportedTables).toContain('recommendations')
+    expect(exportedTables).toContain('auditEvents')
     expect(exportedTables).toContain('weather')
     expect(exportedTables).toContain('placesCache')
     expect(exportedTables).toContain('conversations')
@@ -41,6 +51,11 @@ describe('Database Schema', () => {
       schema.posConnections,
       schema.csvUploads,
       schema.transactions,
+      schema.items,
+      schema.purchaseOrders,
+      schema.inventorySnapshots,
+      schema.recommendations,
+      schema.auditEvents,
       schema.weather,
       schema.placesCache,
       schema.conversations,
