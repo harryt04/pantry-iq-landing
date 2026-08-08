@@ -62,7 +62,7 @@ backup and a forward migration.
 
 ```bash
 pnpm test        # unit tests (Vitest)
-pnpm test:integration  # real PostgreSQL harness (requires Docker)
+pnpm test:integration  # real PostgreSQL harness (Docker or local test DB)
 pnpm test:a11y   # browser accessibility gate (Playwright + axe)
 pnpm test:charts # greyscale chart gate with attached screenshot
 pnpm lint         # Prettier check
@@ -74,7 +74,10 @@ pnpm build        # production build
 The shared fixtures in `tests/fixtures/pantry.ts` cover a messy CSV, a
 partial-data location, and a deterministic full year of history. Integration
 tests use Testcontainers to start PostgreSQL 16 and always remove the
-container after the test. Engine code is expected to maintain at least 90%
+container after the test. To run the migration round-trip against a
+disposable local PostgreSQL database instead, set `TEST_DATABASE_URL`; it
+must use a localhost host because the test resets that database. Engine code
+is expected to maintain at least 90%
 line coverage once `MET-01` lands; arithmetic edge cases should be tested
 with the full-year and partial-data fixtures rather than wall-clock dates.
 

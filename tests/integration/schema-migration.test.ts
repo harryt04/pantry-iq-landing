@@ -6,9 +6,10 @@ import {
   migrateDatabase,
 } from '../../src/server/db/migrations'
 import { seedDatabase } from '../../src/server/db/seed-database'
-import { withTestDatabase } from '../helpers/test-database'
-
-const testcontainersEnabled = process.env.TESTCONTAINERS_ENABLED === '1'
+import {
+  integrationDatabaseEnabled,
+  withTestDatabase,
+} from '../helpers/test-database'
 
 const canonicalTables = [
   'locations',
@@ -159,21 +160,23 @@ async function expectCanonicalSchema(sql: ReturnType<typeof postgres>) {
   )
 }
 
-describe.skipIf(!testcontainersEnabled)('schema migration round trip', () => {
-  it('migrates, seeds, rolls back, and migrates again', async () => {
-    await withTestDatabase(async (sql) => {
-      await migrateDatabase(sql)
-      await expectCanonicalSchema(sql)
+describe.skipIf(!integrationDatabaseEnabled())(
+  'schema migration round trip',
+  () => {
+    it('migrates, seeds, rolls back, and migrates again', async () => {
+      await withTestDatabase(async (sql) => {
+        await migrateDatabase(sql)
+        await expectCanonicalSchema(sql)
 
-      await seedDatabase(sql)
-      const seededRows = await sql<{ count: string }[]>`
+        await seedDatabase(sql)
+        const seededRows = await sql<{ count: string }[]>`
         select count(*)::text as count from transactions
       `
-      expect(seededRows[0]?.count).toBe('35')
+        expect(seededRows[0]?.count).toBe('35')
 
-      await rollbackDatabase(sql)
+        await rollbackDatabase(sql)
 
-      const rolledBackTables = await sql<{ table_name: string | null }[]>`
+        const rolledBackTables = await sql<{ table_name: string | null }[]>`
         select to_regclass(table_name)::text as table_name
         from (values
           ('public.locations'),
@@ -186,12 +189,13 @@ describe.skipIf(!testcontainersEnabled)('schema migration round trip', () => {
           ('public.__drizzle_migrations')
         ) as tables(table_name)
       `
-      expect(
-        rolledBackTables.every(({ table_name }) => table_name === null),
-      ).toBe(true)
+        expect(
+          rolledBackTables.every(({ table_name }) => table_name === null),
+        ).toBe(true)
 
-      await migrateDatabase(sql)
-      await expectCanonicalSchema(sql)
+        await migrateDatabase(sql)
+        await expectCanonicalSchema(sql)
+      })
     })
-  })
-})
+  },
+)

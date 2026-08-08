@@ -478,8 +478,10 @@ column type, nullability, and index, and rejects unexpected public tables
 (including provisional donation tables). A runtime-independent migration
 contract test also guards the exact table and index surface, numeric and
 timestamp types, business-day fields, and the absence of donation tables.
-Live verification is still pending because this environment cannot find a
-working container runtime.
+The integration harness can use either CI's Testcontainers PostgreSQL or an
+explicit disposable localhost database through `TEST_DATABASE_URL`; live
+verification is still pending because this environment has neither a
+working container runtime nor a PostgreSQL server on localhost:5433.
 
 **Decisions to confirm.** Item category taxonomy is open
 (`open-questions.md` §1, Q8). **Default:** free-text `category` with no
