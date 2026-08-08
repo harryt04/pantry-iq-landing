@@ -129,7 +129,7 @@ that touch them carry a stated default so work never stalls.
 | FND-02 | Repository scaffold and developer setup | **done** | claude-opus-5 | FND-01 |
 | FND-03 | CI pipeline and automated gates | **done** | claude-sonnet-5 | FND-02 |
 | FND-04 | Core schema and migrations | **done** | codex | FND-02 |
-| FND-05 | Authentication and the owner account | in-review | codex | FND-04 |
+| FND-05 | Authentication and the owner account | **done** | codex | FND-04 |
 | FND-06 | Design tokens and theming | **done** | codex | FND-02 |
 | FND-07 | Component baseline — restyled shadcn | **done** | codex | FND-06 |
 | FND-08 | App shell, navigation, location switcher | available | — | FND-05, FND-07, ING-01 |
@@ -493,7 +493,7 @@ migration.
 ### FND-05 — Authentication and the owner account
 
 ```
-Status: in-review   Owner: codex   Claimed: 2026-08-08   Completed: —   Branch/PR: rewrite
+Status: done   Owner: codex   Claimed: 2026-08-08   Completed: 2026-08-08   Branch/PR: rewrite
 ```
 
 **Blocked by:** FND-04 · **Blocks:** FND-08, ING-01, INT-02, QAG-06
@@ -522,7 +522,7 @@ Recipient accounts (D3). Billing (D7).
       reversible.
 - [x] Sessions expire and can be revoked.
 - [x] Ownership is enforced in one shared helper, not repeated per route.
-- [ ] No endpoint returns another account's data when given a valid
+- [x] No endpoint returns another account's data when given a valid
       session and a foreign identifier.
 - [x] Auth error copy follows
       [`brand/voice-and-tone.md`](brand/voice-and-tone.md) §6 — never
@@ -533,10 +533,15 @@ every read and write across the boundary. All must fail. `QAG-06`
 automates this later.
 
 **Notes:** Better Auth, the Drizzle schema, the auth pages, and the shared
-ownership helper are implemented and pass static/build validation. Live
-two-account isolation verification remains in review because the local
-PostgreSQL service configured in `.env.local` is unreachable; `QAG-06` will
-provide the full cross-boundary suite when its dependency is available.
+ownership helper are implemented. Better Auth is explicitly configured to
+generate UUID identifiers for the UUID-backed schema. Against a disposable
+local PostgreSQL 16 instance, two owner accounts signed up and signed in,
+each received a location, and the authenticated API rejected the other
+account's location on both read and write (404). The authenticated
+menu-engineering page also returns 404 for a foreign location rather than
+surfacing an authorization error. Sign-out revoked the session and the
+session endpoint returned null. The broader route matrix remains the scope
+of QAG-06.
 
 ---
 
@@ -3549,7 +3554,7 @@ condition.
 
 | Area | Done | Total |
 |---|---|---|
-| Foundation | 6 | 8 |
+| Foundation | 7 | 8 |
 | Data ingest | 1 | 11 |
 | Metrics engine | 1 | 12 |
 | Dashboard | 1 | 7 |
@@ -3561,7 +3566,7 @@ condition.
 | Integrations | 0 | 8 |
 | Menu management | 3 | 7 |
 | Staffing | 0 | 6 |
-| **Total** | **19** | **87** |
+| **Total** | **20** | **87** |
 
 **The backlog is complete when every ticket reads `done`.** Sections 7
 and 8 are not work and never become work.

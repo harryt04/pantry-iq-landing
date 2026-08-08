@@ -1,8 +1,9 @@
 import { headers } from 'next/headers'
-import { redirect } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 
 import { MenuEngineeringView } from '@/components/menu-engineering/menu-engineering-view'
 import { auth } from '@/src/server/auth/auth'
+import { ForbiddenError } from '@/src/server/auth/authorization'
 import { getMenuEngineering } from '@/src/server/menu/menu-engineering-query'
 
 export default async function MenuEngineeringPage({
@@ -23,6 +24,11 @@ export default async function MenuEngineeringPage({
     )
   }
 
-  const result = await getMenuEngineering(requestHeaders, locationId)
-  return <MenuEngineeringView result={result} />
+  try {
+    const result = await getMenuEngineering(requestHeaders, locationId)
+    return <MenuEngineeringView result={result} />
+  } catch (error) {
+    if (error instanceof ForbiddenError) notFound()
+    throw error
+  }
 }

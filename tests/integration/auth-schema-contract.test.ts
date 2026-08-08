@@ -5,6 +5,10 @@ const migration = readFileSync(
   new URL('../../drizzle/0001_fancy_the_leader.sql', import.meta.url),
   'utf8',
 )
+const authConfig = readFileSync(
+  new URL('../../src/server/auth/auth.ts', import.meta.url),
+  'utf8',
+)
 
 describe('authentication migration contract', () => {
   it('creates Better Auth core tables with UUID ownership-compatible IDs', () => {
@@ -25,5 +29,9 @@ describe('authentication migration contract', () => {
 
   it('does not add social-provider tables or product notification tables', () => {
     expect(migration).not.toMatch(/oauth|notification|webhook/i)
+  })
+
+  it('configures Better Auth to generate UUIDs for the UUID-backed schema', () => {
+    expect(authConfig).toMatch(/generateId:\s*['"]uuid['"]/)
   })
 })

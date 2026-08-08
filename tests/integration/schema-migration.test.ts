@@ -26,6 +26,7 @@ const canonicalTables = [
   'recipes',
   'recipe_ingredients',
   'item_unit_conversions',
+  'recipe_cost_history',
 ] as const
 
 const canonicalIndexes = [
@@ -41,6 +42,7 @@ const canonicalIndexes = [
   'recipe_ingredients_recipe_id_idx',
   'recipe_ingredients_ingredient_item_id_idx',
   'item_unit_conversions_item_units_idx',
+  'recipe_cost_history_location_recipe_calculated_idx',
 ] as const
 
 const canonicalColumns = [
@@ -74,6 +76,7 @@ const canonicalColumns = [
   ['inventory_items', 'item_type', false, 'text'],
   ['inventory_items', 'shelf_life_days', true, 'integer'],
   ['inventory_items', 'cost_per_unit', true, 'numeric'],
+  ['inventory_items', 'menu_price', true, 'numeric'],
   ['inventory_items', 'par_level', true, 'numeric'],
   ['inventory_items', 'is_active', false, 'boolean'],
   ['inventory_items', 'usage_count', false, 'integer'],
@@ -173,6 +176,18 @@ const canonicalColumns = [
   ['item_unit_conversions', 'factor', false, 'numeric'],
   ['item_unit_conversions', 'created_at', false, 'timestamp with time zone'],
   ['item_unit_conversions', 'updated_at', false, 'timestamp with time zone'],
+  ['recipe_cost_history', 'id', false, 'uuid'],
+  ['recipe_cost_history', 'location_id', false, 'uuid'],
+  ['recipe_cost_history', 'recipe_id', false, 'uuid'],
+  ['recipe_cost_history', 'calculated_at', false, 'timestamp with time zone'],
+  ['recipe_cost_history', 'status', false, 'text'],
+  ['recipe_cost_history', 'batch_cost', true, 'numeric'],
+  ['recipe_cost_history', 'cost_per_output', true, 'numeric'],
+  ['recipe_cost_history', 'menu_price', true, 'numeric'],
+  ['recipe_cost_history', 'plate_margin', true, 'numeric'],
+  ['recipe_cost_history', 'food_cost_percentage', true, 'numeric'],
+  ['recipe_cost_history', 'evidence', false, 'jsonb'],
+  ['recipe_cost_history', 'created_at', false, 'timestamp with time zone'],
 ] as const
 
 async function expectCanonicalSchema(sql: ReturnType<typeof postgres>) {

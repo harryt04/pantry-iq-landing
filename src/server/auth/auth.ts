@@ -20,6 +20,11 @@ export const auth = betterAuth({
     provider: 'pg',
     schema: { user, session, account, verification },
   }),
+  advanced: {
+    database: {
+      generateId: 'uuid',
+    },
+  },
   emailAndPassword: {
     enabled: true,
     minPasswordLength: 12,
