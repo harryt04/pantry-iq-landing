@@ -21,6 +21,10 @@ const locationManagementMigration = readFileSync(
   new URL('../../drizzle/0005_bouncy_vector.sql', import.meta.url),
   'utf8',
 )
+const metricStoreMigration = readFileSync(
+  new URL('../../drizzle/0008_metric_store.sql', import.meta.url),
+  'utf8',
+)
 
 const canonicalTables = [
   'csv_upload_history',
@@ -125,6 +129,21 @@ describe('canonical migration contract', () => {
     )
     expect(locationTable).toMatch(
       /"business_day_boundary" time DEFAULT '04:00:00' NOT NULL/,
+    )
+  })
+
+  it('adds durable metric runs, item results, and location rollups', () => {
+    expect(metricStoreMigration).toMatch(
+      /CREATE TABLE "metric_runs"[\s\S]*"status" text NOT NULL[\s\S]*"input_window_start" timestamp with time zone/,
+    )
+    expect(metricStoreMigration).toMatch(
+      /CREATE TABLE "metric_results"[\s\S]*"value" numeric[\s\S]*"result" jsonb NOT NULL[\s\S]*metric_results_run_item_key_idx/,
+    )
+    expect(metricStoreMigration).toMatch(
+      /CREATE TABLE "metric_rollups"[\s\S]*"value" numeric[\s\S]*"result" jsonb NOT NULL[\s\S]*metric_rollups_run_key_idx/,
+    )
+    expect(metricStoreMigration).not.toMatch(
+      /\b(?:real|float|double precision)\b/i,
     )
   })
 

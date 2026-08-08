@@ -27,6 +27,9 @@ const canonicalTables = [
   'recipe_ingredients',
   'item_unit_conversions',
   'recipe_cost_history',
+  'metric_runs',
+  'metric_results',
+  'metric_rollups',
 ] as const
 
 const canonicalIndexes = [
@@ -44,6 +47,12 @@ const canonicalIndexes = [
   'item_unit_conversions_item_units_idx',
   'recipe_cost_history_location_recipe_calculated_idx',
   'csv_upload_history_storage_key_idx',
+  'metric_runs_location_started_at_idx',
+  'metric_runs_location_status_idx',
+  'metric_results_run_item_key_idx',
+  'metric_results_location_item_key_idx',
+  'metric_rollups_run_key_idx',
+  'metric_rollups_location_key_idx',
 ] as const
 
 const canonicalColumns = [
@@ -192,6 +201,32 @@ const canonicalColumns = [
   ['recipe_cost_history', 'food_cost_percentage', true, 'numeric'],
   ['recipe_cost_history', 'evidence', false, 'jsonb'],
   ['recipe_cost_history', 'created_at', false, 'timestamp with time zone'],
+  ['metric_runs', 'id', false, 'uuid'],
+  ['metric_runs', 'location_id', false, 'uuid'],
+  ['metric_runs', 'status', false, 'text'],
+  ['metric_runs', 'input_window_start', false, 'timestamp with time zone'],
+  ['metric_runs', 'input_window_end', false, 'timestamp with time zone'],
+  ['metric_runs', 'started_at', false, 'timestamp with time zone'],
+  ['metric_runs', 'completed_at', true, 'timestamp with time zone'],
+  ['metric_runs', 'error', true, 'text'],
+  ['metric_runs', 'created_at', false, 'timestamp with time zone'],
+  ['metric_results', 'id', false, 'uuid'],
+  ['metric_results', 'run_id', false, 'uuid'],
+  ['metric_results', 'location_id', false, 'uuid'],
+  ['metric_results', 'inventory_item_id', false, 'uuid'],
+  ['metric_results', 'metric_key', false, 'text'],
+  ['metric_results', 'status', false, 'text'],
+  ['metric_results', 'value', true, 'numeric'],
+  ['metric_results', 'result', false, 'jsonb'],
+  ['metric_results', 'created_at', false, 'timestamp with time zone'],
+  ['metric_rollups', 'id', false, 'uuid'],
+  ['metric_rollups', 'run_id', false, 'uuid'],
+  ['metric_rollups', 'location_id', false, 'uuid'],
+  ['metric_rollups', 'metric_key', false, 'text'],
+  ['metric_rollups', 'status', false, 'text'],
+  ['metric_rollups', 'value', true, 'numeric'],
+  ['metric_rollups', 'result', false, 'jsonb'],
+  ['metric_rollups', 'created_at', false, 'timestamp with time zone'],
 ] as const
 
 async function expectCanonicalSchema(sql: ReturnType<typeof postgres>) {
@@ -303,6 +338,9 @@ describe.skipIf(!integrationDatabaseEnabled())(
           ('public.recipes'),
           ('public.recipe_ingredients'),
           ('public.item_unit_conversions'),
+          ('public.metric_runs'),
+          ('public.metric_results'),
+          ('public.metric_rollups'),
           ('drizzle.__drizzle_migrations')
         ) as tables(table_name)
       `

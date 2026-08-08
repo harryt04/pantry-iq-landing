@@ -417,3 +417,101 @@ export const csvUploadHistory = pgTable(
     ),
   ],
 )
+
+export const metricRuns = pgTable(
+  'metric_runs',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    locationId: uuid('location_id')
+      .notNull()
+      .references(() => locations.id, { onDelete: 'cascade' }),
+    status: text('status').notNull(),
+    inputWindowStart: timestamp('input_window_start', {
+      withTimezone: true,
+    }).notNull(),
+    inputWindowEnd: timestamp('input_window_end', {
+      withTimezone: true,
+    }).notNull(),
+    startedAt: timestamp('started_at', { withTimezone: true }).notNull(),
+    completedAt: timestamp('completed_at', { withTimezone: true }),
+    error: text('error'),
+    createdAt,
+  },
+  (table) => [
+    index('metric_runs_location_started_at_idx').on(
+      table.locationId,
+      table.startedAt,
+    ),
+    index('metric_runs_location_status_idx').on(table.locationId, table.status),
+    check(
+      'metric_runs_status_check',
+      sql`${table.status} in ('running', 'succeeded', 'failed')`,
+    ),
+  ],
+)
+
+export const metricResults = pgTable(
+  'metric_results',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    runId: uuid('run_id')
+      .notNull()
+      .references(() => metricRuns.id, { onDelete: 'cascade' }),
+    locationId: uuid('location_id')
+      .notNull()
+      .references(() => locations.id, { onDelete: 'cascade' }),
+    inventoryItemId: uuid('inventory_item_id')
+      .notNull()
+      .references(() => inventoryItems.id, { onDelete: 'cascade' }),
+    metricKey: text('metric_key').notNull(),
+    status: text('status').notNull(),
+    value: numeric('value'),
+    result: jsonb('result').notNull(),
+    createdAt,
+  },
+  (table) => [
+    uniqueIndex('metric_results_run_item_key_idx').on(
+      table.runId,
+      table.inventoryItemId,
+      table.metricKey,
+    ),
+    index('metric_results_location_item_key_idx').on(
+      table.locationId,
+      table.inventoryItemId,
+      table.metricKey,
+    ),
+    check(
+      'metric_results_status_check',
+      sql`${table.status} in ('calculated', 'cannot-calculate')`,
+    ),
+  ],
+)
+
+export const metricRollups = pgTable(
+  'metric_rollups',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    runId: uuid('run_id')
+      .notNull()
+      .references(() => metricRuns.id, { onDelete: 'cascade' }),
+    locationId: uuid('location_id')
+      .notNull()
+      .references(() => locations.id, { onDelete: 'cascade' }),
+    metricKey: text('metric_key').notNull(),
+    status: text('status').notNull(),
+    value: numeric('value'),
+    result: jsonb('result').notNull(),
+    createdAt,
+  },
+  (table) => [
+    uniqueIndex('metric_rollups_run_key_idx').on(table.runId, table.metricKey),
+    index('metric_rollups_location_key_idx').on(
+      table.locationId,
+      table.metricKey,
+    ),
+    check(
+      'metric_rollups_status_check',
+      sql`${table.status} in ('calculated', 'cannot-calculate')`,
+    ),
+  ],
+)

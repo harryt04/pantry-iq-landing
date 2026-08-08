@@ -223,13 +223,29 @@ read restaurant financial data.** Offers are the only restaurant-owned
 records a recipient may see, and `estimatedValue` must not be exposed on
 that path. Enforce at the query layer, not in the UI.
 
+### Metric runs and stored results
+
+Precomputation is append-only. A `metric_runs` row records the location,
+input-data window, timestamps, and terminal status of one deterministic run.
+`metric_results` stores the five `MET-01` results for each canonical item;
+`metric_rollups` stores the same metric keys at location scope. Both result
+tables keep the exact numeric value separately for filtering and the full
+JSON evidence returned by the metric function for disclosure later.
+
+The previous successful run is never overwritten while a new run is running
+or failing. Readers select the latest successful run, so an interrupted
+precompute cannot expose partial results. A failed run retains its error and
+can be surfaced by the observability layer.
+
 ### Required tables & indices summary
 
 Tables: `locations` (userId FK), `transactions` (locationId, menuItemId
 FKs), `purchase_orders` (locationId FK), `purchase_order_items`
 (purchaseOrderId, inventoryItemId FKs), `inventory_items` (locationId FK),
 `inventory_snapshots` (locationId, inventoryItemId FKs),
-`csv_upload_history` (locationId FK), `recipes` (locationId, menuItemId
+`csv_upload_history` (locationId FK), `metric_runs` (locationId FK),
+`metric_results` (runId, locationId, inventoryItemId FKs),
+`metric_rollups` (runId, locationId FKs), `recipes` (locationId, menuItemId
 FKs), `recipe_ingredients` (recipeId, ingredientItemId or subRecipeId FKs),
 `item_unit_conversions` (locationId, inventoryItemId FKs),
 `recipe_cost_history` (locationId, recipeId FKs).
@@ -243,7 +259,10 @@ Indices: `transactions(locationId, transactedAt)` for time-range queries;
 `recipe_ingredients(recipeId)` for ingredient expansion;
 `item_unit_conversions(locationId, inventoryItemId, fromUnit, toUnit)` for
 exact conversion lookup; `recipe_cost_history(locationId, recipeId,
-calculatedAt)` for cost movement and evidence lookup.
+calculatedAt)` for cost movement and evidence lookup; `metric_runs(locationId,
+startedAt)` for latest-run selection; `metric_results(locationId,
+inventoryItemId, metricKey)` and `metric_rollups(locationId, metricKey)` for
+scoped reads.
 
 Donation adds (provisional): `recipient_organisations` (userId FK),
 `donation_offers` (locationId, inventoryItemId FKs), `donation_claims`
