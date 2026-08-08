@@ -12,7 +12,9 @@
       "node_modules",
       "drizzle",
       "coverage",
-      "playwright-report"
+      "playwright-report",
+      "components/ui/**",
+      "hooks/use-mobile.ts"
     ]
   },
   "formatter": {

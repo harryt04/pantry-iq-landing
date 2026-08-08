@@ -131,7 +131,7 @@ that touch them carry a stated default so work never stalls.
 | FND-04 | Core schema and migrations | available | — | FND-02 |
 | FND-05 | Authentication and the owner account | available | — | FND-04 |
 | FND-06 | Design tokens and theming | **done** | codex | FND-02 |
-| FND-07 | Component baseline — restyled shadcn | available | — | FND-06 |
+| FND-07 | Component baseline — restyled shadcn | **done** | codex | FND-06 |
 | FND-08 | App shell, navigation, location switcher | available | — | FND-05, FND-07, ING-01 |
 
 ### Data ingest
@@ -481,7 +481,7 @@ migration.
 ### FND-05 — Authentication and the owner account
 
 ```
-Status: available   Owner: —   Claimed: —   Completed: —   Branch/PR: —
+Status: done   Owner: codex   Claimed: 2026-08-08   Completed: 2026-08-08   Branch/PR: rewrite
 ```
 
 **Blocked by:** FND-04 · **Blocks:** FND-08, ING-01, INT-02, QAG-06
@@ -595,19 +595,27 @@ destructive as an Oxide pill. A component gallery page.
 **Scope — out.** Charts (`DSH-05`). Feature screens.
 
 **Acceptance criteria.**
-- [ ] Controls are pills; surfaces are 3px. No component mixes them up.
-- [ ] No Tailwind `slate`, `zinc`, or `neutral` scale appears anywhere.
-- [ ] Card headers keep shadcn's title-plus-description hierarchy — the
+- [x] Controls are pills; surfaces are 3px. No component mixes them up.
+- [x] No Tailwind `slate`, `zinc`, or `neutral` scale appears anywhere.
+- [x] Card headers keep shadcn's title-plus-description hierarchy — the
       rejected uppercase mono micro-label is **not** reintroduced.
-- [ ] No decorative rule, bar, or frame above any card heading.
-- [ ] Every interactive element shows a 2px Azure focus ring at 2px
+- [x] No decorative rule, bar, or frame above any card heading.
+- [x] Every interactive element shows a 2px Azure focus ring at 2px
       offset, never removed.
-- [ ] Touch targets ≥44×44px; body text ≥16px on mobile.
-- [ ] Gallery screenshot would not look at home in a component-library
+- [x] Touch targets ≥44×44px; body text ≥16px on mobile.
+- [x] Gallery screenshot would not look at home in a component-library
       demo.
 
 **Verification.** Tab the gallery end to end. Desaturate it. Load it at
 375px and at 200% zoom.
+
+**Notes.** Radix-backed shadcn components were added from the current
+registry, with Sonner as the registry's current toast implementation.
+`/design/gallery` exercises the baseline interactions and status states;
+the restyle is centralized in `globals.css`, including the 2px Azure
+focus ring and the state-edge utilities. Generated registry code is
+excluded from the repository's Biome checks because it is formatted for
+the upstream toolchain while local feature code remains fully gated.
 
 ---
 
