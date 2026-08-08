@@ -145,7 +145,7 @@ that touch them carry a stated default so work never stalls.
 | ING-05 | Column mapping — uncertain-column resolution | **done** | codex | ING-04, FND-07 |
 | ING-06 | Mapping persistence and reuse | **done** | codex | ING-05 |
 | ING-07 | Canonical item master | **done** | codex | FND-04 |
-| ING-08 | Item name resolution — exact match only | available | — | ING-07, ING-05 |
+| ING-08 | Item name resolution — exact match only | **in-review** | codex | ING-07, ING-05 |
 | ING-09 | Import commit, confirmation, and history | available | — | ING-06, ING-08 |
 | ING-10 | Manual entry | available | — | ING-09 |
 | ING-11 | CSV export — the trust fallback | available | — | ING-09 |
@@ -1003,7 +1003,7 @@ exists in this ticket's scope.
 ### ING-08 — Item name resolution, exact match only
 
 ```
-Status: available   Owner: —   Claimed: —   Completed: —   Branch/PR: —
+Status: in-review   Owner: codex   Claimed: 2026-08-08   Completed: —   Branch/PR: —
 ```
 
 **Blocked by:** ING-07, ING-05 · **Blocks:** ING-09
@@ -1042,6 +1042,17 @@ user may override.
 
 **Verification.** Import a file mixing exact matches, customized
 variants, and genuinely new items; confirm each takes the right path.
+
+**Notes.** The reusable resolution contract and one-at-a-time resolver view
+are implemented. Matching is complete equality after only NFKC/case/
+whitespace normalization plus the explicit modifier rules in
+`src/server/csv/item-resolution.ts`; it never scores or guesses. The
+contract preserves every raw item name, groups unresolved rows with up to
+five context examples, blocks continuation while the queue is non-empty,
+and exposes a category-keyed shelf-life suggestion as an editable value.
+`ING-09` must wire this contract to the full stored-file row stream and its
+atomic commit before this ticket can be signed off against the live import
+flow.
 
 **Decisions to confirm.** Shelf-life default source is open
 (`open-questions.md` §4). **Default:** a committed lookup table keyed by
