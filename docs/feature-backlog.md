@@ -156,7 +156,7 @@ that touch them carry a stated default so work never stalls.
 |---|---|---|---|---|
 | MET-01 | Derived metric definitions | **done** | codex | FND-04 |
 | MET-02 | Precompute pipeline and metric store | **done** | codex | MET-01, ING-09 |
-| MET-03 | Spoilage resolution — snapshots authoritative | available | — | MET-02 |
+| MET-03 | Spoilage resolution — snapshots authoritative | **done** | codex | MET-02 |
 | MET-04 | Data Sufficiency score | available | — | MET-02 |
 | MET-05 | Impact score | available | — | MET-03 |
 | MET-06 | Urgency score | available | — | MET-03 |
@@ -1315,7 +1315,7 @@ exceeded. No LLM is called.
 ### MET-03 — Spoilage resolution, snapshots authoritative
 
 ```
-Status: available   Owner: —   Claimed: —   Completed: —   Branch/PR: —
+Status: done   Owner: codex   Claimed: 2026-08-08   Completed: 2026-08-08   Branch/PR: rewrite
 ```
 
 **Blocked by:** MET-02 · **Blocks:** MET-05, MET-06, MNU-04
@@ -1339,17 +1339,22 @@ worth surfacing, per the conflicting-data rule.
 theft, and data error as possibilities and assume none of them.
 
 **Acceptance criteria.**
-- [ ] Every spoilage figure records its method: `snapshot` or `inferred`.
-- [ ] Snapshots win wherever they cover the period.
-- [ ] A stale snapshot — older than the fallback window — is not treated
+- [x] Every spoilage figure records its method: `snapshot` or `inferred`.
+- [x] Snapshots win wherever they cover the period.
+- [x] A stale snapshot — older than the fallback window — is not treated
       as current; the ticket documents the staleness rule chosen.
-- [ ] A material disagreement produces a variance record, not a silent
+- [x] A material disagreement produces a variance record, not a silent
       pick.
-- [ ] With neither snapshots nor complete PO data, spoilage returns
+- [x] With neither snapshots nor complete PO data, spoilage returns
       "cannot calculate", not zero.
 
 **Verification.** Fixture with counts, without counts, and with counts
 that contradict the math. Confirm all three paths.
+
+**Notes.** Implemented as an exact-decimal resolver. Successive physical
+counts use `beginning + ordered − sold − ending`; fallback periods use
+`ordered − sold − on-hand`. The default fallback freshness window is seven
+days, and material variance is more than 20% of the smaller absolute figure.
 
 **Decisions to confirm.** "Material" disagreement threshold is not
 specified anywhere. **Default:** flag when the two methods differ by more

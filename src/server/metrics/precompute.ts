@@ -14,11 +14,15 @@ import {
 import {
   margin,
   sellThroughRate,
-  spoilageEstimate,
   spoilageRisk,
   variance,
   type MetricResult,
 } from './definitions'
+import {
+  resolveSpoilage,
+  type SpoilageResolution,
+  type SpoilageResolutionResult,
+} from './spoilage'
 
 export const PRECOMPUTED_METRICS = [
   'sellThrough',
@@ -70,6 +74,10 @@ export type StoredMetric = {
   status: MetricResult<string>['status']
   value: string | null
   result: MetricResult<string>
+}
+
+type SpoilageStoredMetric = StoredMetric & {
+  result: StoredMetric['result'] & { resolution: SpoilageResolution }
 }
 
 export type PrecomputeOutput = {
@@ -183,6 +191,23 @@ function calculated(
   }
 }
 
+function calculatedWithSpoilageResolution(
+  metricKey: PrecomputedMetric,
+  result: SpoilageResolutionResult,
+): SpoilageStoredMetric {
+  return {
+    ...calculated(metricKey, result.metric),
+    result: { ...result.metric, resolution: result.resolution },
+  }
+}
+
+function spoilageResolutionOf(metric: StoredMetric) {
+  const result = metric.result as StoredMetric['result'] & {
+    resolution?: SpoilageResolution
+  }
+  return result.resolution
+}
+
 function latestSnapshot(
   snapshots: readonly PrecomputeSnapshot[],
   itemId: string,
@@ -198,6 +223,7 @@ function metricSet(
   sales: readonly PrecomputeSale[],
   orders: readonly PrecomputeOrder[],
   snapshots: readonly PrecomputeSnapshot[],
+  now: Date,
 ): StoredMetric[] {
   const itemSales = sales.filter((sale) => sale.itemId === item.id)
   const itemOrders = orders.filter((order) => order.itemId === item.id)
@@ -205,6 +231,9 @@ function metricSet(
   const revenue = sumDecimals(itemSales.map((sale) => sale.revenue))
   const ordered = sumDecimals(itemOrders.map((order) => order.qty))
   const onHand = latestSnapshot(snapshots, item.id)?.qty
+  const itemSnapshots = snapshots.filter(
+    (snapshot) => snapshot.itemId === item.id,
+  )
   const unitCost =
     weightedUnitCost(
       itemOrders.map((order) => order.qty),
@@ -223,13 +252,16 @@ function metricSet(
         ...(ordered === undefined ? {} : { qtyOrdered: ordered }),
       }),
     ),
-    calculated(
+    calculatedWithSpoilageResolution(
       'spoilageEstimate',
-      spoilageEstimate({
-        unit: item.unit,
-        ...(ordered === undefined ? {} : { qtyOrdered: ordered }),
-        ...(sold === undefined ? {} : { qtySold: sold }),
-        ...(onHand === undefined ? {} : { qtyOnHand: onHand }),
+      resolveSpoilage({
+        sales: itemSales.map(({ qty, transactedAt }) => ({
+          qty,
+          transactedAt,
+        })),
+        orders: itemOrders.map(({ qty, orderedAt }) => ({ qty, orderedAt })),
+        snapshots: itemSnapshots,
+        periodEnd: now,
       }),
     ),
     calculated(
@@ -297,11 +329,7 @@ function rollupMetric(
     )
   }
 
-  if (
-    metricKey === 'sellThrough' ||
-    metricKey === 'spoilageEstimate' ||
-    metricKey === 'variance'
-  ) {
+  if (metricKey === 'sellThrough' || metricKey === 'variance') {
     const units = new Set(input.items.map((item) => item.unit))
     if (units.size > 1) {
       return unavailableRollup(
@@ -334,19 +362,12 @@ function rollupMetric(
             ...(sold === undefined ? {} : { qtySold: sold }),
             ...(ordered === undefined ? {} : { qtyOrdered: ordered }),
           })
-        : metricKey === 'spoilageEstimate'
-          ? spoilageEstimate({
-              unit,
-              ...(sold === undefined ? {} : { qtySold: sold }),
-              ...(ordered === undefined ? {} : { qtyOrdered: ordered }),
-              ...(onHand === undefined ? {} : { qtyOnHand: onHand }),
-            })
-          : variance({
-              unit,
-              ...(sold === undefined ? {} : { qtySold: sold }),
-              ...(ordered === undefined ? {} : { qtyOrdered: ordered }),
-              ...(onHand === undefined ? {} : { qtyOnHand: onHand }),
-            })
+        : variance({
+            unit,
+            ...(sold === undefined ? {} : { qtySold: sold }),
+            ...(ordered === undefined ? {} : { qtyOrdered: ordered }),
+            ...(onHand === undefined ? {} : { qtyOnHand: onHand }),
+          })
     return calculated(metricKey, result)
   }
 
@@ -358,6 +379,46 @@ function rollupMetric(
       inputs: {},
       units: { value: 'location rollup' },
     })
+  }
+
+  if (metricKey === 'spoilageEstimate') {
+    const resolutions = calculatedValues
+      .map(spoilageResolutionOf)
+      .filter(
+        (resolution): resolution is SpoilageResolution =>
+          resolution !== undefined,
+      )
+    const methods = new Set(
+      resolutions.flatMap((resolution) =>
+        resolution.figures.map((figure) => figure.method),
+      ),
+    )
+    const resolution: SpoilageResolution = {
+      method: methods.size === 1 ? ([...methods][0] ?? null) : 'mixed',
+      fallbackWindowDays: Math.max(
+        ...resolutions.map((item) => item.fallbackWindowDays),
+        7,
+      ),
+      figures: resolutions.flatMap((item) => item.figures),
+      variances: resolutions.flatMap((item) => item.variances),
+    }
+    const result: MetricResult<string> = {
+      status: 'calculated',
+      value,
+      inputs: {
+        itemCount: String(values.length),
+        calculatedItemCount: String(calculatedValues.length),
+      },
+      units: { value: 'location rollup' },
+    }
+    return {
+      metricKey,
+      status: result.status,
+      value: result.value,
+      result: { ...result, resolution } as StoredMetric['result'] & {
+        resolution: SpoilageResolution
+      },
+    }
   }
 
   return calculated(metricKey, {
@@ -390,7 +451,7 @@ export function buildPrecomputeResults(
   )
   const itemResults = input.items.map((item) => ({
     itemId: item.id,
-    metrics: metricSet(item, input.sales, input.orders, input.snapshots),
+    metrics: metricSet(item, input.sales, input.orders, input.snapshots, now),
   }))
   const metricSets = itemResults.map((item) => item.metrics)
 

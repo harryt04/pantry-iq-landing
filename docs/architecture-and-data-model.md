@@ -284,6 +284,25 @@ How to handle missing prices/inventory when computing these, and which
 formula is authoritative for waste vs. variance, are open — see
 `open-questions.md`.
 
+#### Spoilage resolution (MET-03)
+
+Inventory snapshots are authoritative for periods bounded by two physical
+counts. For a successive-count interval, spoilage is calculated as
+`beginning on-hand + ordered − sold − ending on-hand`; the result records
+`method: snapshot` and retains the inputs used. The same interval also
+retains the fallback `ordered − sold − ending on-hand` when complete, so a
+material disagreement can be surfaced as a variance rather than silently
+discarded. Material means more than 20% of the smaller absolute figure.
+
+Gaps before the first count, after the last count, or locations with no
+successive counts use the fallback formula and record `method: inferred`.
+The default freshness window for the on-hand count used by that fallback is
+seven days. A count older than seven days at the end of a fallback period is
+stale and cannot supply current on-hand; the metric returns “cannot
+calculate” unless another current on-hand value is available. Every stored
+spoilage result retains its per-period method, inputs, and any variance
+finding in the metric evidence.
+
 ### Item categorization
 
 Likely categories (not finalized — see `open-questions.md`):
