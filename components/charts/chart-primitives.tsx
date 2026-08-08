@@ -239,8 +239,10 @@ export type LinePoint = {
   valueLabel?: string
 }
 
+export type LinePointOrGap = LinePoint | null
+
 export type LineSeries = ChartSeries & {
-  points: readonly LinePoint[]
+  points: readonly LinePointOrGap[]
 }
 
 export function LineChart({
@@ -266,7 +268,7 @@ export function LineChart({
   const plotHeight = height - top - bottom
   const pointsCount = Math.max(...series.map(({ points }) => points.length), 1)
   const values = series.flatMap(({ points }) =>
-    points.map(({ value }) => value),
+    points.flatMap((point) => (point ? [point.value] : [])),
   )
   const minimum = Math.min(...values, 0)
   const maximum = Math.max(...values, 1)
@@ -291,24 +293,42 @@ export function LineChart({
         <title>{ariaLabel}</title>
         {series.map((entry, seriesIndex) => {
           const encoding = getChartEncoding(seriesIndex)
-          const points = entry.points.map(({ value }, pointIndex) => ({
-            x: xFor(pointIndex),
-            y: yFor(value),
-          }))
-          const lastPoint = points.at(-1)
-          const path = points.map(({ x, y }) => `${x},${y}`).join(' ')
+          const points = entry.points.map((point, pointIndex) =>
+            point
+              ? { ...point, x: xFor(pointIndex), y: yFor(point.value) }
+              : null,
+          )
+          const segments: { x: number; y: number }[][] = []
+          let currentSegment: { x: number; y: number }[] | undefined
+          for (const point of points) {
+            if (!point) {
+              currentSegment = undefined
+              continue
+            }
+            if (currentSegment) currentSegment.push(point)
+            else {
+              currentSegment = [point]
+              segments.push(currentSegment)
+            }
+          }
+          const lastPoint = [...points]
+            .reverse()
+            .find((point): point is NonNullable<typeof point> => point !== null)
 
           return (
             <g key={entry.id} aria-label={entry.label}>
-              <polyline
-                className="chart-line"
-                points={path}
-                stroke={encoding.color}
-                strokeDasharray={encoding.dash}
-              />
+              {segments.map((segment, segmentIndex) => (
+                <polyline
+                  key={`${entry.id}-segment-${segmentIndex}`}
+                  className="chart-line"
+                  points={segment.map(({ x, y }) => `${x},${y}`).join(' ')}
+                  stroke={encoding.color}
+                  strokeDasharray={encoding.dash}
+                />
+              ))}
               {entry.points.map((point, pointIndex) => {
                 const position = points[pointIndex]
-                if (!position) return null
+                if (!point || !position) return null
 
                 return (
                   <g key={`${entry.id}-${point.label}`}>

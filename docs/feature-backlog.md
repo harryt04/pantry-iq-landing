@@ -176,7 +176,7 @@ that touch them carry a stated default so work never stalls.
 | DSH-03 | Recommendation card | available | — | DSH-01, MET-09 |
 | DSH-04 | Show-your-work disclosure | available | — | DSH-03, MET-10 |
 | DSH-05 | Chart primitives — pattern-first | **done** | codex | FND-07 |
-| DSH-06 | Trend summaries | available | — | DSH-05, MET-01 |
+| DSH-06 | Trend summaries | **done** | codex | DSH-05, MET-01 |
 | DSH-07 | Item deep dives | available | — | DSH-05, MET-02 |
 
 ### Chat
@@ -1875,7 +1875,7 @@ card backgrounds.
 ### DSH-06 — Trend summaries
 
 ```
-Status: available   Owner: —   Claimed: —   Completed: —   Branch/PR: —
+Status: done   Owner: codex   Claimed: 2026-08-08   Completed: 2026-08-08   Branch/PR: rewrite
 ```
 
 **Blocked by:** DSH-05, MET-01 · **Blocks:** —
@@ -1892,11 +1892,21 @@ figure leads; the chart supports it. Periods with insufficient history
 are shown as absent, never interpolated.
 
 **Acceptance criteria.**
-- [ ] Every trend names its comparison window in words.
-- [ ] The number appears before the chart.
-- [ ] Direction is carried by an arrow glyph and a word, never by colour
+- [x] Every trend names its comparison window in words.
+- [x] The number appears before the chart.
+- [x] Direction is carried by an arrow glyph and a word, never by colour
       or by red-versus-green.
-- [ ] Gaps in data render as gaps.
+- [x] Gaps in data render as gaps.
+
+**Notes.** `getDashboardTrends` reads only the selected owner's imported
+transactions, purchase orders, and inventory snapshots, buckets them by
+the location's business day and week, and feeds exact decimal values into
+the three trend cards. Margin remains calculable across items; quantity
+trends are intentionally absent when the period mixes units. The line
+primitive breaks paths at missing points, so the UI never interpolates a
+value the data cannot support. `npm run prettify` and `npm run ci` pass;
+the latter reports 133 unit tests, 13 accessibility tests, and a clean
+production build.
 
 **Verification.** Desaturate. Confirm direction is still readable.
 
@@ -3661,7 +3671,7 @@ condition.
 | Foundation | 8 | 8 |
 | Data ingest | 7 | 11 |
 | Metrics engine | 1 | 12 |
-| Dashboard | 1 | 7 |
+| Dashboard | 2 | 7 |
 | Chat | 1 | 8 |
 | Settings | 3 | 5 |
 | Marketing site | 4 | 5 |
@@ -3670,7 +3680,7 @@ condition.
 | Integrations | 0 | 8 |
 | Menu management | 4 | 7 |
 | Staffing | 0 | 6 |
-| **Total** | **32** | **87** |
+| **Total** | **33** | **87** |
 
 **The backlog is complete when every ticket reads `done`.** Sections 7
 and 8 are not work and never become work.

@@ -90,4 +90,26 @@ describe('pattern-first chart primitives', () => {
       expect(markup).toContain(`>${value}<`)
     }
   })
+
+  it('renders missing line periods as gaps', () => {
+    const markup = renderToStaticMarkup(
+      React.createElement(LineChart, {
+        series: [
+          {
+            id: 'margin',
+            label: 'Margin',
+            points: [
+              { label: 'Week 1', value: 10 },
+              null,
+              { label: 'Week 3', value: 12 },
+            ],
+          },
+        ],
+      }),
+    )
+
+    expect(markup.match(/class="chart-line"/g)).toHaveLength(2)
+    expect(markup.match(/class="chart-point"/g)).toHaveLength(2)
+    expect(markup).not.toContain('>11<')
+  })
 })
