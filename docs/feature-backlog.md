@@ -206,8 +206,8 @@ that touch them carry a stated default so work never stalls.
 
 | ID | Title | Status | Owner | Blocked by |
 |---|---|---|---|---|
-| MKT-01 | Site shell, nav, and theming | available | — | FND-06 |
-| MKT-02 | Landing page — hero through final CTA | available | — | MKT-01 |
+| MKT-01 | Site shell, nav, and theming | **done** | codex | FND-06 |
+| MKT-02 | Landing page — hero through final CTA | **done** | codex | MKT-01 |
 | MKT-03 | Proof section — a real recommendation card | available | — | MKT-02, DSH-03 |
 | MKT-04 | Pricing section | available | — | MKT-02 |
 | MKT-05 | Claims-discipline audit | available | — | MKT-02 |
@@ -2316,7 +2316,7 @@ shell visibly testable until that ticket is built.
 ### MKT-02 — Landing page, hero through final CTA
 
 ```
-Status: available   Owner: —   Claimed: —   Completed: —   Branch/PR: —
+Status: done   Owner: codex   Claimed: 2026-08-08   Completed: 2026-08-08   Branch/PR: rewrite
 ```
 
 **Blocked by:** MKT-01 · **Blocks:** MKT-03, MKT-04, MKT-05
@@ -2338,13 +2338,13 @@ no decorative rule. No industry statistics. No AI badge or sparkle. No
 testimonials, logos, or customer counts until they are real.
 
 **Acceptance criteria.**
-- [ ] Copy matches `marketing-copy.md` §3; deviations are justified in
+- [x] Copy matches `marketing-copy.md` §3; deviations are justified in
       the PR.
-- [ ] None of the six recorded old-site failures reappears.
-- [ ] "AI" appears at most once, low on the page, described as what it
+- [x] None of the six recorded old-site failures reappears.
+- [x] "AI" appears at most once, low on the page, described as what it
       does.
-- [ ] No banned word from §6 appears anywhere.
-- [ ] Passes the greyscale test and the `ui-implementation.md` §6
+- [x] No banned word from §6 appears anywhere.
+- [x] Passes the greyscale test and the `ui-implementation.md` §6
       checklist.
 
 **Decisions to confirm.** The donation section (`marketing-copy.md` §3.7)
@@ -2352,6 +2352,14 @@ promises a feature this backlog does not build. **Default:** omit §3.7
 entirely. The headline's "Feed more" also outruns the product — flag it
 for the founder in the PR rather than silently rewriting an approved
 headline.
+
+**Notes.** Implemented the approved hero, proof strip, operator problem
+scene, three workflow steps, and final CTA in `app/page.tsx`. The donation
+section and unsupported proof claims remain omitted. The worked-example CTA
+anchors to the workflow section until `MKT-03` can render the real
+recommendation component. Live HTTP smoke checks, `npm run prettify`, and
+`npm run ci` passed. Browser-harness screenshot QA was unavailable because
+the optional gstack browser binary is not built in this environment.
 
 ---
 
