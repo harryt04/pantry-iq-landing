@@ -32,8 +32,11 @@ jobs:
       - name: Format check (Prettier)
         run: pnpm lint
 
-      # QAG-01: accessibility check attaches here as an additional step,
-      # once it exists. It gates merge the same way the steps below do.
+      - name: Install Playwright browser
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Accessibility gate
+        run: pnpm test:a11y
 
       - name: Typecheck
         run: pnpm typecheck

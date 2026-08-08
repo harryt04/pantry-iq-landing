@@ -150,9 +150,9 @@ export default function GalleryPage() {
             />
           </div>
           <div className="gallery-field">
-            <Label>Import type</Label>
+            <Label htmlFor="gallery-import-type">Import type</Label>
             <Select defaultValue="transactions">
-              <SelectTrigger>
+              <SelectTrigger id="gallery-import-type">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>

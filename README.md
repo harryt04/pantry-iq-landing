@@ -62,6 +62,7 @@ backup and a forward migration.
 
 ```bash
 pnpm test        # unit tests (Vitest)
+pnpm test:a11y   # browser accessibility gate (Playwright + axe)
 pnpm lint         # Prettier check
 pnpm format:check # Prettier format check
 pnpm typecheck    # tsc --noEmit

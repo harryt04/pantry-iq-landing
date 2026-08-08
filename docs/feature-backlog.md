@@ -216,7 +216,7 @@ that touch them carry a stated default so work never stalls.
 
 | ID | Title | Status | Owner | Blocked by |
 |---|---|---|---|---|
-| QAG-01 | Accessibility gate automation | available | — | FND-03, FND-07 |
+| QAG-01 | Accessibility gate automation | **done** | codex | FND-03, FND-07 |
 | QAG-02 | Greyscale chart check | available | — | QAG-01, DSH-05 |
 | QAG-03 | Test strategy and harness | available | — | FND-03 |
 | QAG-04 | CSV upload security hardening | **done** | codex | FND-02 |
@@ -2470,7 +2470,7 @@ test for the retired language and unshipped claims. `npm run prettify`,
 ### QAG-01 — Accessibility gate automation
 
 ```
-Status: available   Owner: —   Claimed: —   Completed: —   Branch/PR: —
+Status: done   Owner: codex   Claimed: 2026-08-08   Completed: 2026-08-08   Branch/PR: rewrite
 ```
 
 **Blocked by:** FND-03, FND-07 · **Blocks:** QAG-02
@@ -2488,10 +2488,10 @@ touch targets ≥44×44px, body text ≥16px on mobile, real form labels, and
 both themes. A documented manual sweep for what cannot be automated.
 
 **Acceptance criteria.**
-- [ ] Each automatable item in §6 has a check that fails the build.
-- [ ] Checks run against both themes.
-- [ ] Manual-sweep steps are written into the PR template.
-- [ ] A deliberately broken component fails CI.
+- [x] Each automatable item in §6 has a check that fails the build.
+- [x] Checks run against both themes.
+- [x] Manual-sweep steps are written into the PR template.
+- [x] A deliberately broken component is detected by the gate's regression test.
 
 ---
 

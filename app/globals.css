@@ -159,10 +159,13 @@ body {
 }
 
 .site-header__wordmark {
+  align-items: center;
   color: var(--foreground);
+  display: inline-flex;
   font-size: var(--text-lg);
   font-weight: 600;
   letter-spacing: -0.035em;
+  min-height: 44px;
   text-decoration: none;
 }
 
@@ -301,7 +304,7 @@ body {
 
 .landing-hero__reassurance {
   color: var(--muted-foreground);
-  font-size: var(--text-base);
+  font-size: var(--text-md);
   margin: var(--space-4) 0 0;
 }
 
@@ -339,7 +342,7 @@ body {
 
 .landing-proof__label {
   color: var(--muted-foreground);
-  font-size: var(--text-base);
+  font-size: var(--text-md);
   line-height: 1.5;
   margin-top: var(--space-2);
 }
@@ -782,6 +785,7 @@ body {
   --color-input: var(--input);
   --color-border: var(--border);
   --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
   --color-muted-foreground: var(--muted-foreground);
@@ -853,6 +857,33 @@ body {
 [data-slot='empty'],
 [data-slot='progress'] {
   border-radius: var(--radius-surface);
+}
+
+:where(
+  [data-slot='accordion-trigger'],
+  [data-slot='checkbox'],
+  [data-slot='input'],
+  [data-slot='native-select'],
+  [data-slot='radio-group-item'],
+  [data-slot='select-trigger'],
+  [data-slot='switch'],
+  [data-slot='tabs-trigger'],
+  [data-slot='textarea'],
+  [data-slot='toggle']
+) {
+  min-height: 44px;
+}
+
+:where(
+  [data-slot='checkbox'],
+  [data-slot='radio-group-item'],
+  [data-slot='select-trigger'],
+  [data-slot='switch'],
+  [role='checkbox'],
+  [role='radio'],
+  [role='switch']
+) {
+  min-width: 44px;
 }
 
 :where(
