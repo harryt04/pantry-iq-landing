@@ -1,0 +1,67 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [master, rewrite]
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ci:
+    name: Lint, typecheck, test, build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint (Biome)
+        run: pnpm lint
+
+      # QAG-01: accessibility check attaches here as an additional step,
+      # once it exists. It gates merge the same way the steps below do.
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Unit tests
+        run: pnpm test
+
+      # QAG-02: greyscale chart check attaches here as an additional
+      # step, once chart components exist (DSH-05). It renders every
+      # chart, desaturates it, and asserts it is still readable by
+      # pattern — a merge gate per brand/ui-implementation.md §5-6.
+
+      - name: Build
+        run: pnpm build
+        env:
+          # A placeholder is sufficient for a production build — no route
+          # in this build queries the database yet. Real secrets are
+          # never committed; see .env.example.
+          DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
+          BETTER_AUTH_SECRET: ci-placeholder-secret-not-for-real-use
+          BETTER_AUTH_URL: http://localhost:3000
+
+      - name: Publish test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-report
+          path: |
+            coverage/
+            playwright-report/
+          if-no-files-found: ignore
