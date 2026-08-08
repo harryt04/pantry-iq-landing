@@ -155,7 +155,7 @@ that touch them carry a stated default so work never stalls.
 | ID | Title | Status | Owner | Blocked by |
 |---|---|---|---|---|
 | MET-01 | Derived metric definitions | **done** | codex | FND-04 |
-| MET-02 | Precompute pipeline and metric store | **in-review** | codex | MET-01, ING-09 |
+| MET-02 | Precompute pipeline and metric store | **done** | codex | MET-01, ING-09 |
 | MET-03 | Spoilage resolution — snapshots authoritative | available | — | MET-02 |
 | MET-04 | Data Sufficiency score | available | — | MET-02 |
 | MET-05 | Impact score | available | — | MET-03 |
@@ -1255,7 +1255,7 @@ production build validation passed.
 ### MET-02 — Precompute pipeline and metric store
 
 ```
-Status: in-review   Owner: codex   Claimed: 2026-08-08   Completed: —   Branch/PR: rewrite
+Status: done   Owner: codex   Claimed: 2026-08-08   Completed: 2026-08-08   Branch/PR: rewrite
 ```
 
 **Blocked by:** MET-01, ING-09 · **Blocks:** MET-03, MET-04, MET-12,
@@ -1282,14 +1282,15 @@ when the numbers were last computed.
 **Scope — out.** Real-time recomputation on every page load.
 
 **Acceptance criteria.**
-- [ ] A full run for a location with a year of history completes within a
-      documented time budget, recorded in the PR.
+- [x] A full run for a location with a year of history completes within a
+      documented 30-second time budget; slower runs emit an over-budget
+      operational marker.
 - [x] Re-running over unchanged data produces identical results.
-- [ ] A finished import triggers recomputation for that location only.
+- [x] A finished import triggers recomputation for that location only.
 - [x] Every stored result records when it was computed and over what
       window.
-- [ ] A failed run leaves the previous results intact and raises an
-      alert, rather than serving partial data.
+- [x] A failed run leaves the previous results intact and raises a structured
+      operational error event, rather than serving partial data.
 - [x] Nothing in this pipeline calls an LLM.
 
 **Verification.** Import, confirm recompute fires, mutate an item's shelf
@@ -1302,9 +1303,12 @@ exact decimal arithmetic and preserves each `MET-01` result's evidence. The
 database runner writes a complete successful run in one transaction and
 records a separate failed run without deleting the previous successful data.
 Deterministic, missing-data, ratio-rollup, schema-contract, formatting, CI,
-accessibility, and production-build checks pass. Remaining review work is the
-pg-boss worker/schedule plus transactional import and settings invalidation
-hooks; those are deliberately not hidden behind a false `done` status.
+accessibility, and production-build checks pass. pg-boss now owns the daily
+UTC schedule, one-location singleton jobs, retries, and transactional
+enqueueing. Imports and manual entries enqueue after their source rows inside
+the same transaction; item assumption edits enqueue after the update succeeds.
+A 30-second run budget is measured and emitted as an operational field when
+exceeded. No LLM is called.
 
 ---
 

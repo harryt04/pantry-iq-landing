@@ -35,6 +35,17 @@ docker compose up -d   # starts local Postgres on localhost:5433
 pnpm dev                # starts the app on http://localhost:3000
 ```
 
+Run the precompute worker in a second process for daily scheduling:
+
+```bash
+pnpm jobs:precompute
+```
+
+The worker schedules a daily UTC run and receives import and item-setting
+invalidations in the same PostgreSQL transaction as their source change. Web
+requests also initialize the queue when they enqueue an invalidation, so a
+separate worker can be rolled out independently.
+
 Confirm the app booted:
 
 ```bash

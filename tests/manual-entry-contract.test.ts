@@ -22,6 +22,7 @@ describe('manual entry contract', () => {
     expect(service).toContain('purchaseOrders')
     expect(service).toContain('transactions')
     expect(service).toContain('csvUploadHistory')
+    expect(service).toContain('enqueuePrecomputeForLocationInTransaction')
   })
 
   it('keeps the API location-scoped and the UI accessible', () => {

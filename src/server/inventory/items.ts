@@ -3,6 +3,7 @@ import { and, asc, eq, sql } from 'drizzle-orm'
 import { db } from '@/src/server/db/client'
 import { inventoryItems } from '@/src/server/db/schema'
 import { requireOwnedLocation } from '@/src/server/auth/authorization'
+import { enqueuePrecomputeForLocationInTransaction } from '@/src/server/metrics/scheduler'
 
 import {
   InventoryItemValidationError,
@@ -95,19 +96,25 @@ export async function updateInventoryItem(
 
   // MET-02 can compare this durable input version before serving cached metrics.
   // Every assumption edit therefore invalidates calculations for this item.
-  const [item] = await db
-    .update(inventoryItems)
-    .set({ ...values, updatedAt: new Date() })
-    .where(
-      and(
-        eq(inventoryItems.id, itemId),
-        eq(inventoryItems.locationId, ownedLocation.locationId),
-      ),
-    )
-    .returning()
+  return db.transaction(async (tx) => {
+    const [item] = await tx
+      .update(inventoryItems)
+      .set({ ...values, updatedAt: new Date() })
+      .where(
+        and(
+          eq(inventoryItems.id, itemId),
+          eq(inventoryItems.locationId, ownedLocation.locationId),
+        ),
+      )
+      .returning()
 
-  if (!item) throw new InventoryItemNotFoundError()
-  return item
+    if (!item) throw new InventoryItemNotFoundError()
+    await enqueuePrecomputeForLocationInTransaction(
+      tx,
+      ownedLocation.locationId,
+    )
+    return item
+  })
 }
 
 /** Increment references from a transaction or purchase-order import. */

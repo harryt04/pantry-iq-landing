@@ -21,6 +21,7 @@ describe('CSV import commit contract', () => {
     expect(service).toContain('db.transaction')
     expect(service).toContain('onConflictDoNothing')
     expect(service).toContain("status: 'imported'")
+    expect(service).toContain('enqueuePrecomputeForLocationInTransaction')
   })
 
   it('keeps history location-scoped and presents real confirmation counts', () => {

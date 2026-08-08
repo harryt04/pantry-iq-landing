@@ -28,6 +28,7 @@ import { parseStoredCsvMapping } from './mapping'
 import { parseCsvRows } from './parser'
 import { CSV_IMPORT_TYPES, type CsvImportType } from './upload-input'
 import type { ItemResolutionCandidate } from './item-resolution'
+import { enqueuePrecomputeForLocationInTransaction } from '@/src/server/metrics/scheduler'
 
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
@@ -405,6 +406,8 @@ export async function commitCsvImport(
           eq(csvUploadHistory.status, 'uploaded'),
         ),
       )
+
+    await enqueuePrecomputeForLocationInTransaction(tx, upload.locationId)
 
     return summaryFor(upload, plan, { rowsImported })
   })

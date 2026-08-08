@@ -11,6 +11,7 @@ import {
   purchaseOrders,
   transactions,
 } from '@/src/server/db/schema'
+import { enqueuePrecomputeForLocationInTransaction } from '@/src/server/metrics/scheduler'
 
 export const MANUAL_ENTRY_TYPES = [
   'inventory',
@@ -394,6 +395,8 @@ export async function createManualEntry(
         uploadedAt: new Date(),
       })
       .returning({ id: csvUploadHistory.id })
+
+    await enqueuePrecomputeForLocationInTransaction(tx, owned.locationId)
 
     return { entryType: values.entryType, rowsImported, historyId: history?.id }
   })

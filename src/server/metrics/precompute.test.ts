@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest'
 
 import { buildPrecomputeResults } from './precompute'
+import {
+  PRECOMPUTE_DAILY_CRON,
+  PRECOMPUTE_QUEUE,
+  PRECOMPUTE_TIME_BUDGET_MS,
+  createPrecomputeScheduler,
+} from './scheduler'
 
 const now = new Date('2026-08-08T12:00:00.000Z')
 
@@ -148,5 +154,140 @@ describe('precompute results', () => {
     )
 
     expect(output.rollups[0]?.value).toBe('20')
+  })
+
+  it('keeps a one-year location run inside the documented budget', () => {
+    const year = Array.from({ length: 365 }, (_, index) => {
+      const day = new Date('2025-08-09T12:00:00.000Z')
+      day.setUTCDate(day.getUTCDate() + index)
+      return day
+    })
+    const startedAt = performance.now()
+    const output = buildPrecomputeResults(
+      {
+        items: [{ id: 'item-1', unit: 'lb', costPerUnit: '2.50' }],
+        sales: year.map((transactedAt) => ({
+          itemId: 'item-1',
+          qty: '3',
+          revenue: '30',
+          transactedAt,
+        })),
+        orders: year.map((orderedAt) => ({
+          itemId: 'item-1',
+          qty: '5',
+          totalCost: '12.50',
+          orderedAt,
+        })),
+        snapshots: year.map((countedAt) => ({
+          itemId: 'item-1',
+          qty: '1',
+          countedAt,
+        })),
+      },
+      now,
+    )
+
+    expect(output.itemResults).toHaveLength(1)
+    expect(performance.now() - startedAt).toBeLessThan(
+      PRECOMPUTE_TIME_BUDGET_MS,
+    )
+  })
+})
+
+describe('precompute scheduler', () => {
+  it('initializes once and enqueues a location singleton', async () => {
+    const calls: Array<{ name: string; data: unknown; options?: unknown }> = []
+    const boss = {
+      start: async () => undefined,
+      stop: async () => undefined,
+      createQueue: async () => undefined,
+      send: async (name: string, data: unknown, options?: unknown) => {
+        calls.push({ name, data, options })
+        return 'job-1'
+      },
+      schedule: async () => undefined,
+      work: async () => 'worker-1',
+    } as unknown as Parameters<typeof createPrecomputeScheduler>[0]['boss']
+    const scheduler = createPrecomputeScheduler({
+      boss,
+      listLocationIds: async () => [],
+      run: async () => ({ id: 'run-1', completedAt: now }),
+    })
+
+    await scheduler.enqueueLocation('location-1')
+    await scheduler.enqueueLocation('location-1')
+
+    expect(calls).toHaveLength(2)
+    expect(calls[0]).toMatchObject({
+      name: PRECOMPUTE_QUEUE,
+      data: { scope: 'location', locationId: 'location-1' },
+      options: { singletonKey: 'location:location-1' },
+    })
+  })
+
+  it('fans out the daily schedule and surfaces worker failures', async () => {
+    const calls: Array<{ name: string; data: unknown; options?: unknown }> = []
+    let handler:
+      | ((jobs: Array<{ id: string; data: unknown }>) => Promise<void>)
+      | undefined
+    const errors: string[] = []
+    const boss = {
+      start: async () => undefined,
+      stop: async () => undefined,
+      createQueue: async () => undefined,
+      send: async (name: string, data: unknown, options?: unknown) => {
+        calls.push({ name, data, options })
+        return 'job-1'
+      },
+      schedule: async (
+        name: string,
+        cron: string,
+        data: unknown,
+        options?: unknown,
+      ) => {
+        calls.push({ name, data: { cron, data }, options })
+      },
+      work: async (
+        _name: string,
+        _options: unknown,
+        next: (jobs: Array<{ id: string; data: unknown }>) => Promise<void>,
+      ) => {
+        handler = next
+        return 'worker-1'
+      },
+    } as unknown as Parameters<typeof createPrecomputeScheduler>[0]['boss']
+    const scheduler = createPrecomputeScheduler({
+      boss,
+      listLocationIds: async () => ['location-1', 'location-2'],
+      run: async () => {
+        throw new Error('database unavailable')
+      },
+      logger: {
+        info: () => undefined,
+        error: (_message, error) => {
+          if (error) errors.push(error.message)
+        },
+      },
+    })
+
+    await scheduler.ensureReady()
+    expect(calls[0]).toMatchObject({
+      name: PRECOMPUTE_QUEUE,
+      data: { cron: PRECOMPUTE_DAILY_CRON },
+    })
+    await handler?.([{ id: 'daily-1', data: { scope: 'all' } }])
+    expect(calls.filter((call) => call.name === PRECOMPUTE_QUEUE)).toHaveLength(
+      3,
+    )
+
+    await expect(
+      handler?.([
+        {
+          id: 'location-job-1',
+          data: { scope: 'location', locationId: 'location-1' },
+        },
+      ]),
+    ).rejects.toThrow('database unavailable')
+    expect(errors).toEqual(['database unavailable'])
   })
 })

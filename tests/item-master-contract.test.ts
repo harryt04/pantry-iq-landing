@@ -43,6 +43,7 @@ describe('item master contract', () => {
     expect(items).toContain('requireOwnedLocation')
     expect(input).toContain('canonicalName cannot be changed')
     expect(items).toContain('updatedAt: new Date()')
+    expect(items).toContain('enqueuePrecomputeForLocationInTransaction')
   })
 
   it('keeps the table usable at narrow widths and gives the active toggle a name', () => {
