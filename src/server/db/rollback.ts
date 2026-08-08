@@ -1,5 +1,7 @@
 import postgres from 'postgres'
 
+import { rollbackDatabase } from './migrations'
+
 const databaseUrl = process.env.DATABASE_URL
 if (!databaseUrl) throw new Error('DATABASE_URL is required for rollback.')
 if (process.env.ALLOW_DB_ROLLBACK !== '1') {
@@ -14,23 +16,9 @@ if (!['localhost', '127.0.0.1', '::1'].includes(parsedUrl.hostname)) {
 }
 
 const client = postgres(databaseUrl, { max: 1 })
-const appTables = [
-  'csv_upload_history',
-  'inventory_snapshots',
-  'purchase_order_items',
-  'transactions',
-  'purchase_orders',
-  'inventory_items',
-  'locations',
-] as const
 
 try {
-  await client.begin(async (sql) => {
-    for (const table of appTables) {
-      await sql.unsafe(`DROP TABLE IF EXISTS public."${table}" CASCADE`)
-    }
-    await sql.unsafe('DROP TABLE IF EXISTS public."__drizzle_migrations"')
-  })
+  await rollbackDatabase(client)
 } finally {
   await client.end()
 }

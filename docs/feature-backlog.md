@@ -472,8 +472,9 @@ labor, and connector tables — those arrive with `MNU-01`, `STF-01`, and
 again.
 
 **Notes.** The schema, deterministic seed, and guarded local rollback are
-implemented. Live migration verification is pending because Docker Desktop
-cannot start in the current environment (`ECONNREFUSED` on localhost:5433).
+implemented. Migration, seed, rollback, and remigration are now covered by
+an opt-in Testcontainers round-trip test, but live verification is still
+pending because this environment cannot find a working container runtime.
 
 **Decisions to confirm.** Item category taxonomy is open
 (`open-questions.md` §1, Q8). **Default:** free-text `category` with no
