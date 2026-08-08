@@ -27,6 +27,30 @@ export interface StructuredLogEvent {
   [key: string]: SafeLogValue
 }
 
+export interface PrecomputeRunFields {
+  locationId: string
+  runId: string
+  durationMs: number
+}
+
+export interface ImportRunFields {
+  accountId: string
+  locationId: string
+  importId: string
+  rowsImported: number
+}
+
+export interface LlmQueryFields {
+  accountId: string
+  queryId: string
+  model: string
+  inputTokens: number
+  outputTokens: number
+  /** Millionths of the billing currency unit; integers avoid float drift. */
+  costMicros: number
+  currency: string
+}
+
 const SENSITIVE_KEY =
   /(?:password|passphrase|secret|token|api[-_]?key|authorization|cookie|credential|session)/i
 const IMPORTED_ROW_KEY =
@@ -35,6 +59,7 @@ const BEARER_TOKEN = /\bBearer\s+[A-Za-z0-9._~+/=-]+/gi
 const QUERY_SECRET =
   /([?&](?:token|password|secret|api[-_]?key|access_token|refresh_token)=)[^&\s]+/gi
 const REDACTED = '[REDACTED]'
+const SAFE_OPERATIONAL_TOKEN_KEY = /^(?:input|output)Tokens$/
 
 function redactText(value: string): string {
   return value
@@ -43,7 +68,9 @@ function redactText(value: string): string {
 }
 
 function redactRuntimeValue(key: string, value: unknown): SafeLogValue {
-  if (SENSITIVE_KEY.test(key)) return REDACTED
+  const isNumericTokenCount =
+    SAFE_OPERATIONAL_TOKEN_KEY.test(key) && typeof value === 'number'
+  if (SENSITIVE_KEY.test(key) && !isNumericTokenCount) return REDACTED
   if (IMPORTED_ROW_KEY.test(key)) return '[REDACTED_IMPORTED_ROW]'
 
   if (
@@ -121,6 +148,49 @@ export class Logger {
     if (error && this.errorReporter) {
       this.errorReporter.captureException(error, safeFields(context))
     }
+  }
+
+  precomputeSucceeded(fields: PrecomputeRunFields): void {
+    this.info('Precompute completed', {
+      event: 'precompute.completed',
+      ...fields,
+    })
+  }
+
+  precomputeFailed(
+    fields: Omit<PrecomputeRunFields, 'durationMs'> &
+      Partial<Pick<PrecomputeRunFields, 'durationMs'>>,
+    error: Error,
+  ): void {
+    this.error('Precompute failed', error, {
+      event: 'precompute.failed',
+      ...fields,
+    })
+  }
+
+  importCompleted(fields: ImportRunFields): void {
+    this.info('Import completed', {
+      event: 'import.completed',
+      ...fields,
+    })
+  }
+
+  importFailed(
+    fields: Omit<ImportRunFields, 'rowsImported'> &
+      Partial<Pick<ImportRunFields, 'rowsImported'>>,
+    error: Error,
+  ): void {
+    this.error('Import failed', error, {
+      event: 'import.failed',
+      ...fields,
+    })
+  }
+
+  llmQueryCompleted(fields: LlmQueryFields): void {
+    this.info('LLM query completed', {
+      event: 'llm.query.completed',
+      ...fields,
+    })
   }
 
   private write(level: LogLevel, message: string, fields: SafeLogFields): void {

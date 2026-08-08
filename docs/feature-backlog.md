@@ -2658,8 +2658,10 @@ The framework-independent logger in `src/server/observability/logger.ts`
 emits one JSON event per line, permits scalar operational fields only,
 redacts secrets and imported-row-shaped fields, scrubs bearer/query secrets
 from text and errors, and exposes an injectable error reporter for the
-Sentry adapter. `logger.test.ts` covers the event contract and the redaction
-boundary.
+Sentry adapter. It now also exposes typed producer events for precompute,
+imports, and LLM queries; LLM cost is recorded as an integer number of
+micro-units so per-account and per-day aggregation never uses a float.
+`logger.test.ts` covers the event contract and the redaction boundary.
 
 The remaining acceptance criteria require `MET-02`'s precompute pipeline,
 the LLM narration service, and import execution paths. They are intentionally
