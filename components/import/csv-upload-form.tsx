@@ -5,6 +5,8 @@ import * as React from 'react'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { NativeSelect } from '@/components/ui/native-select'
+import { CsvMappingReview } from '@/components/import/csv-mapping-review'
+import type { CsvMappingDetection } from '@/src/server/csv/mapping'
 
 type CsvPreview = {
   encoding: 'utf-8' | 'latin-1'
@@ -16,6 +18,7 @@ type CsvPreview = {
   readableRowCount: number
   previewRows: Array<{ rowNumber: number; values: string[] }>
   problems: Array<{ count: number; message: string; example: string }>
+  mapping: CsvMappingDetection
 }
 
 const importTypes = [
@@ -128,6 +131,9 @@ export function CsvUploadForm({ locationId }: { locationId: string }) {
         {status}
       </p>
       {preview ? <CsvPreviewTable preview={preview} /> : null}
+      {preview ? (
+        <CsvMappingReview mapping={preview.mapping} preview={preview} />
+      ) : null}
       {error ? (
         <p role="alert" className="app-page__error">
           {error}

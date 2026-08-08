@@ -52,6 +52,25 @@ export type CsvMappingDetection = {
   mapping: Record<string, CanonicalField | null>
 }
 
+export const canonicalFieldLabels: Record<CanonicalField, string> = {
+  transactedAt: 'Transaction date and time',
+  externalId: 'External ID',
+  rawItemName: 'Item name',
+  category: 'Category',
+  qty: 'Quantity',
+  unitPrice: 'Unit price',
+  totalRevenue: 'Total revenue',
+  totalCost: 'Total cost',
+  grossMargin: 'Gross margin',
+  orderedAt: 'Order date',
+  receivedAt: 'Received date',
+  supplierName: 'Supplier name',
+  unitCost: 'Unit cost',
+  countedAt: 'Count date',
+  unit: 'Unit of measure',
+  shelfLifeDays: 'Shelf life in days',
+}
+
 const definitions: Record<CsvImportType, FieldDefinition[]> = {
   transactions: [
     {

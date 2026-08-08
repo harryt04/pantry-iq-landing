@@ -132,7 +132,7 @@ that touch them carry a stated default so work never stalls.
 | FND-05 | Authentication and the owner account | **done** | codex | FND-04 |
 | FND-06 | Design tokens and theming | **done** | codex | FND-02 |
 | FND-07 | Component baseline — restyled shadcn | **done** | codex | FND-06 |
-| FND-08 | App shell, navigation, location switcher | available | — | FND-05, FND-07, ING-01 |
+| FND-08 | App shell, navigation, location switcher | **done** | codex | FND-05, FND-07, ING-01 |
 
 ### Data ingest
 
@@ -142,7 +142,7 @@ that touch them carry a stated default so work never stalls.
 | ING-02 | CSV upload and secure file handling | **done** | codex | ING-01, QAG-04 |
 | ING-03 | CSV parse and preview | **done** | codex | ING-02 |
 | ING-04 | Column mapping — auto-detection | **done** | codex | ING-03 |
-| ING-05 | Column mapping — uncertain-column resolution | available | — | ING-04, FND-07 |
+| ING-05 | Column mapping — uncertain-column resolution | **done** | codex | ING-04, FND-07 |
 | ING-06 | Mapping persistence and reuse | available | — | ING-05 |
 | ING-07 | Canonical item master | **done** | codex | FND-04 |
 | ING-08 | Item name resolution — exact match only | available | — | ING-07, ING-05 |
@@ -870,7 +870,7 @@ specified; no learning store was added.
 ### ING-05 — Column mapping, uncertain-column resolution
 
 ```
-Status: available   Owner: —   Claimed: —   Completed: —   Branch/PR: —
+Status: done   Owner: codex   Claimed: 2026-08-08   Completed: 2026-08-08   Branch/PR: rewrite
 ```
 
 **Blocked by:** ING-04, FND-07 · **Blocks:** ING-06, ING-08
@@ -890,15 +890,27 @@ option. Progress through the queue is visible and reversible.
 **Scope — out.** Item name resolution (`ING-08`).
 
 **Acceptance criteria.**
-- [ ] Only one uncertain column is on screen at a time.
-- [ ] Real example values from the user's own file are shown for each.
-- [ ] The user can go back and change a resolved column before
+- [x] Only one uncertain column is on screen at a time.
+- [x] Real example values from the user's own file are shown for each.
+- [x] The user can go back and change a resolved column before
       committing.
-- [ ] Skipping a column is always available and never warned about.
-- [ ] Keyboard-only completion of the whole queue works.
+- [x] Skipping a column is always available and never warned about.
+- [x] Keyboard-only completion of the whole queue works.
 
 **Verification.** Import a file with six uncertain columns using only the
 keyboard.
+
+**Notes.** Added the one-at-a-time review queue to the authenticated import
+preview. It shows up to five real values from the selected column, exposes
+the detector's candidate fields through a native keyboard-selectable control,
+and treats "Skip this column" as a normal choice. Back/Next navigation keeps
+decisions reversible; the completed summary offers a Change action for every
+uncertain column. The high-confidence path now says "All columns matched.
+Ready to import?" without claiming that the not-yet-built import commit
+exists. Focused mapping tests, formatting, full CI (104 tests, 13
+accessibility checks, production build), and live unauthenticated route
+smoke checks passed. Interactive authenticated verification remains pending:
+`.env.local` has no test credentials.
 
 ---
 
@@ -3589,8 +3601,8 @@ condition.
 
 | Area | Done | Total |
 |---|---|---|
-| Foundation | 7 | 8 |
-| Data ingest | 2 | 11 |
+| Foundation | 8 | 8 |
+| Data ingest | 6 | 11 |
 | Metrics engine | 1 | 12 |
 | Dashboard | 1 | 7 |
 | Chat | 0 | 8 |
@@ -3599,9 +3611,9 @@ condition.
 | Quality gates | 3 | 6 |
 | Cross-location | 0 | 4 |
 | Integrations | 0 | 8 |
-| Menu management | 3 | 7 |
+| Menu management | 4 | 7 |
 | Staffing | 0 | 6 |
-| **Total** | **21** | **87** |
+| **Total** | **26** | **87** |
 
 **The backlog is complete when every ticket reads `done`.** Sections 7
 and 8 are not work and never become work.

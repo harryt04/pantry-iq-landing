@@ -235,6 +235,82 @@ body {
   overflow-wrap: anywhere;
 }
 
+.csv-mapping {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-surface);
+  display: grid;
+  gap: var(--space-5);
+  margin-top: var(--space-5);
+  max-width: 680px;
+  padding: var(--space-5);
+}
+
+.csv-mapping h2,
+.csv-mapping h3 {
+  margin: 0;
+}
+
+.csv-mapping h2 {
+  font-size: var(--text-lg);
+}
+
+.csv-mapping h3 {
+  font-family: var(--font-mono);
+  font-size: var(--text-xl);
+  overflow-wrap: anywhere;
+}
+
+.csv-mapping__heading,
+.csv-mapping__actions {
+  align-items: center;
+  display: flex;
+  gap: var(--space-4);
+  justify-content: space-between;
+}
+
+.csv-mapping__progress,
+.csv-mapping__source-label {
+  color: var(--muted-foreground);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.csv-mapping__question {
+  border-top: 1px solid var(--border);
+  display: grid;
+  gap: var(--space-4);
+  padding-top: var(--space-5);
+}
+
+.csv-mapping__examples {
+  background: var(--muted);
+  border-radius: var(--radius-surface);
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-4);
+}
+
+.csv-mapping__examples ul {
+  display: grid;
+  gap: var(--space-2);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.csv-mapping__examples code {
+  font-family: var(--font-mono);
+  overflow-wrap: anywhere;
+}
+
+.csv-mapping__actions {
+  border-top: 1px solid var(--border);
+  padding-top: var(--space-4);
+}
+
 .auth-heading p:last-child,
 .account-card > p:not(.auth-eyebrow):not(.auth-wordmark):not(.account-email) {
   color: var(--muted-foreground);
