@@ -645,7 +645,7 @@ local feature code.
 ### FND-08 — App shell, navigation, and location switcher
 
 ```
-Status: claimed   Owner: codex   Claimed: 2026-08-08   Completed: —   Branch/PR: rewrite
+Status: done   Owner: codex   Claimed: 2026-08-08   Completed: 2026-08-08   Branch/PR: rewrite
 ```
 
 **Blocked by:** FND-05, FND-07, ING-01 · **Blocks:** DSH-01, CHT-01,
@@ -672,14 +672,14 @@ layout. A first-run path for an account with no locations yet.
 **Scope — out.** The page contents. Cross-location anything (`AGG-01`).
 
 **Acceptance criteria.**
-- [ ] The selected location is readable without interaction on every
+- [x] The selected location is readable without interaction on every
       scoped screen.
-- [ ] Switching location re-scopes the current screen and persists.
-- [ ] No screen implies data spans locations.
-- [ ] Mobile navigation works at 375px with no horizontal body scroll.
-- [ ] Loading uses skeletons matching the real layout, never a full-page
+- [x] Switching location re-scopes the current screen and persists.
+- [x] No screen implies data spans locations.
+- [x] Mobile navigation works at 375px with no horizontal body scroll.
+- [x] Loading uses skeletons matching the real layout, never a full-page
       spinner.
-- [ ] An account with zero locations is routed to create one, with copy
+- [x] An account with zero locations is routed to create one, with copy
       per `voice-and-tone.md` §6.
 
 **Verification.** With two locations holding different data, switch

@@ -473,7 +473,274 @@ body {
   width: 55%;
 }
 
+.app-shell {
+  min-height: 100svh;
+}
+
+.app-shell__header {
+  background: var(--card);
+  border-bottom: 1px solid var(--border);
+}
+
+.app-shell__header-inner {
+  align-items: center;
+  display: flex;
+  gap: var(--space-4);
+  margin: 0 auto;
+  max-width: 1440px;
+  min-height: 80px;
+  padding: var(--space-4) var(--space-6);
+}
+
+.app-shell__wordmark {
+  color: var(--foreground);
+  flex: 0 0 auto;
+  font-size: var(--text-lg);
+  font-weight: 600;
+  letter-spacing: -0.035em;
+  min-height: 44px;
+  padding: var(--space-2) 0;
+  text-decoration: none;
+}
+
+.app-shell__scope {
+  align-items: center;
+  display: flex;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.app-shell__scope-label,
+.app-shell__selected-scope,
+.app-page__eyebrow {
+  color: var(--muted-foreground);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.app-shell__location-select {
+  background: var(--card);
+  border-color: var(--border);
+  border-radius: var(--radius-control);
+  font-size: var(--text-base);
+  height: 44px;
+  max-width: 220px;
+  min-width: 150px;
+  padding-inline: var(--space-4);
+}
+
+.app-shell__nav {
+  align-items: center;
+  display: flex;
+  gap: var(--space-1);
+  margin-left: auto;
+}
+
+.app-shell__nav-link,
+.app-shell__account-link {
+  align-items: center;
+  border-radius: var(--radius-control);
+  color: var(--foreground);
+  display: inline-flex;
+  font-size: var(--text-base);
+  min-height: 44px;
+  padding: var(--space-2) var(--space-3);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.app-shell__nav-link:hover,
+.app-shell__nav-link--active,
+.app-shell__account-link:hover {
+  background: var(--muted);
+}
+
+.app-shell__nav-link--active {
+  font-weight: 600;
+}
+
+.app-shell__account {
+  align-items: center;
+  display: flex;
+  gap: var(--space-2);
+}
+
+.app-shell__account .auth-submit {
+  min-height: 44px;
+}
+
+.app-shell__selected-scope {
+  border-bottom: 1px solid var(--border);
+  display: block;
+  letter-spacing: 0.06em;
+  padding: var(--space-2) var(--space-6);
+  text-align: right;
+}
+
+.app-shell__selected-scope strong {
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  font-weight: 600;
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+.app-shell__menu-trigger {
+  display: none;
+}
+
+.app-shell__mobile-nav {
+  display: grid;
+  gap: var(--space-2);
+  padding: 0 var(--space-4);
+}
+
+.app-shell__mobile-nav-link {
+  align-items: center;
+  border-radius: var(--radius-control);
+  color: var(--foreground);
+  display: flex;
+  font-size: var(--text-md);
+  min-height: 48px;
+  padding: var(--space-2) var(--space-4);
+  text-decoration: none;
+}
+
+.app-shell__mobile-nav-link:hover {
+  background: var(--muted);
+}
+
+.app-page {
+  margin: 0 auto;
+  max-width: 960px;
+  padding: clamp(var(--space-8), 10vw, var(--space-10)) var(--space-6);
+}
+
+.app-page__eyebrow {
+  margin: 0 0 var(--space-3);
+}
+
+.app-page h1 {
+  font-size: clamp(var(--text-2xl), 5vw, var(--text-4xl));
+  letter-spacing: -0.035em;
+  line-height: 1.1;
+  margin: 0;
+  max-width: 18ch;
+}
+
+.app-page__lede {
+  color: var(--muted-foreground);
+  font-size: var(--text-md);
+  line-height: 1.6;
+  margin: var(--space-5) 0 0;
+  max-width: 62ch;
+}
+
+.app-page__primary-action,
+.app-page__secondary-action {
+  align-items: center;
+  border-radius: var(--radius-control);
+  display: inline-flex;
+  font-size: var(--text-base);
+  font-weight: 600;
+  min-height: 48px;
+  margin-top: var(--space-7);
+  padding: var(--space-2) var(--space-5);
+  text-decoration: none;
+}
+
+.app-page__primary-action {
+  background: var(--primary);
+  color: var(--primary-foreground);
+}
+
+.app-page__secondary-action {
+  border: 2px solid var(--foreground);
+  color: var(--foreground);
+}
+
+.app-page__primary-action:focus-visible,
+.app-page__secondary-action:focus-visible,
+.app-shell__wordmark:focus-visible,
+.app-shell__nav-link:focus-visible,
+.app-shell__account-link:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+.app-page--loading {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.app-page__skeleton {
+  border-radius: var(--radius-surface);
+}
+
+.app-page__skeleton--eyebrow {
+  height: 16px;
+  width: 96px;
+}
+
+.app-page__skeleton--heading {
+  height: 56px;
+  max-width: 480px;
+  width: 70%;
+}
+
+.app-page__skeleton--copy {
+  height: 52px;
+  max-width: 620px;
+  width: 90%;
+}
+
+.app-page__skeleton--card {
+  height: 220px;
+  margin-top: var(--space-5);
+  max-width: 760px;
+  width: 100%;
+}
+
 @media (max-width: 760px) {
+  .app-shell__header-inner {
+    gap: var(--space-2);
+    min-height: 72px;
+    padding: var(--space-3) var(--space-4);
+  }
+
+  .app-shell__scope {
+    margin-left: auto;
+  }
+
+  .app-shell__scope-label {
+    display: none;
+  }
+
+  .app-shell__location-select {
+    max-width: 150px;
+    min-width: 120px;
+  }
+
+  .app-shell__nav,
+  .app-shell__account {
+    display: none;
+  }
+
+  .app-shell__menu-trigger {
+    display: inline-flex;
+  }
+
+  .app-shell__selected-scope {
+    padding-inline: var(--space-4);
+  }
+
+  .app-page {
+    padding-inline: var(--space-4);
+  }
+
   .account-page--locations {
     padding: var(--space-6) var(--space-4);
   }
