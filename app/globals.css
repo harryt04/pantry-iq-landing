@@ -1,1 +1,350 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  /* ---- radius: split in two, unlike stock shadcn ---- */
+  --radius-surface: 3px; /* cards, panels, tables, inputs, dialogs */
+  --radius-control: 999px; /* buttons, badges, chips, toggles, avatars */
+  --radius: var(--radius-surface); /* shadcn compatibility alias */
+
+  /* ---- neutrals (warm, deliberately) ---- */
+  --background: #f7f6f3; /* Stone */
+  --foreground: #171614; /* Ink */
+  --card: #ffffff;
+  --card-foreground: #171614;
+  --popover: #ffffff;
+  --popover-foreground: #171614;
+  --muted: #efede7; /* Soft */
+  --muted-foreground: #6a675f; /* Graphite */
+  --accent: #eae8e2;
+  --accent-foreground: #171614;
+  --secondary: #efede7;
+  --secondary-foreground: #171614;
+  --border: #e3e0d9; /* Line */
+  --input: #e3e0d9;
+
+  /* ---- brand + action ---- */
+  --primary: #0b5fa5; /* Azure — primary buttons */
+  --primary-foreground: #ffffff;
+  --ring: #0b5fa5;
+  --destructive: #a83a10; /* Oxide */
+  --destructive-foreground: #ffffff;
+
+  /* ---- semantic signals (not in stock shadcn; we add these) ---- */
+  --signal-good: #0b5fa5; /* Azure  · steady / healthy */
+  --signal-good-soft: #e5eef6;
+  --signal-watch: #4e4b44; /* Iron   · watch, not urgent */
+  --signal-watch-soft: #eae8e2;
+  --signal-risk: #a83a10; /* Oxide  · at risk / act now */
+  --signal-risk-soft: #f6e9e2;
+
+  /* ---- chart categoricals (always paired with a pattern) ---- */
+  --chart-1: #0b5fa5;
+  --chart-2: #a83a10;
+  --chart-3: #4e4b44;
+  --chart-4: #7a4e8c;
+  --chart-5: #3e8fbf;
+
+  /* ---- sidebar ---- */
+  --sidebar: #ffffff;
+  --sidebar-foreground: #171614;
+  --sidebar-primary: #0b5fa5;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #efede7;
+  --sidebar-accent-foreground: #171614;
+  --sidebar-border: #e3e0d9;
+  --sidebar-ring: #0b5fa5;
+}
+
+.dark,
+:root:has(input.theme-toggle[value="dark"]) {
+  --background: #131311;
+  --foreground: #edebe6;
+  --card: #1a1a17;
+  --card-foreground: #edebe6;
+  --popover: #1a1a17;
+  --popover-foreground: #edebe6;
+  --muted: #212120;
+  --muted-foreground: #94918a;
+  --accent: #26261f;
+  --accent-foreground: #edebe6;
+  --secondary: #212120;
+  --secondary-foreground: #edebe6;
+  --border: #2e2e2a;
+  --input: #2e2e2a;
+
+  --primary: #6bb0e8;
+  --primary-foreground: #0c1b24;
+  --ring: #6bb0e8;
+  --destructive: #e5804f;
+  --destructive-foreground: #1a0f08;
+
+  --signal-good: #6bb0e8;
+  --signal-good-soft: #16232e;
+  --signal-watch: #a8a399;
+  --signal-watch-soft: #26251f;
+  --signal-risk: #e5804f;
+  --signal-risk-soft: #2a1d16;
+
+  --chart-1: #6bb0e8;
+  --chart-2: #e5804f;
+  --chart-3: #a8a399;
+  --chart-4: #b98ac9;
+  --chart-5: #8fc5e5;
+
+  --sidebar: #1a1a17;
+  --sidebar-foreground: #edebe6;
+  --sidebar-primary: #6bb0e8;
+  --sidebar-primary-foreground: #0c1b24;
+  --sidebar-accent: #212120;
+  --sidebar-accent-foreground: #edebe6;
+  --sidebar-border: #2e2e2a;
+  --sidebar-ring: #6bb0e8;
+}
+
+/* ---- typography tokens ---- */
+:root {
+  /* next/font (lib/fonts.ts) injects the resolved, self-hosted font
+     stacks into these same variable names on <html>. */
+  --font-sans: "IBM Plex Sans", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+
+  /* type scale (rem, 16px root) */
+  --text-xs: 0.6875rem;
+  --text-sm: 0.75rem;
+  --text-base-sm: 0.8125rem;
+  --text-base: 0.875rem;
+  --text-md: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.375rem;
+  --text-2xl: 1.75rem;
+  --text-3xl: 2.25rem;
+  --text-4xl: 2.75rem;
+
+  /* spacing scale (px) */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-7: 32px;
+  --space-8: 40px;
+  --space-9: 56px;
+  --space-10: 80px;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+}
+
+.sr-only {
+  border: 0;
+  clip: rect(0, 0, 0, 0);
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  padding: 0;
+  position: absolute;
+  white-space: nowrap;
+  width: 1px;
+}
+
+.token-page {
+  display: grid;
+  gap: var(--space-8);
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: var(--space-8) var(--space-5);
+}
+
+.token-header {
+  display: flex;
+  gap: var(--space-5);
+  align-items: start;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: var(--space-6);
+}
+
+.token-header h1,
+.token-page h2,
+.token-page p {
+  margin: 0;
+}
+
+.token-header h1 {
+  font-size: var(--text-3xl);
+  letter-spacing: -0.035em;
+}
+
+.token-header p:not(.token-eyebrow) {
+  max-width: 56ch;
+  color: var(--muted-foreground);
+  margin-top: var(--space-3);
+}
+
+.token-eyebrow {
+  color: var(--muted-foreground);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+}
+
+.token-page h2 {
+  font-size: var(--text-xl);
+  letter-spacing: -0.025em;
+  margin-bottom: var(--space-4);
+}
+
+.token-swatches {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: var(--space-3);
+}
+
+.token-swatch {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-surface);
+  overflow: hidden;
+}
+
+.token-swatch-colour {
+  height: var(--space-9);
+  border-bottom: 1px solid
+    color-mix(in srgb, var(--foreground) 18%, transparent);
+}
+
+.token-swatch p,
+.token-swatch code {
+  display: block;
+  padding: 0 var(--space-3);
+}
+
+.token-swatch p {
+  font-size: var(--text-base);
+  font-weight: 600;
+  padding-top: var(--space-3);
+}
+
+.token-swatch code {
+  color: var(--muted-foreground);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  padding-bottom: var(--space-3);
+}
+
+.token-type-list,
+.token-space-list {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.token-type-list p {
+  line-height: 1.2;
+}
+
+.token-type-list .figure {
+  color: var(--muted-foreground);
+  display: inline-block;
+  min-width: 3.5rem;
+}
+
+.token-space-list > div {
+  align-items: center;
+  display: flex;
+  gap: var(--space-3);
+}
+
+.token-space-list .figure {
+  width: 4rem;
+}
+
+.token-space-bar {
+  background: var(--signal-good);
+  height: var(--space-3);
+}
+
+.token-figure {
+  color: var(--primary);
+  font-size: var(--text-2xl);
+}
+
+@media (max-width: 640px) {
+  .token-page {
+    padding: var(--space-6) var(--space-4);
+  }
+
+  .token-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
+
+/* Every numeric figure — dollar amounts, percentages, quantities, dates —
+   is set in this. Non-negotiable per brand-foundations.md §6. */
+.figure {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.03em;
+}
+
+.pat {
+  background-color: var(--c);
+}
+
+.pat--solid {
+  background-image: none;
+}
+
+.pat--hatch {
+  background-image: repeating-linear-gradient(
+    45deg,
+    rgb(255 255 255 / 62%) 0 3px,
+    transparent 3px 8px
+  );
+}
+
+.pat--cross {
+  background-image: repeating-linear-gradient(
+      45deg,
+      rgb(255 255 255 / 55%) 0 2px,
+      transparent 2px 6px
+    ),
+    repeating-linear-gradient(
+      -45deg,
+      rgb(255 255 255 / 55%) 0 2px,
+      transparent 2px 6px
+    );
+}
+
+.pat--dots {
+  background-image: radial-gradient(
+    rgb(255 255 255 / 75%) 1.5px,
+    transparent 1.6px
+  );
+  background-size: 7px 7px;
+}
+
+.pat--vertical {
+  background-image: repeating-linear-gradient(
+    90deg,
+    rgb(255 255 255 / 60%) 0 2px,
+    transparent 2px 7px
+  );
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

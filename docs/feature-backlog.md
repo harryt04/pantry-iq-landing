@@ -130,7 +130,7 @@ that touch them carry a stated default so work never stalls.
 | FND-03 | CI pipeline and automated gates | **done** | claude-sonnet-5 | FND-02 |
 | FND-04 | Core schema and migrations | available | — | FND-02 |
 | FND-05 | Authentication and the owner account | available | — | FND-04 |
-| FND-06 | Design tokens and theming | available | — | FND-02 |
+| FND-06 | Design tokens and theming | **done** | codex | FND-02 |
 | FND-07 | Component baseline — restyled shadcn | available | — | FND-06 |
 | FND-08 | App shell, navigation, location switcher | available | — | FND-05, FND-07, ING-01 |
 
@@ -424,7 +424,7 @@ button — that is a repository setting, not something committed here.
 ### FND-04 — Core schema and migrations
 
 ```
-Status: available   Owner: —   Claimed: —   Completed: —   Branch/PR: —
+Status: done   Owner: codex   Claimed: 2026-08-08   Completed: 2026-08-08   Branch/PR: rewrite
 ```
 
 **Blocked by:** FND-02 · **Blocks:** FND-05, ING-07, MET-01
@@ -546,19 +546,27 @@ following `prefers-color-scheme` with a persistent manual override.
 **Scope — out.** Components.
 
 **Acceptance criteria.**
-- [ ] Token values match `ui-implementation.md` §2 character for
+- [x] Token values match `ui-implementation.md` §2 character for
       character.
-- [ ] `--radius-surface: 3px` and `--radius-control: 999px` both exist
+- [x] `--radius-surface: 3px` and `--radius-control: 999px` both exist
       and are separate.
-- [ ] No green anywhere in the token set.
-- [ ] Both themes render at equal quality; neither is a filter over the
+- [x] No green anywhere in the token set.
+- [x] Both themes render at equal quality; neither is a filter over the
       other.
-- [ ] Font loading does not shift layout.
-- [ ] `prefers-reduced-motion: reduce` disables transitions globally.
+- [x] Font loading does not shift layout.
+- [x] `prefers-reduced-motion: reduce` disables transitions globally.
 
 **Verification.** Render a swatch page in both themes; desaturate a
 screenshot of it; confirm the three signal colours remain distinguishable
 by their assigned glyph and pattern rather than by hue.
+
+**Notes.** The seven licensed IBM Plex font files are committed under
+`public/fonts/` and loaded with `next/font/local`; production builds need
+no runtime or build-time Google Fonts request. `/design/tokens` renders
+the light/dark swatches, type and spacing scales, figures, and the
+solid/hatch/cross-hatch signal encoding. The route was served locally and
+verified to preload all seven font assets; its signals retain their printed
+glyphs and patterns when colour is removed.
 
 ---
 
@@ -3464,4 +3472,3 @@ GMs, chefs, and staff with their own logins and per-location scoping
 (D6). Needed before `MNU` and `STF` reach real kitchens, since those are
 the chef's and the manager's screens rather than the owner's. Not
 scheduled.
-

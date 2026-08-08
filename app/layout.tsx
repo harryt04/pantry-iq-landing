@@ -1,3 +1,5 @@
+import { plexMono, plexSans } from '@/lib/fonts';
+import { themeInitScript } from '@/lib/theme-script';
 import type { Metadata } from 'next';
 import './globals.css';
 
@@ -12,7 +14,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" className={`${plexSans.variable} ${plexMono.variable}`}>
+      <head>
+        {/* biome-ignore lint/security/noDangerouslySetInnerHtml: Static local script only; it prevents a theme flash. */}
+        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+      </head>
       <body>{children}</body>
     </html>
   );
