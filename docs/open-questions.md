@@ -93,7 +93,133 @@ or simply hasn't been revisited since the market research was done. See
 `cost-and-pricing.md` for the full breakdown and three unconfirmed
 hypotheses about what might explain the gap.
 
-## 3. Technical / product-detail unknowns
+## 3. Food donation — the largest cluster of open questions
+
+Food donation was confirmed as MVP scope on 2026-08-07 (see
+`mvp-scope-and-decisions.md`, "Food donation"). What was confirmed is
+narrow: restaurants register as donors, shelters and soup kitchens
+register as recipients, and the two are connected by locality.
+
+Almost everything needed to build it is undecided. This section exists so
+that nobody mistakes "it's in scope" for "it's specified." **Several of
+these are not design questions — they are questions about whether the
+feature is safe and legal to ship as described.**
+
+### 3.1 Blocking — answer before writing code
+
+**Liability and food safety.** Who is liable if someone is made ill by
+donated food routed through PantryIQ? US federal law (the Bill Emerson
+Good Samaritan Food Donation Act, and the 2023 Food Donation Improvement
+Act that broadened it) provides substantial protection to donors and
+non-profit distributors acting in good faith, but it does not obviously
+cover a software intermediary, and state and local health codes vary
+considerably on prepared-food donation specifically. Requires actual legal
+advice, not a product decision. Until answered, the terms shown to both
+sides cannot be written.
+
+**Notification for recipients.** `mvp-scope-and-decisions.md` lists email,
+push, and webhook notifications as explicit non-goals, on the reasoning
+that in-app alerts suffice. They do not suffice for a shelter coordinator
+who needs to learn within the hour that prepared food is available. The
+donation loop cannot work on the recipient side under the current
+notification non-goal. One of the two decisions has to give.
+
+**Recipient verification.** Anyone can claim to be a soup kitchen. What
+stops a bad actor registering as a recipient to collect free food, and how
+much verification burden can be imposed before legitimate small
+organisations give up? No position taken.
+
+**The account model.** `architecture-and-data-model.md` assumes one user
+owning one or more locations. Recipients are a second user type with no
+locations, different permissions, and a hard requirement that they never
+see restaurant financial data. This is an auth and data-model change, not
+a new page.
+
+### 3.2 Cold start — the feature does not work alone
+
+A two-sided marketplace delivers zero value to the first side to arrive.
+An operator who opens the donate page and finds no recipients within range
+has had a worse experience than if the feature didn't exist.
+
+- How does the first recipient in a given area get there? Direct outreach?
+  Seeding from public non-profit registries? Operator invitation?
+- Is donation gated until a threshold of local recipients exists, and if
+  so what is the threshold?
+- Does the marketing site promise donation before it can deliver it in a
+  given city? `brand/marketing-copy.md` §7 forbids claiming what the
+  product cannot do — that rule collides with a geographically uneven
+  feature.
+
+No position taken on any of these.
+
+### 3.3 Matching and mechanics
+
+- Matching radius — fixed, configurable by recipient, or configurable by
+  operator?
+- Is an offer broadcast to all eligible recipients at once, offered in
+  priority order, or first-come-first-served?
+- What happens on no-show after a claim? Is there any reputation or
+  reliability signal, and does that risk punishing under-resourced
+  organisations?
+- Can an offer be partially claimed?
+- Who cancels, and how late?
+- Prepared vs. raw food almost certainly need different handling and
+  different acceptance criteria. Not specified.
+- Allergen and dietary information is required on offers, but who is
+  accountable for its accuracy?
+
+### 3.4 Valuation and tax
+
+The operator-side framing depends on donation being deductible, and
+`brand/marketing-copy.md` currently says PantryIQ will "log the donation
+with weight and value, so it's deductible."
+
+- What valuation method? Cost basis and fair market value give different
+  numbers, and enhanced deduction rules for food inventory have specific
+  requirements.
+- Is PantryIQ's log adequate substantiation, or is it a convenience record
+  the operator's accountant re-derives?
+- **Stating or implying a deduction amount is tax advice.** Whether the
+  product may show a dollar figure at all is unresolved, and the marketing
+  copy currently assumes it may.
+
+### 3.5 Business model
+
+- Recipients almost certainly do not pay. Is donation a free feature that
+  raises operator willingness-to-pay, a paid add-on, or a
+  differentiator that justifies a higher core price?
+- Does it change the pricing anchor in §2 below? A two-sided marketplace
+  with real coordination costs is a different business from a CSV analysis
+  tool at $20/location.
+- Does the operational cost of running it (support, verification, disputes)
+  fit the self-funded, low-overhead model in `vision.md`?
+
+### 3.6 Scope interaction
+
+- The MVP scope rule is "one location at a time." Does a multi-location
+  operator offer surplus per location? Almost certainly yes, but it is
+  not stated.
+- The product contract says PantryIQ never acts and never writes back.
+  A claimed donation is a commitment to a third party. Does the "decision
+  support, not autopilot" contract need re-wording to cover a surface
+  where the product does coordinate real-world action?
+- Chat is scoped to imported data. Can an operator ask chat about
+  donations? Not specified.
+
+### 3.7 Research gap
+
+Every persona in `personas-and-research.md` was built before donation was
+in scope. **There is no recipient persona at all** — no shelter
+coordinator, no food-bank logistics lead — and no customer research on
+that side. The discovery interview guide (Part 2) contains no donation
+questions.
+
+Before this ships, the recipient side needs the same treatment the
+operator side got: real conversations with real coordinators about how
+they currently source food, what they can and cannot accept, and what
+would make a tool like this useless to them.
+
+## 4. Technical / product-detail unknowns
 
 These are narrower than the scope tensions above — they're implementation
 details that were explicitly left "TBD" or "CPO input needed" in the
@@ -119,7 +245,7 @@ source docs and were never subsequently answered.
   (how exactly Impact, Urgency, and Data Sufficiency are computed from
   raw data) are not.
 
-## 4. Validation queue (pointer)
+## 5. Validation queue (pointer)
 
 Separate from open *decisions* above, there's a list of things that need
 real operator input before they can be decided at all — CSV-only
@@ -136,7 +262,7 @@ integration willingness-to-pay, real-time forecasting demand, waste
 quantification value) — see `personas-and-research.md`, Part 3, "Human
 validation queue."
 
-## 5. Customer-discovery vs. market-research hypothesis numbering
+## 6. Customer-discovery vs. market-research hypothesis numbering
 
 Not a product question, but a documentation hazard worth flagging
 explicitly: `personas-and-research.md` contains **two unrelated H1–H10

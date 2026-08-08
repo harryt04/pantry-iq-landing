@@ -32,6 +32,35 @@ If you're starting fresh, read in this order:
    any decision that touches these areas, so you don't silently
    contradict something already flagged.
 
+## Brand & design
+
+Brand is a category that did not exist when this corpus was consolidated.
+It lives in [`brand/`](brand/) rather than inside any of the seven
+documents above, and follows the same one-file-owns-one-category rule.
+
+Read [`brand/brand-foundations.md`](brand/brand-foundations.md) first —
+the other three extend it and must not contradict it.
+
+| Document | Owns |
+|---|---|
+| [`brand/brand-foundations.md`](brand/brand-foundations.md) | **Root brand doc.** Positioning, personality, naming, colour palette, typography, design language, brand do's and don'ts, accessibility commitments |
+| [`brand/voice-and-tone.md`](brand/voice-and-tone.md) | How PantryIQ talks — chat responses, UI microcopy, errors, handling disagreement, banned language, the two-audience voice split |
+| [`brand/marketing-copy.md`](brand/marketing-copy.md) | Headline and positioning statements, landing page structure and copy, per-persona messaging, claims discipline |
+| [`brand/ui-implementation.md`](brand/ui-implementation.md) | Design tokens, shadcn/ui component assignments, the pattern-first chart contract, accessibility gates, layout and motion rules |
+
+**Two things in there that constrain product decisions, not just visual
+ones:**
+
+1. **Colour is never load-bearing.** The product owner has red-green
+   colour vision deficiency, and so do roughly 1 in 12 male operators.
+   Every chart must survive being desaturated. This is a merge gate, not
+   a preference.
+2. **The donation marketplace is real MVP scope** — restaurants and
+   shelters both registering, matched by locality. The product corpus was
+   reconciled to this on 2026-08-07. It is in scope but **not specified**:
+   [`open-questions.md`](open-questions.md) §3 is now the largest open
+   cluster in the corpus and four of its items block implementation.
+
 ## Reference material (not actively maintained as MVP scope)
 
 - **[`archive/existing-repo-audit-consolidated.md`](archive/existing-repo-audit-consolidated.md)**
@@ -55,6 +84,10 @@ single place to look for it:
 | `architecture-and-data-model.md` | Data model schema, recommendation engine implementation detail |
 | `cost-and-pricing.md` | LLM cost analysis, market pricing research |
 | `open-questions.md` | Everything unresolved or contradictory across the above |
+| `brand/brand-foundations.md` | Brand identity, colour, typography, design language |
+| `brand/voice-and-tone.md` | Product and AI voice, microcopy |
+| `brand/marketing-copy.md` | Positioning, landing page, persona messaging |
+| `brand/ui-implementation.md` | Design tokens, shadcn usage, chart rules, a11y gates |
 
 If you're about to add new planning content, put it in the document that
 owns its category rather than creating a new file — that's what caused

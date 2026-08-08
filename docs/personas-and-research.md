@@ -38,6 +38,18 @@ of real behaviors, fears, and goals.
 Personas are organized by **role** first. Establishment-type context is
 woven in where it changes the psychographic profile meaningfully.
 
+> **This list is incomplete as of 2026-08-07.** All ten personas are
+> restaurant-side. Food donation became MVP scope on that date, which
+> makes shelter and soup-kitchen coordinators a **second user type with no
+> persona here and no research behind them** — they are not buyers, are
+> not motivated by margin, and nothing in this document describes them.
+>
+> The discovery tooling in Part 2 has the same gap: no screener question
+> and no interview question touches donation, on either side.
+>
+> Do not write recipient-facing product or copy from the personas below —
+> they will mislead you. See `open-questions.md` §3.7.
+
 ---
 
 ## 1. Ron Weasley — The Scrappy Owner-Operator

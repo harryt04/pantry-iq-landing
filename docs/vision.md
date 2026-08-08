@@ -5,6 +5,12 @@
 > actually being built first, see [`mvp-scope-and-decisions.md`](mvp-scope-and-decisions.md),
 > which supersedes the "Version 1 MVP" and integration claims that used to
 > live in this file.
+>
+> **One exception, added 2026-08-07:** domain 4 below, food donation and
+> waste prevention, is **no longer a long-term item** — the founder
+> confirmed a two-sided donation marketplace is MVP scope. The other three
+> domains remain long-term. See `mvp-scope-and-decisions.md`, "Food
+> donation", and the substantial open questions in `open-questions.md` §3.
 
 ## Founding vision
 
@@ -53,6 +59,13 @@ Questions like "which local charities accept prepared meals?" or "how much
 food waste did I generate today?" — answered by connecting restaurants to
 nearby non-profits, identifying safely shareable surplus, and tracking
 waste trends and tax-deductible donations.
+
+> **This domain is now MVP scope, not long-term.** The connect-restaurants-
+> to-nearby-non-profits half is being built as a two-sided marketplace
+> where both donors and recipients hold accounts. The conversational
+> framing above ("which local charities accept prepared meals?") is still
+> long-term — the MVP surface is a donate/claim flow, not a chat topic.
+> See `mvp-scope-and-decisions.md`.
 
 ## Long-term roadmap (post-MVP)
 

@@ -47,3 +47,6 @@ next-env.d.ts
 *.db
 .agents/spec/
 .agents/specs/
+
+# lavish-axi review artifacts (local only)
+.lavish/

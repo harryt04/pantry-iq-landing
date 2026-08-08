@@ -20,6 +20,10 @@ Unresolved items that could not be reconciled are in
   scope.
 - The first product loop is: **CSV import → operational facts → ranked
   recommendation → dashboard explanation → chat investigation.**
+- A second loop is in MVP scope: **surplus identified → offered to a
+  local recipient → claimed → collected → logged.** See "Food donation"
+  below. PantryIQ serves **two** audiences: the restaurant operator, and
+  the shelter or soup kitchen receiving food.
 
 ## Core product intent
 
@@ -70,6 +74,62 @@ time**:
   in the MVP
 
 This should be stated clearly in product copy and UX.
+
+## Food donation
+
+**Status: in MVP scope.** Confirmed by the founder on 2026-08-07, during
+the brand-design session. This reverses the position held by every
+document written before that date, including earlier revisions of this
+one, which listed donation as a long-term vision item only. See
+"Provenance & corrections" for what changed.
+
+### What was confirmed
+
+- Restaurants register as **donors**.
+- Shelters, soup kitchens, and comparable organisations register as
+  **recipients**.
+- The two are **connected by locality** — recipients near the donating
+  restaurant.
+- The purpose is to route food a restaurant could not sell to people who
+  need it, rather than to the bin.
+
+That is the whole of what has been decided. Everything below the line is
+either a direct consequence of it or an open question — see
+[`open-questions.md`](open-questions.md) §3, which is substantial and
+should be read before anyone builds this.
+
+### Direct consequences worth stating
+
+- **PantryIQ becomes a two-sided product.** Recipients are users with
+  accounts, not records inside a restaurant's data. The account model in
+  [`architecture-and-data-model.md`](architecture-and-data-model.md)
+  currently assumes one user owning locations, and does not accommodate
+  this.
+- **PantryIQ stops being purely decision-support on this surface.** The
+  core product is read-only and never acts. A donation offer is a real
+  commitment to a third party who may drive across town for it. The
+  product contract's "we recommend, you decide" holds for the operator's
+  decision to offer — but once an offer is claimed, the system is
+  coordinating a real-world handoff, which is a different kind of feature
+  and carries different failure modes.
+- **Donation is framed to operators in dollars, not in charity.** Surplus
+  already represents money lost; donation is a better exit for it, with a
+  deductible value attached. See
+  [`brand/voice-and-tone.md`](brand/voice-and-tone.md) §1 — the recipient
+  side never sees dollar framing.
+
+### The notification contradiction
+
+This document lists "email, push, or webhook notifications" as an explicit
+non-goal, with in-app alerts deemed sufficient. **That is not sufficient
+for the recipient side.** A shelter coordinator cannot be expected to keep
+a dashboard open in order to discover that prepared food expires in two
+hours. A donation marketplace with in-app-only alerting will fail on the
+recipient side by construction.
+
+This is not resolved here. It is a genuine conflict between two decisions
+that were made independently, and it is tracked in
+[`open-questions.md`](open-questions.md) §3.
 
 ## MVP UX principles
 
@@ -277,6 +337,35 @@ analysis.
 - Shelf life and unit cost must be user-editable — trust depends on being
   able to correct the model
 
+### Donate (operator side)
+**Purpose:** turn identified surplus into an offer to a nearby recipient.
+- Reachable from a dashboard recommendation ("Offer to a shelter") and as
+  a standalone page
+- Operator states what the food is, quantity, whether it is prepared or
+  raw, allergens, and a collection window
+- Shows nearby registered recipients and their stated acceptance criteria
+- Logs the donation with weight and estimated value for the operator's
+  records
+- Constraints: the operator always initiates; PantryIQ never offers food
+  on their behalf
+
+### Claim (recipient side)
+**Purpose:** let a shelter or soup kitchen see and claim what's available
+nearby.
+- List of open offers within range, showing food type, quantity,
+  prepared/raw, allergens, collection window, and distance
+- Claim and pass actions
+- No dollar figures anywhere on this surface
+- Constraints: recipients see offers, not restaurant financials. A
+  recipient must never be able to infer a restaurant's margins, costs, or
+  waste totals from what they can see.
+
+> Both pages are specified here only at the level the founder confirmed.
+> Matching logic, notification mechanics, verification of recipient
+> organisations, no-show handling, and food-safety/liability terms are all
+> **undecided** — see [`open-questions.md`](open-questions.md) §3. Do not
+> infer them from this section.
+
 ## Recommendation expectations (examples)
 
 A recommendation includes the action, expected financial impact if known,
@@ -308,6 +397,26 @@ elapsed.
 
 Success: grounded, believable answer within 3–5 seconds.
 
+**Donation — operator side:**
+1. Dashboard flags surplus that won't sell before it turns
+2. Operator chooses "Offer to a shelter"
+3. Operator confirms what it is, how much, prepared or raw, allergens,
+   and when it can be collected
+4. System shows nearby registered recipients; offer is published
+5. On claim, operator sees who claimed it and when they'll collect
+6. Operator marks it collected; system logs weight and estimated value
+
+**Donation — recipient side:**
+1. Recipient organisation registers and states what it can accept
+2. Recipient sees open offers nearby with quantity, type, allergens, and
+   collection window
+3. Recipient claims an offer
+4. Recipient collects
+
+Success: an operator can move real surplus to a real recipient without
+leaving PantryIQ, and neither side sees information belonging to the
+other.
+
 **Assumption override:**
 1. User questions a recommendation ("that salmon shelf life is wrong —
    it's 14 days frozen")
@@ -323,7 +432,9 @@ chat.
 
 - Square, Toast, or other POS integrations
 - Cross-location aggregation or comparison, including side-by-side location comparison
-- Email, push, or webhook notifications
+- Email, push, or webhook notifications **for the operator surface**
+  (this non-goal is in unresolved conflict with the recipient side of
+  donation — see "The notification contradiction" above)
 - Advanced beverage variance / pour-cost workflows
 - Event-specific planning and event-level cost tracking (food trucks, catering)
 - Ghost-kitchen multi-brand allocation
@@ -361,7 +472,8 @@ mobile workflows that still feel broken?
 ## Roadmap
 
 - **MVP (now):** CSV import + manual entry, dashboard + chat, per-location
-  analysis, recommendations with data-sufficiency-based ranking.
+  analysis, recommendations with data-sufficiency-based ranking, and the
+  two-sided donation loop.
 - **Phase 2:** Square POS integration, export workflows, advanced
   beverage variance, thumbs up/down feedback loop.
 - **Phase 3:** multi-location aggregation, email/push notifications,
@@ -389,6 +501,11 @@ The MVP succeeds if a user can:
 5. Understand confidence, evidence, and assumptions
 6. Challenge PantryIQ and see it explain or revise its reasoning honestly
 7. Adjust important assumptions like shelf life and item metadata
+8. Offer surplus to a nearby recipient and have it actually get collected
+
+Criterion 8 depends on recipients existing in the operator's area before
+the operator ever looks. That is a cold-start problem, not a feature —
+see [`open-questions.md`](open-questions.md) §3.
 
 Quantitative targets (beta user count, conversations/week, NPS,
 recommendation adoption rate, time to first value) are unset — tracked as
@@ -402,6 +519,26 @@ This document reconciles, in order of authority: `MVP-DECISION-LEDGER.md`
 `GRILLING-SESSION-NOTES.md` (decision rationale), and `PRD-SKELETON.md`
 (feature checklists, data model pointers, workflows), all now folded in
 here.
+
+### 2026-08-07 — food donation added to MVP scope
+
+This document previously contained no donation scope of any kind, and
+[`vision.md`](vision.md) described food donation as one of four long-term
+question domains — explicitly the north star, not the MVP. During the
+brand-design session on 2026-08-07 the founder confirmed that a two-sided
+donation marketplace **is** MVP scope.
+
+The earlier omission was not a decision that got reversed; donation had
+simply never been written down as scope, and the brand work surfaced the
+gap. The corpus is now reconciled to the founder's stated intent. What
+this does **not** mean:
+
+- It does not mean the donation feature is specified. It isn't — see
+  [`open-questions.md`](open-questions.md) §3.
+- It does not mean the MVP got proportionally larger in effort terms in a
+  way anyone has estimated. A two-sided marketplace with a second user
+  type, a second account model, and real-world coordination is a large
+  addition to a CSV-and-chat product, and no one has costed it.
 
 Known corrections carried forward from the ledger:
 - The older `VISION.md` described Square as MVP scope; this document

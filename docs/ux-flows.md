@@ -198,6 +198,67 @@ resolved, timestamp).
    calculation; the shelf life assumption may be challenged or confirmed
    by the user as a result.
 
+## Donation: flow
+
+Added 2026-08-07 when donation entered MVP scope. **This is deliberately
+thinner than the flows above.** The import and chat flows describe
+decisions that were actually made; this one describes only what the
+founder confirmed, plus the steps that follow unavoidably from it. Where a
+step below would require inventing a decision, it says so instead.
+
+Page purposes are in
+[`mvp-scope-and-decisions.md`](mvp-scope-and-decisions.md); the open
+questions are in [`open-questions.md`](open-questions.md) §3 and there are
+a lot of them.
+
+### Operator side — creating an offer
+
+1. **Entry point.** Either a dashboard recommendation for at-risk stock
+   ("Offer to a shelter"), or the Donate page directly. When entered from
+   a recommendation, the item, quantity, and estimated value prefill.
+2. **Describe the food.** Description, quantity and unit, prepared vs.
+   raw, allergens. Prepared and raw are asked separately because
+   recipients register different acceptance for each.
+3. **Set a collection window.** Earliest and latest collection time.
+4. **See who's nearby.** Recipients within range whose acceptance criteria
+   match. *The matching radius rule is undecided.*
+5. **Publish.** *Whether this broadcasts to all matching recipients at
+   once, or offers in some priority order, is undecided.*
+6. **On claim,** the operator sees which organisation claimed it and the
+   collection time.
+7. **Confirm collection.** Operator marks it collected; the donation is
+   logged with weight and value. *Whether a dollar value may be shown at
+   all is unresolved — see `open-questions.md` §3.4, as stating a
+   deduction is tax advice.*
+
+**If no recipients are in range**, the operator must be told plainly and
+early — before they spend time describing food nobody can collect. This is
+the cold-start failure mode in `open-questions.md` §3.2 and it is the most
+likely way this feature disappoints its first users.
+
+### Recipient side — claiming an offer
+
+1. **Register.** Organisation name, type, address, whether prepared and/or
+   raw food can be accepted, and any capacity limits. *Verification
+   mechanism undecided.*
+2. **See open offers nearby** — food type, quantity, prepared or raw,
+   allergens, collection window, distance. **No dollar figures anywhere on
+   this surface**, and no restaurant financial data of any kind.
+3. **Claim or pass.**
+4. **Collect** within the window.
+
+**Discovery is the unsolved problem here.** A coordinator will not have
+PantryIQ open when an offer with a two-hour window appears. In-app-only
+alerting is a stated non-goal for the operator surface and it does not
+work at all for this one. Nothing in this flow functions until that is
+resolved.
+
+### Tone
+
+Two different registers, documented in
+[`brand/voice-and-tone.md`](brand/voice-and-tone.md) §1 and §7: dollar-first
+for the operator, logistics-first and never financial for the recipient.
+
 ## Settings: sections
 
 **Account basics** — account name, primary email (linked to

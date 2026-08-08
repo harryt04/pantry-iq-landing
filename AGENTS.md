@@ -35,6 +35,7 @@ an ownership table. In short:
 | [`docs/architecture-and-data-model.md`](docs/architecture-and-data-model.md) | Data model schema, recommendation engine implementation detail                                                       |
 | [`docs/cost-and-pricing.md`](docs/cost-and-pricing.md)                       | LLM cost analysis, market pricing research                                                                           |
 | [`docs/open-questions.md`](docs/open-questions.md)                           | Everything unresolved or contradictory across the above — check before deciding anything that touches a flagged area |
+| [`docs/brand/`](docs/brand/)                                                 | **Brand and design.** Four documents — identity/colour/type, voice, marketing copy, and UI implementation. See below                                    |
 
 Where docs disagree, [`mvp-scope-and-decisions.md`](docs/mvp-scope-and-decisions.md)
 wins; it was built by reconciling the others (see its "Provenance &
@@ -57,6 +58,53 @@ transaction history. Ranking formula: `Impact × 0.40 + Urgency × 0.40 + Data
 Sufficiency × 0.20` (see
 [`mvp-scope-and-decisions.md`](docs/mvp-scope-and-decisions.md#scoring-formula)
 for the full contract and message format).
+
+## Before you touch any UI, copy, or colour
+
+Read [`docs/brand/brand-foundations.md`](docs/brand/brand-foundations.md)
+first, then whichever sibling covers your task:
+[`voice-and-tone.md`](docs/brand/voice-and-tone.md) for anything users
+read, [`marketing-copy.md`](docs/brand/marketing-copy.md) for the landing
+page and positioning,
+[`ui-implementation.md`](docs/brand/ui-implementation.md) for tokens,
+components, and charts.
+
+Three rules that get violated by default if you don't know them:
+
+1. **Colour is never load-bearing.** The product owner has red-green
+   colour vision deficiency. Never encode state in colour alone, never
+   distinguish two states by two shades of one hue, and never by two hues
+   of the same temperature. Every chart carries a pattern and a printed
+   value. **The greyscale test is a merge gate:** desaturate a screenshot
+   and read it. No green anywhere in the product.
+2. **We use shadcn/ui for Radix behaviour, not for its appearance.**
+   Stock shadcn styling is off-brand. Round controls (`999px`) on square
+   paper (`3px`), figures in IBM Plex Mono, warm neutrals rather than
+   cool greys.
+3. **Never promise what the MVP can't do.** Marketing claims are held to
+   the same trust contract as product output.
+
+## Scope note: food donation
+
+A two-sided donation marketplace — restaurants registering as donors,
+shelters and soup kitchens as recipients, matched by locality — is **MVP
+scope**, confirmed by the founder on 2026-08-07. The corpus was reconciled
+the same day: see "Food donation" in
+[`docs/mvp-scope-and-decisions.md`](docs/mvp-scope-and-decisions.md), the
+flow in [`docs/ux-flows.md`](docs/ux-flows.md), and the provisional tables
+in [`docs/architecture-and-data-model.md`](docs/architecture-and-data-model.md).
+
+**In scope does not mean specified.**
+[`docs/open-questions.md`](docs/open-questions.md) §3 is the largest open
+cluster in the corpus, and four of its items block implementation: food
+safety liability, recipient notification (which contradicts the
+notifications non-goal), recipient verification, and the account model —
+recipients are a second user type the current schema cannot express. Read
+that section before building any of this.
+
+Two hard rules that hold regardless of how those resolve: **a recipient
+must never see restaurant financial data**, and **the recipient surface
+never uses dollar framing.**
 
 Explicit MVP non-goals worth knowing before proposing scope: POS
 integrations (Square/Toast), cross-location comparison, email/push/webhook

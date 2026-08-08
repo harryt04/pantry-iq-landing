@@ -114,6 +114,77 @@ Tracks all file uploads for audit and replay purposes.
 | `uploadedAt` | timestamp | |
 | `createdAt` | timestamp | |
 
+### Food donation (added 2026-08-07 — provisional)
+
+Donation became MVP scope on 2026-08-07. These tables are a **starting
+sketch, not a settled schema.** The mechanics they imply — matching,
+claiming, verification — are unresolved in `open-questions.md` §3, and
+several of those answers will change these shapes. Do not treat this
+subsection with the same authority as the tables above.
+
+**The account model is the real problem here.** Every table above hangs
+off a `userId` that owns `locations`. A recipient organisation owns no
+locations, must never read restaurant financial data, and needs its own
+authorisation path. That is a change to the account model, not an
+additional table, and it is not designed yet.
+
+#### Recipient organisations
+
+| Field | Type | Purpose |
+|---|---|---|
+| `id` | uuid | Primary key |
+| `userId` | uuid FK | Account that administers this organisation |
+| `name` | text | Organisation name |
+| `orgType` | text | `shelter`, `soup_kitchen`, `food_bank`, `other` |
+| `address` | text | Physical address (used for locality matching) |
+| `lat` / `lng` | numeric | Geocoded position |
+| `acceptsPrepared` | boolean | Can accept prepared/cooked food |
+| `acceptsRaw` | boolean | Can accept raw ingredients |
+| `capacityNotes` | text (nullable) | Free-text limits (refrigeration, volume, hours) |
+| `verificationStatus` | text | **Mechanism undecided** — see `open-questions.md` §3.1 |
+| `isActive` | boolean | |
+| `createdAt` / `updatedAt` | timestamp | |
+
+#### Donation offers
+
+| Field | Type | Purpose |
+|---|---|---|
+| `id` | uuid | Primary key |
+| `locationId` | uuid FK | Donating location |
+| `inventoryItemId` | uuid FK (nullable) | Linked canonical item, when the offer came from a recommendation |
+| `description` | text | What the food is, in the operator's words |
+| `qty` | numeric | Amount offered |
+| `unit` | text | `lb`, `servings`, `each` |
+| `isPrepared` | boolean | Prepared/cooked vs. raw |
+| `allergens` | text (nullable) | Declared allergens — **accountability for accuracy undecided** |
+| `availableFrom` / `availableUntil` | timestamp | Collection window |
+| `estimatedValue` | numeric (nullable) | **Valuation method undecided** — see `open-questions.md` §3.4 |
+| `status` | text | `open`, `claimed`, `collected`, `expired`, `cancelled` |
+| `createdAt` / `updatedAt` | timestamp | |
+
+#### Donation claims
+
+| Field | Type | Purpose |
+|---|---|---|
+| `id` | uuid | Primary key |
+| `donationOfferId` | uuid FK | Offer claimed |
+| `recipientOrgId` | uuid FK | Claiming organisation |
+| `claimedAt` | timestamp | |
+| `collectedAt` | timestamp (nullable) | Null until the operator confirms handover |
+| `status` | text | `claimed`, `collected`, `no_show`, `cancelled` |
+| `createdAt` | timestamp | |
+
+Whether an offer can be claimed by more than one recipient (partial
+claims), and how `no_show` is recorded without unfairly penalising
+under-resourced organisations, are open.
+
+#### Access boundary
+
+A hard requirement, not a preference: **a recipient must never be able to
+read restaurant financial data.** Offers are the only restaurant-owned
+records a recipient may see, and `estimatedValue` must not be exposed on
+that path. Enforce at the query layer, not in the UI.
+
 ### Required tables & indices summary
 
 Tables: `locations` (userId FK), `transactions` (locationId, menuItemId
@@ -127,6 +198,13 @@ Indices: `transactions(locationId, transactedAt)` for time-range queries;
 `purchase_order_items(locationId, inventoryItemId)` for PO analysis;
 `inventory_snapshots(locationId, countedAt)` for spoilage time-series;
 `inventory_items(locationId, canonicalName)` for deduplication.
+
+Donation adds (provisional): `recipient_organisations` (userId FK),
+`donation_offers` (locationId, inventoryItemId FKs), `donation_claims`
+(donationOfferId, recipientOrgId FKs). Indices:
+`donation_offers(status, availableUntil)` for the open-offer feed;
+`recipient_organisations(lat, lng)` — or a PostGIS geography column — for
+locality matching, whose radius rule is undecided.
 
 ### Derived metrics
 
