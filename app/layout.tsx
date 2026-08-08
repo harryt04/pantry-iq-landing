@@ -16,7 +16,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${plexSans.variable} ${plexMono.variable}`}>
+    <html
+      lang="en"
+      className={`${plexSans.variable} ${plexMono.variable}`}
+      suppressHydrationWarning
+    >
       <head>
         {/* biome-ignore lint/security/noDangerouslySetInnerHtml: Static local script only; it prevents a theme flash. */}
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
