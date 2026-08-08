@@ -15,25 +15,22 @@ specifically was wrong with them.
 
 **Headline:**
 
-> ## Waste less. Feed more. Keep the difference.
+> ## See what your kitchen data can tell you.
 
 **Subhead:**
 
-> Upload your sales and purchasing data. PantryIQ tells you what waste is
-> costing you this week, what to do about it, and exactly how it got the
-> number — then helps you get the surplus to a shelter nearby.
+> PantryIQ is being built for restaurant operators who want a clearer view
+> of sales, purchasing, and waste. The product keeps the operator in control
+> and makes room for the numbers behind each decision.
 
-**Primary CTA:** `Import a CSV`
-**Secondary CTA:** `See a worked example`
-**Reassurance line under the CTAs:** No POS connection required. Works
-with a spreadsheet export.
+**Primary CTA:** `See the product direction`
+**Secondary CTA:** `Read the problem it is built to solve`
+**Reassurance line under the CTAs:** Built for one location at a time. No
+POS connection required.
 
-**Why this headline works:** three short clauses covering waste reduction,
-donation, and margin, in that order, with no jargon and no AI vocabulary.
-"Keep the difference" does the commercial work without saying "increase
-profitability." It is the only headline in the set that carries both
-halves of the mission honestly, which matters now that donation is real
-scope.
+**Why this headline works:** it names the operator's starting point — the
+data already in the business — without promising an insight, calculation,
+or action the current build cannot yet provide.
 
 **Never use as a headline:** anything containing "AI-powered,"
 "intelligent," "revolutionise," "unlock," or "restaurant analytics."
@@ -64,8 +61,8 @@ Section by section. Each has a job; if a section can't state its job in
 one line, cut it.
 
 ### 3.1 Nav
-Wordmark left. `Donate` · `Pricing` · `Sign in` · `Start free` (Azure
-pill). Nothing else. No mega-menu, no "Solutions" dropdown.
+Wordmark left. `Pricing` · `Sign in` · `Start free` (Azure pill). Nothing
+else. No donation link, mega-menu, or "Solutions" dropdown.
 
 ### 3.2 Hero
 Headline, subhead, two CTAs, reassurance line. **No hero image, no
@@ -77,13 +74,12 @@ Three short claims directly under the hero, in mono figures:
 
 | | |
 |---|---|
-| **Under 5 min** | Upload to first insight |
-| **Every claim** | Traceable to a row you uploaded |
-| **You decide** | Nothing changes without you |
+| **One location** | Scoped to one operating unit |
+| **Show the work** | Facts stay separate from predictions |
+| **Your call** | Recommendations stay recommendations |
 
-These map to the three universal persona fears in
-[`../personas-and-research.md`](../personas-and-research.md): wasted
-setup time, made-up numbers, and loss of control.
+These state the product contract without claiming that an import,
+recommendation, or chat session is available on the landing page today.
 
 ### 3.4 The problem, in their words
 Not statistics. A specific, recognisable scene.
@@ -101,33 +97,24 @@ own walk-in. The old site led with three such statistics and they are
 removed.
 
 ### 3.5 How it works — three steps
-1. **Upload what you already have.** A sales export, a purchase order, an
-   inventory count. CSV from any POS. Messy is fine — PantryIQ asks about
-   the columns it can't read rather than rejecting the file.
-2. **See what's costing you.** Ranked by money at risk, most urgent first.
-   Each one says what it saw, what it costs, and what to consider doing.
-3. **Ask it anything.** "Why is my halibut margin so bad lately?" Answers
-   come from your data, with the rows attached.
+1. **Start with the data you already have.** The MVP is designed around
+   sales exports, purchase orders, and inventory counts, with CSV as the
+   trust fallback.
+2. **Separate facts from predictions.** The product contract keeps observed
+   numbers distinct from predictions and says what the data cannot support.
+3. **Keep the decision with the operator.** PantryIQ is designed to
+   recommend and explain. The operator decides what happens next.
 
 ### 3.6 The proof section — show, don't claim
-One real recommendation card, rendered exactly as it appears in-product,
-with **Show your work** expanded. This is the single highest-converting
-element on the page, because it answers the objection every persona has:
-*is it making this up?*
+When `DSH-03` ships, add one real recommendation card rendered by the
+actual component, with **Show your work** expanded. Until then, the landing
+page must not show a recommendation mockup or imply that the dashboard is
+available.
 
 ### 3.7 Donation
-Positioned as a better exit for waste, not as charity.
-
-> **The food that didn't sell doesn't have to go in the bin.**
->
-> When PantryIQ spots surplus that won't move, it can find shelters and
-> soup kitchens near you that accept it — and log the donation with weight
-> and value, so it's deductible.
->
-> You already paid for the food. This is a better ending for it.
-
-Never: "give back," "make a difference," "do the right thing," "join our
-mission," photographs of people receiving food.
+Omitted from the current landing page. Donation remains outside the
+scheduled backlog, and the site must not imply that a restaurant can find a
+recipient or log a donation today.
 
 ### 3.8 Pricing
 State the price plainly. No "contact sales," no fake three-tier anchoring.

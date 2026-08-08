@@ -210,7 +210,7 @@ that touch them carry a stated default so work never stalls.
 | MKT-02 | Landing page — hero through final CTA | **done** | codex | MKT-01 |
 | MKT-03 | Proof section — a real recommendation card | available | — | MKT-02, DSH-03 |
 | MKT-04 | Pricing section | **done** | codex | MKT-02 |
-| MKT-05 | Claims-discipline audit | available | — | MKT-02 |
+| MKT-05 | Claims-discipline audit | **done** | codex | MKT-02 |
 
 ### Quality gates
 
@@ -529,7 +529,7 @@ automates this later.
 ### FND-06 — Design tokens and theming
 
 ```
-Status: available   Owner: —   Claimed: —   Completed: —   Branch/PR: —
+Status: done   Owner: codex   Claimed: 2026-08-08   Completed: 2026-08-08   Branch/PR: rewrite
 ```
 
 **Blocked by:** FND-02 · **Blocks:** FND-07, MKT-01
@@ -2428,7 +2428,7 @@ remain future work under FND-05.
 ### MKT-05 — Claims-discipline audit
 
 ```
-Status: available   Owner: —   Claimed: —   Completed: —   Branch/PR: —
+Status: done   Owner: codex   Claimed: 2026-08-08   Completed: 2026-08-08   Branch/PR: rewrite
 ```
 
 **Blocked by:** MKT-02 · **Blocks:** —
@@ -2449,14 +2449,21 @@ testimonials. Update `brand/marketing-copy.md` itself so the source of
 truth stops carrying the invalid claim.
 
 **Acceptance criteria.**
-- [ ] "Ask it anything" is gone from both the site and
+- [x] "Ask it anything" is gone from both the site and
       `marketing-copy.md`.
-- [ ] Every remaining claim is true of the product on the day of merge.
-- [ ] Any claim that outruns the product is either removed or gated
+- [x] Every remaining claim is true of the product on the day of merge.
+- [x] Any claim that outruns the product is either removed or gated
       behind the ticket that would make it true.
 
 **Verification.** Read the whole site against `marketing-copy.md` §7 line
 by line. Every claim must map to a `done` ticket.
+
+**Notes.** Replaced the retired chat promise and removed unshipped import,
+recommendation, and donation claims from the active landing page. The
+authoritative copy now labels future dashboard proof as gated by `DSH-03`
+and omits the donation section from the current site. Added a regression
+test for the retired language and unshipped claims. `npm run prettify`,
+`npm run ci`, and live `/` plus `/api/health` smoke checks passed.
 
 ---
 

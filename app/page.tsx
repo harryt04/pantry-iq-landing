@@ -7,31 +7,29 @@ export default function Home() {
       <main className="landing-page">
         <section className="landing-hero" aria-labelledby="landing-title">
           <div className="landing-container landing-hero__content">
-            <h1 id="landing-title">
-              Waste less. Feed more. Keep the difference.
-            </h1>
+            <h1 id="landing-title">See what your kitchen data can tell you.</h1>
             <p className="landing-hero__subhead">
-              Upload your sales and purchasing data. PantryIQ tells you what
-              waste is costing you this week, what to do about it, and exactly
-              how it got the number — then helps you get the surplus to a
-              shelter nearby.
+              PantryIQ is being built for restaurant operators who want a
+              clearer view of sales, purchasing, and waste. The product keeps
+              the operator in control and makes room for the numbers behind each
+              decision.
             </p>
             <div className="landing-hero__actions" aria-label="Get started">
               <a
                 className="landing-button landing-button--primary"
                 href="/sign-up"
               >
-                Import a CSV
+                See the product direction
               </a>
               <a
                 className="landing-button landing-button--secondary"
                 href="#how-it-works"
               >
-                See a worked example
+                Read the problem it is built to solve
               </a>
             </div>
             <p className="landing-hero__reassurance">
-              No POS connection required. Works with a spreadsheet export.
+              Built for one location at a time. No POS connection required.
             </p>
           </div>
         </section>
@@ -39,19 +37,21 @@ export default function Home() {
         <section className="landing-proof" aria-label="What you can expect">
           <div className="landing-container landing-proof__grid">
             <div className="landing-proof__item">
-              <p className="landing-proof__value">Under 5 min</p>
-              <p className="landing-proof__label">Upload to first insight</p>
-            </div>
-            <div className="landing-proof__item">
-              <p className="landing-proof__value">Every claim</p>
+              <p className="landing-proof__value">One location</p>
               <p className="landing-proof__label">
-                Traceable to a row you uploaded
+                Scoped to one operating unit
               </p>
             </div>
             <div className="landing-proof__item">
-              <p className="landing-proof__value">You decide</p>
+              <p className="landing-proof__value">Show the work</p>
               <p className="landing-proof__label">
-                Nothing changes without you
+                Facts stay separate from predictions
+              </p>
+            </div>
+            <div className="landing-proof__item">
+              <p className="landing-proof__value">Your call</p>
+              <p className="landing-proof__label">
+                Recommendations stay recommendations
               </p>
             </div>
           </div>
@@ -88,7 +88,7 @@ export default function Home() {
             <div className="landing-section-heading">
               <p className="landing-eyebrow">How it works</p>
               <h2 id="landing-how-title">
-                A clear answer from the data you already have.
+                A clearer way to reason from the data you already have.
               </h2>
             </div>
             <ol className="landing-steps">
@@ -97,11 +97,10 @@ export default function Home() {
                   01
                 </span>
                 <div>
-                  <h3>Upload what you already have.</h3>
+                  <h3>Start with the data you already have.</h3>
                   <p>
-                    A sales export, a purchase order, an inventory count. CSV
-                    from any POS. Messy is fine — PantryIQ asks about the
-                    columns it can&apos;t read rather than rejecting the file.
+                    The MVP is designed around sales exports, purchase orders,
+                    and inventory counts, with CSV as the trust fallback.
                   </p>
                 </div>
               </li>
@@ -110,10 +109,11 @@ export default function Home() {
                   02
                 </span>
                 <div>
-                  <h3>See what&apos;s costing you.</h3>
+                  <h3>Separate facts from predictions.</h3>
                   <p>
-                    Ranked by money at risk, most urgent first. Each one says
-                    what it saw, what it costs, and what to consider doing.
+                    PantryIQ&apos;s product contract keeps observed numbers
+                    distinct from predictions and says what the data cannot
+                    support.
                   </p>
                 </div>
               </li>
@@ -122,10 +122,10 @@ export default function Home() {
                   03
                 </span>
                 <div>
-                  <h3>Ask it anything.</h3>
+                  <h3>Keep the decision with the operator.</h3>
                   <p>
-                    &ldquo;Why is my halibut margin so bad lately?&rdquo;
-                    Answers come from your data, with the rows attached.
+                    The system is designed to recommend and explain. You decide
+                    what happens next; PantryIQ does not act for you.
                   </p>
                 </div>
               </li>
@@ -181,7 +181,7 @@ export default function Home() {
               className="landing-button landing-button--primary"
               href="/sign-up"
             >
-              Import a CSV
+              See the product direction
             </a>
           </div>
         </section>
