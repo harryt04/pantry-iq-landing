@@ -2668,11 +2668,13 @@ The independently testable aggregation layer is now in
 `src/server/observability/metrics.ts`. `OperationalMetrics` records
 location-scoped precompute successes and failures, raises an injectable alert
 for each failure, exposes a staleness query against an explicit threshold, and
-aggregates LLM token usage and integer micro-costs by account and UTC day.
-`metrics.test.ts` covers those boundaries, including defensive date copies,
-invalid numeric values, and mixed-currency rejection. The registry is
-deliberately in-process until the producers and persistent telemetry store
-arrive; it provides the typed seam those integrations will consume.
+aggregates LLM token usage and integer micro-costs by account and UTC day. It
+also records import successes and failures and exposes a per-location success
+rate with its underlying counts. `metrics.test.ts` covers those boundaries,
+including defensive date copies, invalid numeric values, mixed-currency
+rejection, and import outcome validation. The registry is deliberately
+in-process until the producers and persistent telemetry store arrive; it
+provides the typed seam those integrations will consume.
 
 The remaining acceptance criteria require `MET-02`'s precompute pipeline,
 the LLM narration service, and import execution paths. They are intentionally

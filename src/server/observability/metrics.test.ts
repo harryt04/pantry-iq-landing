@@ -78,6 +78,70 @@ describe('operational metrics', () => {
     ).toEqual(new Date('2026-08-08T10:00:00.000Z'))
   })
 
+  it('reports import success and failure rates per location', () => {
+    const metrics = new OperationalMetrics()
+
+    metrics.recordImportSuccess({
+      locationId: 'location-1',
+      importId: 'import-1',
+      completedAt: new Date('2026-08-08T10:00:00.000Z'),
+      rowsImported: 12,
+    })
+    metrics.recordImportSuccess({
+      locationId: 'location-1',
+      importId: 'import-2',
+      completedAt: new Date('2026-08-08T11:00:00.000Z'),
+      rowsImported: 8,
+    })
+    metrics.recordImportFailure({
+      locationId: 'location-1',
+      importId: 'import-3',
+      failedAt: new Date('2026-08-08T12:00:00.000Z'),
+    })
+
+    expect(metrics.getImportHealth('location-1')).toEqual({
+      locationId: 'location-1',
+      successfulImportCount: 2,
+      failedImportCount: 1,
+      totalImportCount: 3,
+      successRate: 2 / 3,
+    })
+    expect(metrics.getImportHealth('location-2')).toEqual({
+      locationId: 'location-2',
+      successfulImportCount: 0,
+      failedImportCount: 0,
+      totalImportCount: 0,
+      successRate: 0,
+    })
+  })
+
+  it('rejects invalid import timestamps and row counts', () => {
+    const metrics = new OperationalMetrics()
+    const success = {
+      locationId: 'location-1',
+      importId: 'import-1',
+      completedAt: new Date('2026-08-08T10:00:00.000Z'),
+      rowsImported: 1,
+    }
+
+    expect(() =>
+      metrics.recordImportSuccess({ ...success, rowsImported: -1 }),
+    ).toThrow('rowsImported must be a non-negative safe integer')
+    expect(() =>
+      metrics.recordImportSuccess({
+        ...success,
+        completedAt: new Date('invalid'),
+      }),
+    ).toThrow('completedAt is invalid')
+    expect(() =>
+      metrics.recordImportFailure({
+        locationId: 'location-1',
+        importId: 'import-2',
+        failedAt: new Date('invalid'),
+      }),
+    ).toThrow('failedAt is invalid')
+  })
+
   it('aggregates LLM usage by account and UTC day with integer micro-costs', () => {
     const metrics = new OperationalMetrics()
 

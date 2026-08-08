@@ -24,6 +24,27 @@ export interface PrecomputeHealth {
   isStale: boolean
 }
 
+export interface ImportSuccess {
+  locationId: string
+  importId: string
+  completedAt: Date
+  rowsImported: number
+}
+
+export interface ImportFailure {
+  locationId: string
+  importId: string
+  failedAt: Date
+}
+
+export interface ImportHealth {
+  locationId: string
+  successfulImportCount: number
+  failedImportCount: number
+  totalImportCount: number
+  successRate: number
+}
+
 export interface LlmQueryUsage {
   accountId: string
   completedAt: Date
@@ -53,6 +74,11 @@ interface StoredPrecomputeHealth {
   lastRunDurationMs: number | null
   lastFailureAt: Date | null
   failureCount: number
+}
+
+interface StoredImportHealth {
+  successfulImportCount: number
+  failedImportCount: number
 }
 
 function assertNonNegativeInteger(value: number, field: string): void {
@@ -106,6 +132,7 @@ function healthSnapshot(
  */
 export class OperationalMetrics {
   private readonly precompute = new Map<string, StoredPrecomputeHealth>()
+  private readonly imports = new Map<string, StoredImportHealth>()
   private readonly llmDailySpend = new Map<string, DailyLlmSpend>()
   private readonly onPrecomputeFailure:
     ((alert: PrecomputeFailureAlert) => void) | undefined
@@ -164,6 +191,49 @@ export class OperationalMetrics {
       failureCount: 0,
     }
     return healthSnapshot(locationId, health, now, staleAfterMs)
+  }
+
+  recordImportSuccess(event: ImportSuccess): void {
+    assertDate(event.completedAt, 'completedAt')
+    assertNonNegativeInteger(event.rowsImported, 'rowsImported')
+
+    const health = this.imports.get(event.locationId) ?? {
+      successfulImportCount: 0,
+      failedImportCount: 0,
+    }
+    health.successfulImportCount += 1
+    this.imports.set(event.locationId, health)
+  }
+
+  recordImportFailure(event: ImportFailure): void {
+    assertDate(event.failedAt, 'failedAt')
+
+    const health = this.imports.get(event.locationId) ?? {
+      successfulImportCount: 0,
+      failedImportCount: 0,
+    }
+    health.failedImportCount += 1
+    this.imports.set(event.locationId, health)
+  }
+
+  getImportHealth(locationId: string): ImportHealth {
+    const health = this.imports.get(locationId) ?? {
+      successfulImportCount: 0,
+      failedImportCount: 0,
+    }
+    const totalImportCount =
+      health.successfulImportCount + health.failedImportCount
+
+    return {
+      locationId,
+      successfulImportCount: health.successfulImportCount,
+      failedImportCount: health.failedImportCount,
+      totalImportCount,
+      successRate:
+        totalImportCount === 0
+          ? 0
+          : health.successfulImportCount / totalImportCount,
+    }
   }
 
   recordLlmQuery(event: LlmQueryUsage): void {
