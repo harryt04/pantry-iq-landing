@@ -1,208 +1,115 @@
-# PantryIQ: Founding Vision & Roadmap
+# PantryIQ: Founding Vision
 
-## Harry's Founding Vision
+> **Status note:** This document preserves the founding narrative and
+> long-term product vision. It does **not** describe MVP scope. For what is
+> actually being built first, see [`mvp-scope-and-decisions.md`](mvp-scope-and-decisions.md),
+> which supersedes the "Version 1 MVP" and integration claims that used to
+> live in this file.
 
-PantryIQ solves a critical problem facing restaurant operators: **food waste and inventory inefficiency**. Harry's insight came from years observing restaurants throwing away $50,000+ annually in spoiled food, overstock, and operational inefficiencies.
+## Founding vision
 
-**The Dual Mission:**
-1. **Profitability:** Help restaurants reduce waste, optimize inventory, and improve margins
-2. **Charitable Impact:** Donate surplus food to local charities, addressing food insecurity in communities
+PantryIQ exists to solve a problem restaurant operators face constantly:
+food waste and inventory inefficiency. The founding insight came from
+watching restaurants throw away $50,000+ a year in spoiled food, overstock,
+and operational inefficiency.
 
-PantryIQ integrates AI decision-making with existing POS systems to make this possible at scale.
+**The dual mission:**
+1. **Profitability** — help restaurants reduce waste, optimize inventory,
+   and improve margins.
+2. **Charitable impact** — donate surplus food to local charities, addressing
+   food insecurity in the communities restaurants serve.
 
----
+The long-term bet is that AI decision-making, layered on top of a
+restaurant's existing data (POS, purchasing, inventory), can make both of
+those goals achievable at scale, not just for large chains with dedicated
+analysts.
 
-## Product Scope: AI-Powered Decision Making
+## Long-term product scope
 
-PantryIQ's AI chatbot answers restaurant operations questions across four domains:
+The founding vision describes an AI chatbot that eventually answers
+restaurant operations questions across four domains. This is the north
+star, not the MVP — MVP scope is deliberately much narrower (CSV-first,
+single-location, decision-support only; see `mvp-scope-and-decisions.md`).
 
-### 1. Staffing Optimization
+### 1. Staffing optimization
+Questions like "how many line cooks should I schedule Friday dinner?" or
+"which shifts are most profitable?" — answered using historical sales,
+forecasted weather, and local events to recommend staffing levels and shift
+structure.
 
-```
-"How many line cooks should I schedule Friday dinner?"
-→ AI analyzes: historical sales, forecasted weather, local events
-→ Recommends: optimal staffing level with cost/coverage analysis
+### 2. Inventory & purchasing
+Questions like "what should I order this week?" or "when will I run out of
+chicken breast?" — answered using on-hand inventory, seasonal demand,
+supplier lead times, and spoilage rates to recommend specific orders and
+flag stockouts before they happen.
 
-"Which shifts are most profitable?"
-→ AI calculates: labor cost vs. covers per shift
-→ Suggests: optimal shift structure for margins
+### 3. Menu management & kitchen operations
+Questions like "which dishes should I feature this month?" or "why are food
+costs 32% this month?" — answered using ingredient availability, margin,
+seasonality, and demand to recommend menu changes or prep adjustments.
 
-"Where should I hire experienced vs. training staff?"
-→ AI recommends: roles and experience levels based on demand patterns
-```
+### 4. Food donation & waste prevention
+Questions like "which local charities accept prepared meals?" or "how much
+food waste did I generate today?" — answered by connecting restaurants to
+nearby non-profits, identifying safely shareable surplus, and tracking
+waste trends and tax-deductible donations.
 
-### 2. Inventory & Purchasing
+## Long-term roadmap (post-MVP)
 
-```
-"What should I order from my supplier this week?"
-→ AI analyzes: on-hand inventory, seasonal demand, supplier lead times, spoilage rates
-→ Recommends: specific SKUs, quantities, order timing
+These are aspirational expansion directions from the founding plan, not
+committed scope. Whether and when any of them happen is an open question —
+see `open-questions.md` for the specific tension around POS integration
+priority.
 
-"Which items are over-stocked?"
-→ AI identifies: excess inventory relative to sales velocity
-→ Suggests: promotional pricing or donation to charity
+- **POS ecosystem expansion** — Oracle Micros (enterprise/fine dining),
+  Ziosk (guest-facing terminals, table-level profitability).
+- **MCP server** — deploy PantryIQ as a Claude MCP server so operators can
+  use Claude desktop with PantryIQ context directly.
+- **Kitchen operations** — tokei.app integration for kitchen display system
+  (KDS) analytics and bottleneck detection.
+- **Front-of-house** — Dinetap integration for guest feedback/sentiment
+  analysis and retention strategies.
 
-"When will I run out of chicken breast?"
-→ AI forecasts: inventory depletion based on sales trends
-→ Alerts: proactively before stockouts
-```
+## Bootstrap & business model principles
 
-### 3. Menu Management & Kitchen Operations
+- **Self-funded** — no external VC pressure; build profitably from day one.
+- **Customer-first** — solve real problems, charge fairly for value
+  delivered.
+- **Transparency** — share metrics, growth, and challenges with the team.
+- **Cost sharing** — infrastructure and API costs (hosting, model providers,
+  POS, weather) split across partners; equity aligned with role
+  responsibilities (technical, product, sales, operations).
 
-```
-"Which dishes should I feature this month?"
-→ AI analyzes: ingredient availability, margin, seasonality, demand
-→ Recommends: menu changes to maximize profitability
+## Competitive positioning
 
-"Why are food costs 32% this month?"
-→ AI identifies: dishes with high waste, inefficient recipes, supplier price changes
-→ Suggests: menu adjustments or prep optimization
+1. **Dual-mission focus** — one of few AI solutions for restaurants
+   combining profitability with charitable impact; appeals to
+   socially-conscious operators and CSR-minded ownership.
+2. **Multi-source data integration** — POS, weather, inventory, and charity
+   data together give the AI more context than single-purpose tools.
+3. **Operational breadth** — spans POS ecosystems, supply chain
+   relationships, and day-to-day restaurant operations knowledge.
+4. **Clear expansion path** — starts from a well-defined use case (food
+   waste reduction) with measurable ROI, then expands via more
+   integrations and more question domains.
 
-"What recipes use my excess inventory?"
-→ AI generates: creative uses for perishables nearing expiry
-→ Reduces: waste and food cost variance
-```
+> **Note:** `MASTER-RESEARCH-DECISION-MEMO.md` (folded into
+> `personas-and-research.md`) reaches a more specific and partly conflicting
+> view on which integrations matter most competitively — see
+> `open-questions.md`.
 
-### 4. Food Donation & Waste Prevention
+## Founding launch targets
 
-```
-"Which local charities accept prepared meals?"
-→ AI searches: nearby non-profits, pickup times, delivery requirements
-→ Connects: restaurants with charities for donation programs
+These are the original founder-set targets from the vision-stage plan. They
+predate the later cost and market research and have not been reconciled
+against it (see `cost-and-pricing.md` and `open-questions.md` for the
+pricing tension). Kept here as historical targets, not committed goals.
 
-"Which dishes can I donate at end-of-service?"
-→ AI identifies: safely shareable surplus food
-→ Tracks: tax deductions for charitable giving
+**MVP success (3 months):** 10 beta restaurant users, 50+ conversations per
+user/month, ~$50K MRR potential, NPS > 40.
 
-"How much food waste did I generate today?"
-→ AI calculates: waste metrics from transaction data
-→ Trends: weekly/monthly waste analysis with cost impact
-```
+**Year 1:** 100 paying customers, $500K ARR, 2+ POS integrations, 1,000+
+charitable connections.
 
----
-
-## Version 1: MVP (Current)
-
-**Core Features:**
-- ✅ AI chat interface for restaurant operations Q&A
-- ✅ CSV data import (transactions, inventory, staff)
-- ✅ Square POS integration for real-time sales data
-- ✅ Weather API for demand forecasting context
-- ✅ Google Places for charity/donation discovery
-- ✅ Multi-location support
-- ✅ Zero real-time sync for instant data updates
-
-**Supported Integrations:**
-- Square (POS)
-- OpenWeatherMap (weather)
-- Google Places (charity search)
-
----
-
-## Version 2: Wishlist & Roadmap
-
-### Phase 2A: POS Ecosystem Expansion
-
-**Oracle Micros Integration**
-- Support for enterprise POS systems in fine dining
-- Real-time transaction sync from Micros cloud
-
-**Ziosk Integration**
-- Guest-facing ordering terminals and analytics
-- Table-level profitability analysis
-
-### Phase 2B: Automation & MCP
-
-**MCP (Model Context Protocol) Server**
-- Deploy PantryIQ as a Claude MCP server
-- Restaurant operators can use Claude desktop with PantryIQ context
-- Enables multi-modal AI across Claude's full feature set
-
-### Phase 2C: Kitchen Operations
-
-**tokei.app Integration**
-- Kitchen display system (KDS) integration
-- Realtime prep analytics and bottleneck detection
-- AI recommendations for kitchen workflow optimization
-
-### Phase 2D: Front-of-House
-
-**Dinetap Integration**
-- Guest feedback and reviews
-- Sentiment analysis for menu/service improvements
-- AI-powered retention strategies
-
----
-
-## Harry's Equity & Commitment Model
-
-### Bootstrap Principles
-
-- **Self-funded:** No external VC pressure; build profitably from day one
-- **Customer-first:** Solve real problems, charge fairly for value delivered
-- **Transparency:** Share metrics, growth, and challenges with team
-
-### CTO Commitment (Harry)
-
-- **100% focus:** Full-time founder energy until Series A (if ever)
-- **Long-term vision:** Stay for 3+ years minimum
-- **Technical quality:** Set engineering standards for reliability
-
-### Partner Responsibilities
-
-- **Product:** Design features for restaurant operators
-- **Sales:** Build relationships, land customers
-- **Operations:** Handle admin, finance, compliance
-
-### Cost Sharing Model
-
-- **Infrastructure:** Shared AWS/hosting costs
-- **Services:** Split API costs (OpenAI, Square, Weather)
-- **Equity alignment:** Co-founder equity splits align incentives
-
----
-
-## Competitive Advantage
-
-**1. Dual-Mission Focus**
-- Only AI solution for restaurants combining profitability + charitable impact
-- Appeals to socially-conscious operators and CSR initiatives
-
-**2. Real-Time Data Integration**
-- Multi-source data (POS, weather, inventory, charities)
-- Unique context advantage for AI recommendations
-
-**3. Warehouse Knowledge**
-- POS ecosystems (Square, Micros, Ziosk)
-- Supply chain (suppliers, charities)
-- Restaurant operations (staffing, menus, waste)
-
-**4. Product-Market Fit Path**
-- Clear use case (food waste reduction)
-- Measurable ROI (cost savings, tax deductions)
-- Expansion vector (more POS, more features)
-
----
-
-## Launch Metrics & Success Criteria
-
-### MVP Success (3 months)
-
-- [ ] 10 beta restaurant users
-- [ ] 50+ conversations per user/month
-- [ ] $50K MRR potential (5 users × $10K/year)
-- [ ] NPS > 40 from users
-
-### Year 1 Goals
-
-- [ ] 100 paying customers
-- [ ] $500K ARR
-- [ ] Expand to 2+ POS integrations
-- [ ] 1000+ charitable connections
-
-### Long-Term Vision (3-5 years)
-
-- [ ] 1000+ restaurant operators
-- [ ] $10M+ ARR
-- [ ] Dominant POS integration coverage
-- [ ] Millions of pounds of food rescued for charity
+**Long-term (3-5 years):** 1,000+ restaurant operators, $10M+ ARR, broad POS
+integration coverage, millions of pounds of food rescued for charity.
