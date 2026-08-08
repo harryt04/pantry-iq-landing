@@ -1,4 +1,4 @@
-import { and, eq } from 'drizzle-orm'
+import { and, desc, eq, ne } from 'drizzle-orm'
 
 import { requireSession } from '@/src/server/auth/authorization'
 import { db } from '@/src/server/db/client'
@@ -9,7 +9,11 @@ import {
 } from '@/src/server/storage/object-storage'
 
 import { parseCsvPreview, type CsvPreview } from './parser'
-import { detectColumnMappings } from './mapping'
+import {
+  detectionFromStoredCsvMapping,
+  detectColumnMappings,
+  findReusableCsvMapping,
+} from './mapping'
 import { CSV_IMPORT_TYPES } from './upload-input'
 
 const UUID_PATTERN =
@@ -43,6 +47,7 @@ export async function previewCsv(
   const [upload] = await db
     .select({
       id: csvUploadHistory.id,
+      locationId: csvUploadHistory.locationId,
       filename: csvUploadHistory.filename,
       source: csvUploadHistory.source,
       storageKey: csvUploadHistory.storageKey,
@@ -68,7 +73,7 @@ export async function previewCsv(
         filename: upload.filename,
         source: upload.source,
       },
-      preview: await parsePreviewWithMappings(body, upload.source),
+      preview: await parsePreviewWithMappings(body, upload.source, upload),
     }
   } catch (error) {
     if (error instanceof CsvPreviewNotFoundError) throw error
@@ -79,12 +84,34 @@ export async function previewCsv(
 async function parsePreviewWithMappings(
   body: AsyncIterable<Uint8Array>,
   source: string,
+  upload: { id: string; locationId: string },
 ): Promise<CsvPreview & { mapping: ReturnType<typeof detectColumnMappings> }> {
   const importType = CSV_IMPORT_TYPES.find((value) => value === source)
   if (!importType) throw new CsvPreviewReadError()
   const preview = await parseCsvPreview(body)
+
+  const priorUploads = await db
+    .select({ mappingUsed: csvUploadHistory.mappingUsed })
+    .from(csvUploadHistory)
+    .where(
+      and(
+        eq(csvUploadHistory.locationId, upload.locationId),
+        eq(csvUploadHistory.source, importType),
+        ne(csvUploadHistory.id, upload.id),
+      ),
+    )
+    .orderBy(desc(csvUploadHistory.uploadedAt))
+    .limit(20)
+  const reusableMapping = findReusableCsvMapping(
+    preview.columns,
+    importType,
+    priorUploads.map((prior) => prior.mappingUsed),
+  )
+
   return {
     ...preview,
-    mapping: detectColumnMappings(preview, importType),
+    mapping: reusableMapping
+      ? detectionFromStoredCsvMapping(preview, importType, reusableMapping)
+      : detectColumnMappings(preview, importType),
   }
 }

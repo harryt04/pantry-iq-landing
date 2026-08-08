@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest'
 
-import { detectColumnMappings } from './mapping'
+import {
+  detectionFromStoredCsvMapping,
+  detectColumnMappings,
+  findReusableCsvMapping,
+  parseStoredCsvMapping,
+} from './mapping'
 
 function preview(columns: string[], rows: string[][]) {
   return {
@@ -129,5 +134,45 @@ describe('CSV column mapping detection', () => {
     expect(detectColumnMappings(input, 'transactions')).toEqual(
       detectColumnMappings(input, 'transactions'),
     )
+  })
+
+  it('reuses a stored mapping only when the complete column shape matches', () => {
+    const stored = {
+      Date: 'transactedAt',
+      Item: 'rawItemName',
+      Qty: 'qty',
+    }
+
+    expect(
+      findReusableCsvMapping(['Date', 'Item', 'Qty'], 'transactions', [stored]),
+    ).toEqual(stored)
+    expect(
+      findReusableCsvMapping(['Date', 'Item', 'Quantity'], 'transactions', [
+        stored,
+      ]),
+    ).toBeNull()
+  })
+
+  it('turns a reused mapping into an all-decided detection', () => {
+    const detection = detectionFromStoredCsvMapping(
+      preview(['Date', 'Mystery'], [['2026-08-01', 'Tuesday special']]),
+      'transactions',
+      { Date: 'transactedAt', Mystery: null },
+    )
+
+    expect(detection.reused).toBe(true)
+    expect(detection.columns.every((column) => column.band === 'auto')).toBe(
+      true,
+    )
+    expect(detection.mapping).toEqual({ Date: 'transactedAt', Mystery: null })
+  })
+
+  it('rejects stored fields that are not valid for the import type', () => {
+    expect(
+      parseStoredCsvMapping({ Date: 'orderedAt' }, 'transactions'),
+    ).toBeNull()
+    expect(parseStoredCsvMapping({ Date: null }, 'transactions')).toEqual({
+      Date: null,
+    })
   })
 })

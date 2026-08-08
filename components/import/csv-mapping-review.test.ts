@@ -41,6 +41,7 @@ const mapping = {
     col_7: 'qty' as const,
     Mystery: null,
   },
+  reused: false,
 }
 
 describe('CSV mapping review flow', () => {

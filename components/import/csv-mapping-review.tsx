@@ -59,17 +59,21 @@ function displayValue(value: string) {
 export function CsvMappingReview({
   mapping,
   preview,
+  onMappingAccepted,
 }: {
   mapping: CsvMappingDetection
   preview: Pick<CsvPreview, 'previewRows'>
+  onMappingAccepted: (mapping: Record<string, CanonicalField | null>) => void
 }) {
-  const reviewColumns = React.useMemo(
-    () => getMappingReviewColumns(mapping),
-    [mapping],
-  )
+  const [isEditing, setIsEditing] = React.useState(!mapping.reused)
+  const reviewColumns = React.useMemo(() => {
+    if (mapping.reused && isEditing) return mapping.columns
+    return getMappingReviewColumns(mapping)
+  }, [isEditing, mapping])
   const [answers, setAnswers] = React.useState<Answers>({})
   const [currentPosition, setCurrentPosition] = React.useState(0)
   const [isComplete, setIsComplete] = React.useState(false)
+  const didAutoAccept = React.useRef(false)
 
   const progress = mappingReviewProgress(reviewColumns, answers)
   const currentColumn = reviewColumns[currentPosition]
@@ -92,11 +96,30 @@ export function CsvMappingReview({
     }))
   }
 
+  function acceptedMapping(nextAnswers: Answers = answers) {
+    return Object.fromEntries(
+      mapping.columns.map((column) => [
+        column.sourceColumn,
+        column.band === 'auto' &&
+        !Object.hasOwn(nextAnswers, column.sourceIndex)
+          ? column.targetField
+          : (nextAnswers[column.sourceIndex] ?? null),
+      ]),
+    ) as Record<string, CanonicalField | null>
+  }
+
   function next() {
     if (!currentColumn) return
-    choose(currentColumn, selectedValue(currentColumn))
+    const selected = selectedValue(currentColumn)
+    const answer: MappingAnswer = selected ? (selected as CanonicalField) : null
+    const nextAnswers = {
+      ...answers,
+      [currentColumn.sourceIndex]: answer,
+    }
+    choose(currentColumn, selected)
     if (currentPosition === reviewColumns.length - 1) {
       setIsComplete(true)
+      onMappingAccepted(acceptedMapping(nextAnswers))
       return
     }
     setCurrentPosition((position) => position + 1)
@@ -114,6 +137,41 @@ export function CsvMappingReview({
     if (position < 0) return
     setCurrentPosition(position)
     setIsComplete(false)
+  }
+
+  React.useEffect(() => {
+    if (
+      !mapping.reused &&
+      reviewColumns.length === 0 &&
+      !didAutoAccept.current
+    ) {
+      didAutoAccept.current = true
+      onMappingAccepted(acceptedMapping())
+    }
+  }, [mapping, onMappingAccepted, reviewColumns.length])
+
+  if (mapping.reused && !isEditing) {
+    return (
+      <section className="csv-mapping" aria-labelledby="csv-mapping-title">
+        <div className="csv-mapping__heading">
+          <div>
+            <p className="app-page__eyebrow">Column mapping</p>
+            <h2 id="csv-mapping-title">We reused your last mapping.</h2>
+          </div>
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={() => setIsEditing(true)}
+          >
+            Change mapping
+          </Button>
+        </div>
+        <p className="app-page__help" role="status">
+          The file has the same column shape as an earlier {mapping.importType}{' '}
+          import. Nothing needs reviewing unless you want to change it.
+        </p>
+      </section>
+    )
   }
 
   if (reviewColumns.length === 0) {
@@ -151,10 +209,9 @@ export function CsvMappingReview({
           </TableHeader>
           <TableBody>
             {mapping.columns.map((column) => {
-              const value =
-                column.band === 'auto'
-                  ? column.targetField
-                  : answerFor(column, answers)
+              const value = Object.hasOwn(answers, column.sourceIndex)
+                ? answers[column.sourceIndex]
+                : column.targetField
               return (
                 <TableRow key={columnKey(column)}>
                   <TableCell>{column.sourceColumn}</TableCell>
@@ -162,7 +219,7 @@ export function CsvMappingReview({
                     {value ? canonicalFieldLabels[value] : 'Skipped'}
                   </TableCell>
                   <TableCell className="text-right">
-                    {column.band === 'auto' ? (
+                    {column.band === 'auto' && !mapping.reused ? (
                       <span className="app-page__help">Matched</span>
                     ) : (
                       <Button

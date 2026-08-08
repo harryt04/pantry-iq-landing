@@ -143,7 +143,7 @@ that touch them carry a stated default so work never stalls.
 | ING-03 | CSV parse and preview | **done** | codex | ING-02 |
 | ING-04 | Column mapping — auto-detection | **done** | codex | ING-03 |
 | ING-05 | Column mapping — uncertain-column resolution | **done** | codex | ING-04, FND-07 |
-| ING-06 | Mapping persistence and reuse | available | — | ING-05 |
+| ING-06 | Mapping persistence and reuse | **done** | codex | ING-05 |
 | ING-07 | Canonical item master | **done** | codex | FND-04 |
 | ING-08 | Item name resolution — exact match only | available | — | ING-07, ING-05 |
 | ING-09 | Import commit, confirmation, and history | available | — | ING-06, ING-08 |
@@ -917,7 +917,7 @@ smoke checks passed. Interactive authenticated verification remains pending:
 ### ING-06 — Mapping persistence and reuse
 
 ```
-Status: available   Owner: —   Claimed: —   Completed: —   Branch/PR: —
+Status: done   Owner: codex   Claimed: 2026-08-08   Completed: 2026-08-08   Branch/PR: rewrite
 ```
 
 **Blocked by:** ING-05 · **Blocks:** ING-09
@@ -935,13 +935,23 @@ upload, stating plainly that it was reused. Allow manual adjustment
 before committing.
 
 **Acceptance criteria.**
-- [ ] A second upload of the same export shape asks nothing.
-- [ ] The reused mapping is disclosed, with a way to change it.
-- [ ] A changed source format falls back to `ING-04` detection rather
+- [x] A second upload of the same export shape asks nothing.
+- [x] The reused mapping is disclosed, with a way to change it.
+- [x] A changed source format falls back to `ING-04` detection rather
       than misapplying the old mapping.
 
 **Verification.** Import the same file twice; the second run reaches
 confirmation without a mapping question.
+
+**Notes.** Accepted mappings are persisted through the authenticated
+upload-history mapping route and reused only when the normalized source
+column set exactly matches a prior mapping for the same owned location and
+import type. Reuse is disclosed in the mapping surface and can be edited
+before saving again; a changed column shape uses the existing ING-04
+detection. Focused mapping tests, formatting, full CI (109 tests, 13
+accessibility checks, production build), and live unauthenticated route
+smoke checks passed. Interactive authenticated verification remains
+pending because `.env.local` contains no test credentials.
 
 ---
 

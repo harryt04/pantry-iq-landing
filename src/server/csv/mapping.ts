@@ -50,7 +50,10 @@ export type CsvMappingDetection = {
   importType: CsvImportType
   columns: CsvColumnDetection[]
   mapping: Record<string, CanonicalField | null>
+  reused: boolean
 }
+
+export type StoredCsvMapping = Record<string, CanonicalField | null>
 
 export const canonicalFieldLabels: Record<CanonicalField, string> = {
   transactedAt: 'Transaction date and time',
@@ -409,6 +412,86 @@ function isCanonicalField(value: string): value is CanonicalField {
   )
 }
 
+function fieldsFor(importType: CsvImportType): Set<CanonicalField> {
+  return new Set(definitions[importType].map((definition) => definition.field))
+}
+
+export function parseStoredCsvMapping(
+  value: unknown,
+  importType: CsvImportType,
+): StoredCsvMapping | null {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null
+
+  const allowedFields = fieldsFor(importType)
+  const mapping = Object.create(null) as StoredCsvMapping
+  for (const [sourceColumn, targetField] of Object.entries(value)) {
+    if (
+      sourceColumn.trim().length === 0 ||
+      (targetField !== null &&
+        (typeof targetField !== 'string' ||
+          !allowedFields.has(targetField as CanonicalField)))
+    ) {
+      return null
+    }
+    mapping[sourceColumn] = targetField
+  }
+  return Object.keys(mapping).length > 0 ? mapping : null
+}
+
+function sameColumnShape(
+  columns: string[],
+  mapping: StoredCsvMapping,
+): boolean {
+  const normalizedColumns = columns.map(normalize)
+  const normalizedMapping = Object.keys(mapping).map(normalize)
+  return (
+    normalizedColumns.length === normalizedMapping.length &&
+    new Set(normalizedColumns).size === normalizedColumns.length &&
+    normalizedColumns.every((column) => normalizedMapping.includes(column))
+  )
+}
+
+export function findReusableCsvMapping(
+  columns: string[],
+  importType: CsvImportType,
+  priorMappings: unknown[],
+): StoredCsvMapping | null {
+  for (const candidate of priorMappings) {
+    const mapping = parseStoredCsvMapping(candidate, importType)
+    if (mapping && sameColumnShape(columns, mapping)) return mapping
+  }
+  return null
+}
+
+export function detectionFromStoredCsvMapping(
+  preview: Pick<CsvPreview, 'columns' | 'previewRows'>,
+  importType: CsvImportType,
+  storedMapping: StoredCsvMapping,
+): CsvMappingDetection {
+  const detected = detectColumnMappings(preview, importType)
+  const byNormalizedColumn = new Map(
+    Object.entries(storedMapping).map(([column, field]) => [
+      normalize(column),
+      field,
+    ]),
+  )
+  const columns = detected.columns.map((column) => ({
+    ...column,
+    targetField: byNormalizedColumn.get(normalize(column.sourceColumn)) ?? null,
+    confidence: 100,
+    band: 'auto' as const,
+    evidence: ['This mapping was reused from an earlier import.'],
+  }))
+  return {
+    importType,
+    columns,
+    mapping: Object.fromEntries(
+      columns.map((column) => [column.sourceColumn, column.targetField]),
+    ) as StoredCsvMapping,
+    reused: true,
+  }
+}
+
 export function detectColumnMappings(
   preview: Pick<CsvPreview, 'columns' | 'previewRows'>,
   importType: CsvImportType,
@@ -500,6 +583,7 @@ export function detectColumnMappings(
     mapping: Object.fromEntries(
       columns.map((column) => [column.sourceColumn, column.targetField]),
     ) as Record<string, CanonicalField | null>,
+    reused: false,
   }
 }
 

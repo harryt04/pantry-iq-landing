@@ -6,7 +6,10 @@ import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { NativeSelect } from '@/components/ui/native-select'
 import { CsvMappingReview } from '@/components/import/csv-mapping-review'
-import type { CsvMappingDetection } from '@/src/server/csv/mapping'
+import type {
+  CanonicalField,
+  CsvMappingDetection,
+} from '@/src/server/csv/mapping'
 
 type CsvPreview = {
   encoding: 'utf-8' | 'latin-1'
@@ -34,6 +37,7 @@ export function CsvUploadForm({ locationId }: { locationId: string }) {
   const [error, setError] = React.useState('')
   const [isUploading, setIsUploading] = React.useState(false)
   const [preview, setPreview] = React.useState<CsvPreview | null>(null)
+  const [uploadId, setUploadId] = React.useState<string | null>(null)
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -68,6 +72,7 @@ export function CsvUploadForm({ locationId }: { locationId: string }) {
         throw new Error(result.error ?? 'The file could not be saved.')
 
       if (!result.upload?.id) throw new Error('The file could not be read.')
+      setUploadId(result.upload.id)
       setStatus('Reading the file…')
       const previewResponse = await fetch(
         `/api/uploads/${encodeURIComponent(result.upload.id)}/preview`,
@@ -93,6 +98,35 @@ export function CsvUploadForm({ locationId }: { locationId: string }) {
       setIsUploading(false)
     }
   }
+
+  const saveMapping = React.useCallback(
+    (mapping: Record<string, CanonicalField | null>) => {
+      if (!uploadId) return
+      void (async () => {
+        try {
+          const response = await fetch(
+            `/api/uploads/${encodeURIComponent(uploadId)}/mapping`,
+            {
+              method: 'PATCH',
+              headers: { 'content-type': 'application/json' },
+              body: JSON.stringify({ mapping }),
+            },
+          )
+          const result = (await response.json()) as { error?: string }
+          if (!response.ok)
+            throw new Error(result.error ?? 'The mapping could not be saved.')
+          setStatus('Mapping saved. We’ll reuse it for this export next time.')
+        } catch (mappingError) {
+          setError(
+            mappingError instanceof Error
+              ? mappingError.message
+              : 'The mapping could not be saved. Nothing was changed.',
+          )
+        }
+      })()
+    },
+    [uploadId],
+  )
 
   return (
     <form className="app-page__form" onSubmit={submit}>
@@ -132,7 +166,11 @@ export function CsvUploadForm({ locationId }: { locationId: string }) {
       </p>
       {preview ? <CsvPreviewTable preview={preview} /> : null}
       {preview ? (
-        <CsvMappingReview mapping={preview.mapping} preview={preview} />
+        <CsvMappingReview
+          mapping={preview.mapping}
+          preview={preview}
+          onMappingAccepted={saveMapping}
+        />
       ) : null}
       {error ? (
         <p role="alert" className="app-page__error">
