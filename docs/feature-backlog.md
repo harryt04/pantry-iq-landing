@@ -219,7 +219,7 @@ that touch them carry a stated default so work never stalls.
 | QAG-01 | Accessibility gate automation | available | — | FND-03, FND-07 |
 | QAG-02 | Greyscale chart check | available | — | QAG-01, DSH-05 |
 | QAG-03 | Test strategy and harness | available | — | FND-03 |
-| QAG-04 | CSV upload security hardening | available | — | FND-02 |
+| QAG-04 | CSV upload security hardening | **done** | codex | FND-02 |
 | QAG-05 | Observability and error tracking | available | — | FND-03 |
 | QAG-06 | Data isolation and ownership authorization | available | — | FND-05, QAG-03 |
 
@@ -2533,7 +2533,7 @@ code.
 ### QAG-04 — CSV upload security hardening
 
 ```
-Status: available   Owner: —   Claimed: —   Completed: —   Branch/PR: —
+Status: done   Owner: codex   Claimed: 2026-08-08   Completed: 2026-08-08   Branch/PR: rewrite
 ```
 
 **Blocked by:** FND-02 · **Blocks:** ING-02
@@ -2552,14 +2552,23 @@ in a spreadsheet. Generated storage keys, never user filenames. Uploads
 authorised against location ownership. Rate limiting.
 
 **Acceptance criteria.**
-- [ ] A renamed non-CSV is rejected on content.
-- [ ] A file above the ceiling is rejected before it is fully read.
-- [ ] A parse of a very large file holds memory flat.
-- [ ] Exported cells starting with a formula character are neutralised.
-- [ ] Path traversal via filename is impossible.
-- [ ] Uploading to a foreign location identifier fails.
+- [x] A renamed non-CSV is rejected on content.
+- [x] A file above the ceiling is rejected before it is fully read.
+- [x] A parse of a very large file holds memory flat.
+- [x] Exported cells starting with a formula character are neutralised.
+- [x] Path traversal via filename is impossible.
+- [x] Uploading to a foreign location identifier fails.
 
 **Verification.** A hostile-file fixture set, run in CI.
+
+**Notes.** `src/server/csv/security.ts` provides the framework-independent
+guards that `ING-02` will compose into the upload route: content sniffing,
+bounded streaming, formula-safe CSV serialization, generated storage keys,
+ownership authorization, and rate limiting. The test suite covers renamed
+binary content, an oversized stream, chunked pass-through, formula cells,
+path traversal, foreign locations, and repeated uploads. The upload route
+must stage the object and only publish its key after the guarded stream has
+completed, so a late stream error cannot expose a partial file.
 
 ---
 
