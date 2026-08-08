@@ -220,7 +220,7 @@ that touch them carry a stated default so work never stalls.
 | QAG-02 | Greyscale chart check | available | — | QAG-01, DSH-05 |
 | QAG-03 | Test strategy and harness | **in-review** | codex | FND-03 |
 | QAG-04 | CSV upload security hardening | **done** | codex | FND-02 |
-| QAG-05 | Observability and error tracking | available | — | FND-03 |
+| QAG-05 | Observability and error tracking | **in-review** | codex | FND-03 |
 | QAG-06 | Data isolation and ownership authorization | available | — | FND-05, QAG-03 |
 
 ### Cross-location aggregation
@@ -2607,7 +2607,7 @@ completed, so a late stream error cannot expose a partial file.
 ### QAG-05 — Observability and error tracking
 
 ```
-Status: available   Owner: —   Claimed: —   Completed: —   Branch/PR: —
+Status: in-review   Owner: codex   Claimed: 2026-08-08   Completed: —   Branch/PR: —
 ```
 
 **Blocked by:** FND-03 · **Blocks:** —
@@ -2630,7 +2630,21 @@ success and failure rates.
 - [ ] A failed precompute run raises an alert.
 - [ ] Metric staleness per location is queryable.
 - [ ] LLM spend is attributable per account and per day.
-- [ ] No log line contains a password, token, or full imported row.
+- [x] No log line contains a password, token, or full imported row.
+
+**Verification.**
+
+The framework-independent logger in `src/server/observability/logger.ts`
+emits one JSON event per line, permits scalar operational fields only,
+redacts secrets and imported-row-shaped fields, scrubs bearer/query secrets
+from text and errors, and exposes an injectable error reporter for the
+Sentry adapter. `logger.test.ts` covers the event contract and the redaction
+boundary.
+
+The remaining acceptance criteria require `MET-02`'s precompute pipeline,
+the LLM narration service, and import execution paths. They are intentionally
+left in review until those producers exist; this ticket must then compose
+the logger with Sentry/OpenTelemetry and persisted health/cost signals.
 
 ---
 
