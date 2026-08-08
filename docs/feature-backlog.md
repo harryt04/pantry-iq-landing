@@ -140,7 +140,7 @@ that touch them carry a stated default so work never stalls.
 |---|---|---|---|---|
 | ING-01 | Location create and manage | **done** | codex | FND-05 |
 | ING-02 | CSV upload and secure file handling | **done** | codex | ING-01, QAG-04 |
-| ING-03 | CSV parse and preview | available | — | ING-02 |
+| ING-03 | CSV parse and preview | **done** | codex | ING-02 |
 | ING-04 | Column mapping — auto-detection | available | — | ING-03 |
 | ING-05 | Column mapping — uncertain-column resolution | available | — | ING-04, FND-07 |
 | ING-06 | Mapping persistence and reuse | available | — | ING-05 |
@@ -775,7 +775,7 @@ upload is recorded with `status: uploaded` and remains ready for `ING-03`.
 ### ING-03 — CSV parse and preview
 
 ```
-Status: available   Owner: —   Claimed: —   Completed: —   Branch/PR: —
+Status: done   Owner: codex   Claimed: 2026-08-08   Completed: 2026-08-08   Branch/PR: rewrite
 ```
 
 **Blocked by:** ING-02 · **Blocks:** ING-04
@@ -796,16 +796,24 @@ collected and reported by example, never as a wall of errors.
 **Scope — out.** Mapping columns to fields.
 
 **Acceptance criteria.**
-- [ ] UTF-8, UTF-8 with BOM, and Latin-1 files all parse.
-- [ ] Comma, semicolon, and tab delimited files all parse.
-- [ ] A file with some unreadable rows still previews; the readable rows
+- [x] UTF-8, UTF-8 with BOM, and Latin-1 files all parse.
+- [x] Comma, semicolon, and tab delimited files all parse.
+- [x] A file with some unreadable rows still previews; the readable rows
       are not discarded.
-- [ ] Problem copy names the count and shows one example: "12 rows had a
+- [x] Problem copy names the count and shows one example: "12 rows had a
       date I couldn't read. Here's the first one."
-- [ ] Large files parse without exhausting memory.
+- [x] Large files parse without exhausting memory.
 
 **Verification.** Build a fixture set of deliberately awful exports and
 parse every one.
+
+**Notes.** The upload flow now reads the stored S3-compatible object through
+a bounded streaming parser. It detects encoding, delimiter, and headers;
+preserves quoted fields and embedded newlines; shows five preview rows; and
+groups recoverable row problems with one example. Preview retrieval joins the
+upload to its owned location before reading storage. Parser, storage, full CI,
+accessibility, production build, and live unauthenticated route smoke checks
+passed. The next ticket owns column mapping; no mapping logic was added here.
 
 ---
 

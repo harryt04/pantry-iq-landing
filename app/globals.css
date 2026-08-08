@@ -190,6 +190,51 @@ body {
   margin: 0;
 }
 
+.csv-preview {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-surface);
+  display: grid;
+  gap: var(--space-4);
+  margin-top: var(--space-6);
+  padding: var(--space-5);
+}
+
+.csv-preview h2 {
+  font-size: var(--text-lg);
+  margin: var(--space-2) 0 0;
+}
+
+.csv-preview__table-wrap {
+  overflow-x: auto;
+}
+
+.csv-preview table {
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+  min-width: 100%;
+  text-align: left;
+}
+
+.csv-preview th,
+.csv-preview td {
+  border-bottom: 1px solid var(--border);
+  max-width: 240px;
+  overflow: hidden;
+  padding: var(--space-3);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.csv-preview th {
+  font-weight: 600;
+}
+
+.csv-preview code {
+  font-family: var(--font-mono);
+  overflow-wrap: anywhere;
+}
+
 .auth-heading p:last-child,
 .account-card > p:not(.auth-eyebrow):not(.auth-wordmark):not(.account-email) {
   color: var(--muted-foreground);

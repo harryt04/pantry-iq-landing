@@ -2,6 +2,7 @@ import { Readable } from 'node:stream'
 
 import {
   DeleteObjectCommand,
+  GetObjectCommand,
   PutObjectCommand,
   S3Client,
 } from '@aws-sdk/client-s3'
@@ -15,6 +16,7 @@ export type ObjectStoragePutInput = {
 export interface ObjectStorage {
   putObject(input: ObjectStoragePutInput): Promise<void>
   deleteObject(key: string): Promise<void>
+  getObject(key: string): Promise<AsyncIterable<Uint8Array>>
 }
 
 export class ObjectStorageConfigurationError extends Error {
@@ -45,6 +47,23 @@ export class S3ObjectStorage implements ObjectStorage {
     await this.client.send(
       new DeleteObjectCommand({ Bucket: this.bucket, Key: key }),
     )
+  }
+
+  async getObject(key: string): Promise<AsyncIterable<Uint8Array>> {
+    const response = await this.client.send(
+      new GetObjectCommand({ Bucket: this.bucket, Key: key }),
+    )
+    if (!response.Body) throw new Error('Stored CSV has no readable body.')
+
+    return (async function* () {
+      for await (const chunk of response.Body as AsyncIterable<
+        Uint8Array | string
+      >) {
+        yield typeof chunk === 'string'
+          ? new TextEncoder().encode(chunk)
+          : chunk
+      }
+    })()
   }
 }
 
@@ -99,5 +118,13 @@ export class MemoryObjectStorage implements ObjectStorage {
 
   async deleteObject(key: string): Promise<void> {
     this.objects.delete(key)
+  }
+
+  async getObject(key: string): Promise<AsyncIterable<Uint8Array>> {
+    const object = this.objects.get(key)
+    if (!object) throw new Error('Stored CSV was not found.')
+    return (async function* () {
+      yield object
+    })()
   }
 }
