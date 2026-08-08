@@ -23,6 +23,9 @@ export async function rollbackDatabase(client: DatabaseClient) {
     for (const table of appTables) {
       await sql.unsafe(`DROP TABLE IF EXISTS public."${table}" CASCADE`)
     }
-    await sql.unsafe('DROP TABLE IF EXISTS public."__drizzle_migrations"')
+    // drizzle-orm's PostgreSQL migrator keeps its journal in the dedicated
+    // `drizzle` schema, not alongside application tables in `public`.
+    await sql.unsafe('DROP TABLE IF EXISTS drizzle."__drizzle_migrations"')
+    await sql.unsafe('DROP SCHEMA IF EXISTS drizzle')
   })
 }

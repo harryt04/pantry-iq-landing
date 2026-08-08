@@ -19,7 +19,6 @@ const canonicalTables = [
   'purchase_order_items',
   'inventory_snapshots',
   'csv_upload_history',
-  '__drizzle_migrations',
 ] as const
 
 const canonicalIndexes = [
@@ -129,12 +128,16 @@ async function expectCanonicalSchema(sql: ReturnType<typeof postgres>) {
     order by table_name, ordinal_position
   `
   expect(
-    columns.map(({ table_name, column_name, is_nullable, data_type }) => [
-      table_name,
-      column_name,
-      is_nullable === 'YES',
-      data_type,
-    ]),
+    columns
+      .map(({ table_name, column_name, is_nullable, data_type }) => [
+        table_name,
+        column_name,
+        is_nullable === 'YES',
+        data_type,
+      ])
+      .sort(([tableA, columnA], [tableB, columnB]) =>
+        `${tableA}.${columnA}`.localeCompare(`${tableB}.${columnB}`),
+      ),
   ).toEqual(
     [...canonicalColumns]
       .map(([tableName, columnName, nullable, dataType]) => [
@@ -147,6 +150,21 @@ async function expectCanonicalSchema(sql: ReturnType<typeof postgres>) {
         `${tableA}.${columnA}`.localeCompare(`${tableB}.${columnB}`),
       ),
   )
+
+  const migrationJournal = await sql<
+    {
+      schema_name: string
+      table_name: string
+    }[]
+  >`
+    select table_schema as schema_name, table_name
+    from information_schema.tables
+    where table_schema = 'drizzle'
+      and table_name = '__drizzle_migrations'
+  `
+  expect(migrationJournal).toEqual([
+    { schema_name: 'drizzle', table_name: '__drizzle_migrations' },
+  ])
 
   const indexes = await sql<{ indexname: string }[]>`
     select indexname
@@ -186,7 +204,7 @@ describe.skipIf(!integrationDatabaseEnabled())(
           ('public.purchase_order_items'),
           ('public.inventory_snapshots'),
           ('public.csv_upload_history'),
-          ('public.__drizzle_migrations')
+          ('drizzle.__drizzle_migrations')
         ) as tables(table_name)
       `
         expect(

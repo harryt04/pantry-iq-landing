@@ -128,7 +128,7 @@ that touch them carry a stated default so work never stalls.
 | FND-01 | Prescribe the technology stack → [`tech-stack.md`](tech-stack.md) | **done** | opus-5 | — |
 | FND-02 | Repository scaffold and developer setup | **done** | claude-opus-5 | FND-01 |
 | FND-03 | CI pipeline and automated gates | **done** | claude-sonnet-5 | FND-02 |
-| FND-04 | Core schema and migrations | **in-review** | codex | FND-02 |
+| FND-04 | Core schema and migrations | **done** | codex | FND-02 |
 | FND-05 | Authentication and the owner account | available | — | FND-04 |
 | FND-06 | Design tokens and theming | **done** | codex | FND-02 |
 | FND-07 | Component baseline — restyled shadcn | **done** | codex | FND-06 |
@@ -424,7 +424,7 @@ button — that is a repository setting, not something committed here.
 ### FND-04 — Core schema and migrations
 
 ```
-Status: in-review   Owner: codex   Claimed: 2026-08-08   Completed: —   Branch/PR: rewrite
+Status: done   Owner: codex   Claimed: 2026-08-08   Completed: 2026-08-08   Branch/PR: rewrite
 ```
 
 **Blocked by:** FND-02 · **Blocks:** FND-05, ING-07, MET-01
@@ -464,7 +464,7 @@ labor, and connector tables — those arrive with `MNU-01`, `STF-01`, and
 - [x] Every timestamp stores a timezone; storage is UTC.
 - [x] `locations` carries a timezone and a business-day boundary.
 - [x] `externalId` supports deduplication on re-import.
-- [ ] Migrations run forward and back cleanly on an empty database.
+- [x] Migrations run forward and back cleanly on an empty database.
 - [x] Seed data produces a location with enough history to exercise the
       four-week prediction threshold.
 
@@ -475,13 +475,13 @@ again.
 implemented. Migration, seed, rollback, and remigration are covered by an
 opt-in Testcontainers round-trip test that checks every canonical table,
 column type, nullability, and index, and rejects unexpected public tables
-(including provisional donation tables). A runtime-independent migration
-contract test also guards the exact table and index surface, numeric and
-timestamp types, business-day fields, and the absence of donation tables.
-The integration harness can use either CI's Testcontainers PostgreSQL or an
-explicit disposable localhost database through `TEST_DATABASE_URL`; live
-verification is still pending because this environment has neither a
-working container runtime nor a PostgreSQL server on localhost:5433.
+(including provisional donation tables). Drizzle's migration journal is
+correctly verified in its dedicated `drizzle` schema, and rollback removes
+that journal before remigration. A runtime-independent migration contract
+test also guards the exact table and index surface, numeric and timestamp
+types, business-day fields, and the absence of donation tables. The
+round-trip passed against a disposable local PostgreSQL 16 instance via
+`TEST_DATABASE_URL`; the Testcontainers path remains available for CI.
 
 **Decisions to confirm.** Item category taxonomy is open
 (`open-questions.md` §1, Q8). **Default:** free-text `category` with no
