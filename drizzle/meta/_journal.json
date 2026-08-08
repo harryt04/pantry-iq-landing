@@ -36,6 +36,13 @@
       "when": 1786221339306,
       "tag": "0004_jazzy_karen_page",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1786222767565,
+      "tag": "0005_bouncy_vector",
+      "breakpoints": true
     }
   ]
 }

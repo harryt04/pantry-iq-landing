@@ -63,6 +63,7 @@ const canonicalColumns = [
   ['locations', 'user_id', false, 'uuid'],
   ['locations', 'name', false, 'text'],
   ['locations', 'address', true, 'text'],
+  ['locations', 'is_active', false, 'boolean'],
   ['locations', 'timezone', false, 'text'],
   ['locations', 'business_day_boundary', false, 'time without time zone'],
   ['locations', 'created_at', false, 'timestamp with time zone'],

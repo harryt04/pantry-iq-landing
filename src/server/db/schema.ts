@@ -103,6 +103,7 @@ export const locations = pgTable('locations', {
     .references(() => user.id, { onDelete: 'cascade' }),
   name: text('name').notNull(),
   address: text('address'),
+  isActive: boolean('is_active').notNull().default(true),
   timezone: text('timezone').notNull().default('America/Denver'),
   businessDayBoundary: time('business_day_boundary')
     .notNull()

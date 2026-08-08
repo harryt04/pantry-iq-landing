@@ -292,6 +292,220 @@ body {
   overflow-wrap: anywhere;
 }
 
+.account-page--locations {
+  align-items: stretch;
+  display: block;
+  margin: 0 auto;
+  max-width: 1080px;
+  min-height: 100svh;
+  padding: var(--space-8) var(--space-5);
+}
+
+.account-header {
+  align-items: end;
+  display: flex;
+  gap: var(--space-6);
+  justify-content: space-between;
+  margin-bottom: var(--space-8);
+}
+
+.account-header h1 {
+  letter-spacing: -0.025em;
+  margin: var(--space-3) 0 0;
+}
+
+.account-header > div:first-child > p:last-child {
+  color: var(--muted-foreground);
+  line-height: 1.6;
+  margin: var(--space-3) 0 0;
+  max-width: 480px;
+}
+
+.account-header-actions {
+  align-items: end;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.account-header-actions .account-email {
+  margin: 0;
+}
+
+.locations-layout {
+  display: grid;
+  gap: var(--space-5);
+  grid-template-columns: minmax(260px, 0.7fr) minmax(0, 1.3fr);
+}
+
+.locations-layout > [data-slot='card'] {
+  border-radius: var(--radius-surface);
+}
+
+.locations-layout [data-slot='card-title'] {
+  font-size: var(--text-md);
+}
+
+.location-form {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.location-field {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.location-field label {
+  font-size: var(--text-base);
+  font-weight: 500;
+}
+
+.location-field input {
+  border-radius: var(--radius-surface);
+  min-height: 44px;
+}
+
+.location-optional {
+  color: var(--muted-foreground);
+  font-size: var(--text-sm);
+  font-weight: 400;
+}
+
+.location-form-actions,
+.location-actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.location-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.location-list-item {
+  align-items: start;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  gap: var(--space-4);
+  justify-content: space-between;
+  padding: var(--space-4) 0;
+}
+
+.location-list-item:first-child {
+  padding-top: 0;
+}
+
+.location-list-item:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.location-list-item h3 {
+  font-size: var(--text-lg);
+  margin: 0;
+}
+
+.location-list-item p {
+  color: var(--muted-foreground);
+  line-height: 1.5;
+  margin: var(--space-2) 0;
+}
+
+.location-list-item small {
+  color: var(--muted-foreground);
+  display: block;
+  font-size: var(--text-sm);
+}
+
+.location-actions {
+  justify-content: end;
+}
+
+.location-empty {
+  color: var(--muted-foreground);
+  line-height: 1.6;
+}
+
+.location-empty p:first-child {
+  color: var(--foreground);
+  font-weight: 600;
+  margin-top: 0;
+}
+
+.location-empty p:last-child {
+  margin-bottom: 0;
+}
+
+.locations-message {
+  background: var(--signal-good-soft);
+  border: 1px solid var(--signal-good);
+  border-radius: var(--radius-surface);
+  grid-column: 1 / -1;
+  line-height: 1.6;
+  margin: 0;
+  padding: var(--space-3);
+}
+
+@keyframes pantryiq-pulse {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.locations-skeleton {
+  animation: pantryiq-pulse 1.6s ease-in-out infinite;
+  background: var(--muted);
+  border-radius: var(--radius-surface);
+  height: 24px;
+  margin: var(--space-4);
+}
+
+.locations-skeleton--short {
+  margin-top: 0;
+  width: 55%;
+}
+
+@media (max-width: 760px) {
+  .account-page--locations {
+    padding: var(--space-6) var(--space-4);
+  }
+
+  .account-header {
+    align-items: start;
+    flex-direction: column;
+    margin-bottom: var(--space-6);
+  }
+
+  .account-header-actions {
+    align-items: start;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    width: 100%;
+  }
+
+  .locations-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .location-list-item {
+    flex-direction: column;
+  }
+
+  .location-actions {
+    justify-content: start;
+    width: 100%;
+  }
+}
+
 .site-header {
   border-bottom: 1px solid var(--border);
 }

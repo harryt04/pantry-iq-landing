@@ -17,6 +17,10 @@ const recipeCostMigration = readFileSync(
   new URL('../../drizzle/0004_jazzy_karen_page.sql', import.meta.url),
   'utf8',
 )
+const locationManagementMigration = readFileSync(
+  new URL('../../drizzle/0005_bouncy_vector.sql', import.meta.url),
+  'utf8',
+)
 
 const canonicalTables = [
   'csv_upload_history',
@@ -121,6 +125,12 @@ describe('canonical migration contract', () => {
     )
     expect(locationTable).toMatch(
       /"business_day_boundary" time DEFAULT '04:00:00' NOT NULL/,
+    )
+  })
+
+  it('adds an explicit archive state for location management', () => {
+    expect(locationManagementMigration).toMatch(
+      /ALTER TABLE "locations" ADD COLUMN "is_active" boolean DEFAULT true NOT NULL/,
     )
   })
 })

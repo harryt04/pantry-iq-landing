@@ -129,6 +129,7 @@ counts rather than inference.
 | `userId` | uuid FK | Owner/account |
 | `name` | text | Location name (e.g. "Downtown") |
 | `address` | text (nullable) | Physical address |
+| `isActive` | boolean | If false, the location is archived and hidden from active work |
 | `timezone` | text | IANA timezone used for business-day interpretation |
 | `businessDayBoundary` | time | Local time at which the restaurant's business day rolls over; defaults to 4am |
 | `createdAt` | timestamp | |

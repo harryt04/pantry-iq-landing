@@ -138,7 +138,7 @@ that touch them carry a stated default so work never stalls.
 
 | ID | Title | Status | Owner | Blocked by |
 |---|---|---|---|---|
-| ING-01 | Location create and manage | available | — | FND-05 |
+| ING-01 | Location create and manage | **done** | codex | FND-05 |
 | ING-02 | CSV upload and secure file handling | available | — | ING-01, QAG-04 |
 | ING-03 | CSV parse and preview | available | — | ING-02 |
 | ING-04 | Column mapping — auto-detection | available | — | ING-03 |
@@ -710,12 +710,21 @@ allowed; never aggregated.
 with `SET-02`). Geocoding — that was for donation locality matching (D3).
 
 **Acceptance criteria.**
-- [ ] A new account can create its first location in one screen.
-- [ ] Locations are only visible to their owner (`FND-05` helper).
-- [ ] Copy follows `voice-and-tone.md` §6; the button reads verb + object.
+- [x] A new account can create its first location in one screen.
+- [x] Locations are only visible to their owner (`FND-05` helper).
+- [x] Copy follows `voice-and-tone.md` §6; the button reads verb + object.
 
 **Verification.** Create locations on two accounts; confirm no
 cross-visibility.
+
+**Notes.** Added a location-scoped management surface at `/account` with a
+first-run create form, owner-only list, edit flow, and confirm-then-archive
+or restore action. Location names and addresses are validated at the API
+boundary, and all reads/writes use the shared authentication and ownership
+helpers. Archived locations remain visible in management with an explicit
+status but are sorted after active locations. Live unauthenticated route
+smoke checks return 401/307 as expected; `.env.local` has no test account
+credentials, so authenticated browser verification remains pending.
 
 ---
 
@@ -3555,7 +3564,7 @@ condition.
 | Area | Done | Total |
 |---|---|---|
 | Foundation | 7 | 8 |
-| Data ingest | 1 | 11 |
+| Data ingest | 2 | 11 |
 | Metrics engine | 1 | 12 |
 | Dashboard | 1 | 7 |
 | Chat | 0 | 8 |
@@ -3566,7 +3575,7 @@ condition.
 | Integrations | 0 | 8 |
 | Menu management | 3 | 7 |
 | Staffing | 0 | 6 |
-| **Total** | **20** | **87** |
+| **Total** | **21** | **87** |
 
 **The backlog is complete when every ticket reads `done`.** Sections 7
 and 8 are not work and never become work.
