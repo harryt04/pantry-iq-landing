@@ -250,7 +250,7 @@ that touch them carry a stated default so work never stalls.
 | ID | Title | Status | Owner | Blocked by |
 |---|---|---|---|---|
 | MNU-01 | Recipe and ingredient data model | **done** | codex | ING-07 |
-| MNU-02 | Recipe builder | available | — | MNU-01, FND-07 |
+| MNU-02 | Recipe builder | **done** | codex | MNU-01, FND-07 |
 | MNU-03 | Plate costing | available | — | MNU-02, MET-01 |
 | MNU-04 | Theoretical vs. actual usage | available | — | MNU-03, MET-03 |
 | MNU-05 | Menu engineering matrix | available | — | MNU-03, DSH-05 |
@@ -3150,7 +3150,7 @@ runtime is available.
 ### MNU-02 — Recipe builder
 
 ```
-Status: available   Owner: —   Claimed: —   Completed: —   Branch/PR: —
+Status: done   Owner: codex   Claimed: 2026-08-08   Completed: 2026-08-08   Branch/PR: rewrite
 ```
 
 **Blocked by:** MNU-01, FND-07 · **Blocks:** MNU-03
@@ -3166,12 +3166,21 @@ units. Incremental — a partial recipe is saved and useful. Live cost as
 ingredients are added. Duplicate an existing recipe.
 
 **Acceptance criteria.**
-- [ ] A partial recipe saves and produces a partial cost, stated as
+- [x] A partial recipe saves and produces a partial cost, stated as
       partial.
-- [ ] Cost updates live as ingredients are added.
-- [ ] Items missing a unit cost are flagged in place, with a link to fix
+- [x] Cost updates live as ingredients are added.
+- [x] Items missing a unit cost are flagged in place, with a link to fix
       them.
-- [ ] Never implies the software knows the kitchen better than the chef.
+- [x] Never implies the software knows the kitchen better than the chef.
+
+**Notes.** The authenticated `/recipes` screen and `/api/recipes` endpoints
+support incremental save/edit, exact-string live batch-cost projection,
+missing-cost warnings, unit mismatch warnings, and duplication. The
+builder leaves recipe assumptions visible and uses suggestion language. Unit
+and ownership rules are covered by the server contract; live authenticated
+database verification remains pending because this workspace has no test
+credentials and its configured PostgreSQL service is unavailable. `npm run
+prettify` and `npm run ci` pass.
 
 ---
 
