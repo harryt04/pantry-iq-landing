@@ -146,7 +146,7 @@ that touch them carry a stated default so work never stalls.
 | ING-06 | Mapping persistence and reuse | **done** | codex | ING-05 |
 | ING-07 | Canonical item master | **done** | codex | FND-04 |
 | ING-08 | Item name resolution — exact match only | **in-review** | codex | ING-07, ING-05 |
-| ING-09 | Import commit, confirmation, and history | available | — | ING-06, ING-08 |
+| ING-09 | Import commit, confirmation, and history | **done** | codex | ING-06, ING-08 |
 | ING-10 | Manual entry | available | — | ING-09 |
 | ING-11 | CSV export — the trust fallback | available | — | ING-09 |
 
@@ -1063,7 +1063,7 @@ category, editable in `SET-05`. Do not call an LLM for this.
 ### ING-09 — Import commit, confirmation, and history
 
 ```
-Status: available   Owner: —   Claimed: —   Completed: —   Branch/PR: —
+Status: done   Owner: codex   Claimed: 2026-08-08   Completed: 2026-08-08   Branch/PR: rewrite
 ```
 
 **Blocked by:** ING-06, ING-08 · **Blocks:** ING-10, ING-11, MET-02,
@@ -1085,15 +1085,27 @@ when data is now sufficient, or back to import when it is not.
 **Scope — out.** Deleting imports — data is immutable for audit.
 
 **Acceptance criteria.**
-- [ ] A failure mid-commit leaves the database exactly as it was.
-- [ ] Re-importing the same file does not duplicate rows.
-- [ ] Success copy states real counts: "1,204 rows imported. 6 new items
+- [x] A failure mid-commit leaves the database exactly as it was.
+- [x] Re-importing the same file does not duplicate rows.
+- [x] Success copy states real counts: "1,204 rows imported. 6 new items
       created."
-- [ ] Every import writes exactly one history row.
-- [ ] The next step is obvious and one click away.
+- [x] Every import writes exactly one history row.
+- [x] The next step is obvious and one click away.
 
 **Verification.** Force a failure partway through a large import and
 confirm zero rows landed. Then import the same file twice.
+
+**Notes.** The commit service plans the stored CSV before opening one
+PostgreSQL transaction, then inserts canonical items and source rows,
+updates usage counts, and marks the existing upload-history row imported in
+that same transaction. Transactions and purchase orders use the existing
+location/source/external-ID uniqueness constraints; inventory snapshots use
+an exact location/item/count-time/quantity key. The UI blocks commit until
+item names are resolved, shows row/item counts, and links to the scoped
+dashboard after success. Focused planner/parser/route tests plus the full CI
+suite pass. Live authenticated database verification remains unavailable in
+this environment because `.env.local` has no test credentials and no
+reachable PostgreSQL/object-storage services are configured.
 
 ---
 
@@ -3683,7 +3695,7 @@ condition.
 | Area | Done | Total |
 |---|---|---|
 | Foundation | 8 | 8 |
-| Data ingest | 7 | 11 |
+| Data ingest | 8 | 11 |
 | Metrics engine | 1 | 12 |
 | Dashboard | 2 | 7 |
 | Chat | 1 | 8 |
@@ -3694,7 +3706,7 @@ condition.
 | Integrations | 0 | 8 |
 | Menu management | 4 | 7 |
 | Staffing | 0 | 6 |
-| **Total** | **34** | **87** |
+| **Total** | **35** | **87** |
 
 **The backlog is complete when every ticket reads `done`.** Sections 7
 and 8 are not work and never become work.

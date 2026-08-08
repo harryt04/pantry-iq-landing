@@ -237,8 +237,8 @@ export function CsvMappingReview({
           </TableBody>
         </Table>
         <p className="app-page__help">
-          The import confirmation step will appear after item matching is
-          available.
+          The import confirmation step will appear below after item names are
+          matched.
         </p>
       </section>
     )

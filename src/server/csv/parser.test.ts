@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { parseCsvPreview } from './parser'
+import { parseCsvPreview, parseCsvRows } from './parser'
 
 async function* chunks(bytes: Uint8Array, size = bytes.length) {
   for (let offset = 0; offset < bytes.length; offset += size)
@@ -12,6 +12,21 @@ function utf8(value: string) {
 }
 
 describe('CSV preview parser', () => {
+  it('replays all data rows for the atomic commit while preserving source row numbers', async () => {
+    const rows = await parseCsvRows(
+      chunks(utf8('Date,Item,Qty\n2026-08-01,Salmon,2\n2026-08-02,Cod,1\n'), 5),
+    )
+
+    expect(rows).toMatchObject({
+      hasHeader: true,
+      columns: ['Date', 'Item', 'Qty'],
+      rows: [
+        { rowNumber: 2, values: ['2026-08-01', 'Salmon', '2'] },
+        { rowNumber: 3, values: ['2026-08-02', 'Cod', '1'] },
+      ],
+    })
+  })
+
   it('detects a UTF-8 BOM, comma delimiter, headers, quotes, and newlines', async () => {
     const preview = await parseCsvPreview(
       chunks(

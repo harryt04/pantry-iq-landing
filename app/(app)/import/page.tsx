@@ -1,6 +1,7 @@
 import { cookies } from 'next/headers'
 
 import { CsvUploadForm } from '@/components/import/csv-upload-form'
+import { ImportHistory } from '@/components/import/import-history'
 
 export default async function ImportPage({
   searchParams,
@@ -19,7 +20,12 @@ export default async function ImportPage({
         Choose the kind of data, then upload a CSV. We&apos;ll check the file,
         show a preview next, and keep the original rows available for audit.
       </p>
-      {locationId ? <CsvUploadForm locationId={locationId} /> : null}
+      {locationId ? (
+        <>
+          <CsvUploadForm locationId={locationId} />
+          <ImportHistory locationId={locationId} />
+        </>
+      ) : null}
     </main>
   )
 }

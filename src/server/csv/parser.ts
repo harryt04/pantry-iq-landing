@@ -27,6 +27,14 @@ export type CsvPreview = {
   problems: CsvPreviewProblem[]
 }
 
+export type CsvRows = {
+  encoding: CsvEncoding
+  delimiter: CsvDelimiter
+  hasHeader: boolean
+  columns: string[]
+  rows: Array<{ rowNumber: number; values: string[] }>
+}
+
 type ByteStream = AsyncIterable<Uint8Array>
 
 function joinBytes(chunks: Uint8Array[]): Uint8Array {
@@ -362,5 +370,46 @@ export async function parseCsvPreview(input: ByteStream): Promise<CsvPreview> {
     readableRowCount,
     previewRows,
     problems: [...problems.values()],
+  }
+}
+
+/**
+ * Reads the same guarded object used by the preview, but keeps every data row
+ * for the commit step. Uploads are capped at 10 MB, so this bounded buffer
+ * gives the database transaction one deterministic input to replay.
+ */
+export async function parseCsvRows(input: ByteStream): Promise<CsvRows> {
+  const prepared = await prepareInput(input)
+  const parser = parse({
+    bom: true,
+    delimiter: prepared.delimiter,
+    encoding: 'utf8',
+    relax_column_count: true,
+    skip_empty_lines: true,
+  })
+  Readable.from(prepared.chunks).pipe(parser)
+
+  const records: string[][] = []
+  for await (const record of parser) records.push(record as string[])
+
+  const first = records[0] ?? []
+  const second = records[1]
+  const hasHeader = looksLikeHeader(first, second)
+  const header = hasHeader ? first : []
+  const data = hasHeader ? records.slice(1) : records
+  const columnCount = Math.max(
+    hasHeader ? header.length : 0,
+    ...data.map((row) => row.length),
+  )
+
+  return {
+    encoding: prepared.encoding,
+    delimiter: prepared.delimiter,
+    hasHeader,
+    columns: columnNames(header, columnCount),
+    rows: data.map((values, index) => ({
+      rowNumber: hasHeader ? index + 2 : index + 1,
+      values,
+    })),
   }
 }
