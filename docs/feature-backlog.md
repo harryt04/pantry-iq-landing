@@ -2664,6 +2664,16 @@ imports, and LLM queries; LLM cost is recorded as an integer number of
 micro-units so per-account and per-day aggregation never uses a float.
 `logger.test.ts` covers the event contract and the redaction boundary.
 
+The independently testable aggregation layer is now in
+`src/server/observability/metrics.ts`. `OperationalMetrics` records
+location-scoped precompute successes and failures, raises an injectable alert
+for each failure, exposes a staleness query against an explicit threshold, and
+aggregates LLM token usage and integer micro-costs by account and UTC day.
+`metrics.test.ts` covers those boundaries, including defensive date copies,
+invalid numeric values, and mixed-currency rejection. The registry is
+deliberately in-process until the producers and persistent telemetry store
+arrive; it provides the typed seam those integrations will consume.
+
 The remaining acceptance criteria require `MET-02`'s precompute pipeline,
 the LLM narration service, and import execution paths. They are intentionally
 left in review until those producers exist; this ticket must then compose
