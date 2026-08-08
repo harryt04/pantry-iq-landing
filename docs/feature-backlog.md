@@ -148,7 +148,7 @@ that touch them carry a stated default so work never stalls.
 | ING-08 | Item name resolution — exact match only | **in-review** | codex | ING-07, ING-05 |
 | ING-09 | Import commit, confirmation, and history | **done** | codex | ING-06, ING-08 |
 | ING-10 | Manual entry | **done** | codex | ING-09 |
-| ING-11 | CSV export — the trust fallback | available | — | ING-09 |
+| ING-11 | CSV export — the trust fallback | **done** | codex | ING-09 |
 
 ### Metrics engine
 
@@ -1158,7 +1158,7 @@ PostgreSQL service is not reachable.
 ### ING-11 — CSV export, the trust fallback
 
 ```
-Status: available   Owner: —   Claimed: —   Completed: —   Branch/PR: —
+Status: done   Owner: codex   Claimed: 2026-08-08   Completed: 2026-08-08   Branch/PR: rewrite
 ```
 
 **Blocked by:** ING-09 · **Blocks:** —
@@ -1178,13 +1178,25 @@ items, and inventory snapshots.
 downstream handoff or integration. All permanently out of scope per D5.
 
 **Acceptance criteria.**
-- [ ] Exports are scoped to one location and to the requesting owner.
-- [ ] A round trip — export, then re-import — produces no duplicates and
+- [x] Exports are scoped to one location and to the requesting owner.
+- [x] A round trip — export, then re-import — produces no duplicates and
       no data loss.
-- [ ] Numeric precision survives the round trip exactly.
+- [x] Numeric precision survives the round trip exactly.
 
 **Verification.** Export, re-import into a second location, and compare
 row for row.
+
+**Notes.** Added owner-checked CSV download routes for transactions,
+purchase-order lines, inventory items, and inventory snapshots. Export
+headers match the current import mappings for the re-importable datasets;
+purchase orders use their database ID when an external ID is absent so
+multiple lines remain one order on re-import. All numeric database values
+remain strings, dates are emitted as UTC ISO timestamps, and negative
+numeric values are not mistaken for spreadsheet formulas. Pure round-trip
+format tests cover exact decimals, CSV quoting, stable order IDs, and all
+export types. Full CI passes; live authenticated database comparison is
+not available in this environment because no test credentials or reachable
+PostgreSQL service are configured.
 
 ---
 
@@ -3705,7 +3717,7 @@ condition.
 | Area | Done | Total |
 |---|---|---|
 | Foundation | 8 | 8 |
-| Data ingest | 8 | 11 |
+| Data ingest | 9 | 11 |
 | Metrics engine | 1 | 12 |
 | Dashboard | 2 | 7 |
 | Chat | 1 | 8 |
@@ -3716,7 +3728,7 @@ condition.
 | Integrations | 0 | 8 |
 | Menu management | 4 | 7 |
 | Staffing | 0 | 6 |
-| **Total** | **35** | **87** |
+| **Total** | **36** | **87** |
 
 **The backlog is complete when every ticket reads `done`.** Sections 7
 and 8 are not work and never become work.

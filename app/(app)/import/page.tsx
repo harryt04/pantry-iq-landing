@@ -1,6 +1,7 @@
 import { cookies } from 'next/headers'
 
 import { CsvUploadForm } from '@/components/import/csv-upload-form'
+import { CsvExportOptions } from '@/components/import/csv-export-options'
 import { ImportHistory } from '@/components/import/import-history'
 import { ManualEntryForm } from '@/components/import/manual-entry-form'
 
@@ -26,6 +27,7 @@ export default async function ImportPage({
           <CsvUploadForm locationId={locationId} />
           <ManualEntryForm locationId={locationId} />
           <ImportHistory locationId={locationId} />
+          <CsvExportOptions locationId={locationId} />
         </>
       ) : null}
     </main>

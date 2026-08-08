@@ -137,7 +137,10 @@ export function createCsvStorageKey(input: {
 }
 
 export function neutralizeSpreadsheetFormula(value: string): string {
-  return /^[=+\-@]/.test(value) ? `'${value}` : value
+  // Negative numerics are valid imported values, not formulas. Preserve them
+  // so an export can make the round trip without changing exact amounts.
+  const isNumeric = /^-?(?:\d+(?:\.\d*)?|\.\d+)$/.test(value)
+  return !isNumeric && /^[=+\-@]/.test(value) ? `'${value}` : value
 }
 
 export function serializeCsvRow(values: readonly string[]): string {
