@@ -8,6 +8,7 @@ import { listInventoryItems } from '@/src/server/inventory/items'
 import {
   duplicateRecipe,
   getRecipe,
+  listRecipeCostHistory,
   listRecipes,
   RecipeBuilderValidationError,
   RecipeNotFoundError,
@@ -39,6 +40,7 @@ function publicItem(
     unit: item.unit,
     itemType: item.itemType,
     costPerUnit: item.costPerUnit,
+    menuPrice: item.menuPrice,
   }
 }
 
@@ -51,10 +53,13 @@ export async function GET(request: Request) {
 
   try {
     const requestHeaders = await headers()
-    const [items, recipeRows, selected] = await Promise.all([
+    const [items, recipeRows, selected, costHistory] = await Promise.all([
       listInventoryItems(requestHeaders, locationId),
       listRecipes(requestHeaders, locationId),
       recipeId ? getRecipe(requestHeaders, locationId, recipeId) : null,
+      recipeId
+        ? listRecipeCostHistory(requestHeaders, locationId, recipeId)
+        : Promise.resolve([]),
     ])
     return Response.json({
       items: items.map(publicItem),
@@ -76,6 +81,7 @@ export async function GET(request: Request) {
               quantity: ingredient.quantity,
               unit: ingredient.unit,
             })),
+            costHistory,
           }
         : null,
     })

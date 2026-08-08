@@ -13,6 +13,10 @@ const recipeMigration = readFileSync(
   new URL('../../drizzle/0003_recipe_model.sql', import.meta.url),
   'utf8',
 )
+const recipeCostMigration = readFileSync(
+  new URL('../../drizzle/0004_jazzy_karen_page.sql', import.meta.url),
+  'utf8',
+)
 
 const canonicalTables = [
   'csv_upload_history',
@@ -91,6 +95,19 @@ describe('canonical migration contract', () => {
     }
 
     expect(migration).not.toMatch(/timestamp(?! with time zone)/i)
+  })
+
+  it('adds menu pricing and durable recipe cost evidence without floats', () => {
+    expect(recipeCostMigration).toMatch(/ADD COLUMN "menu_price" numeric/)
+    expect(recipeCostMigration).toMatch(
+      /CREATE TABLE "recipe_cost_history"[\s\S]*"batch_cost" numeric[\s\S]*"cost_per_output" numeric[\s\S]*"food_cost_percentage" numeric[\s\S]*"evidence" jsonb/,
+    )
+    expect(recipeCostMigration).toMatch(
+      /recipe_cost_history_location_recipe_calculated_idx/,
+    )
+    expect(recipeCostMigration).not.toMatch(
+      /\b(?:real|float|double precision)\b/i,
+    )
   })
 
   it('includes the restaurant business-day fields on locations', () => {

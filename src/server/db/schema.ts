@@ -125,6 +125,7 @@ export const inventoryItems = pgTable(
     itemType: text('item_type').notNull().default('ingredient'),
     shelfLifeDays: integer('shelf_life_days'),
     costPerUnit: numeric('cost_per_unit'),
+    menuPrice: numeric('menu_price'),
     parLevel: numeric('par_level'),
     isActive: boolean('is_active').notNull().default(true),
     usageCount: integer('usage_count').notNull().default(0),
@@ -242,6 +243,39 @@ export const itemUnitConversions = pgTable(
     check(
       'item_unit_conversions_positive_factor_check',
       sql`${table.factor} > 0`,
+    ),
+  ],
+)
+
+export const recipeCostHistory = pgTable(
+  'recipe_cost_history',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    locationId: uuid('location_id')
+      .notNull()
+      .references(() => locations.id, { onDelete: 'cascade' }),
+    recipeId: uuid('recipe_id')
+      .notNull()
+      .references(() => recipes.id, { onDelete: 'cascade' }),
+    calculatedAt: timestamp('calculated_at', { withTimezone: true }).notNull(),
+    status: text('status').notNull(),
+    batchCost: numeric('batch_cost'),
+    costPerOutput: numeric('cost_per_output'),
+    menuPrice: numeric('menu_price'),
+    plateMargin: numeric('plate_margin'),
+    foodCostPercentage: numeric('food_cost_percentage'),
+    evidence: jsonb('evidence').notNull(),
+    createdAt,
+  },
+  (table) => [
+    index('recipe_cost_history_location_recipe_calculated_idx').on(
+      table.locationId,
+      table.recipeId,
+      table.calculatedAt,
+    ),
+    check(
+      'recipe_cost_history_status_check',
+      sql`${table.status} in ('empty', 'partial', 'complete')`,
     ),
   ],
 )

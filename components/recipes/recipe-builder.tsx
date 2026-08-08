@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
   calculateRecipeCost,
+  calculateRecipePlateCost,
   type RecipeCostIngredient,
 } from '@/src/server/menu/recipe-cost'
 
@@ -17,6 +18,7 @@ type Item = {
   unit: string
   itemType: string
   costPerUnit: string | null
+  menuPrice: string | null
 }
 
 type RecipeSummary = {
@@ -57,6 +59,8 @@ export function RecipeBuilder({ locationId }: { locationId: string }) {
   const [name, setName] = React.useState('')
   const [outputQuantity, setOutputQuantity] = React.useState('1')
   const [outputUnit, setOutputUnit] = React.useState('each')
+  const [yieldFactor, setYieldFactor] = React.useState('1')
+  const [wasteFactor, setWasteFactor] = React.useState('0')
   const [ingredients, setIngredients] = React.useState<IngredientRow[]>([])
   const [editingRecipeId, setEditingRecipeId] = React.useState<string | null>(
     null,
@@ -84,6 +88,16 @@ export function RecipeBuilder({ locationId }: { locationId: string }) {
     ]
   })
   const cost = calculateRecipeCost(costIngredients)
+  const menuPrice =
+    menuItems.find((item) => item.id === menuItemId)?.menuPrice ?? null
+  const plateCost = calculateRecipePlateCost({
+    batchCost: cost.totalCost,
+    outputQuantity,
+    outputUnit,
+    yieldFactor,
+    wasteFactor,
+    menuPrice,
+  })
 
   React.useEffect(() => {
     let cancelled = false
@@ -149,6 +163,8 @@ export function RecipeBuilder({ locationId }: { locationId: string }) {
           name,
           outputQuantity,
           outputUnit,
+          yieldFactor,
+          wasteFactor,
           ingredients,
         }),
       })
@@ -215,6 +231,8 @@ export function RecipeBuilder({ locationId }: { locationId: string }) {
     setName(recipe.name)
     setOutputQuantity(recipe.outputQuantity)
     setOutputUnit(recipe.outputUnit)
+    setYieldFactor(recipe.yieldFactor)
+    setWasteFactor(recipe.wasteFactor)
     setIngredients(
       recipe.ingredients.flatMap((ingredient) =>
         ingredient.ingredientItemId
@@ -322,6 +340,26 @@ export function RecipeBuilder({ locationId }: { locationId: string }) {
                       </option>
                     ))}
                   </select>
+                </div>
+                <div className="recipe-field">
+                  <Label htmlFor="recipe-yield-factor">Yield factor</Label>
+                  <Input
+                    id="recipe-yield-factor"
+                    value={yieldFactor}
+                    onChange={(event) => setYieldFactor(event.target.value)}
+                    inputMode="decimal"
+                    required
+                  />
+                </div>
+                <div className="recipe-field">
+                  <Label htmlFor="recipe-waste-factor">Waste factor</Label>
+                  <Input
+                    id="recipe-waste-factor"
+                    value={wasteFactor}
+                    onChange={(event) => setWasteFactor(event.target.value)}
+                    inputMode="decimal"
+                    required
+                  />
                 </div>
               </div>
 
@@ -439,6 +477,8 @@ export function RecipeBuilder({ locationId }: { locationId: string }) {
                     onClick={() => {
                       setEditingRecipeId(null)
                       setName('')
+                      setYieldFactor('1')
+                      setWasteFactor('0')
                       setIngredients([])
                       setMessage(null)
                     }}
@@ -495,6 +535,31 @@ export function RecipeBuilder({ locationId }: { locationId: string }) {
                     </li>
                   ))}
                 </ul>
+              )}
+              <dl className="recipe-cost-summary">
+                <div>
+                  <dt>Cost per {outputUnit}</dt>
+                  <dd className="figure">{money(plateCost.costPerOutput)}</dd>
+                </div>
+                <div>
+                  <dt>Menu price</dt>
+                  <dd className="figure">{money(plateCost.menuPrice)}</dd>
+                </div>
+                <div>
+                  <dt>Margin</dt>
+                  <dd className="figure">{money(plateCost.plateMargin)}</dd>
+                </div>
+                <div>
+                  <dt>Food cost</dt>
+                  <dd className="figure">
+                    {plateCost.foodCostPercentage === null
+                      ? '—'
+                      : `${plateCost.foodCostPercentage}%`}
+                  </dd>
+                </div>
+              </dl>
+              {plateCost.reason && (
+                <p className="recipe-muted">{plateCost.reason}</p>
               )}
             </CardContent>
           </Card>

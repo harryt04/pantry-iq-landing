@@ -888,6 +888,29 @@ body {
   font-weight: 600;
 }
 
+.recipe-cost-summary {
+  border-top: 1px solid var(--border);
+  display: grid;
+  gap: var(--space-3);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: var(--space-5) 0 0;
+  padding-top: var(--space-4);
+}
+
+.recipe-cost-summary div {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.recipe-cost-summary dt {
+  color: var(--muted-foreground);
+  font-size: var(--text-sm);
+}
+
+.recipe-cost-summary dd {
+  margin: 0;
+}
+
 .recipe-list li {
   align-items: center;
   display: flex;

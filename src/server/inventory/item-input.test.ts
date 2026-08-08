@@ -14,6 +14,7 @@ describe('inventory item input contract', () => {
         displayName: 'Salmon fillet',
         unit: 'lb',
         costPerUnit: '8.50',
+        menuPrice: '18.00',
         parLevel: '40',
       }),
     ).toEqual({
@@ -21,6 +22,7 @@ describe('inventory item input contract', () => {
       displayName: 'Salmon fillet',
       unit: 'lb',
       costPerUnit: '8.50',
+      menuPrice: '18.00',
       parLevel: '40',
     })
   })
@@ -31,12 +33,14 @@ describe('inventory item input contract', () => {
         category: null,
         shelfLifeDays: null,
         costPerUnit: null,
+        menuPrice: null,
         parLevel: null,
       }),
     ).toEqual({
       category: null,
       shelfLifeDays: null,
       costPerUnit: null,
+      menuPrice: null,
       parLevel: null,
     })
   })

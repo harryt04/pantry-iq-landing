@@ -8,6 +8,7 @@ export type InventoryItemCreateInput = {
   itemType?: InventoryItemType
   shelfLifeDays?: number | null
   costPerUnit?: string | null
+  menuPrice?: string | null
   parLevel?: string | null
 }
 
@@ -114,12 +115,14 @@ export function validateInventoryItemCreateInput(
   const category = optionalText(values, 'category')
   const shelfLifeDays = optionalInteger(values, 'shelfLifeDays')
   const costPerUnit = optionalDecimal(values, 'costPerUnit')
+  const menuPrice = optionalDecimal(values, 'menuPrice')
   const parLevel = optionalDecimal(values, 'parLevel')
   const itemType = optionalItemType(values)
 
   if (category !== undefined) item.category = category
   if (shelfLifeDays !== undefined) item.shelfLifeDays = shelfLifeDays
   if (costPerUnit !== undefined) item.costPerUnit = costPerUnit
+  if (menuPrice !== undefined) item.menuPrice = menuPrice
   if (parLevel !== undefined) item.parLevel = parLevel
   if (itemType !== undefined) item.itemType = itemType
 
@@ -151,6 +154,9 @@ export function validateInventoryItemUpdateInput(
   }
   if ('costPerUnit' in values) {
     update.costPerUnit = optionalDecimal(values, 'costPerUnit') ?? null
+  }
+  if ('menuPrice' in values) {
+    update.menuPrice = optionalDecimal(values, 'menuPrice') ?? null
   }
   if ('parLevel' in values) {
     update.parLevel = optionalDecimal(values, 'parLevel') ?? null

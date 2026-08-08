@@ -79,6 +79,7 @@ Built dynamically from imports, editable by the user.
 | `itemType` | text | `ingredient` (purchased) or `menu_item` (sold) |
 | `shelfLifeDays` | integer (nullable) | Assumed spoilage window (e.g. 3 days for lobster) |
 | `costPerUnit` | numeric (nullable) | Last known cost |
+| `menuPrice` | numeric (nullable) | Current selling price for menu items |
 | `parLevel` | numeric (nullable) | Minimum stock threshold |
 | `isActive` | boolean | If false, item is archived |
 | `usageCount` | integer | Number of times this item appears in transactions/POs |
@@ -97,6 +98,7 @@ type column is added, defaulting to `ingredient` for backwards compatibility.
 | `recipes` | `locationId`, `menuItemId`, `name`, `outputQuantity`, `outputUnit`, `yieldFactor`, `wasteFactor` | A location-scoped recipe and its yield assumptions |
 | `recipeIngredients` | `recipeId`, exactly one of `ingredientItemId` or `subRecipeId`, `quantity`, `unit` | Ingredient quantities or optional sub-recipe references |
 | `itemUnitConversions` | `locationId`, `inventoryItemId`, `fromUnit`, `toUnit`, `factor` | Exact item-specific conversions, including case pack sizes |
+| `recipeCostHistory` | `locationId`, `recipeId`, `calculatedAt`, exact cost fields, `evidence` | Immutable cost projections and their arithmetic inputs over time |
 
 Standard mass conversions are calculated with exact decimal arithmetic in the
 application layer. Item-specific conversion rows handle packaging such as
@@ -226,7 +228,8 @@ FKs), `purchase_orders` (locationId FK), `purchase_order_items`
 `inventory_snapshots` (locationId, inventoryItemId FKs),
 `csv_upload_history` (locationId FK), `recipes` (locationId, menuItemId
 FKs), `recipe_ingredients` (recipeId, ingredientItemId or subRecipeId FKs),
-`item_unit_conversions` (locationId, inventoryItemId FKs).
+`item_unit_conversions` (locationId, inventoryItemId FKs),
+`recipe_cost_history` (locationId, recipeId FKs).
 
 Indices: `transactions(locationId, transactedAt)` for time-range queries;
 `transactions(locationId, menuItemId)` for item-level analysis;
@@ -236,7 +239,8 @@ Indices: `transactions(locationId, transactedAt)` for time-range queries;
 `recipes(locationId, menuItemId, name)` for recipe lookup;
 `recipe_ingredients(recipeId)` for ingredient expansion;
 `item_unit_conversions(locationId, inventoryItemId, fromUnit, toUnit)` for
-exact conversion lookup.
+exact conversion lookup; `recipe_cost_history(locationId, recipeId,
+calculatedAt)` for cost movement and evidence lookup.
 
 Donation adds (provisional): `recipient_organisations` (userId FK),
 `donation_offers` (locationId, inventoryItemId FKs), `donation_claims`

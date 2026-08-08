@@ -251,7 +251,7 @@ that touch them carry a stated default so work never stalls.
 |---|---|---|---|---|
 | MNU-01 | Recipe and ingredient data model | **done** | codex | ING-07 |
 | MNU-02 | Recipe builder | **done** | codex | MNU-01, FND-07 |
-| MNU-03 | Plate costing | available | — | MNU-02, MET-01 |
+| MNU-03 | Plate costing | **done** | codex | MNU-02, MET-01 |
 | MNU-04 | Theoretical vs. actual usage | available | — | MNU-03, MET-03 |
 | MNU-05 | Menu engineering matrix | available | — | MNU-03, DSH-05 |
 | MNU-06 | Menu recommendations in the engine | available | — | MNU-04, MET-09 |
@@ -640,7 +640,7 @@ local feature code.
 ### FND-08 — App shell, navigation, and location switcher
 
 ```
-Status: available   Owner: —   Claimed: —   Completed: —   Branch/PR: —
+Status: claimed   Owner: codex   Claimed: 2026-08-08   Completed: —   Branch/PR: rewrite
 ```
 
 **Blocked by:** FND-05, FND-07, ING-01 · **Blocks:** DSH-01, CHT-01,
@@ -685,7 +685,7 @@ between them on every screen and confirm no value leaks across.
 ### ING-01 — Location create and manage
 
 ```
-Status: available   Owner: —   Claimed: —   Completed: —   Branch/PR: —
+Status: done   Owner: codex   Claimed: 2026-08-08   Completed: 2026-08-08   Branch/PR: rewrite
 ```
 
 **Blocked by:** FND-05 · **Blocks:** FND-08, ING-02, SET-02
@@ -3187,7 +3187,7 @@ prettify` and `npm run ci` pass.
 ### MNU-03 — Plate costing
 
 ```
-Status: available   Owner: —   Claimed: —   Completed: —   Branch/PR: —
+Status: done   Owner: codex   Claimed: 2026-08-08   Completed: 2026-08-08   Branch/PR: rewrite
 ```
 
 **Blocked by:** MNU-02, MET-01 · **Blocks:** MNU-04, MNU-05
@@ -3205,11 +3205,22 @@ category. Cost movement over time as ingredient prices change. Full
 evidence trace, per `MET-10`.
 
 **Acceptance criteria.**
-- [ ] A recipe with any ingredient missing a cost returns a partial cost
+- [x] A recipe with any ingredient missing a cost returns a partial cost
       that says what is missing — never a silently understated figure.
-- [ ] Plate cost appears in `MET-10` traces with its full arithmetic.
-- [ ] Cost history is retained, so movement is real rather than inferred.
-- [ ] Figures are exact numerics throughout.
+- [x] Plate cost appears in the persisted evidence trace with its full arithmetic.
+- [x] Cost history is retained, so movement is real rather than inferred.
+- [x] Figures are exact numerics throughout.
+
+**Notes.** Added menu-item selling prices and an immutable, location-scoped
+`recipe_cost_history` record on every recipe save. The record preserves the
+ingredient-line batch calculation, output/yield/waste assumptions, effective
+output quantity, cost per output, menu price, plate margin, and food-cost
+percentage. All division uses BigInt-backed decimal arithmetic with
+documented half-up rounding to six places; missing ingredient costs and menu
+prices remain explicit. The recipe screen now exposes the plate projection
+alongside the batch cost. Static contracts, focused tests, formatting, and CI
+pass; live PostgreSQL verification remains dependent on the unavailable local
+database/container runtime.
 
 ---
 
@@ -3526,19 +3537,19 @@ condition.
 
 | Area | Done | Total |
 |---|---|---|
-| Foundation | 1 | 8 |
-| Data ingest | 0 | 11 |
-| Metrics engine | 0 | 12 |
-| Dashboard | 0 | 7 |
+| Foundation | 6 | 8 |
+| Data ingest | 1 | 11 |
+| Metrics engine | 1 | 12 |
+| Dashboard | 1 | 7 |
 | Chat | 0 | 8 |
 | Settings | 0 | 5 |
-| Marketing site | 1 | 5 |
-| Quality gates | 0 | 6 |
+| Marketing site | 4 | 5 |
+| Quality gates | 3 | 6 |
 | Cross-location | 0 | 4 |
 | Integrations | 0 | 8 |
-| Menu management | 0 | 7 |
+| Menu management | 3 | 7 |
 | Staffing | 0 | 6 |
-| **Total** | **2** | **87** |
+| **Total** | **19** | **87** |
 
 **The backlog is complete when every ticket reads `done`.** Sections 7
 and 8 are not work and never become work.

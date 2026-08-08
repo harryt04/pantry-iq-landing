@@ -9,6 +9,7 @@ vi.mock('@/src/server/db/client', () => ({ db: {} }))
 
 import {
   calculateRecipeCost,
+  calculateRecipePlateCost,
   RecipeBuilderValidationError,
   validateRecipeBuilderInput,
 } from './recipe-builder'
@@ -107,6 +108,72 @@ describe('recipe live cost projection', () => {
     expect(result.status).toBe('complete')
     expect(result.totalCost).toBe('24')
     expect(result.lines.map((line) => line.cost)).toEqual(['20', '4'])
+  })
+
+  it('projects exact cost, margin, and food-cost percentage per output', () => {
+    const result = calculateRecipePlateCost({
+      batchCost: '24',
+      outputQuantity: '10',
+      outputUnit: 'each',
+      yieldFactor: '1',
+      wasteFactor: '0.1',
+      menuPrice: '12',
+    })
+
+    expect(result).toMatchObject({
+      status: 'complete',
+      effectiveOutputQuantity: '9',
+      costPerOutput: '2.666667',
+      menuPrice: '12',
+      plateMargin: '9.333333',
+      foodCostPercentage: '22.222225',
+      reason: null,
+    })
+  })
+
+  it('keeps plate metrics partial when price or batch cost is missing', () => {
+    expect(
+      calculateRecipePlateCost({
+        batchCost: '24',
+        outputQuantity: '10',
+        outputUnit: 'each',
+        yieldFactor: '1',
+        wasteFactor: '0',
+        menuPrice: null,
+      }),
+    ).toMatchObject({
+      status: 'complete',
+      costPerOutput: '2.4',
+      plateMargin: null,
+      foodCostPercentage: null,
+      reason: 'Menu price is not available.',
+    })
+
+    expect(
+      calculateRecipePlateCost({
+        batchCost: null,
+        outputQuantity: '10',
+        outputUnit: 'each',
+        yieldFactor: '1',
+        wasteFactor: '0',
+        menuPrice: '12',
+      }),
+    ).toMatchObject({
+      status: 'partial',
+      costPerOutput: null,
+      reason: expect.stringContaining('complete batch cost'),
+    })
+
+    expect(
+      calculateRecipePlateCost({
+        batchCost: '24',
+        outputQuantity: '10',
+        outputUnit: 'each',
+        yieldFactor: '1',
+        wasteFactor: '0',
+        menuPrice: '2',
+      }).plateMargin,
+    ).toBe('-0.4')
   })
 
   it('keeps a missing unit cost visible and returns a partial total', () => {

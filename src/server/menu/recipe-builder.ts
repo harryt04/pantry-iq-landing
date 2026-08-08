@@ -1,14 +1,18 @@
-import { and, asc, eq, inArray } from 'drizzle-orm'
+import { and, asc, desc, eq, inArray } from 'drizzle-orm'
 
 import { requireOwnedLocation } from '@/src/server/auth/authorization'
 import { db } from '@/src/server/db/client'
 import {
   inventoryItems,
+  recipeCostHistory,
   recipeIngredients,
   recipes,
 } from '@/src/server/db/schema'
 
+import { calculateRecipePlateCost } from './recipe-cost'
 import { convertQuantity, UnitConversionError } from './unit-conversion'
+
+export { calculateRecipePlateCost } from './recipe-cost'
 
 const uuidPattern =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
@@ -401,6 +405,25 @@ export async function getRecipe(
   return { recipe, ingredients }
 }
 
+export async function listRecipeCostHistory(
+  headers: Headers,
+  locationId: string,
+  recipeId: string,
+) {
+  const ownedLocation = await requireOwnedLocation(headers, locationId)
+  if (!uuidPattern.test(recipeId)) throw new RecipeNotFoundError()
+  return db
+    .select()
+    .from(recipeCostHistory)
+    .where(
+      and(
+        eq(recipeCostHistory.recipeId, recipeId),
+        eq(recipeCostHistory.locationId, ownedLocation.locationId),
+      ),
+    )
+    .orderBy(desc(recipeCostHistory.calculatedAt))
+}
+
 export async function saveRecipe(
   headers: Headers,
   locationId: string,
@@ -460,6 +483,81 @@ export async function saveRecipe(
         })),
       )
     }
+
+    const referencedItemIds = [
+      values.menuItemId,
+      ...values.ingredients.flatMap((ingredient) =>
+        'ingredientItemId' in ingredient ? [ingredient.ingredientItemId] : [],
+      ),
+    ]
+    const currentItems = await transaction
+      .select({
+        id: inventoryItems.id,
+        displayName: inventoryItems.displayName,
+        unit: inventoryItems.unit,
+        costPerUnit: inventoryItems.costPerUnit,
+        menuPrice: inventoryItems.menuPrice,
+      })
+      .from(inventoryItems)
+      .where(
+        and(
+          eq(inventoryItems.locationId, ownedLocation.locationId),
+          inArray(inventoryItems.id, referencedItemIds),
+        ),
+      )
+    const itemById = new Map(currentItems.map((item) => [item.id, item]))
+    const costIngredients = values.ingredients.map((ingredient) => {
+      if ('subRecipeId' in ingredient) {
+        return {
+          ingredientItemId: ingredient.subRecipeId,
+          label: `Sub-recipe ${ingredient.subRecipeId}`,
+          quantity: ingredient.quantity,
+          unit: ingredient.unit,
+          itemUnit: ingredient.unit,
+          unitCost: null,
+        }
+      }
+      const item = itemById.get(ingredient.ingredientItemId)
+      return {
+        ingredientItemId: ingredient.ingredientItemId,
+        label: item?.displayName ?? 'Ingredient',
+        quantity: ingredient.quantity,
+        unit: ingredient.unit,
+        itemUnit: item?.unit ?? ingredient.unit,
+        unitCost: item?.costPerUnit ?? null,
+      }
+    })
+    const batchCost = calculateRecipeCost(costIngredients)
+    const menuItem = itemById.get(values.menuItemId)
+    const plateCost = calculateRecipePlateCost({
+      batchCost: batchCost.totalCost,
+      outputQuantity: values.outputQuantity,
+      outputUnit: values.outputUnit,
+      yieldFactor: values.yieldFactor,
+      wasteFactor: values.wasteFactor,
+      menuPrice: menuItem?.menuPrice ?? null,
+    })
+    await transaction.insert(recipeCostHistory).values({
+      locationId: ownedLocation.locationId,
+      recipeId: savedRecipe.id,
+      calculatedAt: new Date(),
+      status: batchCost.status,
+      batchCost: batchCost.totalCost,
+      costPerOutput: plateCost.costPerOutput,
+      menuPrice: plateCost.menuPrice,
+      plateMargin: plateCost.plateMargin,
+      foodCostPercentage: plateCost.foodCostPercentage,
+      evidence: {
+        recipe: {
+          outputQuantity: values.outputQuantity,
+          outputUnit: values.outputUnit,
+          yieldFactor: values.yieldFactor,
+          wasteFactor: values.wasteFactor,
+        },
+        batch: batchCost,
+        plate: plateCost,
+      },
+    })
     return savedRecipe
   })
 }

@@ -15,6 +15,25 @@ export type RecipeCost = {
   missingCostItemIds: string[]
 }
 
+export type RecipePlateCostInput = {
+  batchCost: string | null
+  outputQuantity: string
+  outputUnit: string
+  yieldFactor: string
+  wasteFactor: string
+  menuPrice: string | null
+}
+
+export type RecipePlateCost = {
+  status: RecipeCost['status']
+  effectiveOutputQuantity: string | null
+  costPerOutput: string | null
+  menuPrice: string | null
+  plateMargin: string | null
+  foodCostPercentage: string | null
+  reason: string | null
+}
+
 export type RecipeCostIngredient = {
   ingredientItemId: string
   label: string
@@ -34,9 +53,11 @@ function decimalParts(value: string): DecimalParts {
 
 function decimalString(parts: DecimalParts): string {
   if (parts.digits === 0n) return '0'
-  const raw = parts.digits.toString().padStart(parts.scale + 1, '0')
-  if (parts.scale === 0) return raw
-  return `${raw.slice(0, -parts.scale)}.${raw.slice(-parts.scale)}`.replace(
+  const negative = parts.digits < 0n
+  const digits = (negative ? -parts.digits : parts.digits).toString()
+  const raw = digits.padStart(parts.scale + 1, '0')
+  if (parts.scale === 0) return `${negative ? '-' : ''}${raw}`
+  return `${negative ? '-' : ''}${raw.slice(0, -parts.scale)}.${raw.slice(-parts.scale)}`.replace(
     /\.?(\d*?)0+$/,
     (_, fraction: string) => (fraction ? `.${fraction}` : ''),
   )
@@ -58,6 +79,93 @@ function multiplyDecimals(left: string, right: string): string {
     digits: a.digits * b.digits,
     scale: a.scale + b.scale,
   })
+}
+
+function divideDecimals(left: string, right: string, scale = 6): string {
+  const a = decimalParts(left)
+  const b = decimalParts(right)
+  if (b.digits === 0n) throw new Error('Cannot divide by zero.')
+  const exponent = scale + b.scale - a.scale
+  let numerator = a.digits
+  let denominator = b.digits
+  if (exponent >= 0) numerator *= 10n ** BigInt(exponent)
+  else denominator *= 10n ** BigInt(-exponent)
+  const negative = numerator < 0n !== denominator < 0n
+  const absoluteNumerator = numerator < 0n ? -numerator : numerator
+  const absoluteDenominator = denominator < 0n ? -denominator : denominator
+  let quotient = absoluteNumerator / absoluteDenominator
+  if ((absoluteNumerator % absoluteDenominator) * 2n >= absoluteDenominator)
+    quotient += 1n
+  return decimalString({ digits: negative ? -quotient : quotient, scale })
+}
+
+function subtractDecimals(left: string, right: string): string {
+  const a = decimalParts(left)
+  const b = decimalParts(right)
+  const scale = Math.max(a.scale, b.scale)
+  return decimalString({
+    digits:
+      a.digits * 10n ** BigInt(scale - a.scale) -
+      b.digits * 10n ** BigInt(scale - b.scale),
+    scale,
+  })
+}
+
+/**
+ * Projects a recipe batch onto one output unit. Division is rounded half-up
+ * to six decimal places and recorded by callers as part of the evidence.
+ */
+export function calculateRecipePlateCost(
+  input: RecipePlateCostInput,
+): RecipePlateCost {
+  if (input.batchCost === null) {
+    return {
+      status: input.outputQuantity ? 'partial' : 'empty',
+      effectiveOutputQuantity: null,
+      costPerOutput: null,
+      menuPrice: input.menuPrice,
+      plateMargin: null,
+      foodCostPercentage: null,
+      reason:
+        'A complete batch cost is required before plate cost can be calculated.',
+    }
+  }
+
+  const effectiveOutputQuantity = multiplyDecimals(
+    multiplyDecimals(input.outputQuantity, input.yieldFactor),
+    subtractDecimals('1', input.wasteFactor),
+  )
+  if (effectiveOutputQuantity === '0') {
+    return {
+      status: 'partial',
+      effectiveOutputQuantity: null,
+      costPerOutput: null,
+      menuPrice: input.menuPrice,
+      plateMargin: null,
+      foodCostPercentage: null,
+      reason: 'Effective output quantity must be greater than zero.',
+    }
+  }
+
+  const costPerOutput = divideDecimals(input.batchCost, effectiveOutputQuantity)
+  const plateMargin =
+    input.menuPrice === null
+      ? null
+      : subtractDecimals(input.menuPrice, costPerOutput)
+  const foodCostPercentage =
+    input.menuPrice === null || input.menuPrice === '0'
+      ? null
+      : divideDecimals(multiplyDecimals(costPerOutput, '100'), input.menuPrice)
+
+  return {
+    status: input.batchCost === null ? 'partial' : 'complete',
+    effectiveOutputQuantity,
+    costPerOutput,
+    menuPrice: input.menuPrice,
+    plateMargin,
+    foodCostPercentage,
+    reason: input.menuPrice === null ? 'Menu price is not available.' : null,
+  }
 }
 
 /**
