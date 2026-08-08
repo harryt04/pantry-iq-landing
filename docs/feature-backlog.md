@@ -126,7 +126,7 @@ that touch them carry a stated default so work never stalls.
 | ID | Title | Status | Owner | Blocked by |
 |---|---|---|---|---|
 | FND-01 | Prescribe the technology stack → [`tech-stack.md`](tech-stack.md) | **done** | opus-5 | — |
-| FND-02 | Repository scaffold and developer setup | available | — | FND-01 |
+| FND-02 | Repository scaffold and developer setup | **done** | claude-opus-5 | FND-01 |
 | FND-03 | CI pipeline and automated gates | available | — | FND-02 |
 | FND-04 | Core schema and migrations | available | — | FND-02 |
 | FND-05 | Authentication and the owner account | available | — | FND-04 |
@@ -339,7 +339,7 @@ the repo from it without asking a question.
 ### FND-02 — Repository scaffold and developer setup
 
 ```
-Status: available   Owner: —   Claimed: —   Completed: —   Branch/PR: —
+Status: done   Owner: claude-opus-5   Claimed: 2026-08-08   Completed: 2026-08-08   Branch/PR: rewrite
 ```
 
 **Blocked by:** FND-01 · **Blocks:** FND-03, FND-04, FND-06, QAG-04
@@ -361,13 +361,19 @@ equivalent proving the app boots.
 **Scope — out.** Schema, auth, UI, CI.
 
 **Acceptance criteria.**
-- [ ] A clean clone reaches a running dev server using only the README.
-- [ ] Lint and format run clean on the empty project.
-- [ ] No secrets committed; the example env file lists every variable.
-- [ ] Stale `node_modules/` gone and ignored.
+- [x] A clean clone reaches a running dev server using only the README.
+- [x] Lint and format run clean on the empty project.
+- [x] No secrets committed; the example env file lists every variable.
+- [x] Stale `node_modules/` gone and ignored.
 
 **Verification.** Delete the working copy, clone fresh, follow the
 README, and reach the health check.
+
+**Notes.** Package manager (unstated in `tech-stack.md`): pnpm, pinned via
+`packageManager` + Corepack. Local Postgres: docker-compose,
+`postgres:16-alpine`, host port `5433` (kanji-forge, a sibling project on
+this machine, already occupies `5432`). `pnpm build`, `pnpm typecheck`,
+`pnpm lint`, and `pnpm dev` → `/api/health` all verified clean.
 
 ---
 
