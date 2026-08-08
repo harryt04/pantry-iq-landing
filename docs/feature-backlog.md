@@ -154,7 +154,7 @@ that touch them carry a stated default so work never stalls.
 
 | ID | Title | Status | Owner | Blocked by |
 |---|---|---|---|---|
-| MET-01 | Derived metric definitions | available | — | FND-04 |
+| MET-01 | Derived metric definitions | **done** | codex | FND-04 |
 | MET-02 | Precompute pipeline and metric store | available | — | MET-01, ING-09 |
 | MET-03 | Spoilage resolution — snapshots authoritative | available | — | MET-02 |
 | MET-04 | Data Sufficiency score | available | — | MET-02 |
@@ -1091,7 +1091,7 @@ row for row.
 ### MET-01 — Derived metric definitions
 
 ```
-Status: available   Owner: —   Claimed: —   Completed: —   Branch/PR: —
+Status: done   Owner: codex   Claimed: 2026-08-08   Completed: 2026-08-08   Branch/PR: rewrite
 ```
 
 **Blocked by:** FND-04 · **Blocks:** MET-02, DSH-06, MNU-03, STF-02
@@ -1116,17 +1116,27 @@ input is missing — never a zero, never a null silently treated as zero.
 **Scope — out.** Scheduling, storage, scoring, and presentation.
 
 **Acceptance criteria.**
-- [ ] Each metric matches its documented formula exactly.
-- [ ] Missing unit costs produce "cannot calculate, no unit cost", not
+- [x] Each metric matches its documented formula exactly.
+- [x] Missing unit costs produce "cannot calculate, no unit cost", not
       `$0`.
-- [ ] Every result carries its input values and the units they were in.
-- [ ] Money arithmetic uses exact numeric types throughout.
-- [ ] Unit tests cover the worked salmon example from
+- [x] Every result carries its input values and the units they were in.
+- [x] Money arithmetic uses exact numeric types throughout.
+- [x] Unit tests cover the worked salmon example from
       `mvp-scope-and-decisions.md` § "Message format" and reproduce its
       figures.
 
 **Verification.** Property tests: no metric ever returns a number when an
 input it depends on is absent.
+
+**Notes.** Added pure metric functions for sell-through rate, spoilage
+estimate, spoilage risk, margin, variance, and timezone-aware business-day
+bucketing. PostgreSQL `numeric` values remain decimal strings throughout;
+ratios use six-place half-up rounding implemented with `bigint`, and every
+result includes the source inputs and units. Missing dependencies and invalid
+inputs return explicit cannot-calculate reasons. The focused suite covers
+the worked salmon figures, decimal arithmetic, missing-data boundaries, and
+midnight/DST business-day behavior. Full formatting, CI, accessibility, and
+production build validation passed.
 
 ---
 
