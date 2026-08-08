@@ -867,11 +867,223 @@ body {
   width: 100%;
 }
 
+.chat-page {
+  max-width: 1120px;
+}
+
+.chat-surface {
+  display: grid;
+  gap: var(--space-4);
+  margin-top: var(--space-8);
+  min-width: 0;
+}
+
+.chat-surface__scope {
+  align-items: baseline;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-3);
+}
+
+.chat-surface__scope-label,
+.chat-empty__eyebrow {
+  color: var(--muted-foreground);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.chat-surface__scope strong {
+  font-size: var(--text-md);
+}
+
+.chat-surface__scope > span:last-child {
+  color: var(--muted-foreground);
+  font-size: var(--text-sm);
+}
+
+.chat-transcript {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-surface);
+  height: min(58svh, 560px);
+  min-height: 360px;
+  min-width: 0;
+}
+
+.chat-transcript__messages {
+  display: grid;
+  gap: var(--space-5);
+  min-height: 100%;
+  padding: var(--space-6);
+}
+
+.chat-empty {
+  align-content: center;
+  display: grid;
+  gap: var(--space-6);
+  margin: auto;
+  max-width: 720px;
+  width: 100%;
+}
+
+.chat-empty__eyebrow {
+  margin: 0 0 var(--space-2);
+}
+
+.chat-empty h2 {
+  font-size: clamp(var(--text-xl), 4vw, var(--text-2xl));
+  letter-spacing: -0.025em;
+  margin: 0;
+}
+
+.chat-empty p:last-child {
+  color: var(--muted-foreground);
+  line-height: 1.6;
+  margin: var(--space-3) 0 0;
+  max-width: 54ch;
+}
+
+.chat-suggestions {
+  display: grid;
+  gap: var(--space-2);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.chat-suggestion {
+  align-items: center;
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-surface);
+  color: var(--foreground);
+  cursor: pointer;
+  display: flex;
+  font: inherit;
+  gap: var(--space-3);
+  justify-content: space-between;
+  min-height: 64px;
+  padding: var(--space-3);
+  text-align: left;
+}
+
+.chat-suggestion:hover {
+  border-color: var(--foreground);
+}
+
+.chat-suggestion:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.chat-suggestion svg {
+  flex: 0 0 auto;
+  height: 16px;
+  width: 16px;
+}
+
+.chat-message {
+  display: grid;
+  gap: var(--space-2);
+  justify-items: start;
+  min-width: 0;
+}
+
+.chat-message--user {
+  justify-items: end;
+}
+
+.chat-message__identity {
+  color: var(--muted-foreground);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.chat-bubble {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-surface);
+  line-height: 1.6;
+  max-width: min(70ch, 92%);
+  min-height: 48px;
+  padding: var(--space-3) var(--space-4);
+  white-space: pre-wrap;
+}
+
+.chat-bubble--assistant {
+  background: var(--background);
+}
+
+.chat-bubble--user {
+  background: var(--muted);
+}
+
+.chat-bubble--streaming {
+  min-height: 88px;
+}
+
+.chat-composer {
+  background: var(--background);
+  display: grid;
+  gap: var(--space-2);
+  min-width: 0;
+  position: sticky;
+  bottom: 0;
+  padding: var(--space-2) 0 var(--space-1);
+}
+
+.chat-composer__group {
+  align-items: end;
+  min-height: 76px;
+  padding: var(--space-2);
+}
+
+.chat-composer__group textarea {
+  min-height: 56px;
+  padding: var(--space-2);
+}
+
+.chat-composer__send {
+  margin: 0 var(--space-1) var(--space-1) 0;
+}
+
+.chat-composer__help {
+  color: var(--muted-foreground);
+  font-size: var(--text-sm);
+  margin: 0;
+}
+
 @media (max-width: 760px) {
   .app-shell__header-inner {
     gap: var(--space-2);
     min-height: 72px;
     padding: var(--space-3) var(--space-4);
+  }
+
+  .chat-page {
+    padding-inline: var(--space-4);
+  }
+
+  .chat-transcript {
+    height: 52svh;
+    min-height: 320px;
+  }
+
+  .chat-transcript__messages {
+    padding: var(--space-4);
+  }
+
+  .chat-suggestions {
+    grid-template-columns: 1fr;
+  }
+
+  .chat-suggestion {
+    min-height: 52px;
+  }
+
+  .chat-bubble {
+    max-width: 96%;
   }
 
   .app-shell__scope {

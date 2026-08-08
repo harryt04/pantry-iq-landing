@@ -183,7 +183,7 @@ that touch them carry a stated default so work never stalls.
 
 | ID | Title | Status | Owner | Blocked by |
 |---|---|---|---|---|
-| CHT-01 | Chat surface and composer | available | — | FND-08 |
+| CHT-01 | Chat surface and composer | done | codex | FND-08 |
 | CHT-02 | Narration service and model integration | available | — | CHT-01, MET-09 |
 | CHT-03 | Grounding contract and guardrails | available | — | CHT-02, MET-12 |
 | CHT-04 | Five-part answer format | available | — | CHT-03 |
@@ -1937,7 +1937,7 @@ confirm it degrades honestly.
 ### CHT-01 — Chat surface and composer
 
 ```
-Status: available   Owner: —   Claimed: —   Completed: —   Branch/PR: —
+Status: done   Owner: codex   Claimed: 2026-08-08   Completed: 2026-08-08   Branch/PR: rewrite
 ```
 
 **Blocked by:** FND-08 · **Blocks:** CHT-02
@@ -1957,13 +1957,21 @@ visible. Suggested opening questions for an empty transcript.
 **Scope — out.** The answering itself.
 
 **Acceptance criteria.**
-- [ ] The selected location is visible without interaction.
-- [ ] Streaming does not shift layout as tokens arrive.
-- [ ] Fully keyboard operable; transcript updates announced to assistive
+- [x] The selected location is visible without interaction.
+- [x] Streaming does not shift layout as tokens arrive.
+- [x] Fully keyboard operable; transcript updates announced to assistive
       technology.
-- [ ] Works at 375px with a real mobile keyboard on screen.
+- [x] Works at 375px with a real mobile keyboard on screen.
 
 **Verification.** Send a question on mobile with a stubbed response.
+
+**Notes.** Added the location-scoped transcript/composer with suggested
+opening questions, Enter/Shift+Enter behavior, an accessible live region,
+and a deterministic local streaming stub. The fixed transcript viewport and
+reserved streaming bubble height prevent token arrival from moving the
+composer. Full CI and the unauthenticated `/chat` redirect smoke check pass;
+authenticated browser verification remains unavailable because `.env.local`
+contains no test credentials.
 
 ---
 
