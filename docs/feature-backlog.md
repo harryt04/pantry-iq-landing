@@ -475,8 +475,11 @@ again.
 implemented. Migration, seed, rollback, and remigration are covered by an
 opt-in Testcontainers round-trip test that checks every canonical table,
 column type, nullability, and index, and rejects unexpected public tables
-(including provisional donation tables). Live verification is still pending
-because this environment cannot find a working container runtime.
+(including provisional donation tables). A runtime-independent migration
+contract test also guards the exact table and index surface, numeric and
+timestamp types, business-day fields, and the absence of donation tables.
+Live verification is still pending because this environment cannot find a
+working container runtime.
 
 **Decisions to confirm.** Item category taxonomy is open
 (`open-questions.md` §1, Q8). **Default:** free-text `category` with no
