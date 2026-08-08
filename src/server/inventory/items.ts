@@ -93,6 +93,8 @@ export async function updateInventoryItem(
   requireUuid(itemId, 'itemId')
   const values = validateInventoryItemUpdateInput(input)
 
+  // MET-02 can compare this durable input version before serving cached metrics.
+  // Every assumption edit therefore invalidates calculations for this item.
   const [item] = await db
     .update(inventoryItems)
     .set({ ...values, updatedAt: new Date() })

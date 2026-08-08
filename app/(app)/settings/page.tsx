@@ -2,25 +2,49 @@ import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 
 import { AccountSettings } from '@/components/settings/account-settings'
+import { ItemMaster } from '@/components/settings/item-master'
 import { auth } from '@/src/server/auth/auth'
+import { listInventoryItems } from '@/src/server/inventory/items'
+import { listLocations } from '@/src/server/locations/locations'
 
-export default async function SettingsPage() {
+export default async function SettingsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ locationId?: string }>
+}) {
+  const requestHeaders = await headers()
   const session = await auth.api.getSession({ headers: await headers() })
   if (!session) redirect('/sign-in')
+
+  const locations = (await listLocations(requestHeaders)).filter(
+    (location) => location.isActive,
+  )
+  const requestedLocationId = (await searchParams).locationId
+  const selectedLocation =
+    locations.find((location) => location.id === requestedLocationId) ??
+    locations[0]
+  const items = selectedLocation
+    ? await listInventoryItems(requestHeaders, selectedLocation.id, {
+        includeInactive: true,
+      })
+    : []
 
   return (
     <main className="app-page" aria-labelledby="settings-title">
       <p className="app-page__eyebrow">Settings</p>
       <h1 id="settings-title">Account settings.</h1>
       <p className="app-page__lede">
-        Keep your account details current. Location assumptions and item
-        settings will live here as they become available.
+        Keep your account details and location assumptions current. Changes stay
+        scoped to the selected operation.
       </p>
       <AccountSettings
         initialCompanyName={session.user.companyName ?? ''}
         initialEmail={session.user.email}
         initialName={session.user.name}
       />
+      {selectedLocation ? (
+        <ItemMaster initialItems={items} locationId={selectedLocation.id} />
+      ) : null}
     </main>
   )
 }

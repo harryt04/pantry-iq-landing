@@ -571,6 +571,99 @@ body {
   padding: var(--space-3);
 }
 
+.item-master-card {
+  margin-top: var(--space-5);
+}
+
+.item-master-note,
+.item-master-empty {
+  background: var(--muted);
+  border-left: 3px solid var(--signal-watch);
+  line-height: 1.6;
+  margin: 0 0 var(--space-4);
+  padding: var(--space-3) var(--space-4);
+}
+
+.item-master-empty {
+  border-left-color: var(--border);
+  color: var(--muted-foreground);
+}
+
+.item-master-table-wrap {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-surface);
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.item-master-table {
+  border-collapse: collapse;
+  min-width: 1120px;
+  width: 100%;
+}
+
+.item-master-table th,
+.item-master-table td {
+  border-bottom: 1px solid var(--border);
+  padding: var(--space-3);
+  text-align: left;
+  vertical-align: top;
+}
+
+.item-master-table th {
+  background: var(--muted);
+  color: var(--muted-foreground);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.item-master-table td {
+  min-width: 104px;
+}
+
+.item-master-table td:first-child {
+  min-width: 180px;
+}
+
+.item-master-table td:nth-child(2) {
+  min-width: 170px;
+}
+
+.item-master-table tr:last-child td {
+  border-bottom: 0;
+}
+
+.item-master-table small {
+  color: var(--muted-foreground);
+  display: block;
+  font-size: var(--text-sm);
+  margin-top: var(--space-1);
+  white-space: nowrap;
+}
+
+.item-master-table code {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+}
+
+.item-master-table input {
+  min-width: 96px;
+}
+
+.item-master-row--inactive {
+  background: color-mix(in srgb, var(--muted) 55%, transparent);
+}
+
+.item-master-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
 @keyframes pantryiq-pulse {
   0%,
   100% {

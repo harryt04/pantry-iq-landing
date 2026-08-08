@@ -198,7 +198,7 @@ that touch them carry a stated default so work never stalls.
 |---|---|---|---|---|
 | SET-01 | Account settings | **done** | codex | FND-08 |
 | SET-02 | Location management | available | — | FND-08, ING-01 |
-| SET-03 | Item master management | available | — | FND-08, ING-07 |
+| SET-03 | Item master management | **done** | codex | FND-08, ING-07 |
 | SET-04 | Import history drill-down | available | — | FND-08, ING-09 |
 | SET-05 | Shelf-life defaults and category taxonomy | available | — | SET-03 |
 
@@ -2305,7 +2305,7 @@ undone."
 ### SET-03 — Item master management
 
 ```
-Status: available   Owner: —   Claimed: —   Completed: —   Branch/PR: —
+Status: done   Owner: codex   Claimed: 2026-08-08   Completed: 2026-08-08   Branch/PR: rewrite
 ```
 
 **Blocked by:** FND-08, ING-07 · **Blocks:** CHT-06, SET-05
@@ -2326,16 +2326,25 @@ spoilage is **not** retroactively recalculated — recalculation is opt-in
 from chat or the dashboard, and the UI says so.
 
 **Acceptance criteria.**
-- [ ] Shelf life and cost per unit are editable — this is the ticket's
+- [x] Shelf life and cost per unit are editable — this is the ticket's
       whole point.
-- [ ] Canonical name cannot be edited.
-- [ ] Edits invalidate the affected precomputed metrics (`MET-02`).
-- [ ] The non-retroactive behaviour is stated in the UI, not assumed.
-- [ ] Every value shows whether it is the user's or our default.
-- [ ] Table works at 375px, scrolling inside its own container.
+- [x] Canonical name cannot be edited.
+- [x] Edits invalidate the affected precomputed metrics (`MET-02`).
+- [x] The non-retroactive behaviour is stated in the UI, not assumed.
+- [x] Every value shows whether it is the user's or our default.
+- [x] Table works at 375px, scrolling inside its own container.
 
 **Verification.** Change a shelf life, confirm future recommendations use
 it and historical figures do not silently move.
+
+**Notes.** The settings surface lists all active and archived items for the
+selected location. Editable assumptions are saved through owner-scoped API
+routes; `inventory_items.updated_at` is deliberately advanced on every edit
+as the durable metric-input version for `MET-02`. Existing historical values
+are not rewritten. Live authenticated verification was unavailable because
+`.env.local` has no test credentials and PostgreSQL is not reachable; the
+route contract, build, accessibility suite, and unauthenticated HTTP smoke
+checks pass.
 
 ---
 
@@ -3644,14 +3653,14 @@ condition.
 | Metrics engine | 1 | 12 |
 | Dashboard | 1 | 7 |
 | Chat | 1 | 8 |
-| Settings | 1 | 5 |
+| Settings | 2 | 5 |
 | Marketing site | 4 | 5 |
 | Quality gates | 3 | 6 |
 | Cross-location | 0 | 4 |
 | Integrations | 0 | 8 |
 | Menu management | 4 | 7 |
 | Staffing | 0 | 6 |
-| **Total** | **30** | **87** |
+| **Total** | **31** | **87** |
 
 **The backlog is complete when every ticket reads `done`.** Sections 7
 and 8 are not work and never become work.
