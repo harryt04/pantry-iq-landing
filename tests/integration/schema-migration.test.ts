@@ -43,6 +43,7 @@ const canonicalIndexes = [
   'recipe_ingredients_ingredient_item_id_idx',
   'item_unit_conversions_item_units_idx',
   'recipe_cost_history_location_recipe_calculated_idx',
+  'csv_upload_history_storage_key_idx',
 ] as const
 
 const canonicalColumns = [
@@ -128,6 +129,8 @@ const canonicalColumns = [
   ['csv_upload_history', 'rows_imported', false, 'integer'],
   ['csv_upload_history', 'mapping_used', false, 'jsonb'],
   ['csv_upload_history', 'unmatched_items', true, 'jsonb'],
+  ['csv_upload_history', 'storage_key', true, 'text'],
+  ['csv_upload_history', 'status', false, 'text'],
   ['csv_upload_history', 'uploaded_at', false, 'timestamp with time zone'],
   ['csv_upload_history', 'created_at', false, 'timestamp with time zone'],
   ['session', 'id', false, 'uuid'],

@@ -29,6 +29,7 @@
     "db:rollback": "tsx --env-file-if-exists=.env.local src/server/db/rollback.ts"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1106.0",
     "@base-ui/react": "^1.7.0",
     "@better-auth/drizzle-adapter": "^1.6.26",
     "better-auth": "^1.6.26",

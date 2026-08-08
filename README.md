@@ -93,6 +93,7 @@ Summary:
 | `BETTER_AUTH_SECRET` | yes | Session signing secret for Better Auth |
 | `BETTER_AUTH_URL` | yes | Base URL Better Auth issues callbacks against |
 | `S3_ENDPOINT` / `S3_ACCESS_KEY_ID` / `S3_SECRET_ACCESS_KEY` / `S3_BUCKET` | later (`ING-02`) | S3-compatible object storage for raw CSV uploads |
+| `S3_REGION` / `S3_FORCE_PATH_STYLE` | optional (`ING-02`) | S3-compatible client settings; defaults to `auto` and virtual-hosted style |
 | `RESEND_API_KEY` | later | Transactional email — auth flows only, never notifications |
 | `ANTHROPIC_API_KEY` | later (`CHT-02`) | LLM narration via the Vercel AI SDK |
 

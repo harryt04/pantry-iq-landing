@@ -639,6 +639,48 @@ body {
   max-width: 62ch;
 }
 
+.app-page__form {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-surface);
+  display: grid;
+  gap: var(--space-5);
+  margin-top: var(--space-8);
+  max-width: 680px;
+  padding: var(--space-6);
+}
+
+.app-page__form-row {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.app-page__form-row input[type='file'] {
+  border: 1px solid var(--input);
+  border-radius: var(--radius-surface);
+  font: inherit;
+  min-height: 48px;
+  padding: var(--space-2);
+}
+
+.app-page__help,
+.app-page__status,
+.app-page__error {
+  font-size: var(--text-sm);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.app-page__help,
+.app-page__status {
+  color: var(--muted-foreground);
+}
+
+.app-page__error {
+  border-left: 3px solid var(--destructive);
+  padding-left: var(--space-3);
+}
+
 .app-page__primary-action,
 .app-page__secondary-action {
   align-items: center;

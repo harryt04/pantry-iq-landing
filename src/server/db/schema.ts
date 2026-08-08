@@ -391,16 +391,28 @@ export const inventorySnapshots = pgTable(
   ],
 )
 
-export const csvUploadHistory = pgTable('csv_upload_history', {
-  id: uuid('id').defaultRandom().primaryKey(),
-  locationId: uuid('location_id')
-    .notNull()
-    .references(() => locations.id),
-  filename: text('filename').notNull(),
-  source: text('source').notNull(),
-  rowsImported: integer('rows_imported').notNull(),
-  mappingUsed: jsonb('mapping_used').notNull(),
-  unmatchedItems: jsonb('unmatched_items'),
-  uploadedAt: timestamp('uploaded_at', { withTimezone: true }).notNull(),
-  createdAt,
-})
+export const csvUploadHistory = pgTable(
+  'csv_upload_history',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    locationId: uuid('location_id')
+      .notNull()
+      .references(() => locations.id),
+    filename: text('filename').notNull(),
+    source: text('source').notNull(),
+    rowsImported: integer('rows_imported').notNull(),
+    mappingUsed: jsonb('mapping_used').notNull(),
+    unmatchedItems: jsonb('unmatched_items'),
+    storageKey: text('storage_key'),
+    status: text('status').notNull().default('imported'),
+    uploadedAt: timestamp('uploaded_at', { withTimezone: true }).notNull(),
+    createdAt,
+  },
+  (table) => [
+    uniqueIndex('csv_upload_history_storage_key_idx').on(table.storageKey),
+    check(
+      'csv_upload_history_status_check',
+      sql`${table.status} in ('uploaded', 'imported')`,
+    ),
+  ],
+)

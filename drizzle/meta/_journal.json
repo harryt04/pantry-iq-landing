@@ -43,6 +43,13 @@
       "when": 1786222767565,
       "tag": "0005_bouncy_vector",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1786223768718,
+      "tag": "0006_secure_csv_upload_storage",
+      "breakpoints": true
     }
   ]
 }

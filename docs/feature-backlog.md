@@ -139,7 +139,7 @@ that touch them carry a stated default so work never stalls.
 | ID | Title | Status | Owner | Blocked by |
 |---|---|---|---|---|
 | ING-01 | Location create and manage | **done** | codex | FND-05 |
-| ING-02 | CSV upload and secure file handling | available | — | ING-01, QAG-04 |
+| ING-02 | CSV upload and secure file handling | **done** | codex | ING-01, QAG-04 |
 | ING-03 | CSV parse and preview | available | — | ING-02 |
 | ING-04 | Column mapping — auto-detection | available | — | ING-03 |
 | ING-05 | Column mapping — uncertain-column resolution | available | — | ING-04, FND-07 |
@@ -731,7 +731,7 @@ credentials, so authenticated browser verification remains pending.
 ### ING-02 — CSV upload and secure file handling
 
 ```
-Status: available   Owner: —   Claimed: —   Completed: —   Branch/PR: —
+Status: done   Owner: codex   Claimed: 2026-08-08   Completed: 2026-08-08   Branch/PR: rewrite
 ```
 
 **Blocked by:** ING-01, QAG-04 · **Blocks:** ING-03
@@ -752,16 +752,23 @@ with a text status alongside, never a bare spinner.
 the friendly redirect in `voice-and-tone.md` §8, not support.
 
 **Acceptance criteria.**
-- [ ] File type validated on content, not on extension alone.
-- [ ] A size ceiling is enforced server-side and stated in the UI before
+- [x] File type validated on content, not on extension alone.
+- [x] A size ceiling is enforced server-side and stated in the UI before
       upload.
-- [ ] Uploads are scoped to a location the account owns.
-- [ ] A failed or interrupted upload writes nothing and says so — "Nothing
+- [x] Uploads are scoped to a location the account owns.
+- [x] A failed or interrupted upload writes nothing and says so — "Nothing
       was saved, so your existing data is untouched."
-- [ ] Filenames are never used as storage paths.
+- [x] Filenames are never used as storage paths.
 
 **Verification.** Attempt an oversized file, a renamed binary, and an
 upload to a foreign location identifier. All three rejected cleanly.
+
+**Notes.** The upload endpoint accepts the raw request body so the guarded
+stream can enforce the 10 MB ceiling without first materialising a multipart
+form in application memory. A configured S3-compatible adapter stores the
+object under a generated UUID key; the audit row is written only after the
+object completes, and a database failure triggers object cleanup. The raw
+upload is recorded with `status: uploaded` and remains ready for `ING-03`.
 
 ---
 

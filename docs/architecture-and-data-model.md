@@ -147,6 +147,8 @@ Tracks all file uploads for audit and replay purposes.
 | `rowsImported` | integer | Number of rows processed |
 | `mappingUsed` | jsonb | Column mapping applied |
 | `unmatchedItems` | jsonb (nullable) | Items that required user resolution |
+| `storageKey` | text (nullable, unique) | Generated S3-compatible object key for the raw file |
+| `status` | text | `uploaded` until parsing and commit finish; `imported` afterward |
 | `uploadedAt` | timestamp | |
 | `createdAt` | timestamp | |
 
