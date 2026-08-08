@@ -19,6 +19,7 @@
     "format:check": "prettier --check .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run --passWithNoTests",
+    "test:integration": "vitest run tests/integration",
     "test:a11y": "playwright test",
     "test:watch": "vitest",
     "db:generate": "drizzle-kit generate",
@@ -47,6 +48,7 @@
   "devDependencies": {
     "@playwright/test": "^1.62.1",
     "@tailwindcss/postcss": "^4.0.0",
+    "@testcontainers/postgresql": "^12.1.0",
     "@types/node": "^22.10.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",

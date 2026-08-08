@@ -218,7 +218,7 @@ that touch them carry a stated default so work never stalls.
 |---|---|---|---|---|
 | QAG-01 | Accessibility gate automation | **done** | codex | FND-03, FND-07 |
 | QAG-02 | Greyscale chart check | available | — | QAG-01, DSH-05 |
-| QAG-03 | Test strategy and harness | available | — | FND-03 |
+| QAG-03 | Test strategy and harness | **in-review** | codex | FND-03 |
 | QAG-04 | CSV upload security hardening | **done** | codex | FND-02 |
 | QAG-05 | Observability and error tracking | available | — | FND-03 |
 | QAG-06 | Data isolation and ownership authorization | available | — | FND-05, QAG-03 |
@@ -2528,7 +2528,7 @@ confirm the build fails.
 ### QAG-03 — Test strategy and harness
 
 ```
-Status: available   Owner: —   Claimed: —   Completed: —   Branch/PR: —
+Status: in-review   Owner: codex   Claimed: 2026-08-08   Completed: —   Branch/PR: rewrite
 ```
 
 **Blocked by:** FND-03 · **Blocks:** QAG-06
@@ -2550,9 +2550,15 @@ code.
 **Acceptance criteria.**
 - [ ] Engine tests run against a real database, not mocks.
 - [ ] The critical path runs end to end in CI.
-- [ ] Fixtures are reusable by other tickets.
-- [ ] Tests are deterministic — no reliance on wall-clock now, no
+- [x] Fixtures are reusable by other tickets.
+- [x] Tests are deterministic — no reliance on wall-clock now, no
       ordering assumptions.
+
+**Notes.** The reusable fixture set and a Testcontainers-backed PostgreSQL
+integration harness are in place, and CI runs the harness. The engine and
+authenticated import/dashboard flows do not exist yet, so the two remaining
+acceptance checks must close with `MET-01` and the dependent application
+tickets rather than being represented by placeholder tests.
 
 ---
 

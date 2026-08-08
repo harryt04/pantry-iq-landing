@@ -44,6 +44,11 @@ jobs:
       - name: Unit tests
         run: pnpm test
 
+      - name: PostgreSQL integration tests
+        run: pnpm test:integration
+        env:
+          TESTCONTAINERS_ENABLED: '1'
+
       # QAG-02: greyscale chart check attaches here as an additional
       # step, once chart components exist (DSH-05). It renders every
       # chart, desaturates it, and asserts it is still readable by
