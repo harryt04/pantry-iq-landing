@@ -13,7 +13,7 @@ export function SiteHeader() {
         </Link>
 
         <nav className="site-header__nav" aria-label="Primary navigation">
-          <Link className="site-header__link" href="/pricing">
+          <Link className="site-header__link" href="/#pricing">
             Pricing
           </Link>
           <Link className="site-header__link" href="/sign-in">

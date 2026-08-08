@@ -134,6 +134,42 @@ export default function Home() {
         </section>
 
         <section
+          className="landing-pricing"
+          id="pricing"
+          aria-labelledby="landing-pricing-title"
+        >
+          <div className="landing-container landing-pricing__content">
+            <div className="landing-section-heading">
+              <p className="landing-eyebrow">Pricing</p>
+              <h2 id="landing-pricing-title">One location. One clear price.</h2>
+            </div>
+            <div className="landing-pricing__card">
+              <div
+                className="landing-pricing__price"
+                aria-label="$20 per location per month"
+              >
+                <span className="landing-pricing__amount figure">$20</span>
+                <span className="landing-pricing__period">
+                  per location
+                  <br />
+                  per month
+                </span>
+              </div>
+              <p>
+                Start with the sales and purchasing data you already have.
+                PantryIQ gives you a clear place to begin.
+              </p>
+              <a
+                className="landing-button landing-button--primary"
+                href="/sign-up"
+              >
+                Start free
+              </a>
+            </div>
+          </div>
+        </section>
+
+        <section
           className="landing-final-cta"
           aria-labelledby="landing-final-title"
         >

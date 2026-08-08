@@ -436,6 +436,54 @@ body {
   padding: clamp(80px, 12vw, 152px) 0;
 }
 
+.landing-pricing {
+  border-top: 1px solid var(--border);
+  padding: clamp(72px, 10vw, 128px) 0;
+}
+
+.landing-pricing__content {
+  align-items: start;
+  display: grid;
+  gap: var(--space-8);
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 420px);
+}
+
+.landing-pricing__card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-surface);
+  padding: var(--space-7);
+}
+
+.landing-pricing__price {
+  align-items: baseline;
+  display: flex;
+  gap: var(--space-3);
+}
+
+.landing-pricing__amount {
+  font-size: clamp(2.5rem, 6vw, 3.5rem);
+  font-weight: 600;
+  line-height: 1;
+}
+
+.landing-pricing__period {
+  color: var(--muted-foreground);
+  font-size: var(--text-base);
+  line-height: 1.4;
+}
+
+.landing-pricing__card p {
+  font-size: var(--text-md);
+  line-height: 1.6;
+  margin: var(--space-5) 0 0;
+  max-width: 34ch;
+}
+
+.landing-pricing__card .landing-button {
+  margin-top: var(--space-6);
+}
+
 .landing-final-cta__content {
   align-items: start;
   display: flex;
@@ -489,6 +537,15 @@ body {
   .landing-proof__item + .landing-proof__item {
     border-left: 0;
     border-top: 1px solid var(--border);
+  }
+
+  .landing-pricing__content {
+    display: block;
+  }
+
+  .landing-pricing__card {
+    margin-top: var(--space-7);
+    padding: var(--space-5);
   }
 }
 

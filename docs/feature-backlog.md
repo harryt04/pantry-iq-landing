@@ -209,7 +209,7 @@ that touch them carry a stated default so work never stalls.
 | MKT-01 | Site shell, nav, and theming | **done** | codex | FND-06 |
 | MKT-02 | Landing page — hero through final CTA | **done** | codex | MKT-01 |
 | MKT-03 | Proof section — a real recommendation card | available | — | MKT-02, DSH-03 |
-| MKT-04 | Pricing section | available | — | MKT-02 |
+| MKT-04 | Pricing section | **done** | codex | MKT-02 |
 | MKT-05 | Claims-discipline audit | available | — | MKT-02 |
 
 ### Quality gates
@@ -2392,7 +2392,7 @@ feature, that feature ships").
 ### MKT-04 — Pricing section
 
 ```
-Status: available   Owner: —   Claimed: —   Completed: —   Branch/PR: —
+Status: done   Owner: codex   Claimed: 2026-08-08   Completed: 2026-08-08   Branch/PR: rewrite
 ```
 
 **Blocked by:** MKT-02 · **Blocks:** —
@@ -2409,13 +2409,19 @@ writes it · [`open-questions.md`](open-questions.md) §2 → pricing anchor.
 there is no billing in this backlog (D7).
 
 **Acceptance criteria.**
-- [ ] One plan shown, because one plan exists.
-- [ ] The `Start free` CTA leads to signup, not to a payment form.
-- [ ] Nothing implies tiers, seats, or contract terms.
+- [x] One plan shown, because one plan exists.
+- [x] The `Start free` CTA leads to signup, not to a payment form.
+- [x] Nothing implies tiers, seats, or contract terms.
 
 **Decisions to confirm.** The $20/location versus $249–350 tension is
 unresolved and this ticket does not resolve it. **Default:** publish the
 live price and ask the founder to confirm the number before merge.
+
+**Notes.** Published the documented live price of $20 per location per
+month as one plan, with a `Start free` link to `/sign-up`. The header's
+Pricing link now targets the landing-page section. No checkout, tiers,
+seats, or contract terms were added. The signup and authentication flow
+remain future work under FND-05.
 
 ---
 
