@@ -755,6 +755,72 @@ body {
   );
 }
 
+/* DSH-05: chart meaning survives desaturation. The scroll boundary belongs
+   to the chart so a long mark can never widen the page itself. */
+.chart-scroll {
+  max-width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  padding: var(--space-2) 0;
+  scrollbar-gutter: stable;
+}
+
+.chart-canvas {
+  min-width: 560px;
+}
+
+.chart-svg {
+  color: var(--foreground);
+  display: block;
+  font-family: var(--font-sans);
+  max-width: none;
+}
+
+.chart-label,
+.chart-line-label {
+  fill: var(--foreground);
+  font-size: var(--text-base);
+  font-weight: 500;
+}
+
+.chart-value {
+  fill: var(--foreground);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.03em;
+}
+
+.chart-mark {
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.chart-line {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+}
+
+.chart-point {
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+}
+
+.chart-point-value {
+  paint-order: stroke;
+  stroke: var(--card);
+  stroke-linejoin: round;
+  stroke-width: 4px;
+}
+
+.chart-empty {
+  fill: var(--muted-foreground);
+  font-size: var(--text-base);
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

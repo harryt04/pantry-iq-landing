@@ -1,6 +1,7 @@
 'use client'
 
 import { ThemeToggle } from '@/components/theme-toggle'
+import { LineChart, RankedBarChart } from '@/components/charts/chart-primitives'
 import {
   Accordion,
   AccordionContent,
@@ -71,6 +72,37 @@ function Section({
     </section>
   )
 }
+
+const chartBars = [
+  { label: 'Salmon fillet', value: 840, valueLabel: '$840' },
+  { label: 'Cream', value: 620, valueLabel: '$620' },
+  { label: 'Romaine', value: 420, valueLabel: '$420' },
+  { label: 'Bread', value: 240, valueLabel: '$240' },
+  { label: 'Limes', value: 110, valueLabel: '$110' },
+]
+
+const chartLines = [
+  {
+    id: 'margin',
+    label: 'Margin',
+    points: [
+      { label: 'Week 1', value: 31, valueLabel: '31%' },
+      { label: 'Week 2', value: 34, valueLabel: '34%' },
+      { label: 'Week 3', value: 32, valueLabel: '32%' },
+      { label: 'Week 4', value: 38, valueLabel: '38%' },
+    ],
+  },
+  {
+    id: 'sell-through',
+    label: 'Sell-through',
+    points: [
+      { label: 'Week 1', value: 24, valueLabel: '24%' },
+      { label: 'Week 2', value: 28, valueLabel: '28%' },
+      { label: 'Week 3', value: 27, valueLabel: '27%' },
+      { label: 'Week 4', value: 30, valueLabel: '30%' },
+    ],
+  },
+]
 
 export default function GalleryPage() {
   return (
@@ -239,6 +271,17 @@ export default function GalleryPage() {
           <Skeleton className="h-6 w-48" />
           <Skeleton className="h-20 w-full" />
         </div>
+      </Section>
+
+      <Section title="Pattern-first charts">
+        <RankedBarChart
+          data={chartBars}
+          ariaLabel="Estimated avoidable cost by item"
+        />
+        <LineChart
+          series={chartLines}
+          ariaLabel="Margin and sell-through by week"
+        />
       </Section>
 
       <Section title="Empty and dialog states">

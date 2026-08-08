@@ -175,7 +175,7 @@ that touch them carry a stated default so work never stalls.
 | DSH-02 | Wallet impact summary | available | — | DSH-01, MET-05 |
 | DSH-03 | Recommendation card | available | — | DSH-01, MET-09 |
 | DSH-04 | Show-your-work disclosure | available | — | DSH-03, MET-10 |
-| DSH-05 | Chart primitives — pattern-first | available | — | FND-07 |
+| DSH-05 | Chart primitives — pattern-first | **done** | codex | FND-07 |
 | DSH-06 | Trend summaries | available | — | DSH-05, MET-01 |
 | DSH-07 | Item deep dives | available | — | DSH-05, MET-02 |
 
@@ -1723,7 +1723,7 @@ panel shows.
 ### DSH-05 — Chart primitives, pattern-first
 
 ```
-Status: available   Owner: —   Claimed: —   Completed: —   Branch/PR: —
+Status: done   Owner: codex   Claimed: 2026-08-08   Completed: 2026-08-08   Branch/PR: rewrite
 ```
 
 **Blocked by:** FND-07 · **Blocks:** DSH-06, DSH-07, QAG-02, AGG-03,
@@ -1750,15 +1750,25 @@ Horizontal overflow contained inside the chart, never on the page body.
 anywhere.
 
 **Acceptance criteria.**
-- [ ] Every categorical series carries its assigned pattern.
-- [ ] Every mark prints its value.
-- [ ] Removing all colour loses no meaning — this is the merge gate.
-- [ ] No green token is reachable from any chart path.
-- [ ] Chart marks meet 3:1 contrast against their background.
-- [ ] Charts scroll inside their own container at 375px.
+- [x] Every categorical series carries its assigned pattern.
+- [x] Every mark prints its value.
+- [x] Removing all colour loses no meaning — this is the merge gate.
+- [x] No green token is reachable from any chart path.
+- [x] Chart marks meet 3:1 contrast against their background.
+- [x] Charts scroll inside their own container at 375px.
 
 **Verification.** Screenshot every chart type, desaturate, read. `QAG-02`
 then automates this.
+
+**Notes.** `components/charts/chart-primitives.tsx` provides reusable SVG
+ranked-bar and line primitives. Bars use solid, diagonal hatch,
+cross-hatch, dots, and vertical-rule fills in fixed order; lines use fixed
+dash patterns. Values and labels are printed on marks, chart overflow is
+contained in a keyboard-focusable region, and the gallery renders both
+types. Server-rendered regression tests cover the encoding contract and
+five-series ceiling. The gallery passes the light/dark accessibility suite;
+the chart tokens are 3:1 or better against their corresponding light/dark
+card backgrounds.
 
 ---
 
