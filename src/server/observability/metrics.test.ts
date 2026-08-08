@@ -196,4 +196,31 @@ describe('operational metrics', () => {
       'Cannot aggregate LLM spend across currencies',
     )
   })
+
+  it('rejects an aggregate that would exceed the safe integer range', () => {
+    const metrics = new OperationalMetrics()
+    const base = {
+      accountId: 'account-1',
+      completedAt: new Date('2026-08-08T12:00:00.000Z'),
+      inputTokens: 1,
+      outputTokens: 1,
+      costMicros: Number.MAX_SAFE_INTEGER,
+      currency: 'USD',
+    }
+
+    metrics.recordLlmQuery(base)
+
+    expect(() => metrics.recordLlmQuery({ ...base, costMicros: 1 })).toThrow(
+      'cost total exceeds the safe integer range',
+    )
+    expect(metrics.getLlmDailySpend('account-1', '2026-08-08')).toEqual({
+      accountId: 'account-1',
+      day: '2026-08-08',
+      queryCount: 1,
+      inputTokens: 1,
+      outputTokens: 1,
+      costMicros: Number.MAX_SAFE_INTEGER,
+      currency: 'USD',
+    })
+  })
 })

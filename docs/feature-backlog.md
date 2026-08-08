@@ -2672,7 +2672,8 @@ aggregates LLM token usage and integer micro-costs by account and UTC day. It
 also records import successes and failures and exposes a per-location success
 rate with its underlying counts. `metrics.test.ts` covers those boundaries,
 including defensive date copies, invalid numeric values, mixed-currency
-rejection, and import outcome validation. The registry is deliberately
+rejection, aggregate safe-integer overflow protection, and import outcome
+validation. The registry is deliberately
 in-process until the producers and persistent telemetry store arrive; it
 provides the typed seam those integrations will consume.
 

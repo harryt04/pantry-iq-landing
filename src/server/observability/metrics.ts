@@ -87,6 +87,14 @@ function assertNonNegativeInteger(value: number, field: string): void {
   }
 }
 
+function addSafeIntegers(left: number, right: number, field: string): number {
+  const total = left + right
+  if (!Number.isSafeInteger(total)) {
+    throw new Error(`${field} total exceeds the safe integer range`)
+  }
+  return total
+}
+
 function assertNonNegativeNumber(value: number, field: string): void {
   if (!Number.isFinite(value) || value < 0) {
     throw new Error(`${field} must be a non-negative finite number`)
@@ -253,10 +261,22 @@ export class OperationalMetrics {
     this.llmDailySpend.set(key, {
       accountId: event.accountId,
       day,
-      queryCount: (existing?.queryCount ?? 0) + 1,
-      inputTokens: (existing?.inputTokens ?? 0) + event.inputTokens,
-      outputTokens: (existing?.outputTokens ?? 0) + event.outputTokens,
-      costMicros: (existing?.costMicros ?? 0) + event.costMicros,
+      queryCount: addSafeIntegers(existing?.queryCount ?? 0, 1, 'query'),
+      inputTokens: addSafeIntegers(
+        existing?.inputTokens ?? 0,
+        event.inputTokens,
+        'input token',
+      ),
+      outputTokens: addSafeIntegers(
+        existing?.outputTokens ?? 0,
+        event.outputTokens,
+        'output token',
+      ),
+      costMicros: addSafeIntegers(
+        existing?.costMicros ?? 0,
+        event.costMicros,
+        'cost',
+      ),
       currency: existing?.currency ?? event.currency,
     })
   }
