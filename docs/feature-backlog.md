@@ -472,9 +472,10 @@ labor, and connector tables — those arrive with `MNU-01`, `STF-01`, and
 again.
 
 **Notes.** The schema, deterministic seed, and guarded local rollback are
-implemented. Migration, seed, rollback, and remigration are now covered by
-an opt-in Testcontainers round-trip test, but live verification is still
-pending because this environment cannot find a working container runtime.
+implemented. Migration, seed, rollback, and remigration are covered by an
+opt-in Testcontainers round-trip test that checks every canonical table and
+index. Live verification is still pending because this environment cannot
+find a working container runtime.
 
 **Decisions to confirm.** Item category taxonomy is open
 (`open-questions.md` §1, Q8). **Default:** free-text `category` with no
