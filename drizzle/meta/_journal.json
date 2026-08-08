@@ -8,6 +8,13 @@
       "when": 1786209857416,
       "tag": "0000_wealthy_jetstream",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1786218760322,
+      "tag": "0001_fancy_the_leader",
+      "breakpoints": true
     }
   ]
 }

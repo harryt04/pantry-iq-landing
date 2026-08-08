@@ -5,6 +5,7 @@ import {
   jsonb,
   numeric,
   pgTable,
+  unique,
   text,
   time,
   timestamp,
@@ -19,11 +20,84 @@ const updatedAt = timestamp('updated_at', { withTimezone: true })
   .defaultNow()
   .notNull()
 
-// Better Auth owns the concrete `user` table in FND-05. The ID remains an
-// explicit UUID now so all restaurant data is ready for ownership enforcement.
+export const user = pgTable(
+  'user',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    name: text('name').notNull(),
+    email: text('email').notNull(),
+    emailVerified: boolean('email_verified').notNull().default(false),
+    image: text('image'),
+    createdAt,
+    updatedAt,
+  },
+  (table) => [unique('user_email_unique').on(table.email)],
+)
+
+export const session = pgTable(
+  'session',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    token: text('token').notNull(),
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+    ipAddress: text('ip_address'),
+    userAgent: text('user_agent'),
+    createdAt,
+    updatedAt,
+  },
+  (table) => [
+    unique('session_token_unique').on(table.token),
+    index('session_user_id_idx').on(table.userId),
+  ],
+)
+
+export const account = pgTable(
+  'account',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    accountId: text('account_id').notNull(),
+    providerId: text('provider_id').notNull(),
+    accessToken: text('access_token'),
+    refreshToken: text('refresh_token'),
+    accessTokenExpiresAt: timestamp('access_token_expires_at', {
+      withTimezone: true,
+    }),
+    refreshTokenExpiresAt: timestamp('refresh_token_expires_at', {
+      withTimezone: true,
+    }),
+    scope: text('scope'),
+    idToken: text('id_token'),
+    password: text('password'),
+    createdAt,
+    updatedAt,
+  },
+  (table) => [index('account_user_id_idx').on(table.userId)],
+)
+
+export const verification = pgTable(
+  'verification',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    identifier: text('identifier').notNull(),
+    value: text('value').notNull(),
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+    createdAt,
+    updatedAt,
+  },
+  (table) => [index('verification_identifier_idx').on(table.identifier)],
+)
+
 export const locations = pgTable('locations', {
   id: uuid('id').defaultRandom().primaryKey(),
-  userId: uuid('user_id').notNull(),
+  userId: uuid('user_id')
+    .notNull()
+    .references(() => user.id, { onDelete: 'cascade' }),
   name: text('name').notNull(),
   address: text('address'),
   timezone: text('timezone').notNull().default('America/Denver'),

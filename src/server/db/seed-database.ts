@@ -8,12 +8,13 @@ import {
   locations,
   purchaseOrderItems,
   purchaseOrders,
+  user,
   transactions,
 } from './schema'
 
 // Stable IDs make the seed safe to run repeatedly and easy to identify in a
-// local database. The owner UUID is intentionally not a real account: FND-05
-// will replace it with a Better Auth user when authentication is available.
+// local database. The seed owner is an identity row for foreign-key fixtures,
+// not a usable login account.
 const seedOwnerId = '00000000-0000-4000-8000-000000000001'
 const seedLocationId = '00000000-0000-4000-8000-000000000002'
 const seedItemId = '00000000-0000-4000-8000-000000000003'
@@ -24,6 +25,16 @@ export const seedDatabase = async (client: ReturnType<typeof postgres>) => {
   const db = drizzle(client)
 
   await db.transaction(async (tx) => {
+    await tx
+      .insert(user)
+      .values({
+        id: seedOwnerId,
+        name: 'Seed owner',
+        email: 'seed-owner@example.invalid',
+        emailVerified: true,
+      })
+      .onConflictDoNothing({ target: user.id })
+
     await tx
       .insert(locations)
       .values({

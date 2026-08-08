@@ -129,7 +129,7 @@ that touch them carry a stated default so work never stalls.
 | FND-02 | Repository scaffold and developer setup | **done** | claude-opus-5 | FND-01 |
 | FND-03 | CI pipeline and automated gates | **done** | claude-sonnet-5 | FND-02 |
 | FND-04 | Core schema and migrations | **done** | codex | FND-02 |
-| FND-05 | Authentication and the owner account | available | — | FND-04 |
+| FND-05 | Authentication and the owner account | in-review | codex | FND-04 |
 | FND-06 | Design tokens and theming | **done** | codex | FND-02 |
 | FND-07 | Component baseline — restyled shadcn | **done** | codex | FND-06 |
 | FND-08 | App shell, navigation, location switcher | available | — | FND-05, FND-07, ING-01 |
@@ -493,7 +493,7 @@ migration.
 ### FND-05 — Authentication and the owner account
 
 ```
-Status: available   Owner: —   Claimed: —   Completed: —   Branch/PR: —
+Status: in-review   Owner: codex   Claimed: 2026-08-08   Completed: —   Branch/PR: rewrite
 ```
 
 **Blocked by:** FND-04 · **Blocks:** FND-08, ING-01, INT-02, QAG-06
@@ -518,19 +518,25 @@ authorization helper that every data query passes through, resolving
 Recipient accounts (D3). Billing (D7).
 
 **Acceptance criteria.**
-- [ ] Passwords stored with a current password-hashing algorithm, never
+- [x] Passwords stored with a current password-hashing algorithm, never
       reversible.
-- [ ] Sessions expire and can be revoked.
-- [ ] Ownership is enforced in one shared helper, not repeated per route.
+- [x] Sessions expire and can be revoked.
+- [x] Ownership is enforced in one shared helper, not repeated per route.
 - [ ] No endpoint returns another account's data when given a valid
       session and a foreign identifier.
-- [ ] Auth error copy follows
+- [x] Auth error copy follows
       [`brand/voice-and-tone.md`](brand/voice-and-tone.md) §6 — never
       blame the user, never leak whether an email exists.
 
 **Verification.** Create two accounts, each with a location, and attempt
 every read and write across the boundary. All must fail. `QAG-06`
 automates this later.
+
+**Notes:** Better Auth, the Drizzle schema, the auth pages, and the shared
+ownership helper are implemented and pass static/build validation. Live
+two-account isolation verification remains in review because the local
+PostgreSQL service configured in `.env.local` is unreachable; `QAG-06` will
+provide the full cross-boundary suite when its dependency is available.
 
 ---
 

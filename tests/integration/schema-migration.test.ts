@@ -12,6 +12,7 @@ import {
 } from '../helpers/test-database'
 
 const canonicalTables = [
+  'account',
   'locations',
   'inventory_items',
   'transactions',
@@ -19,6 +20,9 @@ const canonicalTables = [
   'purchase_order_items',
   'inventory_snapshots',
   'csv_upload_history',
+  'session',
+  'user',
+  'verification',
 ] as const
 
 const canonicalIndexes = [
@@ -32,6 +36,19 @@ const canonicalIndexes = [
 ] as const
 
 const canonicalColumns = [
+  ['account', 'id', false, 'uuid'],
+  ['account', 'user_id', false, 'uuid'],
+  ['account', 'account_id', false, 'text'],
+  ['account', 'provider_id', false, 'text'],
+  ['account', 'access_token', true, 'text'],
+  ['account', 'refresh_token', true, 'text'],
+  ['account', 'access_token_expires_at', true, 'timestamp with time zone'],
+  ['account', 'refresh_token_expires_at', true, 'timestamp with time zone'],
+  ['account', 'scope', true, 'text'],
+  ['account', 'id_token', true, 'text'],
+  ['account', 'password', true, 'text'],
+  ['account', 'created_at', false, 'timestamp with time zone'],
+  ['account', 'updated_at', false, 'timestamp with time zone'],
   ['locations', 'id', false, 'uuid'],
   ['locations', 'user_id', false, 'uuid'],
   ['locations', 'name', false, 'text'],
@@ -100,6 +117,27 @@ const canonicalColumns = [
   ['csv_upload_history', 'unmatched_items', true, 'jsonb'],
   ['csv_upload_history', 'uploaded_at', false, 'timestamp with time zone'],
   ['csv_upload_history', 'created_at', false, 'timestamp with time zone'],
+  ['session', 'id', false, 'uuid'],
+  ['session', 'user_id', false, 'uuid'],
+  ['session', 'token', false, 'text'],
+  ['session', 'expires_at', false, 'timestamp with time zone'],
+  ['session', 'ip_address', true, 'text'],
+  ['session', 'user_agent', true, 'text'],
+  ['session', 'created_at', false, 'timestamp with time zone'],
+  ['session', 'updated_at', false, 'timestamp with time zone'],
+  ['user', 'id', false, 'uuid'],
+  ['user', 'name', false, 'text'],
+  ['user', 'email', false, 'text'],
+  ['user', 'email_verified', false, 'boolean'],
+  ['user', 'image', true, 'text'],
+  ['user', 'created_at', false, 'timestamp with time zone'],
+  ['user', 'updated_at', false, 'timestamp with time zone'],
+  ['verification', 'id', false, 'uuid'],
+  ['verification', 'identifier', false, 'text'],
+  ['verification', 'value', false, 'text'],
+  ['verification', 'expires_at', false, 'timestamp with time zone'],
+  ['verification', 'created_at', false, 'timestamp with time zone'],
+  ['verification', 'updated_at', false, 'timestamp with time zone'],
 ] as const
 
 async function expectCanonicalSchema(sql: ReturnType<typeof postgres>) {
@@ -204,6 +242,10 @@ describe.skipIf(!integrationDatabaseEnabled())(
           ('public.purchase_order_items'),
           ('public.inventory_snapshots'),
           ('public.csv_upload_history'),
+          ('public.account'),
+          ('public.session'),
+          ('public.verification'),
+          ('public.user'),
           ('drizzle.__drizzle_migrations')
         ) as tables(table_name)
       `

@@ -17,6 +17,10 @@ export async function rollbackDatabase(client: DatabaseClient) {
     'purchase_orders',
     'inventory_items',
     'locations',
+    'account',
+    'session',
+    'verification',
+    'user',
   ] as const
 
   await client.begin(async (sql) => {
