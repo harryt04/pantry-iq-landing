@@ -253,7 +253,7 @@ that touch them carry a stated default so work never stalls.
 | MNU-02 | Recipe builder | **done** | codex | MNU-01, FND-07 |
 | MNU-03 | Plate costing | **done** | codex | MNU-02, MET-01 |
 | MNU-04 | Theoretical vs. actual usage | available | — | MNU-03, MET-03 |
-| MNU-05 | Menu engineering matrix | available | — | MNU-03, DSH-05 |
+| MNU-05 | Menu engineering matrix | **done** | codex | MNU-03, DSH-05 |
 | MNU-06 | Menu recommendations in the engine | available | — | MNU-04, MET-09 |
 | MNU-07 | Ingredient-level waste attribution | available | — | MNU-04 |
 
@@ -3257,7 +3257,7 @@ none of them assumed.
 ### MNU-05 — Menu engineering matrix
 
 ```
-Status: available   Owner: —   Claimed: —   Completed: —   Branch/PR: —
+Status: done   Owner: codex   Claimed: 2026-08-08   Completed: 2026-08-08   Branch/PR: rewrite
 ```
 
 **Blocked by:** MNU-03, DSH-05 · **Blocks:** —
@@ -3278,11 +3278,23 @@ secondary.
 the quadrant.
 
 **Acceptance criteria.**
-- [ ] Quadrant membership is printed as a word on every item.
-- [ ] The ranked table is readable with the chart removed entirely.
-- [ ] Passes the greyscale gate.
-- [ ] Items with insufficient sales history are excluded and the
+- [x] Quadrant membership is printed as a word on every item.
+- [x] The ranked table is readable with the chart removed entirely.
+- [x] Passes the greyscale gate.
+- [x] Items with insufficient sales history are excluded and the
       exclusion is stated.
+
+**Notes.** Added a location-owned menu engineering query that combines
+transaction history with the latest complete recipe-derived plate margin.
+The deterministic matrix uses four distinct business weeks by default,
+exact decimal arithmetic, average units sold and average plate margin
+thresholds, and explicit exclusions for insufficient history or missing
+recipe cost. The ranked table is primary; the secondary matrix repeats
+quadrant words and printed values so colour and position are never the only
+signal. Focused tests, full CI, and live unauthenticated route smoke checks
+pass. Authenticated database verification remains pending because this
+workspace has no test credentials and its configured PostgreSQL service is
+unavailable.
 
 ---
 
