@@ -1,8 +1,15 @@
+import { SiteHeader } from './site-header'
+
 export default function Home() {
   return (
-    <main>
-      <h1>PantryIQ</h1>
-      <p>The application shell is under construction.</p>
-    </main>
+    <>
+      <SiteHeader />
+      <main
+        className="site-placeholder"
+        aria-labelledby="site-placeholder-title"
+      >
+        <h1 id="site-placeholder-title">The public site is taking shape.</h1>
+      </main>
+    </>
   )
 }

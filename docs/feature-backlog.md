@@ -2279,7 +2279,7 @@ actually use.
 ### MKT-01 — Site shell, navigation, and theming
 
 ```
-Status: available   Owner: —   Claimed: —   Completed: —   Branch/PR: —
+Status: done   Owner: codex   Claimed: 2026-08-08   Completed: 2026-08-08   Branch/PR: rewrite
 ```
 
 **Blocked by:** FND-06 · **Blocks:** MKT-02
@@ -2301,10 +2301,15 @@ discipline forbids linking to a page that does not exist. A mega-menu or
 a "Solutions" dropdown.
 
 **Acceptance criteria.**
-- [ ] No logotype file, no icon mark, no mascot, no chef hat, no leaf.
-- [ ] No `Donate` link.
-- [ ] Nav works at 375px without overflow.
-- [ ] Both themes ship at equal quality.
+- [x] No logotype file, no icon mark, no mascot, no chef hat, no leaf.
+- [x] No `Donate` link.
+- [x] Nav works at 375px without overflow.
+- [x] Both themes ship at equal quality.
+
+**Notes.** The public header is implemented in `app/site-header.tsx` and
+uses the existing Ledger tokens for both themes. The landing page body is
+intentionally left to `MKT-02`; the current placeholder only keeps the
+shell visibly testable until that ticket is built.
 
 ---
 
@@ -3404,13 +3409,13 @@ condition.
 | Dashboard | 0 | 7 |
 | Chat | 0 | 8 |
 | Settings | 0 | 5 |
-| Marketing site | 0 | 5 |
+| Marketing site | 1 | 5 |
 | Quality gates | 0 | 6 |
 | Cross-location | 0 | 4 |
 | Integrations | 0 | 8 |
 | Menu management | 0 | 7 |
 | Staffing | 0 | 6 |
-| **Total** | **1** | **87** |
+| **Total** | **2** | **87** |
 
 **The backlog is complete when every ticket reads `done`.** Sections 7
 and 8 are not work and never become work.

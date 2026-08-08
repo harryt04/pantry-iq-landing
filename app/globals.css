@@ -143,6 +143,111 @@ body {
   font-family: var(--font-sans);
 }
 
+.site-header {
+  border-bottom: 1px solid var(--border);
+}
+
+.site-header__inner {
+  align-items: center;
+  display: flex;
+  gap: var(--space-4);
+  justify-content: space-between;
+  margin: 0 auto;
+  max-width: 1200px;
+  min-height: 80px;
+  padding: var(--space-4) var(--space-5);
+}
+
+.site-header__wordmark {
+  color: var(--foreground);
+  font-size: var(--text-lg);
+  font-weight: 600;
+  letter-spacing: -0.035em;
+  text-decoration: none;
+}
+
+.site-header__nav {
+  align-items: center;
+  display: flex;
+  gap: var(--space-2);
+}
+
+.site-header__link,
+.site-header__start {
+  align-items: center;
+  border-radius: var(--radius-control);
+  display: inline-flex;
+  font-size: var(--text-base);
+  font-weight: 500;
+  justify-content: center;
+  min-height: 44px;
+  padding: var(--space-2) var(--space-3);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.site-header__link {
+  color: var(--foreground);
+}
+
+.site-header__link:hover {
+  background: var(--muted);
+}
+
+.site-header__start {
+  background: var(--primary);
+  color: var(--primary-foreground);
+  padding-inline: var(--space-4);
+}
+
+.site-header__start:hover {
+  opacity: 0.9;
+}
+
+.site-header__wordmark:focus-visible,
+.site-header__link:focus-visible,
+.site-header__start:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+.site-placeholder {
+  margin: 0 auto;
+  max-width: 1200px;
+  padding: var(--space-10) var(--space-5);
+}
+
+.site-placeholder h1 {
+  font-size: var(--text-3xl);
+  letter-spacing: -0.035em;
+  margin: 0;
+  max-width: 18ch;
+}
+
+@media (max-width: 640px) {
+  .site-header__inner {
+    min-height: 72px;
+    padding-inline: var(--space-4);
+  }
+
+  .site-header__nav {
+    gap: 0;
+  }
+
+  .site-header__link,
+  .site-header__start {
+    padding-inline: var(--space-2);
+  }
+
+  .site-header__start {
+    padding-inline: var(--space-3);
+  }
+
+  .site-placeholder {
+    padding-inline: var(--space-4);
+  }
+}
+
 .sr-only {
   border: 0;
   clip: rect(0, 0, 0, 0);
