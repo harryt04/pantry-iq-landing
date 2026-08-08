@@ -2,6 +2,7 @@ import { cookies } from 'next/headers'
 
 import { CsvUploadForm } from '@/components/import/csv-upload-form'
 import { ImportHistory } from '@/components/import/import-history'
+import { ManualEntryForm } from '@/components/import/manual-entry-form'
 
 export default async function ImportPage({
   searchParams,
@@ -23,6 +24,7 @@ export default async function ImportPage({
       {locationId ? (
         <>
           <CsvUploadForm locationId={locationId} />
+          <ManualEntryForm locationId={locationId} />
           <ImportHistory locationId={locationId} />
         </>
       ) : null}
