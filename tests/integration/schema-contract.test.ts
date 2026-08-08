@@ -9,6 +9,10 @@ const itemMasterMigration = readFileSync(
   new URL('../../drizzle/0002_ambitious_paibok.sql', import.meta.url),
   'utf8',
 )
+const recipeMigration = readFileSync(
+  new URL('../../drizzle/0003_recipe_model.sql', import.meta.url),
+  'utf8',
+)
 
 const canonicalTables = [
   'csv_upload_history',
@@ -48,6 +52,25 @@ describe('canonical migration contract', () => {
     expect(itemMasterMigration).toMatch(
       /CREATE UNIQUE INDEX "inventory_items_location_canonical_name_idx" ON "inventory_items" USING btree \("location_id","canonical_name"\)/,
     )
+  })
+
+  it('adds an optional recipe model without donation tables', () => {
+    expect(recipeMigration).toMatch(
+      /ADD COLUMN "item_type" text DEFAULT 'ingredient' NOT NULL/,
+    )
+    expect(recipeMigration).toMatch(
+      /CREATE TABLE "recipes"[\s\S]*"menu_item_id" uuid NOT NULL[\s\S]*"waste_factor" numeric DEFAULT '0' NOT NULL/,
+    )
+    expect(recipeMigration).toMatch(
+      /CREATE TABLE "recipe_ingredients"[\s\S]*exactly_one_target_check/,
+    )
+    expect(recipeMigration).toMatch(
+      /CREATE TABLE "item_unit_conversions"[\s\S]*"factor" numeric NOT NULL/,
+    )
+    expect(recipeMigration).toMatch(
+      /item_unit_conversions_item_units_idx.*location_id.*inventory_item_id.*from_unit.*to_unit/,
+    )
+    expect(recipeMigration).not.toMatch(/donation|recipient|offer/i)
   })
 
   it('keeps money, quantities, and timestamps in their exact database types', () => {

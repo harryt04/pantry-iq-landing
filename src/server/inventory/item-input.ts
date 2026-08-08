@@ -1,8 +1,11 @@
+export type InventoryItemType = 'ingredient' | 'menu_item'
+
 export type InventoryItemCreateInput = {
   canonicalName: string
   displayName: string
   category?: string | null
   unit: string
+  itemType?: InventoryItemType
   shelfLifeDays?: number | null
   costPerUnit?: string | null
   parLevel?: string | null
@@ -87,6 +90,18 @@ function optionalDecimal(
   return value.trim()
 }
 
+function optionalItemType(
+  input: Record<string, unknown>,
+): InventoryItemType | undefined {
+  if (!('itemType' in input)) return undefined
+  if (input.itemType !== 'ingredient' && input.itemType !== 'menu_item') {
+    throw new InventoryItemValidationError(
+      'itemType must be ingredient or menu_item.',
+    )
+  }
+  return input.itemType
+}
+
 export function validateInventoryItemCreateInput(
   input: unknown,
 ): InventoryItemCreateInput {
@@ -100,11 +115,13 @@ export function validateInventoryItemCreateInput(
   const shelfLifeDays = optionalInteger(values, 'shelfLifeDays')
   const costPerUnit = optionalDecimal(values, 'costPerUnit')
   const parLevel = optionalDecimal(values, 'parLevel')
+  const itemType = optionalItemType(values)
 
   if (category !== undefined) item.category = category
   if (shelfLifeDays !== undefined) item.shelfLifeDays = shelfLifeDays
   if (costPerUnit !== undefined) item.costPerUnit = costPerUnit
   if (parLevel !== undefined) item.parLevel = parLevel
+  if (itemType !== undefined) item.itemType = itemType
 
   return item
 }
@@ -127,6 +144,8 @@ export function validateInventoryItemUpdateInput(
     update.category = optionalText(values, 'category') ?? null
   }
   if ('unit' in values) update.unit = requiredText(values, 'unit')
+  const itemType = optionalItemType(values)
+  if (itemType !== undefined) update.itemType = itemType
   if ('shelfLifeDays' in values) {
     update.shelfLifeDays = optionalInteger(values, 'shelfLifeDays') ?? null
   }

@@ -1,5 +1,8 @@
+import { sql } from 'drizzle-orm'
+
 import {
   boolean,
+  check,
   index,
   integer,
   jsonb,
@@ -119,6 +122,7 @@ export const inventoryItems = pgTable(
     displayName: text('display_name').notNull(),
     category: text('category'),
     unit: text('unit').notNull(),
+    itemType: text('item_type').notNull().default('ingredient'),
     shelfLifeDays: integer('shelf_life_days'),
     costPerUnit: numeric('cost_per_unit'),
     parLevel: numeric('par_level'),
@@ -131,6 +135,113 @@ export const inventoryItems = pgTable(
     uniqueIndex('inventory_items_location_canonical_name_idx').on(
       table.locationId,
       table.canonicalName,
+    ),
+    check(
+      'inventory_items_item_type_check',
+      sql`${table.itemType} in ('ingredient', 'menu_item')`,
+    ),
+  ],
+)
+
+export const recipes = pgTable(
+  'recipes',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    locationId: uuid('location_id')
+      .notNull()
+      .references(() => locations.id, { onDelete: 'cascade' }),
+    menuItemId: uuid('menu_item_id')
+      .notNull()
+      .references(() => inventoryItems.id),
+    name: text('name').notNull(),
+    outputQuantity: numeric('output_quantity').notNull().default('1'),
+    outputUnit: text('output_unit').notNull(),
+    yieldFactor: numeric('yield_factor').notNull().default('1'),
+    wasteFactor: numeric('waste_factor').notNull().default('0'),
+    isActive: boolean('is_active').notNull().default(true),
+    createdAt,
+    updatedAt,
+  },
+  (table) => [
+    uniqueIndex('recipes_location_menu_item_name_idx').on(
+      table.locationId,
+      table.menuItemId,
+      table.name,
+    ),
+    index('recipes_location_idx').on(table.locationId),
+    check(
+      'recipes_positive_output_quantity_check',
+      sql`${table.outputQuantity} > 0`,
+    ),
+    check('recipes_positive_yield_factor_check', sql`${table.yieldFactor} > 0`),
+    check(
+      'recipes_waste_factor_range_check',
+      sql`${table.wasteFactor} >= 0 and ${table.wasteFactor} < 1`,
+    ),
+  ],
+)
+
+export const recipeIngredients = pgTable(
+  'recipe_ingredients',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    recipeId: uuid('recipe_id')
+      .notNull()
+      .references(() => recipes.id, { onDelete: 'cascade' }),
+    ingredientItemId: uuid('ingredient_item_id').references(
+      () => inventoryItems.id,
+    ),
+    subRecipeId: uuid('sub_recipe_id').references(() => recipes.id),
+    quantity: numeric('quantity').notNull(),
+    unit: text('unit').notNull(),
+    createdAt,
+  },
+  (table) => [
+    index('recipe_ingredients_recipe_id_idx').on(table.recipeId),
+    index('recipe_ingredients_ingredient_item_id_idx').on(
+      table.ingredientItemId,
+    ),
+    check(
+      'recipe_ingredients_exactly_one_target_check',
+      sql`(
+        (${table.ingredientItemId} is not null and ${table.subRecipeId} is null)
+        or
+        (${table.ingredientItemId} is null and ${table.subRecipeId} is not null)
+      )`,
+    ),
+    check(
+      'recipe_ingredients_positive_quantity_check',
+      sql`${table.quantity} > 0`,
+    ),
+  ],
+)
+
+export const itemUnitConversions = pgTable(
+  'item_unit_conversions',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    locationId: uuid('location_id')
+      .notNull()
+      .references(() => locations.id, { onDelete: 'cascade' }),
+    inventoryItemId: uuid('inventory_item_id')
+      .notNull()
+      .references(() => inventoryItems.id, { onDelete: 'cascade' }),
+    fromUnit: text('from_unit').notNull(),
+    toUnit: text('to_unit').notNull(),
+    factor: numeric('factor').notNull(),
+    createdAt,
+    updatedAt,
+  },
+  (table) => [
+    uniqueIndex('item_unit_conversions_item_units_idx').on(
+      table.locationId,
+      table.inventoryItemId,
+      table.fromUnit,
+      table.toUnit,
+    ),
+    check(
+      'item_unit_conversions_positive_factor_check',
+      sql`${table.factor} > 0`,
     ),
   ],
 )

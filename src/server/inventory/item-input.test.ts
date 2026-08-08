@@ -57,4 +57,23 @@ describe('inventory item input contract', () => {
       'At least one field is required.',
     )
   })
+
+  it('keeps purchased ingredients and sold menu items explicitly typed', () => {
+    expect(
+      validateInventoryItemCreateInput({
+        canonicalName: 'club sandwich',
+        displayName: 'Club sandwich',
+        unit: 'each',
+        itemType: 'menu_item',
+      }).itemType,
+    ).toBe('menu_item')
+    expect(() =>
+      validateInventoryItemCreateInput({
+        canonicalName: 'unknown',
+        displayName: 'Unknown',
+        unit: 'each',
+        itemType: 'recipe',
+      }),
+    ).toThrow('itemType must be ingredient or menu_item.')
+  })
 })

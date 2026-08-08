@@ -23,6 +23,9 @@ const canonicalTables = [
   'session',
   'user',
   'verification',
+  'recipes',
+  'recipe_ingredients',
+  'item_unit_conversions',
 ] as const
 
 const canonicalIndexes = [
@@ -33,6 +36,11 @@ const canonicalIndexes = [
   'transactions_location_transacted_at_idx',
   'transactions_location_menu_item_idx',
   'transactions_location_source_external_id_idx',
+  'recipes_location_idx',
+  'recipes_location_menu_item_name_idx',
+  'recipe_ingredients_recipe_id_idx',
+  'recipe_ingredients_ingredient_item_id_idx',
+  'item_unit_conversions_item_units_idx',
 ] as const
 
 const canonicalColumns = [
@@ -63,6 +71,7 @@ const canonicalColumns = [
   ['inventory_items', 'display_name', false, 'text'],
   ['inventory_items', 'category', true, 'text'],
   ['inventory_items', 'unit', false, 'text'],
+  ['inventory_items', 'item_type', false, 'text'],
   ['inventory_items', 'shelf_life_days', true, 'integer'],
   ['inventory_items', 'cost_per_unit', true, 'numeric'],
   ['inventory_items', 'par_level', true, 'numeric'],
@@ -138,6 +147,32 @@ const canonicalColumns = [
   ['verification', 'expires_at', false, 'timestamp with time zone'],
   ['verification', 'created_at', false, 'timestamp with time zone'],
   ['verification', 'updated_at', false, 'timestamp with time zone'],
+  ['recipes', 'id', false, 'uuid'],
+  ['recipes', 'location_id', false, 'uuid'],
+  ['recipes', 'menu_item_id', false, 'uuid'],
+  ['recipes', 'name', false, 'text'],
+  ['recipes', 'output_quantity', false, 'numeric'],
+  ['recipes', 'output_unit', false, 'text'],
+  ['recipes', 'yield_factor', false, 'numeric'],
+  ['recipes', 'waste_factor', false, 'numeric'],
+  ['recipes', 'is_active', false, 'boolean'],
+  ['recipes', 'created_at', false, 'timestamp with time zone'],
+  ['recipes', 'updated_at', false, 'timestamp with time zone'],
+  ['recipe_ingredients', 'id', false, 'uuid'],
+  ['recipe_ingredients', 'recipe_id', false, 'uuid'],
+  ['recipe_ingredients', 'ingredient_item_id', true, 'uuid'],
+  ['recipe_ingredients', 'sub_recipe_id', true, 'uuid'],
+  ['recipe_ingredients', 'quantity', false, 'numeric'],
+  ['recipe_ingredients', 'unit', false, 'text'],
+  ['recipe_ingredients', 'created_at', false, 'timestamp with time zone'],
+  ['item_unit_conversions', 'id', false, 'uuid'],
+  ['item_unit_conversions', 'location_id', false, 'uuid'],
+  ['item_unit_conversions', 'inventory_item_id', false, 'uuid'],
+  ['item_unit_conversions', 'from_unit', false, 'text'],
+  ['item_unit_conversions', 'to_unit', false, 'text'],
+  ['item_unit_conversions', 'factor', false, 'numeric'],
+  ['item_unit_conversions', 'created_at', false, 'timestamp with time zone'],
+  ['item_unit_conversions', 'updated_at', false, 'timestamp with time zone'],
 ] as const
 
 async function expectCanonicalSchema(sql: ReturnType<typeof postgres>) {
@@ -246,6 +281,9 @@ describe.skipIf(!integrationDatabaseEnabled())(
           ('public.session'),
           ('public.verification'),
           ('public.user'),
+          ('public.recipes'),
+          ('public.recipe_ingredients'),
+          ('public.item_unit_conversions'),
           ('drizzle.__drizzle_migrations')
         ) as tables(table_name)
       `

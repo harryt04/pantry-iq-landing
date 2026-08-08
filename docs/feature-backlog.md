@@ -249,7 +249,7 @@ that touch them carry a stated default so work never stalls.
 
 | ID | Title | Status | Owner | Blocked by |
 |---|---|---|---|---|
-| MNU-01 | Recipe and ingredient data model | available | — | ING-07 |
+| MNU-01 | Recipe and ingredient data model | **done** | codex | ING-07 |
 | MNU-02 | Recipe builder | available | — | MNU-01, FND-07 |
 | MNU-03 | Plate costing | available | — | MNU-02, MET-01 |
 | MNU-04 | Theoretical vs. actual usage | available | — | MNU-03, MET-03 |
@@ -3106,7 +3106,7 @@ numbers on screen. A reconnect path.
 ### MNU-01 — Recipe and ingredient data model
 
 ```
-Status: available   Owner: —   Claimed: —   Completed: —   Branch/PR: —
+Status: done   Owner: codex   Claimed: 2026-08-08   Completed: 2026-08-08   Branch/PR: rewrite
 ```
 
 **Blocked by:** ING-07 · **Blocks:** MNU-02
@@ -3129,10 +3129,21 @@ recipe units — pounds to ounces, cases to each. Sub-recipes.
 keep working for an operator who never builds one.
 
 **Acceptance criteria.**
-- [ ] The product works unchanged with zero recipes defined.
-- [ ] Unit conversions are exact and tested, including case-to-each.
-- [ ] Sub-recipes resolve without infinite recursion.
-- [ ] Existing canonical items migrate without loss.
+- [x] The product works unchanged with zero recipes defined.
+- [x] Unit conversions are exact and tested, including case-to-each.
+- [x] Sub-recipes resolve without infinite recursion.
+- [x] Existing canonical items migrate without loss.
+
+**Notes.** Added an additive migration that classifies canonical items as
+`ingredient` or `menu_item` without changing existing IDs or values; existing
+rows default to `ingredient`. Recipes remain optional and recipe ingredients
+are either direct ingredient references or sub-recipes, enforced by a database
+check. Standard mass conversions use BigInt-backed exact decimal arithmetic;
+item-specific numeric conversion rows support packaging such as case-to-each.
+The recipe graph guard rejects direct, indirect, and missing sub-recipe
+references before expansion. Static contracts and the full CI suite pass; the
+opt-in PostgreSQL round-trip is still skipped when no local database/container
+runtime is available.
 
 ---
 

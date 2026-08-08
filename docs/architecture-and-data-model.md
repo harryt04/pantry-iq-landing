@@ -76,6 +76,7 @@ Built dynamically from imports, editable by the user.
 | `displayName` | text | User's preferred name (what appears in UI) |
 | `category` | text (nullable) | e.g. `protein`, `produce`, `beverage` |
 | `unit` | text | `lb`, `each`, `case`, etc. |
+| `itemType` | text | `ingredient` (purchased) or `menu_item` (sold) |
 | `shelfLifeDays` | integer (nullable) | Assumed spoilage window (e.g. 3 days for lobster) |
 | `costPerUnit` | numeric (nullable) | Last known cost |
 | `parLevel` | numeric (nullable) | Minimum stock threshold |
@@ -83,6 +84,26 @@ Built dynamically from imports, editable by the user.
 | `usageCount` | integer | Number of times this item appears in transactions/POs |
 | `createdAt` | timestamp | Row inserted |
 | `updatedAt` | timestamp | Last edit time |
+
+### Recipes and ingredients
+Recipes are optional. Existing locations, items, imports, and metrics remain
+valid when a location has no recipes. A menu item is an `inventory_items` row
+whose `itemType` is `menu_item`; purchased inputs are rows whose `itemType` is
+`ingredient`. Existing canonical items keep their IDs and data when the item
+type column is added, defaulting to `ingredient` for backwards compatibility.
+
+| Table | Important fields | Purpose |
+|---|---|---|
+| `recipes` | `locationId`, `menuItemId`, `name`, `outputQuantity`, `outputUnit`, `yieldFactor`, `wasteFactor` | A location-scoped recipe and its yield assumptions |
+| `recipeIngredients` | `recipeId`, exactly one of `ingredientItemId` or `subRecipeId`, `quantity`, `unit` | Ingredient quantities or optional sub-recipe references |
+| `itemUnitConversions` | `locationId`, `inventoryItemId`, `fromUnit`, `toUnit`, `factor` | Exact item-specific conversions, including case pack sizes |
+
+Standard mass conversions are calculated with exact decimal arithmetic in the
+application layer. Item-specific conversion rows handle packaging such as
+`1 case = 24 each`; factors are stored as PostgreSQL `numeric`. Recipe and
+sub-recipe dependencies are checked for cycles before expansion so a malformed
+recipe graph cannot recurse forever. Yield and waste are explicit assumptions,
+not facts inferred by the system.
 
 ### Inventory snapshots (point-in-time counts)
 Optional inventory counts that allow spoilage calculation via actual
@@ -203,13 +224,19 @@ Tables: `locations` (userId FK), `transactions` (locationId, menuItemId
 FKs), `purchase_orders` (locationId FK), `purchase_order_items`
 (purchaseOrderId, inventoryItemId FKs), `inventory_items` (locationId FK),
 `inventory_snapshots` (locationId, inventoryItemId FKs),
-`csv_upload_history` (locationId FK).
+`csv_upload_history` (locationId FK), `recipes` (locationId, menuItemId
+FKs), `recipe_ingredients` (recipeId, ingredientItemId or subRecipeId FKs),
+`item_unit_conversions` (locationId, inventoryItemId FKs).
 
 Indices: `transactions(locationId, transactedAt)` for time-range queries;
 `transactions(locationId, menuItemId)` for item-level analysis;
 `purchase_order_items(locationId, inventoryItemId)` for PO analysis;
 `inventory_snapshots(locationId, countedAt)` for spoilage time-series;
-`inventory_items(locationId, canonicalName)` for deduplication.
+`inventory_items(locationId, canonicalName)` for deduplication;
+`recipes(locationId, menuItemId, name)` for recipe lookup;
+`recipe_ingredients(recipeId)` for ingredient expansion;
+`item_unit_conversions(locationId, inventoryItemId, fromUnit, toUnit)` for
+exact conversion lookup.
 
 Donation adds (provisional): `recipient_organisations` (userId FK),
 `donation_offers` (locationId, inventoryItemId FKs), `donation_claims`

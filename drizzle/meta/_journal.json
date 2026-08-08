@@ -22,6 +22,13 @@
       "when": 1786219640736,
       "tag": "0002_ambitious_paibok",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1786220000000,
+      "tag": "0003_recipe_model",
+      "breakpoints": true
     }
   ]
 }
