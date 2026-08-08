@@ -64,6 +64,7 @@ backup and a forward migration.
 pnpm test        # unit tests (Vitest)
 pnpm test:integration  # real PostgreSQL harness (requires Docker)
 pnpm test:a11y   # browser accessibility gate (Playwright + axe)
+pnpm test:charts # greyscale chart gate with attached screenshot
 pnpm lint         # Prettier check
 pnpm format:check # Prettier format check
 pnpm typecheck    # tsc --noEmit

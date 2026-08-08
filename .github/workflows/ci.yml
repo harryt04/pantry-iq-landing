@@ -38,6 +38,9 @@ jobs:
       - name: Accessibility gate
         run: pnpm test:a11y
 
+      - name: Greyscale chart gate
+        run: pnpm test:charts
+
       - name: Typecheck
         run: pnpm typecheck
 
@@ -48,11 +51,6 @@ jobs:
         run: pnpm test:integration
         env:
           TESTCONTAINERS_ENABLED: '1'
-
-      # QAG-02: greyscale chart check attaches here as an additional
-      # step, once chart components exist (DSH-05). It renders every
-      # chart, desaturates it, and asserts it is still readable by
-      # pattern — a merge gate per brand/ui-implementation.md §5-6.
 
       - name: Build
         run: pnpm build
@@ -72,4 +70,5 @@ jobs:
           path: |
             coverage/
             playwright-report/
+            test-results/
           if-no-files-found: ignore

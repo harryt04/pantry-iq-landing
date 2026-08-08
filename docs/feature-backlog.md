@@ -217,7 +217,7 @@ that touch them carry a stated default so work never stalls.
 | ID | Title | Status | Owner | Blocked by |
 |---|---|---|---|---|
 | QAG-01 | Accessibility gate automation | **done** | codex | FND-03, FND-07 |
-| QAG-02 | Greyscale chart check | available | — | QAG-01, DSH-05 |
+| QAG-02 | Greyscale chart check | **done** | codex | QAG-01, DSH-05 |
 | QAG-03 | Test strategy and harness | **in-review** | codex | FND-03 |
 | QAG-04 | CSV upload security hardening | **done** | codex | FND-02 |
 | QAG-05 | Observability and error tracking | **in-review** | codex | FND-03 |
@@ -2510,7 +2510,7 @@ both themes. A documented manual sweep for what cannot be automated.
 ### QAG-02 — Greyscale chart check
 
 ```
-Status: available   Owner: —   Claimed: —   Completed: —   Branch/PR: —
+Status: done   Owner: codex   Claimed: 2026-08-08   Completed: 2026-08-08   Branch/PR: rewrite
 ```
 
 **Blocked by:** QAG-01, DSH-05 · **Blocks:** —
@@ -2527,13 +2527,21 @@ check that no green value is reachable from any chart code path. Pattern
 assignment order verified against the fixed sequence.
 
 **Acceptance criteria.**
-- [ ] A chart built without patterns fails CI.
-- [ ] A green colour value anywhere in chart code fails CI.
-- [ ] A sixth series fails CI.
-- [ ] Desaturated renders are attached to the CI run for human review.
+- [x] A chart built without patterns fails CI.
+- [x] A green colour value anywhere in chart code fails CI.
+- [x] A sixth series fails CI.
+- [x] Desaturated renders are attached to the CI run for human review.
 
 **Verification.** Add a deliberately colour-only chart in a branch and
 confirm the build fails.
+
+**Notes.** `tests/charts/greyscale-gate.test.ts` statically scans every
+chart implementation for forbidden green values and validates the fixed
+pattern sequence, five-series ceiling, and pattern-bearing marks. The
+Playwright `test:charts` gate renders the gallery at 375px, applies a
+greyscale filter, verifies every current bar and line encoding, and
+attaches `greyscale-charts.png` to the Playwright test result. CI runs the
+gate and uploads `test-results/` alongside the existing report artifacts.
 
 ---
 
