@@ -6,6 +6,16 @@ the recommendation *contract* (what must be true, business-wise) live in
 [`mvp-scope-and-decisions.md`](mvp-scope-and-decisions.md) — this document
 is the implementation-level detail underneath that contract.
 
+> **Technology choices live in [`tech-stack.md`](tech-stack.md)**
+> (approved 2026-08-07), not here. Two of its rules change the tables
+> below and are not yet reflected in them: `locations` needs a
+> **timezone** column and a **business-day boundary** setting, because a
+> restaurant's business day is not a calendar day (`tech-stack.md`
+> §3.10). Every monetary and quantity column is `numeric`, never a float
+> (§3.9). That document also settles the "AI / data query layer" section
+> further down: the model narrates precomputed results and never
+> calculates.
+
 ## Canonical data model
 
 ### Transactions (sales at POS)

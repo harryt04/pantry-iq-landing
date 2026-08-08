@@ -31,6 +31,16 @@ If you're starting fresh, read in this order:
    pricing tension, and narrower technical unknowns. Read before making
    any decision that touches these areas, so you don't silently
    contradict something already flagged.
+8. **[`tech-stack.md`](tech-stack.md)** — what we build with and why.
+   Approved 2026-08-07. Read before writing any code; §3.9 (money),
+   §3.10 (the restaurant business day), and §3.14 (email is not a
+   notification channel) impose rules that are easy to violate by
+   accident.
+9. **[`feature-backlog.md`](feature-backlog.md)** — **the execution
+   surface.** 87 tickets, ordered only by dependency, each claimable and
+   checkable off. If you are here to build rather than to plan, go
+   straight there — but read its Decision Record first, which closes
+   several questions the six documents above leave open.
 
 ## Brand & design
 
@@ -60,6 +70,9 @@ ones:**
    reconciled to this on 2026-08-07. It is in scope but **not specified**:
    [`open-questions.md`](open-questions.md) §3 is now the largest open
    cluster in the corpus and four of its items block implementation.
+   It is also **not scheduled** — the founder deliberately kept it out of
+   [`feature-backlog.md`](feature-backlog.md) on the same day, to think it
+   through rather than specify it in passing. See that file's §8.
 
 ## Reference material (not actively maintained as MVP scope)
 
@@ -72,12 +85,14 @@ ones:**
 
 ## How this corpus is organized
 
-Each of the 7 core documents owns one category of information and is the
+Each of the 9 core documents owns one category of information and is the
 single place to look for it:
 
 | Document | Owns |
 |---|---|
 | `vision.md` | Founding narrative, long-term roadmap, business model principles |
+| `tech-stack.md` | **Technology choices and their reasoning.** Language, framework, database, jobs, auth, LLM access, hosting, and what we deliberately refuse |
+| `feature-backlog.md` | **Execution state.** Tickets, dependencies, claim status, and the decisions closed on 2026-08-07. Owns what gets built; owns no product truth |
 | `personas-and-research.md` | User personas, customer discovery tooling, market/competitive research |
 | `mvp-scope-and-decisions.md` | What's in and out of MVP scope, product contract, recommendation contract, workflows |
 | `ux-flows.md` | Step-by-step page mechanics (import, chat, settings) |

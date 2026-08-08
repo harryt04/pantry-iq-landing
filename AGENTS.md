@@ -16,7 +16,22 @@ prior build. It is not binding on the rewrite.
 
 ## Working in this repo right now
 
-The active work is planning, not code. The docs form a single corpus with
+**If you are here to build, go to
+[`docs/feature-backlog.md`](docs/feature-backlog.md).** It holds 87
+tickets, ordered only by dependency, each one claimable. Read its
+Decision Record first — it closes several questions the planning corpus
+leaves open.
+
+Then read **[`docs/tech-stack.md`](docs/tech-stack.md)** before writing a
+line of code. It is authoritative for every technology choice, approved
+2026-08-07. Three of its rules get broken by default if you don't know
+them: **money never touches a float** (§3.9), **a restaurant's business
+day is not a calendar day** (§3.10), and **email is authentication
+plumbing, never a notification channel** (§3.14). The pre-reset stack
+described below is reference, not a source of authority — the choices
+overlap, the reasoning is independent.
+
+The rest of the active work is planning. The docs form a single corpus with
 each file owning one category — **do not create new planning files**; put
 new content in the doc that already owns that category (see the ownership
 table in [`docs/INDEX.md`](docs/INDEX.md)). This corpus was itself
@@ -36,6 +51,8 @@ an ownership table. In short:
 | [`docs/cost-and-pricing.md`](docs/cost-and-pricing.md)                       | LLM cost analysis, market pricing research                                                                           |
 | [`docs/open-questions.md`](docs/open-questions.md)                           | Everything unresolved or contradictory across the above — check before deciding anything that touches a flagged area |
 | [`docs/brand/`](docs/brand/)                                                 | **Brand and design.** Four documents — identity/colour/type, voice, marketing copy, and UI implementation. See below                                    |
+| [`docs/tech-stack.md`](docs/tech-stack.md)                                   | **Technology choices and why.** Language, framework, database, jobs, auth, LLM access, hosting, and what we refuse to use                               |
+| [`docs/feature-backlog.md`](docs/feature-backlog.md)                         | **Execution state.** Tickets, dependency order, claim status, and the decisions closed on 2026-08-07. Owns what gets built; owns no product truth       |
 
 Where docs disagree, [`mvp-scope-and-decisions.md`](docs/mvp-scope-and-decisions.md)
 wins; it was built by reconciling the others (see its "Provenance &
@@ -94,7 +111,12 @@ the same day: see "Food donation" in
 flow in [`docs/ux-flows.md`](docs/ux-flows.md), and the provisional tables
 in [`docs/architecture-and-data-model.md`](docs/architecture-and-data-model.md).
 
-**In scope does not mean specified.**
+**In scope does not mean scheduled.** Donation is deliberately excluded
+from [`docs/feature-backlog.md`](docs/feature-backlog.md) — see its §8.
+Do not write donation tickets, do not create the provisional donation
+tables, and do not link a donate page from the marketing site.
+
+**In scope does not mean specified, either.**
 [`docs/open-questions.md`](docs/open-questions.md) §3 is the largest open
 cluster in the corpus, and four of its items block implementation: food
 safety liability, recipient notification (which contradicts the

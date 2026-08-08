@@ -520,6 +520,28 @@ This document reconciles, in order of authority: `MVP-DECISION-LEDGER.md`
 (feature checklists, data model pointers, workflows), all now folded in
 here.
 
+### 2026-08-07 — execution decisions moved to the feature backlog
+
+Later the same day, a backlog session closed eleven decisions and
+recorded them in [`feature-backlog.md`](feature-backlog.md) §3. Three of
+them qualify this document and should be read alongside it:
+
+- **Donation is unscheduled.** Its MVP scope, described below, stands.
+  It is simply not in the build queue — see `feature-backlog.md` §8.
+- **Four deferred non-goals hardened into permanent ones**: an MCP
+  server, external notifications, native mobile apps, and export or
+  downstream workflows beyond the CSV trust fallback. The "Deferred
+  feature backlog" table below still lists three of these as awaiting
+  validation. They are no longer awaiting anything.
+- **The phase roadmap is superseded as a scheduling device.** Its content
+  survives as tickets; the ordering does not. Dependencies are the only
+  order.
+
+Also closed there: the Impact score's composition (this document's
+provisional rules), the spoilage-authority question, and the AI grounding
+architecture — the model narrates precomputed results and never
+calculates.
+
 ### 2026-08-07 — food donation added to MVP scope
 
 This document previously contained no donation scope of any kind, and
