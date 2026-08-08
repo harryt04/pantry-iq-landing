@@ -128,7 +128,7 @@ export const inventoryItems = pgTable(
     updatedAt,
   },
   (table) => [
-    index('inventory_items_location_canonical_name_idx').on(
+    uniqueIndex('inventory_items_location_canonical_name_idx').on(
       table.locationId,
       table.canonicalName,
     ),

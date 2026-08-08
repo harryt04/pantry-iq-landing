@@ -15,6 +15,13 @@
       "when": 1786218760322,
       "tag": "0001_fancy_the_leader",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1786219640736,
+      "tag": "0002_ambitious_paibok",
+      "breakpoints": true
     }
   ]
 }

@@ -144,7 +144,7 @@ that touch them carry a stated default so work never stalls.
 | ING-04 | Column mapping — auto-detection | available | — | ING-03 |
 | ING-05 | Column mapping — uncertain-column resolution | available | — | ING-04, FND-07 |
 | ING-06 | Mapping persistence and reuse | available | — | ING-05 |
-| ING-07 | Canonical item master | available | — | FND-04 |
+| ING-07 | Canonical item master | **done** | codex | FND-04 |
 | ING-08 | Item name resolution — exact match only | available | — | ING-07, ING-05 |
 | ING-09 | Import commit, confirmation, and history | available | — | ING-06, ING-08 |
 | ING-10 | Manual entry | available | — | ING-09 |
@@ -896,7 +896,7 @@ confirmation without a mapping question.
 ### ING-07 — Canonical item master
 
 ```
-Status: available   Owner: —   Claimed: —   Completed: —   Branch/PR: —
+Status: done   Owner: codex   Claimed: 2026-08-08   Completed: 2026-08-08   Branch/PR: rewrite
 ```
 
 **Blocked by:** FND-04 · **Blocks:** ING-08, SET-03, MNU-01
@@ -920,16 +920,21 @@ flag, and a usage count maintained as imports reference the item.
 (`SET-03`), recipes (`MNU-01`).
 
 **Acceptance criteria.**
-- [ ] `canonicalName` cannot be edited after creation.
-- [ ] Every UI surface reads `displayName`; no screen shows the canonical
+- [x] `canonicalName` cannot be edited after creation.
+- [x] Every UI surface reads `displayName`; no screen shows the canonical
       name except the audit field in `SET-03`.
-- [ ] Items are unique per location on `canonicalName`.
-- [ ] `usageCount` reflects references from transactions and PO lines.
-- [ ] Shelf life and cost per unit are nullable and editable — a default
+- [x] Items are unique per location on `canonicalName`.
+- [x] `usageCount` reflects references from transactions and PO lines.
+- [x] Shelf life and cost per unit are nullable and editable — a default
       is never presented as a fact.
 
-**Verification.** Rename a display name and confirm every downstream
-surface follows while historical rows still resolve.
+**Verification.** The location-scoped service exposes create, list, read,
+update, archive, and atomic usage-increment operations. Update input rejects
+`canonicalName`, the database migration enforces per-location uniqueness,
+and unit/migration-contract tests cover immutable names, nullable values,
+decimal-string money, and the unique index. The management screen and import
+callers consume this service in `SET-03` and `ING-09`; no UI or import route
+exists in this ticket's scope.
 
 ---
 

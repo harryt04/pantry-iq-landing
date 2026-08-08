@@ -5,6 +5,10 @@ const migration = readFileSync(
   new URL('../../drizzle/0000_wealthy_jetstream.sql', import.meta.url),
   'utf8',
 )
+const itemMasterMigration = readFileSync(
+  new URL('../../drizzle/0002_ambitious_paibok.sql', import.meta.url),
+  'utf8',
+)
 
 const canonicalTables = [
   'csv_upload_history',
@@ -38,6 +42,12 @@ describe('canonical migration contract', () => {
     expect(tables).toEqual([...canonicalTables].sort())
     expect(indexes.sort()).toEqual([...canonicalIndexes].sort())
     expect(migration).not.toMatch(/donation|recipient|offer/i)
+  })
+
+  it('makes canonical item names unique within each location', () => {
+    expect(itemMasterMigration).toMatch(
+      /CREATE UNIQUE INDEX "inventory_items_location_canonical_name_idx" ON "inventory_items" USING btree \("location_id","canonical_name"\)/,
+    )
   })
 
   it('keeps money, quantities, and timestamps in their exact database types', () => {

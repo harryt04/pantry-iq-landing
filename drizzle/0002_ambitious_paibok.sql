@@ -1,0 +1,2 @@
+DROP INDEX "inventory_items_location_canonical_name_idx";--> statement-breakpoint
+CREATE UNIQUE INDEX "inventory_items_location_canonical_name_idx" ON "inventory_items" USING btree ("location_id","canonical_name");
