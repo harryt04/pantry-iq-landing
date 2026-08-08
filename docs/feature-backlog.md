@@ -488,7 +488,7 @@ migration.
 ### FND-05 — Authentication and the owner account
 
 ```
-Status: done   Owner: codex   Claimed: 2026-08-08   Completed: 2026-08-08   Branch/PR: rewrite
+Status: available   Owner: —   Claimed: —   Completed: —   Branch/PR: —
 ```
 
 **Blocked by:** FND-04 · **Blocks:** FND-08, ING-01, INT-02, QAG-06
@@ -580,7 +580,7 @@ glyphs and patterns when colour is removed.
 ### FND-07 — Component baseline, restyled
 
 ```
-Status: available   Owner: —   Claimed: —   Completed: —   Branch/PR: —
+Status: done   Owner: codex   Claimed: 2026-08-08   Completed: 2026-08-08   Branch/PR: rewrite
 ```
 
 **Blocked by:** FND-06 · **Blocks:** FND-08, DSH-05, ING-05, MNU-02, QAG-01
