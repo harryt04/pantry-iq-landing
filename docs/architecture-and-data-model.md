@@ -363,6 +363,16 @@ Three dimensions feed the ranking formula defined in
   calculated from weeks of transaction data, purchase data completeness,
   and pattern consistency. Higher = more trustworthy pattern.
 
+`MET-04` calculates Data Sufficiency with four separately retained
+components: history coverage (45%), purchase-week coverage (25%),
+inventory-snapshot coverage (15%), and transaction-week continuity (15%).
+History reaches its maximum at the configurable four-week prediction gate.
+The continuity component is intentionally a conservative weekly-coverage
+proxy until a richer seasonal pattern model exists. The score is ranking
+input only; it is never labelled or presented as confidence. Observations
+remain eligible with any transaction history, trend analysis requires two
+weeks, and predictive reorder recommendations require four weeks.
+
 **Extending the formula:** to add a new dimension (e.g. seasonality, staff
 capacity), define its 0–100 score calculation, assign it a weight, and
 proportionally rebalance all existing weights against the new total. See

@@ -23,6 +23,10 @@ import {
   type SpoilageResolution,
   type SpoilageResolutionResult,
 } from './spoilage'
+import {
+  calculateDataSufficiency,
+  DATA_SUFFICIENCY_METRIC,
+} from './sufficiency'
 
 export const PRECOMPUTED_METRICS = [
   'sellThrough',
@@ -30,6 +34,7 @@ export const PRECOMPUTED_METRICS = [
   'spoilageRisk',
   'margin',
   'variance',
+  DATA_SUFFICIENCY_METRIC,
 ] as const
 
 export type PrecomputedMetric = (typeof PRECOMPUTED_METRICS)[number]
@@ -242,6 +247,11 @@ function metricSet(
     item.costPerUnit ??
     undefined
   const common = { unit: item.unit, currency: 'USD' }
+  const sufficiency = calculateDataSufficiency({
+    transactions: itemSales,
+    purchaseOrders: itemOrders.map(({ orderedAt }) => ({ orderedAt })),
+    inventorySnapshots: itemSnapshots.map(({ countedAt }) => ({ countedAt })),
+  })
 
   return [
     calculated(
@@ -290,6 +300,7 @@ function metricSet(
         ...(onHand === undefined ? {} : { qtyOnHand: onHand }),
       }),
     ),
+    calculated(DATA_SUFFICIENCY_METRIC, sufficiency),
   ]
 }
 
@@ -369,6 +380,19 @@ function rollupMetric(
             ...(onHand === undefined ? {} : { qtyOnHand: onHand }),
           })
     return calculated(metricKey, result)
+  }
+
+  if (metricKey === DATA_SUFFICIENCY_METRIC) {
+    return calculated(
+      metricKey,
+      calculateDataSufficiency({
+        transactions: input.sales,
+        purchaseOrders: input.orders.map(({ orderedAt }) => ({ orderedAt })),
+        inventorySnapshots: input.snapshots.map(({ countedAt }) => ({
+          countedAt,
+        })),
+      }),
+    )
   }
 
   const value = sumDecimals(calculatedValues.map((metric) => metric.value))

@@ -157,7 +157,7 @@ that touch them carry a stated default so work never stalls.
 | MET-01 | Derived metric definitions | **done** | codex | FND-04 |
 | MET-02 | Precompute pipeline and metric store | **done** | codex | MET-01, ING-09 |
 | MET-03 | Spoilage resolution — snapshots authoritative | **done** | codex | MET-02 |
-| MET-04 | Data Sufficiency score | available | — | MET-02 |
+| MET-04 | Data Sufficiency score | **done** | codex | MET-02 |
 | MET-05 | Impact score | available | — | MET-03 |
 | MET-06 | Urgency score | available | — | MET-03 |
 | MET-07 | Ranking and top-N selection | available | — | MET-04, MET-05, MET-06 |
@@ -1365,7 +1365,7 @@ than 20% of the smaller figure, configurable via `MET-08`.
 ### MET-04 — Data Sufficiency score
 
 ```
-Status: available   Owner: —   Claimed: —   Completed: —   Branch/PR: —
+Status: done   Owner: codex   Claimed: 2026-08-08   Completed: 2026-08-08   Branch/PR: rewrite
 ```
 
 **Blocked by:** MET-02 · **Blocks:** MET-07, DSH-01
@@ -1389,13 +1389,13 @@ per-recommendation-type minimum data table implemented as code.
 It ranks; it is never displayed as a certainty claim.
 
 **Acceptance criteria.**
-- [ ] Under four weeks of transactions, predictions are suppressed
+- [x] Under four weeks of transactions, predictions are suppressed
       entirely — observations still flow.
-- [ ] The score's constituent parts are individually retrievable for
+- [x] The score's constituent parts are individually retrievable for
       `MET-10`.
-- [ ] Each recommendation type honours its minimum-data row from the
+- [x] Each recommendation type honours its minimum-data row from the
       architecture table.
-- [ ] No API returns this value labelled "confidence".
+- [x] No API returns this value labelled "confidence".
 
 **Verification.** Feed histories of 1, 3, 4, and 12 weeks; confirm the
 prediction gate flips only at four.
@@ -1404,6 +1404,18 @@ prediction gate flips only at four.
 placeholder (`open-questions.md` §4). **Default:** keep 7 days as the
 threshold for showing any dashboard insight, and 4 weeks for predictions.
 Make both configurable via `MET-08`.
+
+**Notes.** Added exact-integer Data Sufficiency scoring with independently
+stored history, purchase completeness, inventory presence, and weekly
+continuity components. The existing metric store now persists the score per
+item and at location rollup scope with recommendation-readiness evidence.
+Observations require one transaction, trend analysis requires two weeks, and
+predictive reorder requires four weeks; the 7-day dashboard gate and
+four-week prediction gate are options for the future `MET-08` configuration
+surface. The continuity component is documented as a conservative weekly
+coverage proxy until a richer pattern model exists. Focused tests cover 1,
+3, 4, and 12-week histories plus missing-history behavior; `npm run prettify`
+and `npm run ci` pass.
 
 ---
 
