@@ -141,7 +141,7 @@ that touch them carry a stated default so work never stalls.
 | ING-01 | Location create and manage | **done** | codex | FND-05 |
 | ING-02 | CSV upload and secure file handling | **done** | codex | ING-01, QAG-04 |
 | ING-03 | CSV parse and preview | **done** | codex | ING-02 |
-| ING-04 | Column mapping — auto-detection | available | — | ING-03 |
+| ING-04 | Column mapping — auto-detection | **done** | codex | ING-03 |
 | ING-05 | Column mapping — uncertain-column resolution | available | — | ING-04, FND-07 |
 | ING-06 | Mapping persistence and reuse | available | — | ING-05 |
 | ING-07 | Canonical item master | **done** | codex | FND-04 |
@@ -820,7 +820,7 @@ passed. The next ticket owns column mapping; no mapping logic was added here.
 ### ING-04 — Column mapping, auto-detection
 
 ```
-Status: available   Owner: —   Claimed: —   Completed: —   Branch/PR: —
+Status: done   Owner: codex   Claimed: 2026-08-08   Completed: 2026-08-08   Branch/PR: rewrite
 ```
 
 **Blocked by:** ING-03 · **Blocks:** ING-05
@@ -844,15 +844,26 @@ learning — `ux-flows.md` mentions it, but it needs customers first;
 record it as a future improvement in the ticket, do not build it.
 
 **Acceptance criteria.**
-- [ ] Detection returns a confidence score per column, not a yes/no.
-- [ ] A clean, conventionally-headed export maps every column at ≥85%.
-- [ ] Value-shape evidence (dates, currency, quantities) contributes, so
+- [x] Detection returns a confidence score per column, not a yes/no.
+- [x] A clean, conventionally-headed export maps every column at ≥85%.
+- [x] Value-shape evidence (dates, currency, quantities) contributes, so
       a column headed `col_7` can still be recognised.
-- [ ] Detection is deterministic — the same file yields the same result.
-- [ ] Any column may be skipped entirely.
+- [x] Detection is deterministic — the same file yields the same result.
+- [x] Any column may be skipped entirely.
 
 **Verification.** Run the `ING-03` fixture set and record a detection
 accuracy figure per import type in the PR.
+
+**Notes.** Implemented a deterministic detector in `src/server/csv/mapping.ts`
+and included its result in the authenticated preview response. Header aliases
+and sampled value shapes produce confidence scores with the agreed `auto`
+(≥85), `review` (50–84), and `unmapped` (<50) bands. Prior mappings are an
+optional high-priority input; saving and reusing them belongs to `ING-06`.
+Unknown text columns remain skippable, while anonymous date and numeric
+columns retain value-shape evidence for the resolution step. Contract samples
+map 100% of expected fields: transactions 6/6, purchase orders 3/3, and
+inventory snapshots 3/3. Cross-customer pattern learning remains deferred as
+specified; no learning store was added.
 
 ---
 

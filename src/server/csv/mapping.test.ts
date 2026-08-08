@@ -1,0 +1,133 @@
+import { describe, expect, it } from 'vitest'
+
+import { detectColumnMappings } from './mapping'
+
+function preview(columns: string[], rows: string[][]) {
+  return {
+    columns,
+    previewRows: rows.map((values, rowNumber) => ({ rowNumber, values })),
+  }
+}
+
+function mappingFor(
+  columns: string[],
+  rows: string[][],
+  importType: Parameters<typeof detectColumnMappings>[1],
+) {
+  return detectColumnMappings(preview(columns, rows), importType)
+}
+
+describe('CSV column mapping detection', () => {
+  it('auto-maps a conventional transaction export', () => {
+    const detection = mappingFor(
+      [
+        'Transaction ID',
+        'Transaction Date',
+        'Item Description',
+        'Quantity',
+        'Unit Price',
+        'Total Revenue',
+      ],
+      [
+        ['sale-1', '2026-08-01T12:00:00Z', 'Soup', '2', '$8.50', '$17.00'],
+        ['sale-2', '2026-08-02T12:00:00Z', 'Salad', '1', '$11.00', '$11.00'],
+      ],
+      'transactions',
+    )
+
+    expect(detection.mapping).toEqual({
+      'Transaction ID': 'externalId',
+      'Transaction Date': 'transactedAt',
+      'Item Description': 'rawItemName',
+      Quantity: 'qty',
+      'Unit Price': 'unitPrice',
+      'Total Revenue': 'totalRevenue',
+    })
+    expect(detection.columns.every((column) => column.band === 'auto')).toBe(
+      true,
+    )
+    expect(detection.columns.every((column) => column.confidence >= 85)).toBe(
+      true,
+    )
+  })
+
+  it.each([
+    ['purchase orders', 'purchase_orders', 'Order Date', 'orderedAt'],
+    ['inventory snapshots', 'inventory', 'Count Date', 'countedAt'],
+  ] as const)(
+    'maps the primary date for %s',
+    (_label, importType, header, field) => {
+      const detection = mappingFor(
+        [header, 'Item Name', 'Quantity'],
+        [
+          ['2026-08-01', 'Tomatoes', '4'],
+          ['2026-08-02', 'Onions', '7'],
+        ],
+        importType,
+      )
+
+      expect(detection.mapping[header]).toBe(field)
+      expect(detection.mapping['Item Name']).toBe('rawItemName')
+      expect(detection.mapping.Quantity).toBe('qty')
+    },
+  )
+
+  it('uses value shape as evidence for an anonymous date column', () => {
+    const detection = mappingFor(
+      ['col_7', 'col_8'],
+      [
+        ['2026-08-01', 'Soup'],
+        ['2026-08-02', 'Salad'],
+      ],
+      'transactions',
+    )
+
+    expect(detection.mapping.col_7).toBe('transactedAt')
+    expect(detection.columns[0]?.band).toBe('review')
+    expect(detection.columns[0]?.evidence).toContain(
+      '100% of sampled values look date.',
+    )
+  })
+
+  it('gives a prior mapping more weight than a conflicting header guess', () => {
+    const detection = detectColumnMappings(
+      preview(['Amount'], [['17.00'], ['11.00']]),
+      'transactions',
+      { Amount: 'totalCost' },
+    )
+
+    expect(detection.mapping.Amount).toBe('totalCost')
+    expect(detection.columns[0]?.confidence).toBeGreaterThanOrEqual(92)
+    expect(detection.columns[0]?.evidence).toContain(
+      'A prior mapping for this column supports this field.',
+    )
+  })
+
+  it('leaves an unrecognised column available to skip', () => {
+    const detection = mappingFor(
+      ['Mystery note'],
+      [['Tuesday special'], ['Closed early']],
+      'inventory',
+    )
+
+    expect(detection.mapping['Mystery note']).toBeNull()
+    expect(detection.columns[0]).toMatchObject({
+      targetField: null,
+      band: 'unmapped',
+    })
+  })
+
+  it('returns the same result for the same input', () => {
+    const input = preview(
+      ['Date', 'Item', 'Qty'],
+      [
+        ['2026-08-01', 'Soup', '2'],
+        ['2026-08-02', 'Salad', '1'],
+      ],
+    )
+
+    expect(detectColumnMappings(input, 'transactions')).toEqual(
+      detectColumnMappings(input, 'transactions'),
+    )
+  })
+})

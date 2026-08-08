@@ -9,6 +9,8 @@ import {
 } from '@/src/server/storage/object-storage'
 
 import { parseCsvPreview, type CsvPreview } from './parser'
+import { detectColumnMappings } from './mapping'
+import { CSV_IMPORT_TYPES } from './upload-input'
 
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
@@ -66,10 +68,23 @@ export async function previewCsv(
         filename: upload.filename,
         source: upload.source,
       },
-      preview: await parseCsvPreview(body),
+      preview: await parsePreviewWithMappings(body, upload.source),
     }
   } catch (error) {
     if (error instanceof CsvPreviewNotFoundError) throw error
     throw new CsvPreviewReadError()
+  }
+}
+
+async function parsePreviewWithMappings(
+  body: AsyncIterable<Uint8Array>,
+  source: string,
+): Promise<CsvPreview & { mapping: ReturnType<typeof detectColumnMappings> }> {
+  const importType = CSV_IMPORT_TYPES.find((value) => value === source)
+  if (!importType) throw new CsvPreviewReadError()
+  const preview = await parseCsvPreview(body)
+  return {
+    ...preview,
+    mapping: detectColumnMappings(preview, importType),
   }
 }
