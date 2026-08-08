@@ -42,6 +42,22 @@ curl http://localhost:3000/api/health
 # {"status":"ok"}
 ```
 
+To create a deterministic local dataset with five weeks of sales history,
+run `pnpm db:migrate` followed by `pnpm db:seed`. The seed is idempotent and
+uses a clearly marked local-only owner UUID until authentication is added.
+
+For a clean local migration cycle, use the guarded rollback command:
+
+```bash
+ALLOW_DB_ROLLBACK=1 pnpm db:rollback
+pnpm db:migrate
+```
+
+Rollback only accepts a database hosted on localhost and drops the PantryIQ
+tables plus Drizzle's applied-migrations record. It is destructive and is
+not a production migration strategy; production recovery uses a database
+backup and a forward migration.
+
 ## Test
 
 ```bash

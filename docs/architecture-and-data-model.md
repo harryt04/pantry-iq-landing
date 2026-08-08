@@ -7,14 +7,13 @@ the recommendation *contract* (what must be true, business-wise) live in
 is the implementation-level detail underneath that contract.
 
 > **Technology choices live in [`tech-stack.md`](tech-stack.md)**
-> (approved 2026-08-07), not here. Two of its rules change the tables
-> below and are not yet reflected in them: `locations` needs a
-> **timezone** column and a **business-day boundary** setting, because a
-> restaurant's business day is not a calendar day (`tech-stack.md`
-> §3.10). Every monetary and quantity column is `numeric`, never a float
-> (§3.9). That document also settles the "AI / data query layer" section
-> further down: the model narrates precomputed results and never
-> calculates.
+> (approved 2026-08-07), not here. The schema includes the two location
+> settings required by that document: a **timezone** column and a
+> **business-day boundary**, because a restaurant's business day is not a
+> calendar day (`tech-stack.md` §3.10). Every monetary and quantity column
+> is `numeric`, never a float (§3.9). That document also settles the "AI /
+> data query layer" section further down: the model narrates precomputed
+> results and never calculates.
 
 ## Canonical data model
 
@@ -58,6 +57,7 @@ Header table for orders placed with suppliers.
 |---|---|---|
 | `id` | uuid | Primary key |
 | `purchaseOrderId` | uuid FK | Parent PO |
+| `locationId` | uuid FK | Denormalized ownership scope for item-level queries |
 | `inventoryItemId` | uuid FK (nullable) | Link to canonical inventory item |
 | `rawItemName` | text | Original name from source (audit trail) |
 | `qty` | numeric | Units ordered |
@@ -106,6 +106,8 @@ counts rather than inference.
 | `userId` | uuid FK | Owner/account |
 | `name` | text | Location name (e.g. "Downtown") |
 | `address` | text (nullable) | Physical address |
+| `timezone` | text | IANA timezone used for business-day interpretation |
+| `businessDayBoundary` | time | Local time at which the restaurant's business day rolls over; defaults to 4am |
 | `createdAt` | timestamp | |
 | `updatedAt` | timestamp | |
 

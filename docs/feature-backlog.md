@@ -128,7 +128,7 @@ that touch them carry a stated default so work never stalls.
 | FND-01 | Prescribe the technology stack → [`tech-stack.md`](tech-stack.md) | **done** | opus-5 | — |
 | FND-02 | Repository scaffold and developer setup | **done** | claude-opus-5 | FND-01 |
 | FND-03 | CI pipeline and automated gates | **done** | claude-sonnet-5 | FND-02 |
-| FND-04 | Core schema and migrations | available | — | FND-02 |
+| FND-04 | Core schema and migrations | **in-review** | codex | FND-02 |
 | FND-05 | Authentication and the owner account | available | — | FND-04 |
 | FND-06 | Design tokens and theming | **done** | codex | FND-02 |
 | FND-07 | Component baseline — restyled shadcn | **done** | codex | FND-06 |
@@ -424,7 +424,7 @@ button — that is a repository setting, not something committed here.
 ### FND-04 — Core schema and migrations
 
 ```
-Status: done   Owner: codex   Claimed: 2026-08-08   Completed: 2026-08-08   Branch/PR: rewrite
+Status: in-review   Owner: codex   Claimed: 2026-08-08   Completed: —   Branch/PR: rewrite
 ```
 
 **Blocked by:** FND-02 · **Blocks:** FND-05, ING-07, MET-01
@@ -457,19 +457,23 @@ labor, and connector tables — those arrive with `MNU-01`, `STF-01`, and
 `INT-02`. Multi-user org tables (D6).
 
 **Acceptance criteria.**
-- [ ] Every table and index in the architecture document exists, with
+- [x] Every table and index in the architecture document exists, with
       matching field names and nullability.
-- [ ] Money and quantity columns use an exact numeric type, never a
+- [x] Money and quantity columns use an exact numeric type, never a
       float.
-- [ ] Every timestamp stores a timezone; storage is UTC.
-- [ ] `locations` carries a timezone and a business-day boundary.
-- [ ] `externalId` supports deduplication on re-import.
+- [x] Every timestamp stores a timezone; storage is UTC.
+- [x] `locations` carries a timezone and a business-day boundary.
+- [x] `externalId` supports deduplication on re-import.
 - [ ] Migrations run forward and back cleanly on an empty database.
-- [ ] Seed data produces a location with enough history to exercise the
+- [x] Seed data produces a location with enough history to exercise the
       four-week prediction threshold.
 
 **Verification.** Migrate up, seed, inspect, migrate down, migrate up
 again.
+
+**Notes.** The schema, deterministic seed, and guarded local rollback are
+implemented. Live migration verification is pending because Docker Desktop
+cannot start in the current environment (`ECONNREFUSED` on localhost:5433).
 
 **Decisions to confirm.** Item category taxonomy is open
 (`open-questions.md` §1, Q8). **Default:** free-text `category` with no

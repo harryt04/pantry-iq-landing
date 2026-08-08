@@ -12,6 +12,7 @@
     "build": "next build",
     "start": "next start",
     "ci": "pnpm lint && pnpm typecheck && pnpm test && pnpm build",
+    "prettify": "prettier --write .",
     "lint": "prettier --check .",
     "lint:fix": "prettier --write .",
     "format": "prettier --write .",
@@ -20,7 +21,9 @@
     "test": "vitest run --passWithNoTests",
     "test:watch": "vitest",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "tsx src/server/db/migrate.ts"
+    "db:migrate": "tsx --env-file-if-exists=.env.local src/server/db/migrate.ts",
+    "db:seed": "tsx --env-file-if-exists=.env.local src/server/db/seed.ts",
+    "db:rollback": "tsx --env-file-if-exists=.env.local src/server/db/rollback.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",
