@@ -31,16 +31,120 @@ const canonicalIndexes = [
   'transactions_location_source_external_id_idx',
 ] as const
 
+const canonicalColumns = [
+  ['locations', 'id', false, 'uuid'],
+  ['locations', 'user_id', false, 'uuid'],
+  ['locations', 'name', false, 'text'],
+  ['locations', 'address', true, 'text'],
+  ['locations', 'timezone', false, 'text'],
+  ['locations', 'business_day_boundary', false, 'time without time zone'],
+  ['locations', 'created_at', false, 'timestamp with time zone'],
+  ['locations', 'updated_at', false, 'timestamp with time zone'],
+  ['inventory_items', 'id', false, 'uuid'],
+  ['inventory_items', 'location_id', false, 'uuid'],
+  ['inventory_items', 'canonical_name', false, 'text'],
+  ['inventory_items', 'display_name', false, 'text'],
+  ['inventory_items', 'category', true, 'text'],
+  ['inventory_items', 'unit', false, 'text'],
+  ['inventory_items', 'shelf_life_days', true, 'integer'],
+  ['inventory_items', 'cost_per_unit', true, 'numeric'],
+  ['inventory_items', 'par_level', true, 'numeric'],
+  ['inventory_items', 'is_active', false, 'boolean'],
+  ['inventory_items', 'usage_count', false, 'integer'],
+  ['inventory_items', 'created_at', false, 'timestamp with time zone'],
+  ['inventory_items', 'updated_at', false, 'timestamp with time zone'],
+  ['transactions', 'id', false, 'uuid'],
+  ['transactions', 'location_id', false, 'uuid'],
+  ['transactions', 'transacted_at', false, 'timestamp with time zone'],
+  ['transactions', 'external_id', false, 'text'],
+  ['transactions', 'source', false, 'text'],
+  ['transactions', 'menu_item_id', true, 'uuid'],
+  ['transactions', 'raw_item_name', false, 'text'],
+  ['transactions', 'category', true, 'text'],
+  ['transactions', 'qty', false, 'numeric'],
+  ['transactions', 'unit_price', false, 'numeric'],
+  ['transactions', 'total_revenue', false, 'numeric'],
+  ['transactions', 'total_cost', true, 'numeric'],
+  ['transactions', 'gross_margin', true, 'numeric'],
+  ['transactions', 'created_at', false, 'timestamp with time zone'],
+  ['purchase_orders', 'id', false, 'uuid'],
+  ['purchase_orders', 'location_id', false, 'uuid'],
+  ['purchase_orders', 'ordered_at', false, 'timestamp with time zone'],
+  ['purchase_orders', 'received_at', true, 'timestamp with time zone'],
+  ['purchase_orders', 'external_id', true, 'text'],
+  ['purchase_orders', 'source', false, 'text'],
+  ['purchase_orders', 'supplier_name', true, 'text'],
+  ['purchase_orders', 'created_at', false, 'timestamp with time zone'],
+  ['purchase_order_items', 'id', false, 'uuid'],
+  ['purchase_order_items', 'purchase_order_id', false, 'uuid'],
+  ['purchase_order_items', 'location_id', false, 'uuid'],
+  ['purchase_order_items', 'inventory_item_id', true, 'uuid'],
+  ['purchase_order_items', 'raw_item_name', false, 'text'],
+  ['purchase_order_items', 'qty', false, 'numeric'],
+  ['purchase_order_items', 'unit_cost', false, 'numeric'],
+  ['purchase_order_items', 'total_cost', false, 'numeric'],
+  ['purchase_order_items', 'created_at', false, 'timestamp with time zone'],
+  ['inventory_snapshots', 'id', false, 'uuid'],
+  ['inventory_snapshots', 'location_id', false, 'uuid'],
+  ['inventory_snapshots', 'inventory_item_id', false, 'uuid'],
+  ['inventory_snapshots', 'counted_at', false, 'timestamp with time zone'],
+  ['inventory_snapshots', 'qty', false, 'numeric'],
+  ['inventory_snapshots', 'source', false, 'text'],
+  ['inventory_snapshots', 'created_at', false, 'timestamp with time zone'],
+  ['csv_upload_history', 'id', false, 'uuid'],
+  ['csv_upload_history', 'location_id', false, 'uuid'],
+  ['csv_upload_history', 'filename', false, 'text'],
+  ['csv_upload_history', 'source', false, 'text'],
+  ['csv_upload_history', 'rows_imported', false, 'integer'],
+  ['csv_upload_history', 'mapping_used', false, 'jsonb'],
+  ['csv_upload_history', 'unmatched_items', true, 'jsonb'],
+  ['csv_upload_history', 'uploaded_at', false, 'timestamp with time zone'],
+  ['csv_upload_history', 'created_at', false, 'timestamp with time zone'],
+] as const
+
 async function expectCanonicalSchema(sql: ReturnType<typeof postgres>) {
   const tables = await sql<{ table_name: string }[]>`
     select table_name
     from information_schema.tables
     where table_schema = 'public'
-      and table_name = any(${sql.array([...canonicalTables])})
+      and table_type = 'BASE TABLE'
     order by table_name
   `
   expect(tables.map(({ table_name }) => table_name)).toEqual(
     [...canonicalTables].sort(),
+  )
+
+  const columns = await sql<
+    {
+      table_name: string
+      column_name: string
+      is_nullable: 'YES' | 'NO'
+      data_type: string
+    }[]
+  >`
+    select table_name, column_name, is_nullable, data_type
+    from information_schema.columns
+    where table_schema = 'public'
+    order by table_name, ordinal_position
+  `
+  expect(
+    columns.map(({ table_name, column_name, is_nullable, data_type }) => [
+      table_name,
+      column_name,
+      is_nullable === 'YES',
+      data_type,
+    ]),
+  ).toEqual(
+    [...canonicalColumns]
+      .map(([tableName, columnName, nullable, dataType]) => [
+        tableName,
+        columnName,
+        nullable,
+        dataType,
+      ])
+      .sort(([tableA, columnA], [tableB, columnB]) =>
+        `${tableA}.${columnA}`.localeCompare(`${tableB}.${columnB}`),
+      ),
   )
 
   const indexes = await sql<{ indexname: string }[]>`
