@@ -13,6 +13,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
+import { SHELF_LIFE_DEFAULTS } from '@/src/server/inventory/shelf-life-defaults'
 
 export type ItemMasterItem = {
   id: string
@@ -22,6 +23,9 @@ export type ItemMasterItem = {
   unit: string
   itemType: string
   shelfLifeDays: number | null
+  effectiveShelfLifeDays: number | null
+  shelfLifeSource: 'user' | 'suggestion' | 'unset'
+  shelfLifeSuggestionCategory: string | null
   costPerUnit: string | null
   usageCount: number
   isActive: boolean
@@ -166,6 +170,11 @@ export function ItemMaster({
           Correct the assumptions PantryIQ uses for this location. Canonical
           names stay locked so imports remain auditable.
         </CardDescription>
+        <p className="item-master-taxonomy-note">
+          Shelf life suggestions are starting points, not measured facts. Pick a
+          suggested category or type your own; an explicit shelf-life value
+          always stays in force.
+        </p>
       </CardHeader>
       <CardContent>
         <p className="item-master-note">
@@ -185,6 +194,13 @@ export function ItemMaster({
           </p>
         ) : (
           <div className="item-master-table-wrap" tabIndex={0}>
+            <datalist id="pantryiq-item-categories">
+              {SHELF_LIFE_DEFAULTS.map((entry) => (
+                <option key={entry.category} value={entry.category}>
+                  {entry.label} — {entry.days} days suggested
+                </option>
+              ))}
+            </datalist>
             <table className="item-master-table">
               <caption className="sr-only">
                 Canonical items for this location
@@ -253,6 +269,7 @@ export function ItemMaster({
                         {isEditing ? (
                           <Input
                             aria-label={`Category for ${item.displayName}`}
+                            list="pantryiq-item-categories"
                             value={draft.category ?? ''}
                             onChange={(event) =>
                               setDraft({
@@ -264,7 +281,11 @@ export function ItemMaster({
                         ) : (
                           <>
                             {item.category ?? '—'}
-                            <small>{sourceLabel(item.category)}</small>
+                            <small>
+                              {item.category
+                                ? 'Your value · suggestions available'
+                                : 'No category set'}
+                            </small>
                           </>
                         )}
                       </td>
@@ -288,6 +309,11 @@ export function ItemMaster({
                         {isEditing ? (
                           <Input
                             aria-label={`Shelf life in days for ${item.displayName}`}
+                            placeholder={
+                              item.effectiveShelfLifeDays === null
+                                ? undefined
+                                : String(item.effectiveShelfLifeDays)
+                            }
                             min="0"
                             step="1"
                             type="number"
@@ -303,10 +329,16 @@ export function ItemMaster({
                           />
                         ) : (
                           <>
-                            {item.shelfLifeDays === null
+                            {item.effectiveShelfLifeDays === null
                               ? '—'
-                              : `${item.shelfLifeDays} days`}
-                            <small>{sourceLabel(item.shelfLifeDays)}</small>
+                              : `${item.effectiveShelfLifeDays} days`}
+                            <small>
+                              {item.shelfLifeSource === 'user'
+                                ? 'Your value'
+                                : item.shelfLifeSource === 'suggestion'
+                                  ? `Suggested for ${item.shelfLifeSuggestionCategory}`
+                                  : 'No suggestion available'}
+                            </small>
                           </>
                         )}
                       </td>

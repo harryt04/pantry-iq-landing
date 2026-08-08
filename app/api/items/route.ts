@@ -6,6 +6,7 @@ import {
 } from '@/src/server/auth/authorization'
 import { InventoryItemValidationError } from '@/src/server/inventory/item-input'
 import { listInventoryItems } from '@/src/server/inventory/items'
+import { resolveShelfLife } from '@/src/server/inventory/shelf-life-defaults'
 
 function errorResponse(error: unknown) {
   if (error instanceof UnauthorizedError) {
@@ -26,6 +27,7 @@ function errorResponse(error: unknown) {
 function publicItem(
   item: Awaited<ReturnType<typeof listInventoryItems>>[number],
 ) {
+  const shelfLife = resolveShelfLife(item)
   return {
     id: item.id,
     canonicalName: item.canonicalName,
@@ -34,6 +36,9 @@ function publicItem(
     unit: item.unit,
     itemType: item.itemType,
     shelfLifeDays: item.shelfLifeDays,
+    effectiveShelfLifeDays: shelfLife.days,
+    shelfLifeSource: shelfLife.source,
+    shelfLifeSuggestionCategory: shelfLife.suggestionCategory,
     costPerUnit: item.costPerUnit,
     usageCount: item.usageCount,
     isActive: item.isActive,

@@ -1,4 +1,5 @@
 import type { CanonicalField } from './mapping'
+import { getShelfLifeSuggestion } from '../inventory/shelf-life-defaults'
 
 export type ItemResolutionCandidate = {
   id: string
@@ -218,21 +219,8 @@ export function resolveCsvItems(input: {
   }
 }
 
-export const SHELF_LIFE_DAYS_BY_CATEGORY: Readonly<Record<string, number>> = {
-  beverage: 30,
-  dry_good: 30,
-  'dry goods': 30,
-  pasta: 30,
-  produce: 5,
-  protein: 3,
-  salad: 2,
-  seafood: 3,
-  soup: 3,
-}
-
 export function suggestedShelfLifeDays(category: string | null | undefined) {
-  if (!category) return null
-  return SHELF_LIFE_DAYS_BY_CATEGORY[normalizeExactItemName(category)] ?? null
+  return getShelfLifeSuggestion(category ?? null)?.days ?? null
 }
 
 export class CsvItemResolutionError extends Error {

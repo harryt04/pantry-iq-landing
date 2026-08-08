@@ -598,6 +598,13 @@ body {
   padding: var(--space-3) var(--space-4);
 }
 
+.item-master-taxonomy-note {
+  color: var(--muted-foreground);
+  font-size: var(--text-sm);
+  line-height: 1.6;
+  margin: 0;
+}
+
 .item-master-empty {
   border-left-color: var(--border);
   color: var(--muted-foreground);

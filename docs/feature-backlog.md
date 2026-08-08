@@ -200,7 +200,7 @@ that touch them carry a stated default so work never stalls.
 | SET-02 | Location management | **done** | codex | FND-08, ING-01 |
 | SET-03 | Item master management | **done** | codex | FND-08, ING-07 |
 | SET-04 | Import history drill-down | available | — | FND-08, ING-09 |
-| SET-05 | Shelf-life defaults and category taxonomy | available | — | SET-03 |
+| SET-05 | Shelf-life defaults and category taxonomy | **done** | codex | SET-03 |
 
 ### Marketing site
 
@@ -2399,7 +2399,7 @@ items created or matched.
 ### SET-05 — Shelf-life defaults and category taxonomy
 
 ```
-Status: available   Owner: —   Claimed: —   Completed: —   Branch/PR: —
+Status: done   Owner: codex   Claimed: 2026-08-08   Completed: 2026-08-08   Branch/PR: rewrite
 ```
 
 **Blocked by:** SET-03 · **Blocks:** —
@@ -2420,10 +2420,10 @@ override documented and tested. A category list the user can extend.
 **Scope — out.** An LLM call to guess shelf life.
 
 **Acceptance criteria.**
-- [ ] Defaults live in one committed file, reviewable.
-- [ ] Per-item override always wins, and the UI says which is in force.
-- [ ] Category assignment never overwrites an explicit user value.
-- [ ] A default is never presented as a fact — it is labelled a
+- [x] Defaults live in one committed file, reviewable.
+- [x] Per-item override always wins, and the UI says which is in force.
+- [x] Category assignment never overwrites an explicit user value.
+- [x] A default is never presented as a fact — it is labelled a
       suggestion everywhere it appears.
 
 **Decisions to confirm.** Fixed versus free-form taxonomy is open
@@ -2431,6 +2431,20 @@ override documented and tested. A category list the user can extend.
 `architecture-and-data-model.md` § "Item categorization" as suggestions,
 allow free text, and revisit once real import data shows what operators
 actually use.
+
+**Notes.** Added the single committed `SHELF_LIFE_DEFAULTS` lookup with
+category normalization and a user-override-first resolver. Existing CSV
+creation suggestions now use the same module; the settings item master
+shows effective shelf life with either `Your value`, a labelled category
+suggestion, or `No suggestion available`. Category entry uses a datalist for
+the suggested taxonomy but remains free text, so custom categories do not
+become an accidental closed enum. The API and server-rendered settings data
+publish the effective value and its source. Unit and contract tests cover
+precedence, aliases, unknown categories, source labels, and one-file
+ownership. `npm run prettify` and `npm run ci` pass; unauthenticated live
+smoke checks returned 200 for `/api/health` and 307 to `/sign-in` for
+`/settings`. `.env.local` contains no test credentials, so authenticated
+settings verification was unavailable.
 
 ---
 
@@ -3673,14 +3687,14 @@ condition.
 | Metrics engine | 1 | 12 |
 | Dashboard | 2 | 7 |
 | Chat | 1 | 8 |
-| Settings | 3 | 5 |
+| Settings | 4 | 5 |
 | Marketing site | 4 | 5 |
 | Quality gates | 3 | 6 |
 | Cross-location | 0 | 4 |
 | Integrations | 0 | 8 |
 | Menu management | 4 | 7 |
 | Staffing | 0 | 6 |
-| **Total** | **33** | **87** |
+| **Total** | **34** | **87** |
 
 **The backlog is complete when every ticket reads `done`.** Sections 7
 and 8 are not work and never become work.

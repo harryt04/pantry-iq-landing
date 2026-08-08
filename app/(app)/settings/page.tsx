@@ -7,6 +7,7 @@ import { LocationManager } from '@/components/locations/location-manager'
 import { auth } from '@/src/server/auth/auth'
 import { listInventoryItems } from '@/src/server/inventory/items'
 import { listLocations } from '@/src/server/locations/locations'
+import { resolveShelfLife } from '@/src/server/inventory/shelf-life-defaults'
 
 export default async function SettingsPage({
   searchParams,
@@ -24,11 +25,20 @@ export default async function SettingsPage({
   const selectedLocation =
     locations.find((location) => location.id === requestedLocationId) ??
     locations[0]
-  const items = selectedLocation
+  const rawItems = selectedLocation
     ? await listInventoryItems(requestHeaders, selectedLocation.id, {
         includeInactive: true,
       })
     : []
+  const items = rawItems.map((item) => {
+    const shelfLife = resolveShelfLife(item)
+    return {
+      ...item,
+      effectiveShelfLifeDays: shelfLife.days,
+      shelfLifeSource: shelfLife.source,
+      shelfLifeSuggestionCategory: shelfLife.suggestionCategory,
+    }
+  })
 
   return (
     <main className="app-page" aria-labelledby="settings-title">
