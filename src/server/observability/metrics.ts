@@ -129,7 +129,7 @@ function healthSnapshot(
     lastRunDurationMs: health.lastRunDurationMs,
     lastFailureAt: cloneDate(health.lastFailureAt),
     failureCount: health.failureCount,
-    isStale: ageMs > staleAfterMs,
+    isStale: ageMs >= staleAfterMs,
   }
 }
 

@@ -78,6 +78,25 @@ describe('operational metrics', () => {
     ).toEqual(new Date('2026-08-08T10:00:00.000Z'))
   })
 
+  it('marks a location stale at the configured threshold', () => {
+    const metrics = new OperationalMetrics()
+
+    metrics.recordPrecomputeSuccess({
+      locationId: 'location-1',
+      runId: 'run-1',
+      completedAt: new Date('2026-08-08T10:00:00.000Z'),
+      durationMs: 100,
+    })
+
+    expect(
+      metrics.getPrecomputeHealth(
+        'location-1',
+        new Date('2026-08-08T11:00:00.000Z'),
+        60 * 60 * 1000,
+      ).isStale,
+    ).toBe(true)
+  })
+
   it('reports import success and failure rates per location', () => {
     const metrics = new OperationalMetrics()
 
