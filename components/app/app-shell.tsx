@@ -70,7 +70,15 @@ export function AppShell({
       locations.some((location) => location.id === id),
     )
 
-    if (!nextLocationId || nextLocationId === selectedLocationId) return
+    if (!nextLocationId) {
+      const fallbackLocation = locations[0]
+      if (!fallbackLocation || selectedLocationId === fallbackLocation.id)
+        return
+      setSelectedLocationId(fallbackLocation.id)
+      rememberLocation(fallbackLocation.id)
+      return
+    }
+    if (nextLocationId === selectedLocationId) return
     setSelectedLocationId(nextLocationId)
     rememberLocation(nextLocationId)
   }, [locations, selectedLocationId])

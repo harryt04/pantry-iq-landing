@@ -15,7 +15,7 @@ export default async function AccountPage() {
         <div>
           <p className="auth-wordmark">PantryIQ</p>
           <p className="auth-eyebrow">Account</p>
-          <h1 id="account-title">Set up your locations.</h1>
+          <h1 id="account-title">Manage your locations.</h1>
           <p>Keep each operation separate so every number has a clear home.</p>
         </div>
         <div className="account-header-actions">

@@ -197,7 +197,7 @@ that touch them carry a stated default so work never stalls.
 | ID | Title | Status | Owner | Blocked by |
 |---|---|---|---|---|
 | SET-01 | Account settings | **done** | codex | FND-08 |
-| SET-02 | Location management | available | — | FND-08, ING-01 |
+| SET-02 | Location management | **done** | codex | FND-08, ING-01 |
 | SET-03 | Item master management | **done** | codex | FND-08, ING-07 |
 | SET-04 | Import history drill-down | available | — | FND-08, ING-09 |
 | SET-05 | Shelf-life defaults and category taxonomy | available | — | SET-03 |
@@ -2276,7 +2276,7 @@ service is configured.
 ### SET-02 — Location management
 
 ```
-Status: available   Owner: —   Claimed: —   Completed: —   Branch/PR: —
+Status: done   Owner: codex   Claimed: 2026-08-08   Completed: 2026-08-08   Branch/PR: rewrite
 ```
 
 **Blocked by:** FND-08, ING-01 · **Blocks:** —
@@ -2295,10 +2295,20 @@ real consequence: "This deletes 3 imports and 4,102 rows. It can't be
 undone."
 
 **Acceptance criteria.**
-- [ ] The confirmation states actual counts from that location's data.
-- [ ] Destructive action is never behind a hover-only affordance.
-- [ ] Removal is transactional and complete.
-- [ ] The location picker updates immediately afterward.
+- [x] The confirmation states actual counts from that location's data.
+- [x] Destructive action is never behind a hover-only affordance.
+- [x] Removal is transactional and complete.
+- [x] The location picker updates immediately afterward.
+
+**Notes.** Settings and account now list owner-scoped locations with edit,
+dashboard, chat, archive/restore, and remove actions. Removal loads the
+location's real import and imported-row counts into an `AlertDialog`, then
+deletes all location-owned database records in one transaction. The shell
+falls back to the first remaining active location after refresh, or routes to
+location setup when none remain. Contract tests, formatting, CI, accessibility,
+and production build validation pass. Authenticated live verification remains
+unavailable because `.env.local` has no test credentials and PostgreSQL is not
+reachable in this environment.
 
 ---
 
@@ -3653,14 +3663,14 @@ condition.
 | Metrics engine | 1 | 12 |
 | Dashboard | 1 | 7 |
 | Chat | 1 | 8 |
-| Settings | 2 | 5 |
+| Settings | 3 | 5 |
 | Marketing site | 4 | 5 |
 | Quality gates | 3 | 6 |
 | Cross-location | 0 | 4 |
 | Integrations | 0 | 8 |
 | Menu management | 4 | 7 |
 | Staffing | 0 | 6 |
-| **Total** | **31** | **87** |
+| **Total** | **32** | **87** |
 
 **The backlog is complete when every ticket reads `done`.** Sections 7
 and 8 are not work and never become work.

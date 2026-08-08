@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 
 import { AccountSettings } from '@/components/settings/account-settings'
 import { ItemMaster } from '@/components/settings/item-master'
+import { LocationManager } from '@/components/locations/location-manager'
 import { auth } from '@/src/server/auth/auth'
 import { listInventoryItems } from '@/src/server/inventory/items'
 import { listLocations } from '@/src/server/locations/locations'
@@ -42,6 +43,7 @@ export default async function SettingsPage({
         initialEmail={session.user.email}
         initialName={session.user.name}
       />
+      <LocationManager />
       {selectedLocation ? (
         <ItemMaster initialItems={items} locationId={selectedLocation.id} />
       ) : null}

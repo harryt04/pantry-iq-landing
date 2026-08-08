@@ -1,7 +1,19 @@
 'use client'
 
 import * as React from 'react'
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -15,6 +27,12 @@ type Location = {
   createdAt: string
 }
 
+type DeletionSummary = {
+  locationName: string
+  importCount: number
+  importedRowCount: number
+}
+
 function formatDate(value: string) {
   return new Intl.DateTimeFormat('en', {
     dateStyle: 'medium',
@@ -22,6 +40,7 @@ function formatDate(value: string) {
 }
 
 export function LocationManager() {
+  const router = useRouter()
   const [locations, setLocations] = React.useState<Location[]>([])
   const [name, setName] = React.useState('')
   const [address, setAddress] = React.useState('')
@@ -31,6 +50,12 @@ export function LocationManager() {
   const [confirmingArchiveId, setConfirmingArchiveId] = React.useState<
     string | null
   >(null)
+  const [deletingLocation, setDeletingLocation] =
+    React.useState<Location | null>(null)
+  const [deletionSummary, setDeletionSummary] =
+    React.useState<DeletionSummary | null>(null)
+  const [loadingDeletionSummary, setLoadingDeletionSummary] =
+    React.useState(false)
   const [loading, setLoading] = React.useState(true)
   const [saving, setSaving] = React.useState(false)
   const [message, setMessage] = React.useState<string | null>(null)
@@ -129,6 +154,65 @@ export function LocationManager() {
         error instanceof Error
           ? error.message
           : 'Location could not be updated.',
+      )
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function prepareDeletion(location: Location) {
+    setMessage(null)
+    setDeletionSummary(null)
+    setDeletingLocation(location)
+    setLoadingDeletionSummary(true)
+    try {
+      const response = await fetch(`/api/locations/${location.id}`)
+      const payload = (await response.json()) as {
+        summary?: DeletionSummary
+        error?: string
+      }
+      if (!response.ok || !payload.summary) {
+        throw new Error(
+          payload.error ?? 'The removal details could not be loaded.',
+        )
+      }
+      setDeletionSummary(payload.summary)
+    } catch (error) {
+      setDeletingLocation(null)
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : 'The removal details could not be loaded.',
+      )
+    } finally {
+      setLoadingDeletionSummary(false)
+    }
+  }
+
+  async function removeLocation() {
+    if (!deletingLocation) return
+    setSaving(true)
+    setMessage(null)
+    try {
+      const response = await fetch(`/api/locations/${deletingLocation.id}`, {
+        method: 'DELETE',
+      })
+      const payload = (await response.json().catch(() => ({}))) as {
+        error?: string
+      }
+      if (!response.ok) {
+        throw new Error(payload.error ?? 'That location could not be removed.')
+      }
+      setDeletingLocation(null)
+      setDeletionSummary(null)
+      await loadLocations()
+      router.refresh()
+      setMessage('Location removed. Its imported data is no longer available.')
+    } catch (error) {
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : 'That location could not be removed.',
       )
     } finally {
       setSaving(false)
@@ -239,6 +323,20 @@ export function LocationManager() {
                       </span>
                       {!location.isActive ? ' · Archived' : ''}
                     </small>
+                    {location.isActive ? (
+                      <div className="location-view-links">
+                        <Link
+                          href={`/dashboard?locationId=${encodeURIComponent(location.id)}`}
+                        >
+                          View dashboard
+                        </Link>
+                        <Link
+                          href={`/chat?locationId=${encodeURIComponent(location.id)}`}
+                        >
+                          View chat
+                        </Link>
+                      </div>
+                    ) : null}
                   </div>
                   <div className="location-actions">
                     <Button
@@ -282,6 +380,14 @@ export function LocationManager() {
                           : 'Restore location'}
                       </Button>
                     )}
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      onClick={() => void prepareDeletion(location)}
+                      disabled={saving}
+                    >
+                      Remove location
+                    </Button>
                   </div>
                 </li>
               ))}
@@ -295,6 +401,52 @@ export function LocationManager() {
           {message}
         </p>
       ) : null}
+
+      <AlertDialog
+        open={deletingLocation !== null}
+        onOpenChange={(open) => {
+          if (!open && !saving) {
+            setDeletingLocation(null)
+            setDeletionSummary(null)
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              Remove {deletingLocation?.name ?? 'this location'}?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {loadingDeletionSummary || !deletionSummary ? (
+                'Loading the data that will be removed…'
+              ) : (
+                <>
+                  This deletes {deletionSummary.importCount} import
+                  {deletionSummary.importCount === 1 ? '' : 's'} and{' '}
+                  {deletionSummary.importedRowCount.toLocaleString()} imported
+                  row{deletionSummary.importedRowCount === 1 ? '' : 's'}. It
+                  can&apos;t be undone.
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={saving}>
+              Keep location
+            </AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              onClick={(event) => {
+                event.preventDefault()
+                void removeLocation()
+              }}
+              disabled={saving || loadingDeletionSummary || !deletionSummary}
+            >
+              {saving ? 'Removing…' : 'Remove location'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
