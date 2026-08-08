@@ -1,4 +1,4 @@
-import localFont from 'next/font/local';
+import localFont from 'next/font/local'
 
 // The exact weight set in ui-implementation.md §2, checked into the app
 // rather than fetched at build or runtime.
@@ -11,7 +11,7 @@ export const plexSans = localFont({
   ],
   variable: '--font-sans',
   display: 'swap',
-});
+})
 
 export const plexMono = localFont({
   src: [
@@ -21,4 +21,4 @@ export const plexMono = localFont({
   ],
   variable: '--font-mono',
   display: 'swap',
-});
+})

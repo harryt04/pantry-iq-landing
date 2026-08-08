@@ -1,29 +1,29 @@
-'use client';
+'use client'
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react'
 
-type ThemePreference = 'light' | 'dark' | 'system';
+type ThemePreference = 'light' | 'dark' | 'system'
 
-const STORAGE_KEY = 'pantryiq-theme';
+const STORAGE_KEY = 'pantryiq-theme'
 
 function applyTheme(pref: ThemePreference) {
-  const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-  const dark = pref === 'dark' || (pref === 'system' && systemDark);
-  document.documentElement.classList.toggle('dark', dark);
+  const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+  const dark = pref === 'dark' || (pref === 'system' && systemDark)
+  document.documentElement.classList.toggle('dark', dark)
 }
 
 export function ThemeToggle() {
-  const [preference, setPreference] = useState<ThemePreference>('system');
+  const [preference, setPreference] = useState<ThemePreference>('system')
 
   useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY) as ThemePreference | null;
-    setPreference(stored ?? 'system');
-  }, []);
+    const stored = localStorage.getItem(STORAGE_KEY) as ThemePreference | null
+    setPreference(stored ?? 'system')
+  }, [])
 
   function setTheme(pref: ThemePreference) {
-    setPreference(pref);
-    localStorage.setItem(STORAGE_KEY, pref);
-    applyTheme(pref);
+    setPreference(pref)
+    localStorage.setItem(STORAGE_KEY, pref)
+    applyTheme(pref)
   }
 
   return (
@@ -60,5 +60,5 @@ export function ThemeToggle() {
         </button>
       ))}
     </fieldset>
-  );
+  )
 }

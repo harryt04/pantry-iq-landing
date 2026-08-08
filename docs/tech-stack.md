@@ -62,7 +62,7 @@ Three further constraints shaped it:
 | Numbers | **Postgres `numeric`; integer minor units in JS** | Money never touches a float |
 | Time | **UTC in storage; an explicit business-day rule** | See §3.10 — this is a real domain trap |
 | Testing | **Vitest + Testcontainers; Playwright** | Engine tests hit a real database, because mocks prove nothing about SQL |
-| Lint & format | **Biome** | One tool, one config, fast |
+| Lint & format | **Prettier** | One formatter and one check command, with Tailwind class sorting |
 | Errors & telemetry | **Sentry + OpenTelemetry traces** | A silently failing precompute run is the worst failure mode we have |
 | CI | **GitHub Actions** | Where the code lives |
 | Hosting | **Docker on a VPS via Coolify** | Already running it. One box until one box demonstrably fails |
@@ -486,8 +486,9 @@ moving to a managed platform later is a deployment change, not a rewrite.
 GitHub Actions, per `FND-03`: install, lint, type check, unit tests,
 engine tests against real Postgres, and build. Failures block merge.
 
-**Biome** for linting and formatting — one tool, one config file, fast
-enough that nobody disables it.
+**Prettier** for formatting, with the Tailwind plugin sorting utility classes.
+The `lint` script remains the CI-compatible formatting check; Prettier is not
+a semantic linter.
 
 Two gates are unusual and are the point of the product
 (`QAG-01`, `QAG-02`):

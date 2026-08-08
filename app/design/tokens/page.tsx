@@ -1,4 +1,4 @@
-import { ThemeToggle } from '@/components/theme-toggle';
+import { ThemeToggle } from '@/components/theme-toggle'
 
 const palettes = [
   ['Stone', '--background', 'solid'],
@@ -11,7 +11,7 @@ const palettes = [
   ['Oxide · ▲ Act now · cross-hatch', '--signal-risk', 'cross'],
   ['Chart 4 · dots', '--chart-4', 'dots'],
   ['Chart 5 · vertical rule', '--chart-5', 'vertical'],
-] as const;
+] as const
 
 const typeScale = [
   ['11px', '--text-xs'],
@@ -24,9 +24,9 @@ const typeScale = [
   ['28px', '--text-2xl'],
   ['36px', '--text-3xl'],
   ['44px', '--text-4xl'],
-] as const;
+] as const
 
-const spaces = [4, 8, 12, 16, 20, 24, 32, 40, 56, 80];
+const spaces = [4, 8, 12, 16, 20, 24, 32, 40, 56, 80]
 
 export default function DesignTokensPage() {
   return (
@@ -93,5 +93,5 @@ export default function DesignTokensPage() {
         <p className="token-figure figure">$12,480.00 · 23.4% · 2026-08-08</p>
       </section>
     </main>
-  );
+  )
 }

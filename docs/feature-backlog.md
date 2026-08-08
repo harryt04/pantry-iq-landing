@@ -614,8 +614,8 @@ registry, with Sonner as the registry's current toast implementation.
 `/design/gallery` exercises the baseline interactions and status states;
 the restyle is centralized in `globals.css`, including the 2px Azure
 focus ring and the state-edge utilities. Generated registry code is
-excluded from the repository's Biome checks because it is formatted for
-the upstream toolchain while local feature code remains fully gated.
+formatted and checked by the repository's Prettier configuration alongside
+local feature code.
 
 ---
 

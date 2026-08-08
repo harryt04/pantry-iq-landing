@@ -11,4 +11,4 @@ export const themeInitScript = `
     document.documentElement.classList.toggle('dark', dark);
   } catch (e) {}
 })();
-`;
+`

@@ -46,8 +46,8 @@ curl http://localhost:3000/api/health
 
 ```bash
 pnpm test        # unit tests (Vitest)
-pnpm lint         # Biome check
-pnpm format:check # Biome format check
+pnpm lint         # Prettier check
+pnpm format:check # Prettier format check
 pnpm typecheck    # tsc --noEmit
 pnpm build        # production build
 ```
@@ -73,7 +73,7 @@ No secrets are committed. `.env.local` is gitignored.
 
 TypeScript (strict) · Next.js App Router · React · Tailwind v4 · shadcn/ui
 on Radix · PostgreSQL · Drizzle ORM · pg-boss · Better Auth · Vercel AI SDK
-· Biome · Vitest + Testcontainers + Playwright · Docker on Coolify.
+· Prettier · Vitest + Testcontainers + Playwright · Docker on Coolify.
 
 Full reasoning in [`docs/tech-stack.md`](docs/tech-stack.md).
 

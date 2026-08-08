@@ -10,14 +10,14 @@ import {
   timestamp,
   uniqueIndex,
   uuid,
-} from 'drizzle-orm/pg-core';
+} from 'drizzle-orm/pg-core'
 
 const createdAt = timestamp('created_at', { withTimezone: true })
   .defaultNow()
-  .notNull();
+  .notNull()
 const updatedAt = timestamp('updated_at', { withTimezone: true })
   .defaultNow()
-  .notNull();
+  .notNull()
 
 // Better Auth owns the concrete `user` table in FND-05. The ID remains an
 // explicit UUID now so all restaurant data is ready for ownership enforcement.
@@ -32,7 +32,7 @@ export const locations = pgTable('locations', {
     .default('04:00:00'),
   createdAt,
   updatedAt,
-});
+})
 
 export const inventoryItems = pgTable(
   'inventory_items',
@@ -59,7 +59,7 @@ export const inventoryItems = pgTable(
       table.canonicalName,
     ),
   ],
-);
+)
 
 export const transactions = pgTable(
   'transactions',
@@ -96,7 +96,7 @@ export const transactions = pgTable(
       table.externalId,
     ),
   ],
-);
+)
 
 export const purchaseOrders = pgTable(
   'purchase_orders',
@@ -119,7 +119,7 @@ export const purchaseOrders = pgTable(
       table.externalId,
     ),
   ],
-);
+)
 
 export const purchaseOrderItems = pgTable(
   'purchase_order_items',
@@ -146,7 +146,7 @@ export const purchaseOrderItems = pgTable(
       table.inventoryItemId,
     ),
   ],
-);
+)
 
 export const inventorySnapshots = pgTable(
   'inventory_snapshots',
@@ -169,7 +169,7 @@ export const inventorySnapshots = pgTable(
       table.countedAt,
     ),
   ],
-);
+)
 
 export const csvUploadHistory = pgTable('csv_upload_history', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -183,4 +183,4 @@ export const csvUploadHistory = pgTable('csv_upload_history', {
   unmatchedItems: jsonb('unmatched_items'),
   uploadedAt: timestamp('uploaded_at', { withTimezone: true }).notNull(),
   createdAt,
-});
+})

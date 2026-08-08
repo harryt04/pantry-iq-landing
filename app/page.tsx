@@ -4,5 +4,5 @@ export default function Home() {
       <h1>PantryIQ</h1>
       <p>The application shell is under construction.</p>
     </main>
-  );
+  )
 }

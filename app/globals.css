@@ -1,6 +1,6 @@
-@import "tailwindcss";
-@import "tw-animate-css";
-@import "shadcn/tailwind.css";
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@import 'shadcn/tailwind.css';
 
 @custom-variant dark (&:is(.dark *));
 
@@ -60,7 +60,7 @@
 }
 
 .dark,
-:root:has(input.theme-toggle[value="dark"]) {
+:root:has(input.theme-toggle[value='dark']) {
   --background: #131311;
   --foreground: #edebe6;
   --card: #1a1a17;
@@ -109,8 +109,8 @@
 :root {
   /* next/font (lib/fonts.ts) injects the resolved, self-hosted font
      stacks into these same variable names on <html>. */
-  --font-sans: "IBM Plex Sans", system-ui, sans-serif;
-  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+  --font-sans: 'IBM Plex Sans', system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
 
   /* type scale (rem, 16px root) */
   --text-xs: 0.6875rem;
@@ -311,7 +311,8 @@ body {
 }
 
 .pat--cross {
-  background-image: repeating-linear-gradient(
+  background-image:
+    repeating-linear-gradient(
       45deg,
       rgb(255 255 255 / 55%) 0 2px,
       transparent 2px 6px
@@ -406,54 +407,54 @@ body {
 
 /* FND-07 signature moves: behaviour stays in Radix; the visual language
    is controlled here once rather than tuned component by component. */
-[data-slot="button"],
-[data-slot="badge"],
-[data-slot="toggle"],
-[data-slot="toggle-group-item"],
-[data-slot="avatar"],
-[data-slot="pagination-link"] {
+[data-slot='button'],
+[data-slot='badge'],
+[data-slot='toggle'],
+[data-slot='toggle-group-item'],
+[data-slot='avatar'],
+[data-slot='pagination-link'] {
   border-radius: var(--radius-control);
 }
 
-[data-slot="card"],
-[data-slot="accordion"],
-[data-slot="alert"],
-[data-slot="checkbox"],
-[data-slot="combobox-content"],
-[data-slot="table-container"],
-[data-slot="input"],
-[data-slot="textarea"],
-[data-slot="native-select"],
-[data-slot="select-trigger"],
-[data-slot="select-content"],
-[data-slot="dialog-content"],
-[data-slot="alert-dialog-content"],
-[data-slot="sheet-content"],
-[data-slot="popover-content"],
-[data-slot="hover-card-content"],
-[data-slot="dropdown-menu-content"],
-[data-slot="skeleton"],
-[data-slot="command"],
-[data-slot="input-group"],
-[data-slot="item"],
-[data-slot="kbd"],
-[data-slot="empty"],
-[data-slot="progress"] {
+[data-slot='card'],
+[data-slot='accordion'],
+[data-slot='alert'],
+[data-slot='checkbox'],
+[data-slot='combobox-content'],
+[data-slot='table-container'],
+[data-slot='input'],
+[data-slot='textarea'],
+[data-slot='native-select'],
+[data-slot='select-trigger'],
+[data-slot='select-content'],
+[data-slot='dialog-content'],
+[data-slot='alert-dialog-content'],
+[data-slot='sheet-content'],
+[data-slot='popover-content'],
+[data-slot='hover-card-content'],
+[data-slot='dropdown-menu-content'],
+[data-slot='skeleton'],
+[data-slot='command'],
+[data-slot='input-group'],
+[data-slot='item'],
+[data-slot='kbd'],
+[data-slot='empty'],
+[data-slot='progress'] {
   border-radius: var(--radius-surface);
 }
 
 :where(
-    button,
-    [role="button"],
-    a,
-    input,
-    textarea,
-    select,
-    [role="checkbox"],
-    [role="radio"],
-    [role="switch"],
-    [tabindex]:not([tabindex="-1"])
-  ):focus-visible {
+  button,
+  [role='button'],
+  a,
+  input,
+  textarea,
+  select,
+  [role='checkbox'],
+  [role='radio'],
+  [role='switch'],
+  [tabindex]:not([tabindex='-1'])
+):focus-visible {
   outline: 2px solid var(--ring) !important;
   outline-offset: 2px;
   box-shadow: none !important;
