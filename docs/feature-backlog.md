@@ -196,7 +196,7 @@ that touch them carry a stated default so work never stalls.
 
 | ID | Title | Status | Owner | Blocked by |
 |---|---|---|---|---|
-| SET-01 | Account settings | available | — | FND-08 |
+| SET-01 | Account settings | **done** | codex | FND-08 |
 | SET-02 | Location management | available | — | FND-08, ING-01 |
 | SET-03 | Item master management | available | — | FND-08, ING-07 |
 | SET-04 | Import history drill-down | available | — | FND-08, ING-09 |
@@ -2240,7 +2240,7 @@ five declines against `voice-and-tone.md` §5.
 ### SET-01 — Account settings
 
 ```
-Status: available   Owner: —   Claimed: —   Completed: —   Branch/PR: —
+Status: done   Owner: codex   Claimed: 2026-08-08   Completed: 2026-08-08   Branch/PR: rewrite
 ```
 
 **Blocked by:** FND-08 · **Blocks:** —
@@ -2258,9 +2258,18 @@ verification.
 **Scope — out.** Team members and roles (D6). Billing (D7).
 
 **Acceptance criteria.**
-- [ ] Email change requires verification before it takes effect.
-- [ ] Password change invalidates other sessions.
-- [ ] Forms use real labels; errors described in text.
+- [x] Email change requires verification before it takes effect.
+- [x] Password change invalidates other sessions.
+- [x] Forms use real labels; errors described in text.
+
+**Notes.** Account settings now expose editable name, optional company name,
+primary email, and password forms. Better Auth sends a verification link for
+email changes and rejects unverified updates; password changes revoke other
+sessions. The account profile migration is additive and keeps the existing
+owner model. Contract, typecheck, accessibility, build, and unauthenticated
+route checks pass. Authenticated browser submission could not be exercised
+because `.env.local` has no test credentials and no reachable PostgreSQL
+service is configured.
 
 ---
 
@@ -3631,18 +3640,18 @@ condition.
 | Area | Done | Total |
 |---|---|---|
 | Foundation | 8 | 8 |
-| Data ingest | 6 | 11 |
+| Data ingest | 7 | 11 |
 | Metrics engine | 1 | 12 |
 | Dashboard | 1 | 7 |
-| Chat | 0 | 8 |
-| Settings | 0 | 5 |
+| Chat | 1 | 8 |
+| Settings | 1 | 5 |
 | Marketing site | 4 | 5 |
 | Quality gates | 3 | 6 |
 | Cross-location | 0 | 4 |
 | Integrations | 0 | 8 |
 | Menu management | 4 | 7 |
 | Staffing | 0 | 6 |
-| **Total** | **26** | **87** |
+| **Total** | **30** | **87** |
 
 **The backlog is complete when every ticket reads `done`.** Sections 7
 and 8 are not work and never become work.

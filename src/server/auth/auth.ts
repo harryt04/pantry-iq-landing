@@ -13,6 +13,7 @@ if (!process.env.BETTER_AUTH_SECRET && process.env.NODE_ENV === 'production') {
 }
 
 export const auth = betterAuth({
+  appName: 'PantryIQ',
   secret:
     process.env.BETTER_AUTH_SECRET ?? 'local-development-secret-change-me',
   baseURL: baseUrl,
@@ -37,6 +38,30 @@ export const auth = betterAuth({
       })
     },
     revokeSessionsOnPasswordReset: true,
+  },
+  emailVerification: {
+    sendVerificationEmail: async ({ user: verificationUser, url }) => {
+      await sendAuthEmail({
+        to: verificationUser.email,
+        subject: 'Verify your PantryIQ email',
+        text: `Verify your PantryIQ email address by opening this link: ${url}`,
+      })
+    },
+    expiresIn: 60 * 60,
+  },
+  user: {
+    additionalFields: {
+      companyName: {
+        type: 'string',
+        required: false,
+        input: true,
+        returned: true,
+      },
+    },
+    changeEmail: {
+      enabled: true,
+      updateEmailWithoutVerification: false,
+    },
   },
   session: {
     expiresIn: 60 * 60 * 24 * 30,
