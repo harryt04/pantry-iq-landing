@@ -227,8 +227,8 @@ that touch them carry a stated default so work never stalls.
 
 | ID | Title | Status | Owner | Blocked by |
 |---|---|---|---|---|
-| AGG-01 | Lift the single-location scope rule | available | — | MET-07, DSH-03 |
-| AGG-02 | Portfolio rollup | available | — | AGG-01 |
+| AGG-01 | Lift the single-location scope rule | **done** | codex | MET-07, DSH-03 |
+| AGG-02 | Portfolio rollup | **done** | codex | AGG-01 |
 | AGG-03 | Location comparison | available | — | AGG-02, DSH-05 |
 | AGG-04 | Cross-location chat scope | available | — | AGG-02, CHT-03 |
 
@@ -3203,7 +3203,7 @@ single-location outputs. They must match exactly.
 ### AGG-02 — Portfolio rollup
 
 ```
-Status: available   Owner: —   Claimed: —   Completed: —   Branch/PR: —
+Status: done   Owner: codex   Claimed: 2026-08-09   Completed: 2026-08-09   Branch/PR: rewrite
 ```
 
 **Blocked by:** AGG-01 · **Blocks:** AGG-03, AGG-04
@@ -3221,12 +3221,22 @@ per-location summary rows. Drill from any row into that location's
 scoped dashboard.
 
 **Acceptance criteria.**
-- [ ] Every figure names the location it belongs to.
-- [ ] Ranking across locations uses the same `MET-07` formula, with no
+- [x] Every figure names the location it belongs to.
+- [x] Ranking across locations uses the same `MET-07` formula, with no
       second implementation.
-- [ ] Rollups sum correctly and are reconcilable against each location.
-- [ ] The current scope — portfolio or single location — is unambiguous
+- [x] Rollups sum correctly and are reconcilable against each location.
+- [x] The current scope — portfolio or single location — is unambiguous
       on screen.
+
+**Notes.** `/portfolio` reads only the active locations returned by the
+owner-scoped location service, combines each location's latest successful
+metric run, and ranks the shared recommendation records without a second
+scoring formula. Dollar totals use exact decimal arithmetic and are marked
+partial when any location cannot provide a calculable amount. The page names
+the location on every summary row and recommendation card, and links each
+row to its scoped dashboard. Pure rollup tests cover exact sums, partial
+data, and deterministic cross-location ordering; the full CI suite and an
+authenticated local smoke test passed.
 
 ---
 

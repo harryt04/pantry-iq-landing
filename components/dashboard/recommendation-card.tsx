@@ -76,11 +76,13 @@ function actionSentence(recommendation: RecommendationRecord) {
 
 export function RecommendationCard({
   locationId,
+  locationName,
   recommendation,
   variant = 'dashboard',
   workDefaultOpen,
 }: {
   locationId: string
+  locationName?: string
   recommendation: RecommendationRecord
   variant?: RecommendationCardVariant
   workDefaultOpen?: boolean
@@ -102,6 +104,9 @@ export function RecommendationCard({
             #{recommendation.rank}
           </p>
           <CardTitle>{recommendation.itemName}</CardTitle>
+          {locationName ? (
+            <p className="recommendation-card__location">{locationName}</p>
+          ) : null}
         </div>
         <Badge className="recommendation-card__severity" variant="outline">
           <span aria-hidden="true">{severityInfo.glyph}</span>{' '}
@@ -152,10 +157,12 @@ export function RecommendationCard({
 
 export function RecommendationCardList({
   locationId,
+  locationName,
   recommendations,
   variant = 'dashboard',
 }: {
   locationId: string
+  locationName?: string
   recommendations: readonly RecommendationRecord[]
   variant?: RecommendationCardVariant
 }) {
@@ -181,6 +188,7 @@ export function RecommendationCardList({
           <RecommendationCard
             key={recommendation.evidenceTraceRef.key}
             locationId={locationId}
+            {...(locationName ? { locationName } : {})}
             recommendation={recommendation}
             variant={variant}
           />

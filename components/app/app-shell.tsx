@@ -30,6 +30,7 @@ export type AppShellLocation = {
 
 const navigation = [
   { href: '/dashboard', label: 'Dashboard' },
+  { href: '/portfolio', label: 'Portfolio' },
   { href: '/chat', label: 'Chat' },
   { href: '/import', label: 'Import' },
   { href: '/usage', label: 'Usage' },

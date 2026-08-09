@@ -1126,6 +1126,111 @@ body {
   margin: 0;
 }
 
+.portfolio-summary,
+.portfolio-locations,
+.portfolio-recommendations {
+  display: grid;
+  gap: var(--space-5);
+  margin-top: var(--space-10);
+}
+
+.portfolio-summary__heading,
+.portfolio-section-heading {
+  align-items: end;
+  display: flex;
+  gap: var(--space-6);
+  justify-content: space-between;
+}
+
+.portfolio-summary__heading h2,
+.portfolio-section-heading h2 {
+  font-size: var(--text-xl);
+  letter-spacing: -0.025em;
+  margin: 0;
+}
+
+.portfolio-summary__heading .app-page__eyebrow,
+.portfolio-section-heading .app-page__eyebrow {
+  margin-bottom: var(--space-2);
+}
+
+.portfolio-summary__card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-surface);
+  box-shadow: none;
+}
+
+.portfolio-summary__total {
+  font-size: var(--text-4xl);
+  font-weight: 600;
+  margin: 0;
+}
+
+.portfolio-summary__note {
+  border-left: 3px solid var(--signal-watch);
+  color: var(--muted-foreground);
+  line-height: 1.5;
+  margin: var(--space-3) 0 0;
+  padding-left: var(--space-3);
+}
+
+.portfolio-table-wrap {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-surface);
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.portfolio-table {
+  border-collapse: collapse;
+  min-width: 760px;
+  width: 100%;
+}
+
+.portfolio-table th,
+.portfolio-table td {
+  border-bottom: 1px solid var(--border);
+  padding: var(--space-3) var(--space-4);
+  text-align: left;
+  vertical-align: middle;
+}
+
+.portfolio-table thead th {
+  background: var(--muted);
+  color: var(--muted-foreground);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.portfolio-table tbody tr:last-child th,
+.portfolio-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.portfolio-table tbody th {
+  font-weight: 600;
+}
+
+.portfolio-table__link {
+  color: var(--foreground);
+  font-weight: 600;
+  text-underline-offset: 0.2em;
+  white-space: nowrap;
+}
+
+.recommendation-card__location {
+  color: var(--muted-foreground);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  letter-spacing: 0.04em;
+  margin: var(--space-1) 0 0;
+  text-transform: uppercase;
+}
+
 .wallet-impact-card__details dd {
   font-size: var(--text-xl);
   font-weight: 600;
@@ -1335,6 +1440,13 @@ body {
 }
 
 @media (max-width: 800px) {
+  .portfolio-summary__heading,
+  .portfolio-section-heading {
+    align-items: start;
+    flex-direction: column;
+    gap: var(--space-3);
+  }
+
   .recommendation-list__heading {
     align-items: start;
     flex-direction: column;
