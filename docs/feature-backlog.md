@@ -164,7 +164,7 @@ that touch them carry a stated default so work never stalls.
 | MET-08 | Tuning configuration | **done** | codex | MET-07 |
 | MET-09 | Recommendation record and message assembly | **done** | codex | MET-07 |
 | MET-10 | Evidence trace — "show your work" data | **done** | codex | MET-09 |
-| MET-11 | Partial-data and conflicting-data rules | available | — | MET-09 |
+| MET-11 | Partial-data and conflicting-data rules | **done** | codex | MET-09 |
 | MET-12 | Interpretable data layer for pattern discovery | available | — | MET-02 |
 
 ### Dashboard
@@ -1713,7 +1713,7 @@ the trace without a schema migration.
 ### MET-11 — Partial-data and conflicting-data rules
 
 ```
-Status: available   Owner: —   Claimed: —   Completed: —   Branch/PR: —
+Status: done   Owner: codex   Claimed: 2026-08-08   Completed: 2026-08-08   Branch/PR: rewrite
 ```
 
 **Blocked by:** MET-09 · **Blocks:** —
@@ -1735,15 +1735,22 @@ offered and none assumed. Seasonal items: acknowledge seasonality, still
 show the data, offer an explanation.
 
 **Acceptance criteria.**
-- [ ] Each of the four cases has a test proving its behaviour.
-- [ ] No case produces a fabricated number or a silent zero.
-- [ ] Every "cannot calculate" states what is missing and where to
+- [x] Each of the four cases has a test proving its behaviour.
+- [x] No case produces a fabricated number or a silent zero.
+- [x] Every "cannot calculate" states what is missing and where to
       supply it.
-- [ ] Copy passes `voice-and-tone.md` §5 — never "invalid", "bad", or
+- [x] Copy passes `voice-and-tone.md` §5 — never "invalid", "bad", or
       "incomplete data" as a scolding.
 
 **Verification.** Run the engine on four fixtures, one per case, and read
 every output aloud against §5's banned-language list.
+
+**Notes.** Recommendation records now carry deterministic `dataFindings`
+alongside their facts and evidence trace. Findings preserve unit quantities
+when prices are absent, report physical-count variances with possible
+explanations rather than choosing one, suppress prediction language below
+the history gate, and acknowledge an observed seasonal pattern. Each case
+has focused regression coverage; the full CI suite passes.
 
 ---
 
@@ -3800,7 +3807,7 @@ condition.
 |---|---|---|
 | Foundation | 8 | 8 |
 | Data ingest | 10 | 11 |
-| Metrics engine | 8 | 12 |
+| Metrics engine | 9 | 12 |
 | Dashboard | 2 | 7 |
 | Chat | 1 | 8 |
 | Settings | 4 | 5 |
@@ -3810,7 +3817,7 @@ condition.
 | Integrations | 0 | 8 |
 | Menu management | 4 | 7 |
 | Staffing | 0 | 6 |
-| **Total** | **44** | **87** |
+| **Total** | **45** | **87** |
 
 **The backlog is complete when every ticket reads `done`.** Sections 7
 and 8 are not work and never become work.

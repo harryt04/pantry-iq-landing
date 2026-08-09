@@ -605,6 +605,9 @@ export function buildPrecomputeResults(
         purchaseOrderCount: input.orders.filter(
           (order) => order.itemId === item.id,
         ).length,
+        sales: input.sales
+          .filter((sale) => sale.itemId === item.id)
+          .map(({ qty, transactedAt }) => ({ qty, transactedAt })),
         metrics:
           itemResults.find((result) => result.itemId === item.id)?.metrics ??
           [],
@@ -612,6 +615,7 @@ export function buildPrecomputeResults(
       rankedItems,
       inputWindowStart,
       inputWindowEnd,
+      currentDate: now,
       ...(input.sources ? { sources: input.sources } : {}),
       sourceCounts: {
         transactions: input.sales.length,

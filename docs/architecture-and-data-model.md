@@ -379,6 +379,28 @@ required artifact rather than an optional debug aid. The existing metric
 result JSON already stores the exact inputs and evidence, so this does not
 need a second persistence table or a floating-point conversion.
 
+`MET-11` adds a deterministic `dataFindings` array to each recommendation.
+It is separate from the recommendation's facts and prediction so a missing
+input cannot become a silent zero or an unlabelled prediction. The four
+finding codes are:
+
+- `insufficient-history`: states the observed history and the transaction
+  history required before a prediction is shown.
+- `missing-prices`: keeps quantity observations in their recorded unit and
+  states that a unit cost or purchase-order cost is needed for a dollar
+  impact.
+- `conflicting-data`: reports a material physical-count versus order-and-
+  sales variance, including both results and possible explanations without
+  selecting one.
+- `seasonal-pattern`: acknowledges a pattern observed in imported
+  transaction months, labels it as an observation rather than a certainty,
+  and keeps the historical data visible.
+
+Finding order is fixed, all numeric values remain decimal strings, and the
+seasonal comparison uses the precompute run's explicit analysis date. This
+makes the record byte-stable for unchanged inputs and keeps the rendering
+layers from having to rediscover edge-case rules.
+
 ### Scoring dimensions (implementation detail)
 
 Three dimensions feed the ranking formula defined in
@@ -489,23 +511,28 @@ in decisions without user approval.
 
 **Not enough data** (e.g. only 1 week of transaction history): surface
 observed facts (what sold, what didn't); do not make predictions; admit
-the data requirement ("come back when you have 3+ weeks of history").
+the data requirement and the number of transaction weeks needed. `MET-11`
+stores this as an `insufficient-history` finding.
 
 **Partial data — no prices** (e.g. POs uploaded without unit costs): can
 calculate order counts and sell-through; cannot calculate dollar impact;
 frame recommendations in units, not dollars ("you ordered 5 salmon, sold
-0").
+0"). `MET-11` records the missing unit-cost requirement and where to supply
+it.
 
 **Conflicting data** (e.g. POs say 5 units ordered, inventory says 0
 on-hand, transactions say 2 sold — 3 units unaccounted for): surface the
 observation plainly ("you have a variance: 3 units unaccounted for"),
 offer possible explanations (waste, theft, data error), but don't assume
-which one is correct.
+which one is correct. `MET-11` promotes each material snapshot-versus-
+inferred variance to its own finding.
 
 **Seasonal items** (e.g. asking about eggnog in May): acknowledge
 seasonality ("this is typically a winter item"), still show data if
 available ("you have 2 cases on-hand from Q4"), offer an explanation
-("this may be old inventory; consider liquidating").
+("this may be old inventory; consider liquidating"). `MET-11` identifies
+seasonal month patterns from imported sales and labels the observation as
+uncertain.
 
 ### Tuning & configuration
 

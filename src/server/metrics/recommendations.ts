@@ -5,6 +5,11 @@ import {
   type EvidenceSourceInput,
   type EvidenceTrace,
 } from './evidence'
+import {
+  buildPartialDataFindings,
+  type PartialDataFinding,
+  type PartialDataSale,
+} from './partial-data'
 
 export const RECOMMENDATION_METRIC_KEY = 'recommendation' as const
 
@@ -21,6 +26,7 @@ export type RecommendationItem = {
   unit: string
   purchaseOrderCount: number
   shelfLifeDays?: number | null
+  sales?: readonly PartialDataSale[]
   metrics: readonly MetricResultShape[]
 }
 
@@ -68,6 +74,7 @@ export type RecommendationRecord = {
     action: 'reduce-next-order-or-pull-from-menu' | 'review-item'
     timeHorizon: 'this week'
   }
+  dataFindings: PartialDataFinding[]
   evidenceTraceRef: {
     key: string
     itemId: string
@@ -213,6 +220,7 @@ export function assembleRecommendationRecords(input: {
     purchaseOrders: number
     snapshots: number
   }
+  currentDate?: Date
 }): RecommendationRecord[] {
   const itemById = new Map(input.items.map((item) => [item.itemId, item]))
   const inputWindowStart = input.inputWindowStart.toISOString()
@@ -234,6 +242,13 @@ export function assembleRecommendationRecords(input: {
       'spoilageRisk',
       'qtyOnHand',
     )
+    const dataFindings = buildPartialDataFindings({
+      metrics: item.metrics,
+      unit: item.unit,
+      ...(item.sales ? { sales: item.sales } : {}),
+      currentDate: input.currentDate ?? input.inputWindowEnd,
+      quantities: [quantityOrdered, quantitySold, quantityOnHand],
+    })
 
     const prediction = predictionFor(item.metrics)
 
@@ -260,6 +275,7 @@ export function assembleRecommendationRecords(input: {
         financialImpact: dollarImpact(item.metrics),
         ...(prediction ? { prediction } : {}),
         suggestedAction: actionFor(item),
+        dataFindings,
         evidenceTraceRef: {
           key: `recommendation:${item.itemId}:${inputWindowStart}:${inputWindowEnd}`,
           itemId: item.itemId,

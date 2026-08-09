@@ -94,6 +94,7 @@ describe('recommendation records', () => {
         action: 'reduce-next-order-or-pull-from-menu',
         timeHorizon: 'this week',
       },
+      dataFindings: [],
     })
     expect(result.recommendations[0]?.prediction?.basis.historyWeeks).toBe('5')
     expect(result.recommendations[0]).not.toHaveProperty(
