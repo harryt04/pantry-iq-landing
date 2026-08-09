@@ -461,6 +461,24 @@ the accepted history at 24 messages before this budget pass. Any trim emits
 `chat.history.trimmed` with account/query ownership and counts only — never
 message content — so the cost and context trade-off remains observable.
 
+### Chat declines and miss report (`CHT-08`)
+
+When the model signals that a question cannot be answered from the supplied
+context, `src/server/chat/narration.ts` discards that prose and returns a
+deterministic five-part decline. It explains that the question is outside
+the location's imported data, does not include a figure, and offers a nearby
+question the current analysis can answer. Buffering the model response keeps
+an unsupported answer from reaching the browser before the decline boundary
+can be checked.
+
+Each miss records the signed-in account, location, question text, query ID,
+reason, and timestamp through the structured `chat.miss.recorded` log event
+and the in-process `ChatMissRegistry`. `GET /api/chat/misses` provides a
+one-off, account-scoped report grouped by repeated question and sorted by
+frequency. This is intentionally an operational report rather than a
+dashboard; a future persistent telemetry store can replace the registry
+without changing the narration contract.
+
 ## Recommendation engine
 
 ### Core philosophy

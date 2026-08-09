@@ -141,6 +141,13 @@ describe('structured logger', () => {
       retainedTokens: 400,
       omittedMessages: 2,
     })
+    logger.chatMissRecorded({
+      accountId: 'account-1',
+      locationId: 'location-1',
+      queryId: 'query-1',
+      question: 'Did my supplier raise prices?',
+      reason: 'outside-grounding',
+    })
 
     expect(JSON.parse(lines[0] ?? '')).toMatchObject({
       event: 'precompute.completed',
@@ -170,6 +177,13 @@ describe('structured logger', () => {
       originalTokens: 612,
       retainedTokens: 400,
       omittedMessages: 2,
+    })
+    expect(JSON.parse(lines[4] ?? '')).toMatchObject({
+      event: 'chat.miss.recorded',
+      accountId: 'account-1',
+      locationId: 'location-1',
+      question: 'Did my supplier raise prices?',
+      reason: 'outside-grounding',
     })
   })
 

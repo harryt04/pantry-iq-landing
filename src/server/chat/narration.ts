@@ -15,8 +15,14 @@ import {
   trimSessionHistory,
 } from '@/src/chat/session-memory'
 
-import { checkAnswerFormat, formatFivePartAnswer } from './answer-format'
+import {
+  checkAnswerFormat,
+  formatDeclineAnswer,
+  formatFivePartAnswer,
+} from './answer-format'
+import { detectDecline, declineAlternative } from './decline'
 import { checkGrounding } from './grounding'
+import { chatMisses, type ChatMissRecorder } from './misses'
 
 const DEFAULT_PROVIDER = 'anthropic' as const
 const DEFAULT_ANTHROPIC_MODEL = 'claude-3-5-haiku-latest'
@@ -63,6 +69,7 @@ export type ChatTurn = {
 
 export type NarrationInput = {
   accountId: string
+  locationId: string
   queryId: string
   question: string
   contextBundle: ContextBundle
@@ -224,6 +231,7 @@ export function createNarrationService(
     config?: NarrationConfig
     model?: LanguageModel
     logger?: Logger
+    misses?: ChatMissRecorder
     now?: () => number
   } = {},
 ) {
@@ -231,6 +239,7 @@ export function createNarrationService(
   const model = options.model ?? getNarrationModel(config)
   const logger =
     options.logger ?? createLogger({ service: 'pantryiq.chat.narration' })
+  const misses = options.misses ?? chatMisses
   const now = options.now ?? Date.now
 
   return {
@@ -281,11 +290,59 @@ export function createNarrationService(
 
             const modelUsage = await result.usage
             const cache = cacheTokens(modelUsage)
-            const grounding = checkGrounding(chunks.join(''), [
+            const responseText = chunks.join('')
+            const decline = detectDecline(responseText)
+            if (decline.detected) {
+              const recorded: NarrationUsage = {
+                model: config.model,
+                inputTokens: safeNumber(modelUsage.inputTokens),
+                outputTokens: safeNumber(modelUsage.outputTokens),
+                cacheReadTokens: cache.read,
+                cacheWriteTokens: cache.write,
+                cacheHit: cache.read > 0,
+                costMicros: costMicros(modelUsage, config),
+                currency: 'USD',
+                firstTokenMs,
+                degraded: false,
+                blocked: false,
+              }
+              const miss = {
+                accountId: input.accountId,
+                locationId: input.locationId,
+                queryId: input.queryId,
+                question: input.question,
+                reason: decline.reason,
+                occurredAt: new Date(now()),
+              }
+              misses.record(miss)
+              logger.chatMissRecorded(miss)
+              logger.llmQueryCompleted({
+                accountId: input.accountId,
+                queryId: input.queryId,
+                model: recorded.model,
+                inputTokens: recorded.inputTokens,
+                outputTokens: recorded.outputTokens,
+                costMicros: recorded.costMicros,
+                currency: recorded.currency,
+                cacheReadTokens: recorded.cacheReadTokens,
+                cacheWriteTokens: recorded.cacheWriteTokens,
+                cacheHit: recorded.cacheHit,
+                firstTokenMs: recorded.firstTokenMs,
+                degraded: recorded.degraded,
+                blocked: recorded.blocked,
+              })
+              resolveUsage(recorded)
+              yield formatDeclineAnswer(
+                declineAlternative(narrationInput.recommendations),
+              )
+              return
+            }
+
+            const grounding = checkGrounding(responseText, [
               narrationInput.recommendations,
               narrationInput.contextBundle,
             ])
-            const answerFormat = checkAnswerFormat(chunks.join(''))
+            const answerFormat = checkAnswerFormat(responseText)
             const accepted = grounding.accepted && answerFormat.accepted
             if (!accepted) {
               logger.chatGuardrailBlocked({

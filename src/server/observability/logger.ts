@@ -73,6 +73,14 @@ export interface ChatHistoryTrimmedFields {
   omittedMessages: number
 }
 
+export interface ChatMissFields {
+  accountId: string
+  locationId: string
+  queryId: string
+  question: string
+  reason: 'outside-grounding' | 'missing-data'
+}
+
 const SENSITIVE_KEY =
   /(?:password|passphrase|secret|token|api[-_]?key|authorization|cookie|credential|session)/i
 const IMPORTED_ROW_KEY =
@@ -231,6 +239,13 @@ export class Logger {
   chatHistoryTrimmed(fields: ChatHistoryTrimmedFields): void {
     this.info('Chat history trimmed to the session budget', {
       event: 'chat.history.trimmed',
+      ...fields,
+    })
+  }
+
+  chatMissRecorded(fields: ChatMissFields): void {
+    this.info('Chat question could not be grounded', {
+      event: 'chat.miss.recorded',
       ...fields,
     })
   }

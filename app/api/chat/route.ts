@@ -95,6 +95,7 @@ export async function POST(request: Request) {
     const service = createNarrationService()
     const narration = service.stream({
       accountId: owned.session.user.id,
+      locationId: owned.locationId,
       queryId: crypto.randomUUID(),
       question,
       history,

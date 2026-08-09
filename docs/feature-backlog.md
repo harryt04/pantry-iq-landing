@@ -190,7 +190,7 @@ that touch them carry a stated default so work never stalls.
 | CHT-05 | Show your work, in chat | **done** | codex | CHT-04, MET-10 |
 | CHT-06 | Assumption override and scope prompt | **done** | codex | CHT-05, SET-03 |
 | CHT-07 | Session memory | **done** | codex | CHT-04 |
-| CHT-08 | Decline, redirect, and log the miss | available | — | CHT-03 |
+| CHT-08 | Decline, redirect, and log the miss | **done** | codex | CHT-03 |
 
 ### Settings
 
@@ -2459,7 +2459,7 @@ and confirm the context is gone.
 ### CHT-08 — Decline, redirect, and log the miss
 
 ```
-Status: available   Owner: —   Claimed: —   Completed: —   Branch/PR: —
+Status: done   Owner: codex   Claimed: 2026-08-08   Completed: 2026-08-08   Branch/PR: rewrite
 ```
 
 **Blocked by:** CHT-03 · **Blocks:** —
@@ -2478,16 +2478,23 @@ the set of unanswerable questions becomes a ranked list of metrics worth
 adding to `MET-01`. Route that list somewhere a human reads it.
 
 **Acceptance criteria.**
-- [ ] A decline always offers a concrete alternative question.
-- [ ] A decline never guesses, hedges, or produces a figure.
-- [ ] Every miss is recorded with the question text and the reason.
-- [ ] Misses are aggregated and readable — a one-off report is enough,
+- [x] A decline always offers a concrete alternative question.
+- [x] A decline never guesses, hedges, or produces a figure.
+- [x] Every miss is recorded with the question text and the reason.
+- [x] Misses are aggregated and readable — a one-off report is enough,
       no dashboard needed.
-- [ ] Decline copy contains no apology beyond one, and no self-blame
+- [x] Decline copy contains no apology beyond one, and no self-blame
       language.
 
 **Verification.** Ask five questions the engine cannot ground; read all
 five declines against `voice-and-tone.md` §5.
+
+**Notes.** The model response is buffered at the existing grounding
+boundary, then replaced with deterministic decline copy whenever the model
+signals an unanswerable question. Misses are written to structured logs and
+held in an account-scoped in-process registry exposed by
+`GET /api/chat/misses`; a persistent telemetry store can replace this
+one-off report later.
 
 ---
 

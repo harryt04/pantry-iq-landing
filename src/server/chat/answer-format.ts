@@ -212,3 +212,16 @@ export function formatFivePartAnswer(
   }
   return recommendationAnswer(first, notice)
 }
+
+/** Builds the deterministic response for a question outside the grounding boundary. */
+export function formatDeclineAnswer(alternative: string) {
+  return [
+    "Observation: I can't answer that question from this location's imported data. Dollar impact is not available for it; consider asking, \"" +
+      alternative +
+      '\".',
+    'Financial impact: Dollar impact is not available for the question asked.',
+    'Prediction: Not provided. The imported data does not support a prediction for this question.',
+    `Recommendation: Consider asking, "${alternative}"`,
+    'Show your work: The question needs data or analysis that is outside this location’s imported records.',
+  ].join('\n')
+}

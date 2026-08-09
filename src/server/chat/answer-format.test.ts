@@ -2,7 +2,11 @@ import { describe, expect, it } from 'vitest'
 
 import type { RecommendationRecord } from '@/src/server/metrics/recommendations'
 
-import { checkAnswerFormat, formatFivePartAnswer } from './answer-format'
+import {
+  checkAnswerFormat,
+  formatDeclineAnswer,
+  formatFivePartAnswer,
+} from './answer-format'
 
 const recommendation: RecommendationRecord = {
   version: 1,
@@ -92,5 +96,20 @@ describe('chat answer format', () => {
       accepted: false,
       reason: 'observation-confidence',
     })
+  })
+
+  it('formats a decline with a concrete alternative and no figure', () => {
+    const answer = formatDeclineAnswer(
+      'Which item should I review for current spoilage risk?',
+    )
+
+    expect(checkAnswerFormat(answer)).toEqual({
+      accepted: true,
+      reason: 'ordered-sections',
+    })
+    expect(answer).not.toMatch(/\$\s*\d|\b\d+(?:\.\d+)?%?\b/)
+    expect(answer).toContain(
+      'Recommendation: Consider asking, "Which item should I review for current spoilage risk?"',
+    )
   })
 })

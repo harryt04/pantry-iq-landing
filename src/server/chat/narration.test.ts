@@ -9,6 +9,7 @@ import {
   getNarrationConfig,
   type NarrationConfig,
 } from './narration'
+import { ChatMissRegistry } from './misses'
 
 const contextBundle = {
   version: 1,
@@ -88,6 +89,7 @@ const config: NarrationConfig = {
 function input() {
   return {
     accountId: 'account-1',
+    locationId: 'location-1',
     queryId: 'query-1',
     question: 'What should I watch this week?',
     contextBundle,
@@ -228,6 +230,51 @@ describe('narration service', () => {
       queryId: 'query-1',
       reason: 'unmatched-number',
       unmatchedCount: 1,
+    })
+  })
+
+  it('turns an unanswerable model response into a safe decline and records the miss', async () => {
+    const chatMissRecorded = vi.fn()
+    const misses = new ChatMissRegistry()
+    const service = createNarrationService({
+      config,
+      model: successfulModel(
+        "I can't determine whether your supplier pricing changed from the imported data.",
+      ),
+      misses,
+      now: () => 100,
+      logger: { chatMissRecorded, llmQueryCompleted: vi.fn() } as never,
+    })
+
+    const text = await readStream(
+      service.stream({ ...input(), question: 'Did my supplier raise prices?' })
+        .textStream,
+    )
+
+    expect(text).toContain(
+      "I can't answer that question from this location's imported data.",
+    )
+    expect(text).toContain(
+      'Which item should I review for current spoilage risk?',
+    )
+    expect(text).not.toMatch(/\$\s*\d|\b\d+(?:\.\d+)?%?\b/)
+    expect(chatMissRecorded).toHaveBeenCalledWith(
+      expect.objectContaining({
+        accountId: 'account-1',
+        locationId: 'location-1',
+        question: 'Did my supplier raise prices?',
+        reason: 'outside-grounding',
+      }),
+    )
+    expect(misses.report('account-1')).toMatchObject({
+      totalMisses: 1,
+      questions: [
+        {
+          question: 'Did my supplier raise prices?',
+          reason: 'outside-grounding',
+          count: 1,
+        },
+      ],
     })
   })
 
