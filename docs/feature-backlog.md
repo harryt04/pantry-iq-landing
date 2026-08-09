@@ -3539,7 +3539,7 @@ API smoke testing.
 ### INT-06 — Sync scheduling and incremental updates
 
 ```
-Status: available   Owner: —   Claimed: —   Completed: —   Branch/PR: —
+Status: done   Owner: codex   Claimed: 2026-08-09   Completed: 2026-08-09   Branch/PR: rewrite
 ```
 
 **Blocked by:** INT-03 · **Blocks:** INT-07, INT-08
@@ -3555,10 +3555,19 @@ triggered on completion. Freshness recorded and surfaced. Overlapping
 runs prevented.
 
 **Acceptance criteria.**
-- [ ] Incremental sync fetches only what changed.
-- [ ] A completed sync triggers precompute for that location only.
-- [ ] Two runs for one connection cannot overlap.
-- [ ] Last-successful-sync time is visible to the user.
+- [x] Incremental sync fetches only what changed.
+- [x] A completed sync triggers precompute for that location only.
+- [x] Two runs for one connection cannot overlap.
+- [x] Last-successful-sync time is visible to the user.
+
+**Notes.** Added a pg-boss connector-sync queue with a fifteen-minute UTC
+schedule per connection, incremental-only worker jobs, singleton keys, and a
+registration path for newly connected sources. Connector completion now
+queues location-scoped precompute by default (or accepts an injected callback)
+and preserves a successful connection state if the follow-up queue fails.
+`GET /api/connectors/status` returns the owner-scoped provider status,
+last-successful-sync timestamp, and failure text without exposing credentials.
+Prettier, `npm run ci`, and authenticated local smoke checks passed.
 
 ---
 

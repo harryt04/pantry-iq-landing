@@ -23,6 +23,10 @@ const protectedRoutes: readonly RouteContract[] = [
   { file: 'chat/misses/route.ts', markers: ['requireOwnedLocation'] },
   { file: 'chat/override/route.ts', markers: ['requireOwnedLocation'] },
   { file: 'chat/route.ts', markers: ['requireOwnedLocation'] },
+  {
+    file: 'connectors/status/route.ts',
+    markers: ['listConnectorConnectionStatuses'],
+  },
   { file: 'exports/[exportType]/route.ts', markers: ['exportLocationCsv'] },
   { file: 'items/[itemId]/route.ts', markers: ['updateInventoryItem'] },
   { file: 'items/route.ts', markers: ['listInventoryItems'] },

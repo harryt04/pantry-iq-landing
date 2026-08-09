@@ -23,6 +23,7 @@ import {
   encryptConnectorTokens,
   hashOAuthState,
 } from './credentials'
+import { enqueuePrecomputeForLocation } from '@/src/server/metrics/scheduler'
 import { withConnectorRetry } from './retry'
 import {
   ConnectorAuthorizationRevokedError,
@@ -263,6 +264,7 @@ export async function syncConnectorConnection(input: {
   connectionId: string
   adapter: ConnectorAdapter
   mode: 'backfill' | 'incremental'
+  onComplete?: (locationId: string) => Promise<void>
   now?: Date
 }): Promise<{ rowsImported: number; pages: number; complete: boolean }> {
   const now = input.now ?? new Date()
@@ -278,6 +280,7 @@ export async function syncConnectorConnection(input: {
     .set({ status: 'syncing', lastError: null, updatedAt: now })
     .where(eq(connectorConnections.id, connection.id))
 
+  let syncCompleted = false
   try {
     const tokens = await refreshIfNeeded(connection, input.adapter, now)
     let cursor =
@@ -336,21 +339,49 @@ export async function syncConnectorConnection(input: {
             updatedAt: now,
           })
           .where(eq(connectorConnections.id, connection.id))
+        syncCompleted = true
+        await (input.onComplete ?? enqueuePrecomputeForLocation)(
+          connection.locationId,
+        )
         return { rowsImported, pages, complete: true }
       }
     }
   } catch (error) {
     const revoked = error instanceof ConnectorAuthorizationRevokedError
-    await db
-      .update(connectorConnections)
-      .set({
-        status: revoked ? 'revoked' : 'failed',
-        lastError: revoked ? 'authorization-revoked' : 'sync-failed',
-        updatedAt: now,
-      })
-      .where(eq(connectorConnections.id, connection.id))
+    if (!syncCompleted)
+      await db
+        .update(connectorConnections)
+        .set({
+          status: revoked ? 'revoked' : 'failed',
+          lastError: revoked ? 'authorization-revoked' : 'sync-failed',
+          updatedAt: now,
+        })
+        .where(eq(connectorConnections.id, connection.id))
     throw error
   }
+}
+
+export async function listConnectorConnectionStatuses(input: {
+  headers: Headers
+  locationId?: string
+}) {
+  const session = await requireSession(input.headers)
+  const conditions = [eq(locations.userId, session.user.id)]
+  if (input.locationId)
+    conditions.push(eq(connectorConnections.locationId, input.locationId))
+
+  return db
+    .select({
+      connectionId: connectorConnections.id,
+      locationId: connectorConnections.locationId,
+      provider: connectorConnections.provider,
+      status: connectorConnections.status,
+      lastSyncedAt: connectorConnections.lastSyncedAt,
+      lastError: connectorConnections.lastError,
+    })
+    .from(connectorConnections)
+    .innerJoin(locations, eq(locations.id, connectorConnections.locationId))
+    .where(and(...conditions))
 }
 
 export async function acceptConnectorWebhook(input: {

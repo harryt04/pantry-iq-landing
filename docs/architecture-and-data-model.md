@@ -39,6 +39,26 @@ records for shared persistence. Manual entries use the same normalized audit
 history helpers, so future API connectors add an adapter and do not duplicate
 normalization, deduplication, item-resolution, or history behavior.
 
+## Connector sync scheduling (`INT-06`)
+
+Each connected source is registered with the `pantryiq.connector-sync` pg-boss
+queue on a fifteen-minute UTC schedule. Scheduled jobs always call the
+adapter's incremental cursor path, so providers receive only records after
+the connection's durable `syncCursor`; backfill remains an explicit operation.
+The queue carries a singleton key per connection and uses one local worker,
+which prevents overlapping runs for a connection while allowing the schedule
+to cover every location.
+
+The connector framework records `lastSyncedAt` after each persisted page and
+keeps the connection in `connected` only after the final page succeeds. A
+completed incremental sync hands its location to the precompute scheduler
+through `onComplete` (or the default scheduler when no callback is supplied);
+precompute is therefore location-scoped and follows the freshest imported
+rows. `GET /api/connectors/status` exposes this timestamp,
+provider, and textual status through the same owner authorization boundary as
+other location data. A failed sync retains the prior successful timestamp and
+records a failure state for the later connection-health surface.
+
 ## Canonical data model
 
 ### Transactions (sales at POS)
