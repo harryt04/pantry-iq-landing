@@ -262,7 +262,7 @@ that touch them carry a stated default so work never stalls.
 | ID | Title | Status | Owner | Blocked by |
 |---|---|---|---|---|
 | STF-01 | Labor data model and import | **done** | codex | INT-01 |
-| STF-02 | Labor efficiency metrics | available | — | STF-01, MET-01 |
+| STF-02 | Labor efficiency metrics | **done** | codex | STF-01, MET-01 |
 | STF-03 | Demand forecasting | available | — | MET-02 |
 | STF-04 | External signals — weather and local events | available | — | STF-03 |
 | STF-05 | Shift-level recommendations | available | — | STF-04, STF-02 |
@@ -3976,7 +3976,7 @@ the production build passed. Authenticated smoke checks returned 200 for
 ### STF-02 — Labor efficiency metrics
 
 ```
-Status: available   Owner: —   Claimed: —   Completed: —   Branch/PR: —
+Status: done   Owner: codex   Claimed: 2026-08-09   Completed: 2026-08-09   Branch/PR: rewrite
 ```
 
 **Blocked by:** STF-01, MET-01 · **Blocks:** STF-05, STF-06
@@ -3992,11 +3992,25 @@ cost, by shift, by day part, and by day of week. Scheduled against actual
 variance.
 
 **Acceptance criteria.**
-- [ ] Metrics align sales and labor on the same time boundaries, with
+- [x] Metrics align sales and labor on the same time boundaries, with
       the boundary rule documented.
-- [ ] Periods with labor data but no sales data, and the reverse, are
+- [x] Periods with labor data but no sales data, and the reverse, are
       excluded and the exclusion is stated.
-- [ ] Prime cost combines food and labor only where both are complete.
+- [x] Prime cost combines food and labor only where both are complete.
+
+**Notes.** Added exact-decimal sales-per-labor-hour, labor-cost percentage,
+prime-cost, and prime-cost percentage primitives to the shared metric library.
+The staffing analysis groups owner-scoped data by complete shift, relative
+day part, and business-day weekday. It uses inclusive shift starts and
+exclusive ends, excludes uncovered and overlapping sales, excludes sales-only
+and labor-only periods, and withholds prime cost when any sale lacks food
+cost. The authenticated Staffing page shows the metrics, scheduled-versus-
+actual variance, exclusions, and assumptions. `npm run prettify` passed;
+formatting, typecheck, 338 tests (2 database tests skipped without a
+container), 13 accessibility tests, and the production build passed. The
+configured test account signed in with the required origin and returned 200
+from `/api/locations`; it has no locations, so `/staffing` correctly redirected
+to `/account` during smoke testing.
 
 ---
 

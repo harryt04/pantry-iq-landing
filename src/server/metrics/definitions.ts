@@ -418,6 +418,192 @@ export function variance(input: {
   }
 }
 
+/** Revenue generated for one hour of recorded actual labor. */
+export function salesPerLaborHour(input: {
+  sales?: string
+  actualHours?: string
+  currency?: string
+}): MetricResult<string> {
+  const values = {
+    sales: input.sales,
+    actualHours: input.actualHours,
+    currency: input.currency,
+  }
+  const units = {
+    sales: input.currency ?? 'currency',
+    actualHours: 'hours',
+    value: `${input.currency ?? 'currency'}/hour`,
+  }
+  if (input.sales === undefined) return missingInput(values, units, 'sales')
+  if (input.actualHours === undefined)
+    return missingInput(values, units, 'actual labor hours')
+
+  const parsed = parseMetricInputs(
+    { sales: input.sales, actualHours: input.actualHours },
+    units,
+  )
+  if ('status' in parsed) return parsed
+  const [sales, actualHours] = parsed.decimals
+  if (!sales || !actualHours)
+    return invalidInput(values, units, 'labor efficiency input')
+  if (actualHours.coefficient === 0n)
+    return {
+      status: 'cannot-calculate',
+      reason: 'cannot calculate, actual labor hours are zero',
+      inputs: inputValues(values),
+      units,
+    }
+
+  return {
+    status: 'calculated',
+    value: decimalToString(divide(sales, actualHours, RATIO_SCALE)),
+    inputs: inputValues(values),
+    units,
+    rounding: `ratio rounded to ${RATIO_SCALE} decimal places using half-up integer arithmetic`,
+  }
+}
+
+/** Labor cost as a percentage of recorded sales. */
+export function laborCostPercentage(input: {
+  laborCost?: string
+  sales?: string
+  currency?: string
+}): MetricResult<string> {
+  const values = {
+    laborCost: input.laborCost,
+    sales: input.sales,
+    currency: input.currency,
+  }
+  const units = {
+    laborCost: input.currency ?? 'currency',
+    sales: input.currency ?? 'currency',
+    value: '%',
+  }
+  if (input.laborCost === undefined)
+    return missingInput(values, units, 'labor cost')
+  if (input.sales === undefined) return missingInput(values, units, 'sales')
+
+  const parsed = parseMetricInputs(
+    { laborCost: input.laborCost, sales: input.sales },
+    units,
+  )
+  if ('status' in parsed) return parsed
+  const [laborCost, sales] = parsed.decimals
+  if (!laborCost || !sales)
+    return invalidInput(values, units, 'labor cost percentage input')
+  if (sales.coefficient === 0n)
+    return {
+      status: 'cannot-calculate',
+      reason: 'cannot calculate, sales are zero',
+      inputs: inputValues(values),
+      units,
+    }
+
+  return {
+    status: 'calculated',
+    value: decimalToString(
+      divide(
+        multiply(laborCost, { coefficient: 100n, scale: 0 }),
+        sales,
+        RATIO_SCALE,
+      ),
+    ),
+    inputs: inputValues(values),
+    units,
+    rounding: `ratio rounded to ${RATIO_SCALE} decimal places using half-up integer arithmetic`,
+  }
+}
+
+/** Prime cost is food cost plus labor cost; it is not a margin estimate. */
+export function primeCost(input: {
+  foodCost?: string
+  laborCost?: string
+  currency?: string
+}): MetricResult<string> {
+  const values = {
+    foodCost: input.foodCost,
+    laborCost: input.laborCost,
+    currency: input.currency,
+  }
+  const units = {
+    foodCost: input.currency ?? 'currency',
+    laborCost: input.currency ?? 'currency',
+    value: input.currency ?? 'currency',
+  }
+  if (input.foodCost === undefined)
+    return missingInput(values, units, 'complete food cost')
+  if (input.laborCost === undefined)
+    return missingInput(values, units, 'complete labor cost')
+
+  const parsed = parseMetricInputs(
+    { foodCost: input.foodCost, laborCost: input.laborCost },
+    units,
+  )
+  if ('status' in parsed) return parsed
+  const [foodCost, laborCost] = parsed.decimals
+  if (!foodCost || !laborCost)
+    return invalidInput(values, units, 'prime cost input')
+
+  return {
+    status: 'calculated',
+    value: decimalToString(add(foodCost, laborCost)),
+    inputs: inputValues(values),
+    units,
+  }
+}
+
+/** Prime cost as a percentage of sales, when all three inputs are complete. */
+export function primeCostPercentage(input: {
+  foodCost?: string
+  laborCost?: string
+  sales?: string
+  currency?: string
+}): MetricResult<string> {
+  const cost = primeCost(input)
+  const values = {
+    ...cost.inputs,
+    ...(input.sales === undefined ? {} : { sales: input.sales }),
+  }
+  const units = {
+    ...cost.units,
+    sales: input.currency ?? 'currency',
+    value: '%',
+  }
+  if (cost.status === 'cannot-calculate')
+    return { ...cost, inputs: values, units }
+  if (input.sales === undefined) return missingInput(values, units, 'sales')
+
+  const parsed = parseMetricInputs(
+    { primeCost: cost.value, sales: input.sales },
+    units,
+  )
+  if ('status' in parsed) return parsed
+  const [totalCost, sales] = parsed.decimals
+  if (!totalCost || !sales)
+    return invalidInput(values, units, 'prime cost percentage input')
+  if (sales.coefficient === 0n)
+    return {
+      status: 'cannot-calculate',
+      reason: 'cannot calculate, sales are zero',
+      inputs: inputValues(values),
+      units,
+    }
+
+  return {
+    status: 'calculated',
+    value: decimalToString(
+      divide(
+        multiply(totalCost, { coefficient: 100n, scale: 0 }),
+        sales,
+        RATIO_SCALE,
+      ),
+    ),
+    inputs: inputValues(values),
+    units,
+    rounding: `ratio rounded to ${RATIO_SCALE} decimal places using half-up integer arithmetic`,
+  }
+}
+
 function serializeTimestamp(timestamp: Date | string) {
   if (timestamp instanceof Date) {
     return Number.isNaN(timestamp.getTime())

@@ -2,7 +2,11 @@ import { describe, expect, it } from 'vitest'
 
 import {
   businessDayBucket,
+  laborCostPercentage,
   margin,
+  primeCost,
+  primeCostPercentage,
+  salesPerLaborHour,
   sellThroughRate,
   spoilageEstimate,
   spoilageRisk,
@@ -69,6 +73,26 @@ describe('derived metric definitions', () => {
       status: 'cannot-calculate',
       reason: 'cannot calculate, quantity ordered is zero',
     })
+  })
+
+  it('calculates labor efficiency metrics with exact decimal inputs', () => {
+    expect(
+      salesPerLaborHour({ sales: '150', actualHours: '8', currency: 'USD' }),
+    ).toMatchObject({ status: 'calculated', value: '18.75' })
+    expect(
+      laborCostPercentage({ laborCost: '20', sales: '150', currency: 'USD' }),
+    ).toMatchObject({ status: 'calculated', value: '13.333333' })
+    expect(
+      primeCost({ foodCost: '45', laborCost: '20', currency: 'USD' }),
+    ).toMatchObject({ status: 'calculated', value: '65' })
+    expect(
+      primeCostPercentage({
+        foodCost: '45',
+        laborCost: '20',
+        sales: '150',
+        currency: 'USD',
+      }),
+    ).toMatchObject({ status: 'calculated', value: '43.333333' })
   })
 
   it('rejects malformed decimal strings instead of calculating with them', () => {

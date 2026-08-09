@@ -34,6 +34,7 @@ const navigation = [
   { href: '/chat', label: 'Chat' },
   { href: '/import', label: 'Import' },
   { href: '/usage', label: 'Usage' },
+  { href: '/staffing', label: 'Staffing' },
   { href: '/settings', label: 'Settings' },
 ]
 

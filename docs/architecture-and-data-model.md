@@ -75,6 +75,30 @@ Rows are location-scoped and deduplicated by `(locationId, source,
 externalId)` through the same `persistNormalizedRecords` boundary as the
 other source types.
 
+### Labor efficiency metrics (STF-02)
+
+The staffing analysis reads sales and labor shifts over the same 365-day
+window. It keeps the arithmetic in the deterministic metric library; the UI
+only renders the returned values and cannot fill a missing input with zero.
+
+- **Sales per labor hour** is `total revenue / actual hours`.
+- **Labor cost percentage** is `labor cost / total revenue × 100`.
+- **Prime cost** is `food cost + labor cost`, with an accompanying prime-cost
+  percentage of `prime cost / total revenue × 100`.
+- Actual hours power efficiency. Scheduled hours remain separate, and
+  `actual − scheduled` is shown as a variance when both are complete.
+
+The boundaries are deliberately explicit. Shift metrics assign sales to one
+complete shift using an inclusive start and exclusive end. Sales outside a
+complete shift, or sales overlapping multiple shifts, are excluded rather
+than assigned by guesswork. Day-part and day-of-week groups use the location
+timezone; the configured business-day boundary is applied before weekday
+grouping. Relative to that boundary, day parts are Morning (0–7 hours),
+Midday (7–12), Evening (12–18), and Overnight (18–24). A period with labor
+but no sales, or sales but no labor, is excluded. Prime cost is withheld when
+any sale in the period lacks `totalCost`, because a partial food-cost sum
+would misstate the result.
+
 ## Connector sync scheduling (`INT-06`)
 
 Each connected source is registered with the `pantryiq.connector-sync` pg-boss
