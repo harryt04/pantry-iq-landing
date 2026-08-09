@@ -39,6 +39,7 @@ export default async function ChatPage({
         location at a time.
       </p>
       <ChatSurface
+        key={location.id}
         locationId={location.id}
         locationName={location.name}
         recommendations={recommendations}

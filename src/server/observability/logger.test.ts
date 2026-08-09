@@ -133,6 +133,14 @@ describe('structured logger', () => {
       costMicros: 3300,
       currency: 'USD',
     })
+    logger.chatHistoryTrimmed({
+      accountId: 'account-1',
+      queryId: 'query-1',
+      budgetTokens: 400,
+      originalTokens: 612,
+      retainedTokens: 400,
+      omittedMessages: 2,
+    })
 
     expect(JSON.parse(lines[0] ?? '')).toMatchObject({
       event: 'precompute.completed',
@@ -154,6 +162,14 @@ describe('structured logger', () => {
       outputTokens: 500,
       costMicros: 3300,
       currency: 'USD',
+    })
+    expect(JSON.parse(lines[3] ?? '')).toMatchObject({
+      event: 'chat.history.trimmed',
+      accountId: 'account-1',
+      budgetTokens: 400,
+      originalTokens: 612,
+      retainedTokens: 400,
+      omittedMessages: 2,
     })
   })
 

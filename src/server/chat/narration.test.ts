@@ -247,4 +247,38 @@ describe('narration service', () => {
       getNarrationConfig({ NARRATION_PROVIDER: 'unsupported' }),
     ).toThrow('NARRATION_PROVIDER must be anthropic or openai')
   })
+
+  it('trims old turns before narration and logs only safe history metadata', async () => {
+    const history = [
+      { role: 'user' as const, content: 'old question '.repeat(100) },
+      { role: 'assistant' as const, content: 'old answer '.repeat(100) },
+      { role: 'user' as const, content: 'Tell me more about salmon.' },
+    ]
+    const lines: string[] = []
+    const model = successfulModel()
+    const service = createNarrationService({
+      config,
+      model,
+      logger: {
+        chatHistoryTrimmed: vi.fn((fields) =>
+          lines.push(
+            JSON.stringify({ event: 'chat.history.trimmed', ...fields }),
+          ),
+        ),
+        llmQueryCompleted: vi.fn(),
+      } as never,
+    })
+
+    await readStream(service.stream({ ...input(), history }).textStream)
+
+    expect(lines[0]).toContain('chat.history.trimmed')
+    expect(lines[0]).toContain('"omittedMessages":1')
+    expect(lines[0]).not.toContain('old question')
+    expect(JSON.stringify(model.doStreamCalls[0]?.prompt)).toContain(
+      'Tell me more about salmon.',
+    )
+    expect(JSON.stringify(model.doStreamCalls[0]?.prompt)).not.toContain(
+      'old question',
+    )
+  })
 })

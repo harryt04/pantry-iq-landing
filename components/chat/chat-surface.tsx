@@ -72,6 +72,14 @@ export function ChatSurface({
   const [isComparing, setIsComparing] = React.useState(false)
   const [isSavingOverride, setIsSavingOverride] = React.useState(false)
 
+  React.useEffect(() => {
+    setMessages([])
+    setDraft('')
+    setOverrides([])
+    setComparison(null)
+    setOverrideStatus(null)
+  }, [locationId])
+
   function updateStreamingMessage(id: string, content: string) {
     setMessages((current) =>
       current.map((message) =>

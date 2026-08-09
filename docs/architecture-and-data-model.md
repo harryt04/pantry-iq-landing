@@ -446,6 +446,21 @@ invalidates the item's precompute through the normal scheduler. The model has
 no write path, and no override is persisted merely because an operator
 questioned an assumption.
 
+### Chat session memory (`CHT-07`)
+
+Chat history is client-held session state only. The transcript and
+conversation-only overrides begin empty, and the chat surface is keyed and
+reset whenever the selected location changes, so context cannot cross a
+location boundary. Nothing is persisted when the page or session ends.
+
+Before narration, `src/chat/session-memory.ts` estimates four characters per
+token and keeps the newest history within the 400-token allowance recorded in
+`cost-and-pricing.md`. Complete recent turns are retained first; if the newest
+turn alone exceeds the allowance, only its ending is retained. The API caps
+the accepted history at 24 messages before this budget pass. Any trim emits
+`chat.history.trimmed` with account/query ownership and counts only — never
+message content — so the cost and context trade-off remains observable.
+
 ## Recommendation engine
 
 ### Core philosophy

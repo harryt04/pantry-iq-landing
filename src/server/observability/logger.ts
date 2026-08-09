@@ -64,6 +64,15 @@ export interface ChatGuardrailFields {
   unmatchedCount: number
 }
 
+export interface ChatHistoryTrimmedFields {
+  accountId: string
+  queryId: string
+  budgetTokens: number
+  originalTokens: number
+  retainedTokens: number
+  omittedMessages: number
+}
+
 const SENSITIVE_KEY =
   /(?:password|passphrase|secret|token|api[-_]?key|authorization|cookie|credential|session)/i
 const IMPORTED_ROW_KEY =
@@ -73,7 +82,7 @@ const QUERY_SECRET =
   /([?&](?:token|password|secret|api[-_]?key|access_token|refresh_token)=)[^&\s]+/gi
 const REDACTED = '[REDACTED]'
 const SAFE_OPERATIONAL_TOKEN_KEY =
-  /^(?:input|output|cacheRead|cacheWrite)Tokens$/
+  /^(?:input|output|cacheRead|cacheWrite|budget|original|retained)Tokens$/
 const SAFE_OPERATIONAL_TIMING_KEY = /^firstTokenMs$/
 
 function redactText(value: string): string {
@@ -215,6 +224,13 @@ export class Logger {
   chatGuardrailBlocked(fields: ChatGuardrailFields): void {
     this.warn('Chat response blocked by grounding guardrail', {
       event: 'chat.guardrail.blocked',
+      ...fields,
+    })
+  }
+
+  chatHistoryTrimmed(fields: ChatHistoryTrimmedFields): void {
+    this.info('Chat history trimmed to the session budget', {
+      event: 'chat.history.trimmed',
       ...fields,
     })
   }

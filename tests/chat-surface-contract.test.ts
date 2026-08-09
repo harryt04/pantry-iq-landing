@@ -43,6 +43,9 @@ describe('chat surface contract', () => {
     expect(page).toContain('getAppShellData()')
     expect(page).toContain('<ChatSurface')
     expect(page).toContain('locationName={location.name}')
+    expect(page).toContain('key={location.id}')
+    expect(surface).toContain('setMessages([])')
+    expect(surface).toContain('}, [locationId])')
   })
 
   it('requires an explicit scope after an engine-backed assumption comparison', () => {

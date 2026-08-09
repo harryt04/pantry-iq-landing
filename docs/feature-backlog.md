@@ -189,7 +189,7 @@ that touch them carry a stated default so work never stalls.
 | CHT-04 | Five-part answer format | **done** | codex | CHT-03 |
 | CHT-05 | Show your work, in chat | **done** | codex | CHT-04, MET-10 |
 | CHT-06 | Assumption override and scope prompt | **done** | codex | CHT-05, SET-03 |
-| CHT-07 | Session memory | available | — | CHT-04 |
+| CHT-07 | Session memory | **done** | codex | CHT-04 |
 | CHT-08 | Decline, redirect, and log the miss | available | — | CHT-03 |
 
 ### Settings
@@ -2416,7 +2416,7 @@ never invents them when the loaded records do not produce them.
 ### CHT-07 — Session memory
 
 ```
-Status: available   Owner: —   Claimed: —   Completed: —   Branch/PR: —
+Status: done   Owner: codex   Claimed: 2026-08-08   Completed: 2026-08-08   Branch/PR: —
 ```
 
 **Blocked by:** CHT-04 · **Blocks:** —
@@ -2436,10 +2436,20 @@ cleared when the session ends or the location changes.
 **Scope — out.** Persistence across sessions — explicitly not in scope.
 
 **Acceptance criteria.**
-- [ ] "Tell me more about salmon" resolves against the previous answer.
-- [ ] Switching location clears context; no answer mixes locations.
-- [ ] History stays within its token budget and the trim is logged.
-- [ ] A new session starts empty.
+- [x] "Tell me more about salmon" resolves against the previous answer.
+- [x] Switching location clears context; no answer mixes locations.
+- [x] History stays within its token budget and the trim is logged.
+- [x] A new session starts empty.
+
+**Notes.** Session memory stays in the client transcript and is never
+persisted. The chat route accepts at most 24 messages, then the narration
+boundary applies the documented 400-token estimate, retaining the newest
+complete turns first and trimming older turns. An oversized newest turn is
+trimmed from its beginning. `chat.history.trimmed` records only safe counts,
+not user or model text. The keyed chat surface and a location-change reset
+clear transcript, overrides, and draft state when the operator switches
+locations. Unit, narration, logger, and route-contract tests cover the
+budget, telemetry, empty sessions, and location boundary.
 
 **Verification.** Ten-turn conversation, then switch location mid-thread
 and confirm the context is gone.

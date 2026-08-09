@@ -12,6 +12,7 @@ import {
   createNarrationService,
   type ChatTurn,
 } from '@/src/server/chat/narration'
+import { CHAT_HISTORY_MAX_MESSAGES } from '@/src/chat/session-memory'
 import {
   ForbiddenError,
   requireOwnedLocation,
@@ -49,7 +50,7 @@ function parseRequest(value: unknown) {
     throw new Error('A location and question are required.')
   }
   const history = Array.isArray(body.history)
-    ? body.history.filter(isChatTurn).slice(-12)
+    ? body.history.filter(isChatTurn).slice(-CHAT_HISTORY_MAX_MESSAGES)
     : []
   const overrides = Array.isArray(body.overrides)
     ? body.overrides.slice(-5).map(parseAssumptionOverride)

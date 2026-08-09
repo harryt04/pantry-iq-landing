@@ -10,6 +10,10 @@ import {
 import type { ContextBundle } from '@/src/server/metrics/context-bundle'
 import type { RecommendationRecord } from '@/src/server/metrics/recommendations'
 import { createLogger, type Logger } from '@/src/server/observability/logger'
+import {
+  CHAT_HISTORY_TOKEN_BUDGET,
+  trimSessionHistory,
+} from '@/src/chat/session-memory'
 
 import { checkAnswerFormat, formatFivePartAnswer } from './answer-format'
 import { checkGrounding } from './grounding'
@@ -231,6 +235,25 @@ export function createNarrationService(
 
   return {
     stream(input: NarrationInput): NarrationResult {
+      const sessionHistory = trimSessionHistory(
+        input.history ?? [],
+        CHAT_HISTORY_TOKEN_BUDGET,
+      )
+      if (sessionHistory.trimmed) {
+        logger.chatHistoryTrimmed({
+          accountId: input.accountId,
+          queryId: input.queryId,
+          budgetTokens: CHAT_HISTORY_TOKEN_BUDGET,
+          originalTokens: sessionHistory.originalTokens,
+          retainedTokens: sessionHistory.retainedTokens,
+          omittedMessages: sessionHistory.omittedMessages,
+        })
+      }
+
+      const narrationInput = {
+        ...input,
+        history: sessionHistory.history,
+      }
       let resolveUsage!: (usage: NarrationUsage) => void
       const usage = new Promise<NarrationUsage>((resolve) => {
         resolveUsage = resolve
@@ -245,7 +268,7 @@ export function createNarrationService(
             const result = streamText({
               model,
               instructions: NARRATION_SYSTEM_PROMPT,
-              messages: buildMessages(input, model),
+              messages: buildMessages(narrationInput, model),
               maxRetries: 0,
               timeout: { totalMs: config.timeoutMs },
             })
@@ -259,8 +282,8 @@ export function createNarrationService(
             const modelUsage = await result.usage
             const cache = cacheTokens(modelUsage)
             const grounding = checkGrounding(chunks.join(''), [
-              input.recommendations,
-              input.contextBundle,
+              narrationInput.recommendations,
+              narrationInput.contextBundle,
             ])
             const answerFormat = checkAnswerFormat(chunks.join(''))
             const accepted = grounding.accepted && answerFormat.accepted
@@ -305,7 +328,7 @@ export function createNarrationService(
             resolveUsage(recorded)
             if (!accepted) {
               yield formatFivePartAnswer(
-                input.recommendations,
+                narrationInput.recommendations,
                 grounding.accepted ? '' : 'Narration is unavailable.',
               )
               return
@@ -356,7 +379,7 @@ export function createNarrationService(
       return {
         textStream: generate(),
         usage,
-        fallbackRecommendations: input.recommendations,
+        fallbackRecommendations: narrationInput.recommendations,
       }
     },
   }
