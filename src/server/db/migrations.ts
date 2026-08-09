@@ -10,6 +10,9 @@ export async function migrateDatabase(client: DatabaseClient) {
 
 export async function rollbackDatabase(client: DatabaseClient) {
   const appTables = [
+    'connector_webhook_deliveries',
+    'connector_oauth_states',
+    'connector_connections',
     'metric_rollups',
     'metric_results',
     'metric_runs',

@@ -71,6 +71,13 @@
       "when": 1786239800678,
       "tag": "0009_loose_epoch",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1786290375000,
+      "tag": "0010_connector_framework",
+      "breakpoints": true
     }
   ]
 }

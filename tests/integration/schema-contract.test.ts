@@ -29,6 +29,10 @@ const importHistoryMigration = readFileSync(
   new URL('../../drizzle/0009_loose_epoch.sql', import.meta.url),
   'utf8',
 )
+const connectorMigration = readFileSync(
+  new URL('../../drizzle/0010_connector_framework.sql', import.meta.url),
+  'utf8',
+)
 
 const canonicalTables = [
   'csv_upload_history',
@@ -160,6 +164,21 @@ describe('canonical migration contract', () => {
   it('keeps item-resolution evidence durable for history drill-downs', () => {
     expect(importHistoryMigration).toContain(
       'ALTER TABLE "csv_upload_history" ADD COLUMN "item_resolution" jsonb',
+    )
+  })
+
+  it('stores connector credentials encrypted and makes sync/webhook state durable', () => {
+    expect(connectorMigration).toMatch(
+      /CREATE TABLE "connector_connections"[\s\S]*"encrypted_credentials" text NOT NULL[\s\S]*"sync_cursor" text[\s\S]*"backfill_cursor" text/,
+    )
+    expect(connectorMigration).toMatch(
+      /CREATE TABLE "connector_oauth_states"[\s\S]*"state_hash" text NOT NULL[\s\S]*"expires_at" timestamp with time zone NOT NULL[\s\S]*"consumed_at" timestamp with time zone/,
+    )
+    expect(connectorMigration).toMatch(
+      /CREATE TABLE "connector_webhook_deliveries"[\s\S]*"provider_event_id" text NOT NULL[\s\S]*"payload_hash" text NOT NULL[\s\S]*"processed_at" timestamp with time zone/,
+    )
+    expect(connectorMigration).not.toMatch(
+      /"(?:access_token|refresh_token)" text/,
     )
   })
 })

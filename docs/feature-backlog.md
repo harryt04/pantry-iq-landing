@@ -237,7 +237,7 @@ that touch them carry a stated default so work never stalls.
 | ID | Title | Status | Owner | Blocked by |
 |---|---|---|---|---|
 | INT-01 | Source-agnostic ingestion abstraction | **done** | codex | ING-09 |
-| INT-02 | Connector framework | available | — | INT-01, FND-05 |
+| INT-02 | Connector framework | **done** | codex | INT-01, FND-05 |
 | INT-03 | Square connector | available | — | INT-02 |
 | INT-04 | Toast connector | available | — | INT-02 |
 | INT-05 | QuickBooks connector | available | — | INT-02 |
@@ -3366,7 +3366,7 @@ that table has no external-ID field.
 ### INT-02 — Connector framework
 
 ```
-Status: available   Owner: —   Claimed: —   Completed: —   Branch/PR: —
+Status: done   Owner: codex   Claimed: 2026-08-09   Completed: 2026-08-09   Branch/PR: rewrite
 ```
 
 **Blocked by:** INT-01, FND-05 · **Blocks:** INT-03, INT-04, INT-05
@@ -3388,13 +3388,25 @@ record tied to a location.
 **Scope — out.** Any specific vendor.
 
 **Acceptance criteria.**
-- [ ] Credentials are encrypted at rest and never logged.
-- [ ] Webhook signatures are verified; unsigned or replayed deliveries
+- [x] Credentials are encrypted at rest and never logged.
+- [x] Webhook signatures are verified; unsigned or replayed deliveries
       are rejected.
-- [ ] Sync state survives a restart mid-sync.
-- [ ] A revoked authorization surfaces as a connection failure rather
+- [x] Sync state survives a restart mid-sync.
+- [x] A revoked authorization surfaces as a connection failure rather
       than as silent data loss.
-- [ ] A connector cannot write to a location its account does not own.
+- [x] A connector cannot write to a location its account does not own.
+
+**Notes.** Added a provider-neutral connector adapter contract and durable
+connection, OAuth-state, and webhook-delivery tables. OAuth state is hashed,
+credentials use AES-256-GCM, webhook HMAC verification is constant-time, and
+provider event IDs plus a five-minute timestamp window provide replay
+protection. Owner-scoped sync persists normalized records and its cursor in
+one transaction, refreshes expiring credentials, retries transient failures
+with bounded backoff, and marks revoked authorizations explicitly. Focused
+tests, migration contract coverage, the real PostgreSQL round trip,
+`npm run prettify`, `npm run ci`, and an authenticated live smoke check all
+pass. No vendor-specific connector was added; INT-03–05 supply those
+adapters.
 
 ---
 

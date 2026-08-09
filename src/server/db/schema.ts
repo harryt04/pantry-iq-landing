@@ -113,6 +113,87 @@ export const locations = pgTable('locations', {
   updatedAt,
 })
 
+export const connectorConnections = pgTable(
+  'connector_connections',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    locationId: uuid('location_id')
+      .notNull()
+      .references(() => locations.id, { onDelete: 'cascade' }),
+    provider: text('provider').notNull(),
+    externalAccountId: text('external_account_id'),
+    status: text('status').notNull().default('authorizing'),
+    encryptedCredentials: text('encrypted_credentials').notNull(),
+    accessTokenExpiresAt: timestamp('access_token_expires_at', {
+      withTimezone: true,
+    }),
+    syncCursor: text('sync_cursor'),
+    backfillCursor: text('backfill_cursor'),
+    lastSyncedAt: timestamp('last_synced_at', { withTimezone: true }),
+    lastError: text('last_error'),
+    connectedAt: timestamp('connected_at', { withTimezone: true }),
+    createdAt,
+    updatedAt,
+  },
+  (table) => [
+    uniqueIndex('connector_connections_location_provider_idx').on(
+      table.locationId,
+      table.provider,
+    ),
+    index('connector_connections_status_idx').on(table.status),
+    check(
+      'connector_connections_status_check',
+      sql`${table.status} in ('authorizing', 'connected', 'syncing', 'failed', 'revoked', 'disconnected')`,
+    ),
+  ],
+)
+
+export const connectorOAuthStates = pgTable(
+  'connector_oauth_states',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    locationId: uuid('location_id')
+      .notNull()
+      .references(() => locations.id, { onDelete: 'cascade' }),
+    provider: text('provider').notNull(),
+    stateHash: text('state_hash').notNull(),
+    redirectUri: text('redirect_uri').notNull(),
+    returnTo: text('return_to'),
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+    consumedAt: timestamp('consumed_at', { withTimezone: true }),
+    createdAt,
+  },
+  (table) => [
+    uniqueIndex('connector_oauth_states_state_hash_idx').on(table.stateHash),
+    index('connector_oauth_states_expiry_idx').on(table.expiresAt),
+  ],
+)
+
+export const connectorWebhookDeliveries = pgTable(
+  'connector_webhook_deliveries',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    connectionId: uuid('connection_id')
+      .notNull()
+      .references(() => connectorConnections.id, { onDelete: 'cascade' }),
+    providerEventId: text('provider_event_id').notNull(),
+    payloadHash: text('payload_hash').notNull(),
+    receivedAt: timestamp('received_at', { withTimezone: true }).notNull(),
+    processedAt: timestamp('processed_at', { withTimezone: true }),
+    createdAt,
+  },
+  (table) => [
+    uniqueIndex('connector_webhook_deliveries_event_idx').on(
+      table.connectionId,
+      table.providerEventId,
+    ),
+    index('connector_webhook_deliveries_received_idx').on(
+      table.connectionId,
+      table.receivedAt,
+    ),
+  ],
+)
+
 export const inventoryItems = pgTable(
   'inventory_items',
   {
