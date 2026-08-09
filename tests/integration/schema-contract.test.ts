@@ -33,6 +33,10 @@ const connectorMigration = readFileSync(
   new URL('../../drizzle/0010_connector_framework.sql', import.meta.url),
   'utf8',
 )
+const reconciliationMigration = readFileSync(
+  new URL('../../drizzle/0011_boring_bulldozer.sql', import.meta.url),
+  'utf8',
+)
 
 const canonicalTables = [
   'csv_upload_history',
@@ -179,6 +183,18 @@ describe('canonical migration contract', () => {
     )
     expect(connectorMigration).not.toMatch(
       /"(?:access_token|refresh_token)" text/,
+    )
+  })
+
+  it('stores source overlaps and an explicit authority decision', () => {
+    expect(reconciliationMigration).toMatch(
+      /CREATE TABLE "reconciliation_conflicts"[\s\S]*"identity_key" text NOT NULL[\s\S]*"sources" jsonb NOT NULL[\s\S]*"authority_source" text[\s\S]*"details" jsonb NOT NULL/,
+    )
+    expect(reconciliationMigration).toMatch(
+      /reconciliation_conflicts_location_identity_idx/,
+    )
+    expect(reconciliationMigration).toMatch(
+      /reconciliation_conflicts_status_check[\s\S]*'unresolved', 'resolved'/,
     )
   })
 })

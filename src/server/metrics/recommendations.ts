@@ -10,6 +10,7 @@ import {
   type PartialDataFinding,
   type PartialDataSale,
 } from './partial-data'
+import type { ReconciliationTrace } from '@/src/server/ingestion/reconciliation'
 
 export const RECOMMENDATION_METRIC_KEY = 'recommendation' as const
 
@@ -240,6 +241,7 @@ export function assembleRecommendationRecords(input: {
     snapshots: number
   }
   currentDate?: Date
+  reconciliation?: readonly ReconciliationTrace[]
 }): RecommendationRecord[] {
   const itemById = new Map(input.items.map((item) => [item.itemId, item]))
   const inputWindowStart = input.inputWindowStart.toISOString()
@@ -315,6 +317,9 @@ export function assembleRecommendationRecords(input: {
             ? {}
             : { shelfLifeDays: item.shelfLifeDays }),
           config: METRICS_CONFIG,
+          ...(input.reconciliation
+            ? { reconciliation: input.reconciliation }
+            : {}),
         }),
       } satisfies RecommendationRecord,
     ]

@@ -28,7 +28,12 @@ database directly.
 `persistNormalizedRecords` owns the database write path. Transactions and
 purchase orders deduplicate by `(location, source, externalId)`; inventory
 counts use the existing `(location, source, item, countedAt, qty)` identity
-because the canonical snapshot table has no external-ID field. Exact item
+because the canonical snapshot table has no external-ID field. The
+`reconciliation_conflicts` table records the second, cross-source boundary:
+matching external IDs are retained once for metric input (with the preferred
+provider recorded), while overlapping periods without stable IDs are excluded
+until the operator chooses an authority source. Raw rows remain available for
+audit, and every choice is included in the evidence trace. Exact item
 resolution is also source-independent: case, whitespace, and the explicitly
 listed POS customization clauses are presentation normalization only. No
 fuzzy matching is available to connectors.

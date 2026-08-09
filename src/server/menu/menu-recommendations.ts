@@ -11,6 +11,7 @@ import type {
   MenuRecommendationType,
   RecommendationRecord,
 } from '@/src/server/metrics/recommendations'
+import type { ReconciliationTrace } from '@/src/server/ingestion/reconciliation'
 
 type Decimal = { coefficient: bigint; scale: number }
 const DECIMAL_PATTERN = /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)$/
@@ -400,6 +401,7 @@ export function assembleMenuRecommendationRecords(input: {
   inputWindowStart: Date
   inputWindowEnd: Date
   sources?: readonly EvidenceSourceInput[]
+  reconciliation?: readonly ReconciliationTrace[]
 }): RecommendationRecord[] {
   const candidates = new Map(
     input.candidates.map((candidate) => [candidate.candidateId, candidate]),
@@ -424,6 +426,7 @@ export function assembleMenuRecommendationRecords(input: {
           editPath: 'Recipes → recipe builder',
         },
       ],
+      ...(input.reconciliation ? { reconciliation: input.reconciliation } : {}),
     })
     return [
       {

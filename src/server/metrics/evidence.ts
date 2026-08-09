@@ -1,5 +1,6 @@
 import type { MetricsConfig } from './config'
 import type { RankedRecommendation } from './ranking'
+import type { ReconciliationTrace } from '@/src/server/ingestion/reconciliation'
 
 export type EvidenceSourceInput = {
   filename: string
@@ -37,6 +38,7 @@ export type EvidenceTrace = {
   sources: EvidenceSource[]
   calculations: EvidenceCalculation[]
   assumptions: EvidenceAssumption[]
+  reconciliation?: ReconciliationTrace[]
 }
 
 type MetricResultShape = {
@@ -269,6 +271,7 @@ export function buildEvidenceTrace(input: {
   shelfLifeDays?: number | null
   config: MetricsConfig
   additionalAssumptions?: readonly EvidenceAssumption[]
+  reconciliation?: readonly ReconciliationTrace[]
 }): EvidenceTrace {
   const calculations = input.metrics.flatMap((metric) => [
     calculationForMetric(metric),
@@ -324,6 +327,9 @@ export function buildEvidenceTrace(input: {
       ...assumptionsFor(input.config, input.shelfLifeDays),
       ...(input.additionalAssumptions ?? []),
     ],
+    ...(input.reconciliation && input.reconciliation.length > 0
+      ? { reconciliation: [...input.reconciliation] }
+      : {}),
   } satisfies EvidenceTrace
   assertCompleteTrace(trace)
   return trace

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { buildPrecomputeResults } from './precompute'
+import type { ReconciliationConflict } from '@/src/server/ingestion/reconciliation'
 import {
   PRECOMPUTE_DAILY_CRON,
   PRECOMPUTE_QUEUE,
@@ -97,6 +98,33 @@ describe('precompute results', () => {
     expect(buildPrecomputeResults(input, now)).toEqual(
       buildPrecomputeResults(input, now),
     )
+  })
+
+  it('carries source authority decisions into recommendation evidence', () => {
+    const conflict: ReconciliationConflict = {
+      recordKind: 'inventory',
+      conflictType: 'period-overlap',
+      identityKey: 'inventory|period-overlap|2026-08-01',
+      externalId: null,
+      periodStart: new Date('2026-08-01T12:00:00.000Z'),
+      periodEnd: new Date('2026-08-01T12:00:00.000Z'),
+      sources: ['square', 'csv'],
+      status: 'resolved',
+      authoritySource: 'square',
+      details: { message: 'Square is the authority for this count.' },
+    }
+    const output = buildPrecomputeResults(
+      { ...input, reconciliation: [conflict] },
+      now,
+    )
+
+    expect(output.recommendations[0]?.evidenceTrace?.reconciliation).toEqual([
+      expect.objectContaining({
+        conflictType: 'period-overlap',
+        authoritySource: 'square',
+        status: 'resolved',
+      }),
+    ])
   })
 
   it('keeps missing inputs explicit instead of turning them into zeroes', () => {

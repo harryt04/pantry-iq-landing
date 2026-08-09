@@ -1,4 +1,4 @@
-import { and, asc, desc, eq } from 'drizzle-orm'
+import { and, asc, desc, eq, sql } from 'drizzle-orm'
 
 import {
   inventoryItems,
@@ -56,6 +56,14 @@ import {
   type MenuRecommendationInput,
 } from '@/src/server/menu/menu-recommendations'
 import { buildUsageVariance } from '@/src/server/menu/usage-variance'
+import {
+  detectReconciliationConflicts,
+  listReconciliationConflicts,
+  mergeReconciliationDecisions,
+  reconciliationTrace,
+  shouldIncludeRecord,
+  type ReconciliationConflict,
+} from '@/src/server/ingestion/reconciliation'
 
 export const PRECOMPUTED_METRICS = [
   'sellThrough',
@@ -88,6 +96,8 @@ export type PrecomputeSale = {
   revenue: string
   totalCost?: string | null
   transactedAt: Date
+  source?: string
+  externalId?: string | null
 }
 
 export type PrecomputeOrder = {
@@ -96,12 +106,16 @@ export type PrecomputeOrder = {
   totalCost: string
   orderedAt: Date
   receivedAt?: Date | null
+  source?: string
+  externalId?: string | null
 }
 
 export type PrecomputeSnapshot = {
   itemId: string
   qty: string
   countedAt: Date
+  source?: string
+  externalId?: string | null
 }
 
 export type PrecomputeInput = {
@@ -110,6 +124,7 @@ export type PrecomputeInput = {
   orders: readonly PrecomputeOrder[]
   snapshots: readonly PrecomputeSnapshot[]
   sources?: readonly EvidenceSourceInput[]
+  reconciliation?: readonly ReconciliationConflict[]
   menuRecommendations?: MenuRecommendationInput
 }
 
@@ -691,6 +706,9 @@ export function buildPrecomputeResults(
       purchaseOrders: input.orders.length,
       snapshots: input.snapshots.length,
     },
+    ...(input.reconciliation
+      ? { reconciliation: reconciliationTrace(input.reconciliation) }
+      : {}),
   })
   const menuRecommendations = assembleMenuRecommendationRecords({
     candidates: menuCandidates,
@@ -699,6 +717,9 @@ export function buildPrecomputeResults(
     inputWindowEnd,
     ...(input.menuRecommendations?.sources
       ? { sources: input.menuRecommendations.sources }
+      : {}),
+    ...(input.reconciliation
+      ? { reconciliation: reconciliationTrace(input.reconciliation) }
       : {}),
   })
 
@@ -749,6 +770,8 @@ export async function loadPrecomputeInput(
         revenue: transactions.totalRevenue,
         totalCost: transactions.totalCost,
         transactedAt: transactions.transactedAt,
+        source: transactions.source,
+        externalId: transactions.externalId,
       })
       .from(transactions)
       .where(eq(transactions.locationId, locationId)),
@@ -759,6 +782,8 @@ export async function loadPrecomputeInput(
         totalCost: purchaseOrderItems.totalCost,
         orderedAt: purchaseOrders.orderedAt,
         receivedAt: purchaseOrders.receivedAt,
+        source: purchaseOrders.source,
+        externalId: purchaseOrders.externalId,
       })
       .from(purchaseOrderItems)
       .innerJoin(
@@ -771,6 +796,8 @@ export async function loadPrecomputeInput(
         itemId: inventorySnapshots.inventoryItemId,
         qty: inventorySnapshots.qty,
         countedAt: inventorySnapshots.countedAt,
+        source: inventorySnapshots.source,
+        externalId: sql`null`.as<string | null>(),
       })
       .from(inventorySnapshots)
       .where(eq(inventorySnapshots.locationId, locationId)),
@@ -844,6 +871,67 @@ export async function loadPrecomputeInput(
       .where(eq(itemUnitConversions.locationId, locationId)),
   ])
 
+  const reconciliationRecords = [
+    ...sales.map((sale) => ({
+      kind: 'transaction' as const,
+      source: sale.source,
+      externalId: sale.externalId,
+      occurredAt: sale.transactedAt,
+    })),
+    ...orders.map((order) => ({
+      kind: 'purchase_order' as const,
+      source: order.source,
+      externalId: order.externalId,
+      occurredAt: order.orderedAt,
+    })),
+    ...snapshots.map((snapshot) => ({
+      kind: 'inventory' as const,
+      source: snapshot.source,
+      externalId: snapshot.externalId,
+      occurredAt: snapshot.countedAt,
+    })),
+  ]
+  const detectedReconciliation = detectReconciliationConflicts(
+    reconciliationRecords,
+  )
+  const reconciliation = mergeReconciliationDecisions(
+    detectedReconciliation,
+    await listReconciliationConflicts(locationId),
+  )
+  const includedSales = sales.filter((sale) =>
+    shouldIncludeRecord(
+      {
+        kind: 'transaction',
+        source: sale.source,
+        externalId: sale.externalId,
+        occurredAt: sale.transactedAt,
+      },
+      reconciliation,
+    ),
+  )
+  const includedOrders = orders.filter((order) =>
+    shouldIncludeRecord(
+      {
+        kind: 'purchase_order',
+        source: order.source,
+        externalId: order.externalId,
+        occurredAt: order.orderedAt,
+      },
+      reconciliation,
+    ),
+  )
+  const includedSnapshots = snapshots.filter((snapshot) =>
+    shouldIncludeRecord(
+      {
+        kind: 'inventory',
+        source: snapshot.source,
+        externalId: snapshot.externalId,
+        occurredAt: snapshot.countedAt,
+      },
+      reconciliation,
+    ),
+  )
+
   const normalizedItems: PrecomputeItem[] = items.map((item) => ({
     ...item,
     itemType: item.itemType === 'menu_item' ? 'menu_item' : 'ingredient',
@@ -861,7 +949,7 @@ export async function loadPrecomputeInput(
     }
   }
   const unitsSoldByMenuItem = new Map<string, string>()
-  for (const sale of sales) {
+  for (const sale of includedSales) {
     if (!sale.itemId || !menuItems.some((item) => item.id === sale.itemId))
       continue
     const total = sumDecimals([
@@ -932,9 +1020,9 @@ export async function loadPrecomputeInput(
     }),
     recipeVariance: buildRecipeVarianceRecommendations({
       items: normalizedItems,
-      sales,
-      orders,
-      snapshots,
+      sales: includedSales,
+      orders: includedOrders,
+      snapshots: includedSnapshots,
       recipeRows,
       recipeIngredientRows,
       conversions,
@@ -956,10 +1044,11 @@ export async function loadPrecomputeInput(
 
   return {
     items: normalizedItems,
-    sales,
-    orders,
-    snapshots,
+    sales: includedSales,
+    orders: includedOrders,
+    snapshots: includedSnapshots,
     sources,
+    reconciliation,
     menuRecommendations,
   }
 }

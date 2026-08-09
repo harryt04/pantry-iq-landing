@@ -242,7 +242,7 @@ that touch them carry a stated default so work never stalls.
 | INT-04 | Toast connector | **done** | codex | INT-02 |
 | INT-05 | QuickBooks connector | **done** | codex | INT-02 |
 | INT-06 | Sync scheduling and incremental updates | **done** | codex | INT-03 |
-| INT-07 | Deduplication and cross-source reconciliation | available | — | INT-06 |
+| INT-07 | Deduplication and cross-source reconciliation | **claimed** | codex | INT-06 |
 | INT-08 | Connection health and failure surfacing | **done** | codex | INT-06 |
 
 ### Menu management
@@ -3574,7 +3574,7 @@ Prettier, `npm run ci`, and authenticated local smoke checks passed.
 ### INT-07 — Deduplication and cross-source reconciliation
 
 ```
-Status: available   Owner: —   Claimed: —   Completed: —   Branch/PR: —
+Status: done   Owner: codex   Claimed: 2026-08-09   Completed: 2026-08-09   Branch/PR: rewrite
 ```
 
 **Blocked by:** INT-06 · **Blocks:** —
@@ -3592,10 +3592,19 @@ the overlap to the user and let them choose which source is authoritative
 for that period. Never silently merge.
 
 **Acceptance criteria.**
-- [ ] Overlapping CSV and API data never double-counts.
-- [ ] Ambiguous overlaps are surfaced, not resolved by guess.
-- [ ] The chosen authority per period is recorded and appears in
+- [x] Overlapping CSV and API data never double-counts.
+- [x] Ambiguous overlaps are surfaced, not resolved by guess.
+- [x] The chosen authority per period is recorded and appears in
       `MET-10` traces.
+
+**Notes.** Added deterministic cross-source conflict detection. Matching
+external IDs are counted once with provider-first precedence and retain both
+source identities for audit. Records from overlapping periods without stable
+IDs are excluded from precompute until the operator chooses an authority in
+the import review surface; the choice is stored in `reconciliation_conflicts`
+and included in recommendation evidence traces. Added focused detector,
+filtering, API, UI, and migration coverage. Prettier, typecheck, focused
+tests, and the full CI suite pass.
 
 ---
 

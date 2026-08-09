@@ -41,6 +41,10 @@ const protectedRoutes: readonly RouteContract[] = [
     markers: ['listRecipes', 'getRecipe', 'saveRecipe'],
   },
   {
+    file: 'reconciliation/route.ts',
+    markers: ['requireOwnedLocation', 'resolveReconciliationConflict'],
+  },
+  {
     file: 'uploads/[uploadId]/commit/route.ts',
     markers: ['previewCsvImport', 'commitCsvImport'],
   },

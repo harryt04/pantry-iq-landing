@@ -500,6 +500,54 @@ export const csvUploadHistory = pgTable(
   ],
 )
 
+export const reconciliationConflicts = pgTable(
+  'reconciliation_conflicts',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    locationId: uuid('location_id')
+      .notNull()
+      .references(() => locations.id, { onDelete: 'cascade' }),
+    recordKind: text('record_kind').notNull(),
+    conflictType: text('conflict_type').notNull(),
+    identityKey: text('identity_key').notNull(),
+    externalId: text('external_id'),
+    periodStart: timestamp('period_start', { withTimezone: true }).notNull(),
+    periodEnd: timestamp('period_end', { withTimezone: true }).notNull(),
+    sources: jsonb('sources').notNull(),
+    status: text('status').notNull().default('unresolved'),
+    authoritySource: text('authority_source'),
+    details: jsonb('details').notNull(),
+    createdAt,
+    updatedAt,
+  },
+  (table) => [
+    uniqueIndex('reconciliation_conflicts_location_identity_idx').on(
+      table.locationId,
+      table.identityKey,
+    ),
+    index('reconciliation_conflicts_location_status_idx').on(
+      table.locationId,
+      table.status,
+    ),
+    check(
+      'reconciliation_conflicts_record_kind_check',
+      sql`${table.recordKind} in ('transaction', 'purchase_order', 'inventory')`,
+    ),
+    check(
+      'reconciliation_conflicts_type_check',
+      sql`${table.conflictType} in ('external-id', 'period-overlap')`,
+    ),
+    check(
+      'reconciliation_conflicts_status_check',
+      sql`${table.status} in ('unresolved', 'resolved')`,
+    ),
+    check(
+      'reconciliation_conflicts_period_check',
+      sql`${table.periodEnd} >= ${table.periodStart}`,
+    ),
+  ],
+)
+
 export const metricRuns = pgTable(
   'metric_runs',
   {

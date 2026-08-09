@@ -13,6 +13,7 @@ export async function rollbackDatabase(client: DatabaseClient) {
     'connector_webhook_deliveries',
     'connector_oauth_states',
     'connector_connections',
+    'reconciliation_conflicts',
     'metric_rollups',
     'metric_results',
     'metric_runs',
