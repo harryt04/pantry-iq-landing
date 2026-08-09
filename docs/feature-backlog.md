@@ -236,7 +236,7 @@ that touch them carry a stated default so work never stalls.
 
 | ID | Title | Status | Owner | Blocked by |
 |---|---|---|---|---|
-| INT-01 | Source-agnostic ingestion abstraction | available | — | ING-09 |
+| INT-01 | Source-agnostic ingestion abstraction | **done** | codex | ING-09 |
 | INT-02 | Connector framework | available | — | INT-01, FND-05 |
 | INT-03 | Square connector | available | — | INT-02 |
 | INT-04 | Toast connector | available | — | INT-02 |
@@ -3211,7 +3211,7 @@ answer names which locations it drew on.
 ### INT-01 — Source-agnostic ingestion abstraction
 
 ```
-Status: available   Owner: —   Claimed: —   Completed: —   Branch/PR: —
+Status: done   Owner: codex   Claimed: 2026-08-08   Completed: 2026-08-08   Branch/PR: rewrite
 ```
 
 **Blocked by:** ING-09 · **Blocks:** INT-02, STF-01
@@ -3231,12 +3231,23 @@ deduplication, and history logging shared across all sources. CSV import
 refactored onto it, with behaviour unchanged.
 
 **Acceptance criteria.**
-- [ ] CSV import behaves identically after the refactor — proven by the
+- [x] CSV import behaves identically after the refactor — proven by the
       existing tests.
-- [ ] Adding a source requires implementing one adapter and nothing else.
-- [ ] Deduplication works across sources on `externalId`.
-- [ ] Item resolution stays exact-match only, with no fuzzy path
+- [x] Adding a source requires implementing one adapter and nothing else.
+- [x] Deduplication works across sources on `externalId`.
+- [x] Item resolution stays exact-match only, with no fuzzy path
       introduced for API sources.
+
+**Notes.** Added the framework-independent `src/server/ingestion/` boundary
+with normalized transaction, purchase-order, and inventory-count records;
+adapter typing; source-independent exact item resolution; shared source and
+external-ID deduplication; and shared ingestion-history helpers. CSV commit
+now feeds normalized records into the shared persistence path, while manual
+entry uses the shared history writer. Existing CSV planning and item-resolution
+tests remain green, and new normalized-record tests cover source trimming,
+stable identities, exact decimal strings, and invalid identities. Inventory
+snapshot deduplication remains keyed by its existing canonical columns because
+that table has no external-ID field.
 
 ---
 

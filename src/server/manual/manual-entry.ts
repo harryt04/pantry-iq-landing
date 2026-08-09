@@ -4,7 +4,6 @@ import { randomUUID } from 'node:crypto'
 import { requireOwnedLocation } from '@/src/server/auth/authorization'
 import { db } from '@/src/server/db/client'
 import {
-  csvUploadHistory,
   inventoryItems,
   inventorySnapshots,
   purchaseOrderItems,
@@ -13,6 +12,7 @@ import {
 } from '@/src/server/db/schema'
 import { enqueuePrecomputeForLocationInTransaction } from '@/src/server/metrics/scheduler'
 import type { ImportHistoryItem } from '@/src/server/csv/import-history'
+import { createIngestionHistory } from '@/src/server/ingestion/persistence'
 
 export const MANUAL_ENTRY_TYPES = [
   'inventory',
@@ -413,28 +413,25 @@ export async function createManualEntry(
       entryLabel = 'Manual purchase order'
     }
 
-    const [history] = await tx
-      .insert(csvUploadHistory)
-      .values({
-        locationId: owned.locationId,
-        filename: entryLabel,
-        source: 'manual',
-        rowsImported,
-        mappingUsed: { entryType: values.entryType, source: 'manual' },
-        itemResolution: {
-          created: [...createdItems.values()].sort((a, b) =>
-            a.canonicalName.localeCompare(b.canonicalName),
-          ),
-          matched: [...matchedItems.values()].sort((a, b) =>
-            a.canonicalName.localeCompare(b.canonicalName),
-          ),
-        },
-        unmatchedItems: [],
-        storageKey: null,
-        status: 'imported',
-        uploadedAt: new Date(),
-      })
-      .returning({ id: csvUploadHistory.id })
+    const history = await createIngestionHistory(tx, {
+      locationId: owned.locationId,
+      filename: entryLabel,
+      source: 'manual',
+      rowsImported,
+      mappingUsed: { entryType: values.entryType, source: 'manual' },
+      itemResolution: {
+        created: [...createdItems.values()].sort((a, b) =>
+          a.canonicalName.localeCompare(b.canonicalName),
+        ),
+        matched: [...matchedItems.values()].sort((a, b) =>
+          a.canonicalName.localeCompare(b.canonicalName),
+        ),
+      },
+      unmatchedItems: [],
+      storageKey: null,
+      status: 'imported',
+      uploadedAt: new Date(),
+    })
 
     await enqueuePrecomputeForLocationInTransaction(tx, owned.locationId)
 

@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, inArray, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, sql } from 'drizzle-orm'
 
 import {
   requireOwnedLocation,
@@ -8,10 +8,6 @@ import { db } from '@/src/server/db/client'
 import {
   csvUploadHistory,
   inventoryItems,
-  inventorySnapshots,
-  purchaseOrderItems,
-  purchaseOrders,
-  transactions,
   locations,
 } from '@/src/server/db/schema'
 import {
@@ -24,6 +20,13 @@ import {
   type ImportItemResolution,
   type ImportPlan,
 } from './import-plan'
+import {
+  normalizeInventoryCount,
+  normalizePurchaseOrder,
+  normalizeTransaction,
+} from '@/src/server/ingestion/records'
+import { persistNormalizedRecords } from '@/src/server/ingestion/persistence'
+import { finalizeIngestionHistory } from '@/src/server/ingestion/persistence'
 import { parseStoredCsvMapping } from './mapping'
 import { parseCsvRows } from './parser'
 import { CSV_IMPORT_TYPES, type CsvImportType } from './upload-input'
@@ -286,18 +289,15 @@ export async function commitCsvImport(
       }
     }
 
-    let rowsImported = 0
-    const usage = new Map<string, number>()
+    const normalized = []
     if (upload.source === 'transactions') {
-      const inserted = await tx
-        .insert(transactions)
-        .values(
-          plan.rows.map((row) => ({
-            locationId: upload.locationId,
+      normalized.push(
+        ...plan.rows.map((row) =>
+          normalizeTransaction({
             transactedAt: row.values.transactedAt as Date,
             externalId: row.values.externalId as string,
             source: 'csv',
-            menuItemId: idFor(row.item, created) ?? null,
+            itemId: idFor(row.item, created) as string,
             rawItemName: row.rawItemName,
             category: row.values.category as string | null,
             qty: row.values.qty as string,
@@ -305,129 +305,54 @@ export async function commitCsvImport(
             totalRevenue: row.values.totalRevenue as string,
             totalCost: row.values.totalCost as string | null,
             grossMargin: row.values.grossMargin as string | null,
-          })),
-        )
-        .onConflictDoNothing()
-        .returning({ menuItemId: transactions.menuItemId })
-      rowsImported = inserted.length
-      for (const row of inserted) {
-        if (row.menuItemId)
-          usage.set(row.menuItemId, (usage.get(row.menuItemId) ?? 0) + 1)
-      }
+          }),
+        ),
+      )
     } else if (upload.source === 'purchase_orders') {
       const groups = new Map<string, ImportPlan['rows']>()
       for (const row of plan.rows) {
         const key = row.values.externalId as string
         groups.set(key, [...(groups.get(key) ?? []), row])
       }
-      const keys = [...groups.keys()]
-      const existing = await tx
-        .select({
-          id: purchaseOrders.id,
-          externalId: purchaseOrders.externalId,
-        })
-        .from(purchaseOrders)
-        .where(
-          and(
-            eq(purchaseOrders.locationId, upload.locationId),
-            eq(purchaseOrders.source, 'csv'),
-            inArray(purchaseOrders.externalId, keys),
-          ),
-        )
-      const existingKeys = new Set(
-        existing.map((row) => row.externalId).filter(Boolean),
+      normalized.push(
+        ...[...groups.entries()].map(([externalId, rows]) => {
+          const first = rows[0]
+          if (!first) throw new Error('A purchase order row is required.')
+          return normalizePurchaseOrder({
+            source: 'csv',
+            externalId,
+            orderedAt: first.values.orderedAt as Date,
+            receivedAt: first.values.receivedAt as Date | null,
+            supplierName: first.values.supplierName as string | null,
+            lines: rows.map((row) => ({
+              itemId: idFor(row.item, created) as string,
+              rawItemName: row.rawItemName,
+              qty: row.values.qty as string,
+              unitCost: row.values.unitCost as string,
+              totalCost: row.values.totalCost as string,
+            })),
+          })
+        }),
       )
-      const freshGroups = keys.filter((key) => !existingKeys.has(key))
-      const insertedOrders = await tx
-        .insert(purchaseOrders)
-        .values(
-          freshGroups.map((key) => {
-            const row = groups.get(key)?.[0]
-            return {
-              locationId: upload.locationId,
-              orderedAt: row?.values.orderedAt as Date,
-              receivedAt: row?.values.receivedAt as Date | null,
-              externalId: key,
-              source: 'csv',
-              supplierName: row?.values.supplierName as string | null,
-            }
-          }),
-        )
-        .returning({
-          id: purchaseOrders.id,
-          externalId: purchaseOrders.externalId,
-        })
-      const orderIds = new Map(
-        insertedOrders.map((row) => [row.externalId, row.id]),
-      )
-      const lines = freshGroups.flatMap((key) =>
-        (groups.get(key) ?? []).map((row) => ({
-          purchaseOrderId: orderIds.get(key) as string,
-          locationId: upload.locationId,
-          inventoryItemId: idFor(row.item, created) ?? null,
-          rawItemName: row.rawItemName,
-          qty: row.values.qty as string,
-          unitCost: row.values.unitCost as string,
-          totalCost: row.values.totalCost as string,
-        })),
-      )
-      const insertedLines = lines.length
-        ? await tx
-            .insert(purchaseOrderItems)
-            .values(lines)
-            .returning({ inventoryItemId: purchaseOrderItems.inventoryItemId })
-        : []
-      rowsImported = insertedLines.length
-      for (const row of insertedLines) {
-        if (row.inventoryItemId)
-          usage.set(
-            row.inventoryItemId,
-            (usage.get(row.inventoryItemId) ?? 0) + 1,
-          )
-      }
     } else {
-      const existing = await tx
-        .select({
-          inventoryItemId: inventorySnapshots.inventoryItemId,
-          countedAt: inventorySnapshots.countedAt,
-          qty: inventorySnapshots.qty,
-        })
-        .from(inventorySnapshots)
-        .where(
-          and(
-            eq(inventorySnapshots.locationId, upload.locationId),
-            eq(inventorySnapshots.source, 'csv'),
-          ),
-        )
-      const existingKeys = new Set(
-        existing.map(
-          (row) =>
-            `${row.inventoryItemId}|${row.countedAt.toISOString()}|${row.qty}`,
+      normalized.push(
+        ...plan.rows.map((row) =>
+          normalizeInventoryCount({
+            source: 'csv',
+            externalId: null,
+            countedAt: row.values.countedAt as Date,
+            itemId: idFor(row.item, created) as string,
+            qty: row.values.qty as string,
+          }),
         ),
       )
-      const values = plan.rows.flatMap((row) => {
-        const inventoryItemId = idFor(row.item, created)
-        if (!inventoryItemId) return []
-        const value = {
-          locationId: upload.locationId,
-          inventoryItemId,
-          countedAt: row.values.countedAt as Date,
-          qty: row.values.qty as string,
-          source: 'csv',
-        }
-        const key = `${inventoryItemId}|${value.countedAt.toISOString()}|${value.qty}`
-        if (existingKeys.has(key)) return []
-        existingKeys.add(key)
-        return [value]
-      })
-      if (values.length) {
-        const inserted = await tx
-          .insert(inventorySnapshots)
-          .values(values)
-          .returning({ id: inventorySnapshots.id })
-        rowsImported = inserted.length
-      }
     }
+
+    const { rowsImported, usage } = await persistNormalizedRecords(
+      tx,
+      upload.locationId,
+      normalized,
+    )
 
     for (const [itemId, amount] of usage) {
       await tx
@@ -446,21 +371,13 @@ export async function commitCsvImport(
 
     const itemResolution = itemResolutionForPlan(plan, created)
 
-    await tx
-      .update(csvUploadHistory)
-      .set({
-        rowsImported,
-        itemResolution,
-        unmatchedItems: [],
-        status: 'imported',
-      })
-      .where(
-        and(
-          eq(csvUploadHistory.id, upload.id),
-          eq(csvUploadHistory.locationId, upload.locationId),
-          eq(csvUploadHistory.status, 'uploaded'),
-        ),
-      )
+    await finalizeIngestionHistory(tx, {
+      id: upload.id,
+      locationId: upload.locationId,
+      rowsImported,
+      itemResolution,
+      unmatchedItems: [],
+    })
 
     await enqueuePrecomputeForLocationInTransaction(tx, upload.locationId)
 

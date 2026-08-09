@@ -1,11 +1,13 @@
 import type { CsvRows } from './parser'
 import type { CanonicalField, StoredCsvMapping } from './mapping'
 import {
-  normalizeExactItemName,
-  resolveExactItemName,
   type ItemResolutionCandidate,
   type UnmatchedItem,
 } from './item-resolution'
+import {
+  normalizeExactItemName,
+  resolveExactItemName,
+} from '@/src/server/ingestion/item-resolution'
 import type { CsvImportType } from './upload-input'
 
 type Decimal = { digits: bigint; scale: number }

@@ -1,121 +1,21 @@
 import type { CanonicalField } from './mapping'
 import { getShelfLifeSuggestion } from '../inventory/shelf-life-defaults'
-
-export type ItemResolutionCandidate = {
-  id: string
-  canonicalName: string
-  displayName: string
-  category: string | null
-  unit: string
-  isActive?: boolean
-}
-
-export type ItemResolutionMatch = {
-  status: 'matched'
-  rawItemName: string
-  normalizedItemName: string
-  item: ItemResolutionCandidate
-}
-
-export type ItemResolutionMiss = {
-  status: 'unmatched'
-  rawItemName: string
-  normalizedItemName: string
-  reason: 'empty-name' | 'no-exact-match' | 'ambiguous-match'
-}
-
-export type ItemResolution = ItemResolutionMatch | ItemResolutionMiss
-
-/**
- * These are deliberately small, explicit rules. They remove modifiers a POS
- * commonly appends to a base item while leaving every other spelling alone.
- * A new rule requires a regression test because a false match corrupts all
- * downstream metrics.
- */
-export const ITEM_CUSTOMIZATION_RULES = [
-  {
-    name: 'modifier clause',
-    pattern:
-      /\b(?:no|without|w\/?o|extra|add(?:ed)?|light|hold|remove|minus|sub(?:stitute)?)\s+[^,;|()[\]{}]+/giu,
-  },
-  {
-    name: 'on-the-side clause',
-    pattern: /\bon\s+the\s+side\b/giu,
-  },
-] as const
-
-/**
- * Case and whitespace are presentation differences, not fuzzy matching. The
- * resulting value is still compared for complete equality.
- */
-export function normalizeExactItemName(value: string): string {
-  return value
-    .normalize('NFKC')
-    .trim()
-    .replace(/\s+/gu, ' ')
-    .toLocaleLowerCase()
-}
-
-export function stripKnownCustomizations(value: string): string {
-  const normalized = normalizeExactItemName(value)
-  let stripped = normalized
-
-  for (const rule of ITEM_CUSTOMIZATION_RULES) {
-    stripped = stripped.replace(
-      new RegExp(rule.pattern.source, rule.pattern.flags),
-      '',
-    )
-  }
-
-  stripped = stripped
-    .replace(/[([{]\s*[)\]}]/gu, '')
-    .replace(/\s*[,;|]\s*(?=$|[,;|])/gu, '')
-    .replace(/(?:\s*[-–—:]\s*)+$/gu, '')
-    .replace(/^[,;|]+/gu, '')
-    .trim()
-
-  // A standalone item such as "Extra Sauce" must remain searchable. A
-  // customization rule that removes the whole value therefore falls back to
-  // the normalized original rather than producing an empty match key.
-  return stripped || normalized
-}
-
-export function resolveExactItemName(
-  rawItemName: string,
-  items: readonly ItemResolutionCandidate[],
-): ItemResolution {
-  const normalizedItemName = stripKnownCustomizations(rawItemName)
-  if (!normalizedItemName) {
-    return {
-      status: 'unmatched',
-      rawItemName,
-      normalizedItemName,
-      reason: 'empty-name',
-    }
-  }
-
-  const matches = items.filter(
-    (item) =>
-      item.isActive !== false &&
-      normalizeExactItemName(item.canonicalName) === normalizedItemName,
-  )
-
-  if (matches.length === 1) {
-    return {
-      status: 'matched',
-      rawItemName,
-      normalizedItemName,
-      item: matches[0]!,
-    }
-  }
-
-  return {
-    status: 'unmatched',
-    rawItemName,
-    normalizedItemName,
-    reason: matches.length > 1 ? 'ambiguous-match' : 'no-exact-match',
-  }
-}
+export {
+  ITEM_CUSTOMIZATION_RULES,
+  normalizeExactItemName,
+  resolveExactItemName,
+  stripKnownCustomizations,
+  type ItemResolution,
+  type ItemResolutionCandidate,
+  type ItemResolutionMatch,
+  type ItemResolutionMiss,
+} from '@/src/server/ingestion/item-resolution'
+import {
+  normalizeExactItemName,
+  resolveExactItemName,
+  type ItemResolutionCandidate,
+  type ItemResolutionMiss,
+} from '@/src/server/ingestion/item-resolution'
 
 export type CsvItemResolutionRow = {
   rowNumber: number

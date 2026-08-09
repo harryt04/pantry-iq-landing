@@ -9,6 +9,10 @@ const service = readFileSync(
   new URL('../src/server/csv/imports.ts', import.meta.url),
   'utf8',
 )
+const ingestionPersistence = readFileSync(
+  new URL('../src/server/ingestion/persistence.ts', import.meta.url),
+  'utf8',
+)
 const form = readFileSync(
   new URL('../components/import/csv-upload-form.tsx', import.meta.url),
   'utf8',
@@ -19,8 +23,9 @@ describe('CSV import commit contract', () => {
     expect(route).toContain('dryRun')
     expect(route).toContain('commitCsvImport')
     expect(service).toContain('db.transaction')
-    expect(service).toContain('onConflictDoNothing')
-    expect(service).toContain("status: 'imported'")
+    expect(service).toContain('persistNormalizedRecords')
+    expect(ingestionPersistence).toContain('onConflictDoNothing')
+    expect(ingestionPersistence).toContain("status: 'imported'")
     expect(service).toContain('enqueuePrecomputeForLocationInTransaction')
   })
 

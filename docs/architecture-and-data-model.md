@@ -15,6 +15,30 @@ is the implementation-level detail underneath that contract.
 > data query layer" section further down: the model narrates precomputed
 > results and never calculates.
 
+## Source-independent ingestion
+
+Every source crosses the same boundary in `src/server/ingestion/` before it
+writes canonical rows. An adapter implements `IngestionAdapter<TInput>` and
+normalizes its payload into one of three records: a transaction, a purchase
+order with normalized lines, or an inventory count. The normalized contract
+keeps the source, stable external ID, original item name, exact decimal
+strings, and canonical item ID together; adapters do not write to the
+database directly.
+
+`persistNormalizedRecords` owns the database write path. Transactions and
+purchase orders deduplicate by `(location, source, externalId)`; inventory
+counts use the existing `(location, source, item, countedAt, qty)` identity
+because the canonical snapshot table has no external-ID field. Exact item
+resolution is also source-independent: case, whitespace, and the explicitly
+listed POS customization clauses are presentation normalization only. No
+fuzzy matching is available to connectors.
+
+The existing CSV flow is the first adapter. It retains its preview and
+one-at-a-time resolution UX, then converts its resolved plan into normalized
+records for shared persistence. Manual entries use the same normalized audit
+history helpers, so future API connectors add an adapter and do not duplicate
+normalization, deduplication, item-resolution, or history behavior.
+
 ## Canonical data model
 
 ### Transactions (sales at POS)

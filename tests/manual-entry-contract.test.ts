@@ -5,6 +5,10 @@ const service = readFileSync(
   new URL('../src/server/manual/manual-entry.ts', import.meta.url),
   'utf8',
 )
+const ingestionPersistence = readFileSync(
+  new URL('../src/server/ingestion/persistence.ts', import.meta.url),
+  'utf8',
+)
 const route = readFileSync(
   new URL('../app/api/manual-entry/route.ts', import.meta.url),
   'utf8',
@@ -21,7 +25,8 @@ describe('manual entry contract', () => {
     expect(service).toContain('inventorySnapshots')
     expect(service).toContain('purchaseOrders')
     expect(service).toContain('transactions')
-    expect(service).toContain('csvUploadHistory')
+    expect(service).toContain('createIngestionHistory')
+    expect(ingestionPersistence).toContain('csvUploadHistory')
     expect(service).toContain('enqueuePrecomputeForLocationInTransaction')
   })
 
