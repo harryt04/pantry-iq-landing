@@ -1,18 +1,29 @@
 import Link from 'next/link'
+import { cookies, headers } from 'next/headers'
 
+import { DashboardDataState } from '@/components/dashboard/dashboard-data-state'
 import { TrendSummaries } from '@/components/dashboard/trend-summaries'
+import { getAppShellData } from '@/components/app/app-shell-server'
+import { getDashboardDataState } from '@/src/server/metrics/dashboard-state'
 import { getDashboardTrends } from '@/src/server/metrics/trends'
-import { headers } from 'next/headers'
 
 export default async function DashboardPage({
   searchParams,
 }: {
   searchParams: Promise<{ locationId?: string }>
 }) {
-  const { locationId = '' } = await searchParams
-  const summaries = locationId
-    ? await getDashboardTrends(await headers(), locationId)
-    : []
+  const params = await searchParams
+  const { initialLocationId } = await getAppShellData()
+  const locationId =
+    params.locationId ??
+    (await cookies()).get('pantryiq-location-id')?.value ??
+    initialLocationId
+  const requestHeaders = await headers()
+  const [state, summaries] = await Promise.all([
+    getDashboardDataState(requestHeaders, locationId),
+    getDashboardTrends(requestHeaders, locationId),
+  ])
+  const hasEnoughData = state.status === 'ready'
 
   return (
     <main className="app-page" aria-labelledby="dashboard-title">
@@ -22,12 +33,16 @@ export default async function DashboardPage({
         Import a sales, purchasing, or inventory CSV for this location. The
         dashboard will show what the data can support once it has been checked.
       </p>
-      <Link
-        className="app-page__primary-action"
-        href={`/import?locationId=${encodeURIComponent(locationId)}`}
-      >
-        Import data
-      </Link>
+      {hasEnoughData ? (
+        <Link
+          className="app-page__primary-action"
+          href={`/import?locationId=${encodeURIComponent(locationId)}`}
+        >
+          Import data
+        </Link>
+      ) : (
+        <DashboardDataState locationId={locationId} state={state} />
+      )}
       <TrendSummaries summaries={summaries} />
     </main>
   )

@@ -171,7 +171,7 @@ that touch them carry a stated default so work never stalls.
 
 | ID | Title | Status | Owner | Blocked by |
 |---|---|---|---|---|
-| DSH-01 | Insufficient-data state | available | — | FND-08, MET-04 |
+| DSH-01 | Insufficient-data state | **done** | codex | FND-08, MET-04 |
 | DSH-02 | Wallet impact summary | available | — | DSH-01, MET-05 |
 | DSH-03 | Recommendation card | available | — | DSH-01, MET-09 |
 | DSH-04 | Show-your-work disclosure | available | — | DSH-03, MET-10 |
@@ -1810,7 +1810,7 @@ ownership-checked entry point for authenticated callers.
 ### DSH-01 — Insufficient-data state
 
 ```
-Status: available   Owner: —   Claimed: —   Completed: —   Branch/PR: —
+Status: done   Owner: codex   Claimed: 2026-08-08   Completed: 2026-08-08   Branch/PR: rewrite
 ```
 
 **Blocked by:** FND-08, MET-04 · **Blocks:** DSH-02, DSH-03
@@ -1829,14 +1829,24 @@ mean anything. You've got 4." One next step, always. Never a hard block
 with nothing to do.
 
 **Acceptance criteria.**
-- [ ] Both states state real counts from the user's own data.
-- [ ] Each offers exactly one next action.
-- [ ] Neither uses "simply", "just", or an exclamation mark.
-- [ ] Whatever *can* be shown at the current data level is shown, rather
+- [x] Both states state real counts from the user's own data.
+- [x] Each offers exactly one next action.
+- [x] Neither uses "simply", "just", or an exclamation mark.
+- [x] Whatever *can* be shown at the current data level is shown, rather
       than withheld until the threshold is met.
 
 **Verification.** Walk an account from zero rows to 3 days to 10 days and
 read each state.
+
+**Notes.** The dashboard now counts distinct owner-scoped transaction
+business days using each location's timezone and 4am-style boundary, then
+renders separate empty and insufficient states with concrete progress and
+one `Import a CSV` action. Supported trend summaries remain visible while
+history is incomplete. Pure threshold/boundary tests, contract tests,
+formatting, typecheck, 206 unit/contract tests, 13 accessibility checks,
+and the production build pass. Authenticated live walkthrough remains
+unavailable because `.env.local` has no test-account credentials and the
+database service is not reachable.
 
 ---
 
@@ -3818,7 +3828,7 @@ condition.
 | Foundation | 8 | 8 |
 | Data ingest | 10 | 11 |
 | Metrics engine | 9 | 12 |
-| Dashboard | 2 | 7 |
+| Dashboard | 3 | 7 |
 | Chat | 1 | 8 |
 | Settings | 4 | 5 |
 | Marketing site | 4 | 5 |
@@ -3827,7 +3837,7 @@ condition.
 | Integrations | 0 | 8 |
 | Menu management | 4 | 7 |
 | Staffing | 0 | 6 |
-| **Total** | **45** | **87** |
+| **Total** | **46** | **87** |
 
 **The backlog is complete when every ticket reads `done`.** Sections 7
 and 8 are not work and never become work.
