@@ -305,23 +305,29 @@ async function expectCanonicalSchema(sql: ReturnType<typeof postgres>) {
   )
 }
 
+// Starting a real PostgreSQL testcontainer (image pull + boot) routinely
+// exceeds vitest's 5s default timeout on CI runners.
+const CONTAINER_TEST_TIMEOUT_MS = 60_000
+
 describe.skipIf(!integrationDatabaseEnabled())(
   'schema migration round trip',
   () => {
-    it('migrates, seeds, rolls back, and migrates again', async () => {
-      await withTestDatabase(async (sql) => {
-        await migrateDatabase(sql)
-        await expectCanonicalSchema(sql)
+    it(
+      'migrates, seeds, rolls back, and migrates again',
+      async () => {
+        await withTestDatabase(async (sql) => {
+          await migrateDatabase(sql)
+          await expectCanonicalSchema(sql)
 
-        await seedDatabase(sql)
-        const seededRows = await sql<{ count: string }[]>`
+          await seedDatabase(sql)
+          const seededRows = await sql<{ count: string }[]>`
         select count(*)::text as count from transactions
       `
-        expect(seededRows[0]?.count).toBe('35')
+          expect(seededRows[0]?.count).toBe('35')
 
-        await rollbackDatabase(sql)
+          await rollbackDatabase(sql)
 
-        const rolledBackTables = await sql<{ table_name: string | null }[]>`
+          const rolledBackTables = await sql<{ table_name: string | null }[]>`
         select to_regclass(table_name)::text as table_name
         from (values
           ('public.locations'),
@@ -344,13 +350,15 @@ describe.skipIf(!integrationDatabaseEnabled())(
           ('drizzle.__drizzle_migrations')
         ) as tables(table_name)
       `
-        expect(
-          rolledBackTables.every(({ table_name }) => table_name === null),
-        ).toBe(true)
+          expect(
+            rolledBackTables.every(({ table_name }) => table_name === null),
+          ).toBe(true)
 
-        await migrateDatabase(sql)
-        await expectCanonicalSchema(sql)
-      })
-    })
+          await migrateDatabase(sql)
+          await expectCanonicalSchema(sql)
+        })
+      },
+      CONTAINER_TEST_TIMEOUT_MS,
+    )
   },
 )
