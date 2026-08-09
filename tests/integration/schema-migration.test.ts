@@ -153,6 +153,7 @@ const canonicalColumns = [
   ['session', 'updated_at', false, 'timestamp with time zone'],
   ['user', 'id', false, 'uuid'],
   ['user', 'name', false, 'text'],
+  ['user', 'company_name', true, 'text'],
   ['user', 'email', false, 'text'],
   ['user', 'email_verified', false, 'boolean'],
   ['user', 'image', true, 'text'],
