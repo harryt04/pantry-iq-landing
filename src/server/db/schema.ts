@@ -473,6 +473,50 @@ export const inventorySnapshots = pgTable(
   ],
 )
 
+export const laborShifts = pgTable(
+  'labor_shifts',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    locationId: uuid('location_id')
+      .notNull()
+      .references(() => locations.id, { onDelete: 'cascade' }),
+    shiftStart: timestamp('shift_start', { withTimezone: true }).notNull(),
+    shiftEnd: timestamp('shift_end', { withTimezone: true }),
+    externalId: text('external_id').notNull(),
+    source: text('source').notNull(),
+    employeeReference: text('employee_reference'),
+    role: text('role').notNull(),
+    scheduledHours: numeric('scheduled_hours'),
+    actualHours: numeric('actual_hours'),
+    laborCost: numeric('labor_cost'),
+    createdAt,
+  },
+  (table) => [
+    index('labor_shifts_location_shift_start_idx').on(
+      table.locationId,
+      table.shiftStart,
+    ),
+    index('labor_shifts_location_role_idx').on(table.locationId, table.role),
+    uniqueIndex('labor_shifts_location_source_external_id_idx').on(
+      table.locationId,
+      table.source,
+      table.externalId,
+    ),
+    check(
+      'labor_shifts_hours_present_check',
+      sql`${table.scheduledHours} is not null or ${table.actualHours} is not null`,
+    ),
+    check(
+      'labor_shifts_non_negative_hours_check',
+      sql`(${table.scheduledHours} is null or ${table.scheduledHours} >= 0) and (${table.actualHours} is null or ${table.actualHours} >= 0)`,
+    ),
+    check(
+      'labor_shifts_non_negative_cost_check',
+      sql`${table.laborCost} is null or ${table.laborCost} >= 0`,
+    ),
+  ],
+)
+
 export const csvUploadHistory = pgTable(
   'csv_upload_history',
   {

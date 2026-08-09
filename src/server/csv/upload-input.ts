@@ -4,6 +4,7 @@ export const CSV_IMPORT_TYPES = [
   'transactions',
   'purchase_orders',
   'inventory',
+  'labor',
 ] as const
 
 export type CsvImportType = (typeof CSV_IMPORT_TYPES)[number]

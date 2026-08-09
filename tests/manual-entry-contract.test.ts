@@ -25,6 +25,8 @@ describe('manual entry contract', () => {
     expect(service).toContain('inventorySnapshots')
     expect(service).toContain('purchaseOrders')
     expect(service).toContain('transactions')
+    expect(service).toContain('normalizeLaborShift')
+    expect(service).toContain("entryType === 'labor'")
     expect(service).toContain('createIngestionHistory')
     expect(ingestionPersistence).toContain('csvUploadHistory')
     expect(service).toContain('enqueuePrecomputeForLocationInTransaction')

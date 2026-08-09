@@ -20,6 +20,13 @@ export type CanonicalField =
   | 'countedAt'
   | 'unit'
   | 'shelfLifeDays'
+  | 'shiftStart'
+  | 'shiftEnd'
+  | 'employeeReference'
+  | 'role'
+  | 'scheduledHours'
+  | 'actualHours'
+  | 'laborCost'
 
 type ValueShape = 'date' | 'number' | 'text' | 'identifier'
 
@@ -72,6 +79,13 @@ export const canonicalFieldLabels: Record<CanonicalField, string> = {
   countedAt: 'Count date',
   unit: 'Unit of measure',
   shelfLifeDays: 'Shelf life in days',
+  shiftStart: 'Shift start',
+  shiftEnd: 'Shift end',
+  employeeReference: 'Employee reference (non-PII)',
+  role: 'Role',
+  scheduledHours: 'Scheduled hours',
+  actualHours: 'Actual hours',
+  laborCost: 'Labor cost',
 }
 
 const definitions: Record<CsvImportType, FieldDefinition[]> = {
@@ -282,6 +296,71 @@ const definitions: Record<CsvImportType, FieldDefinition[]> = {
         'days to spoil',
         'expiry days',
       ],
+      shape: 'number',
+    },
+  ],
+  labor: [
+    {
+      field: 'shiftStart',
+      aliases: [
+        'shift start',
+        'shift start time',
+        'start time',
+        'clock in',
+        'scheduled start',
+      ],
+      shape: 'date',
+    },
+    {
+      field: 'shiftEnd',
+      aliases: [
+        'shift end',
+        'shift end time',
+        'end time',
+        'clock out',
+        'scheduled end',
+      ],
+      shape: 'date',
+    },
+    {
+      field: 'externalId',
+      aliases: ['id', 'shift id', 'shift number', 'external id'],
+      shape: 'identifier',
+    },
+    {
+      field: 'employeeReference',
+      aliases: [
+        'employee id',
+        'employee code',
+        'employee reference',
+        'staff id',
+        'worker id',
+      ],
+      shape: 'identifier',
+    },
+    {
+      field: 'role',
+      aliases: ['role', 'job role', 'position', 'job title', 'staff role'],
+      shape: 'text',
+    },
+    {
+      field: 'scheduledHours',
+      aliases: [
+        'scheduled hours',
+        'planned hours',
+        'scheduled hrs',
+        'planned hrs',
+      ],
+      shape: 'number',
+    },
+    {
+      field: 'actualHours',
+      aliases: ['actual hours', 'worked hours', 'hours worked', 'actual hrs'],
+      shape: 'number',
+    },
+    {
+      field: 'laborCost',
+      aliases: ['labor cost', 'labour cost', 'wages', 'wage cost', 'pay'],
       shape: 'number',
     },
   ],

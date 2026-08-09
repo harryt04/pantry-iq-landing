@@ -120,4 +120,62 @@ describe('CSV import planning', () => {
       }),
     ).toThrow(CsvImportValidationError)
   })
+
+  it('plans labor rows through the shared CSV pipeline without item resolution', () => {
+    const plan = buildCsvImportPlan({
+      importType: 'labor',
+      mapping: {
+        ID: 'externalId',
+        Start: 'shiftStart',
+        End: 'shiftEnd',
+        Employee: 'employeeReference',
+        Role: 'role',
+        Scheduled: 'scheduledHours',
+        Actual: 'actualHours',
+        Cost: 'laborCost',
+      },
+      items: [],
+      csv: {
+        encoding: 'utf-8',
+        delimiter: ',',
+        hasHeader: true,
+        columns: [
+          'ID',
+          'Start',
+          'End',
+          'Employee',
+          'Role',
+          'Scheduled',
+          'Actual',
+          'Cost',
+        ],
+        rows: [
+          {
+            rowNumber: 2,
+            values: [
+              'shift-1',
+              '2026-08-08T15:00:00Z',
+              '2026-08-08T23:00:00Z',
+              'staff-7',
+              'Line cook',
+              '8',
+              '7.5',
+              '135.25',
+            ],
+          },
+        ],
+      },
+    })
+
+    expect(plan.unmatchedItems).toHaveLength(0)
+    expect(plan.linkedItemCount).toBe(0)
+    expect(plan.rows[0]?.item).toBeNull()
+    expect(plan.rows[0]?.values).toMatchObject({
+      externalId: 'shift-1',
+      role: 'Line cook',
+      scheduledHours: '8',
+      actualHours: '7.5',
+      laborCost: '135.25',
+    })
+  })
 })

@@ -261,7 +261,7 @@ that touch them carry a stated default so work never stalls.
 
 | ID | Title | Status | Owner | Blocked by |
 |---|---|---|---|---|
-| STF-01 | Labor data model and import | available | — | INT-01 |
+| STF-01 | Labor data model and import | **done** | codex | INT-01 |
 | STF-02 | Labor efficiency metrics | available | — | STF-01, MET-01 |
 | STF-03 | Demand forecasting | available | — | MET-02 |
 | STF-04 | External signals — weather and local events | available | — | STF-03 |
@@ -3856,7 +3856,7 @@ unavailable.
 ### MNU-06 — Menu recommendations in the engine
 
 ```
-Status: available   Owner: —   Claimed: —   Completed: —   Branch/PR: —
+Status: claimed   Owner: codex   Claimed: 2026-08-09   Completed: —   Branch/PR: —
 ```
 
 **Blocked by:** MNU-04, MET-09 · **Blocks:** —
@@ -3933,7 +3933,7 @@ returned HTTP 403, so authenticated walkthrough verification remains pending.
 ### STF-01 — Labor data model and import
 
 ```
-Status: available   Owner: —   Claimed: —   Completed: —   Branch/PR: —
+Status: done   Owner: codex   Claimed: 2026-08-09   Completed: 2026-08-09   Branch/PR: rewrite
 ```
 
 **Blocked by:** INT-01 · **Blocks:** STF-02
@@ -3954,10 +3954,22 @@ the analysis needs.
 Storing personal data beyond what the metrics require.
 
 **Acceptance criteria.**
-- [ ] Labor imports use the `INT-01` path with no special casing.
-- [ ] Personal data is minimised and the minimisation is documented.
-- [ ] Scheduled and actual hours are distinct fields.
-- [ ] Labor data is location-scoped and ownership-enforced.
+- [x] Labor imports use the `INT-01` path with no special casing.
+- [x] Personal data is minimised and the minimisation is documented.
+- [x] Scheduled and actual hours are distinct fields.
+- [x] Labor data is location-scoped and ownership-enforced.
+
+**Notes.** Added the location-owned `labor_shifts` table and migration, with
+source/external-ID deduplication, exact numeric hours/cost fields, shift
+timestamps, role, and an optional non-PII internal employee reference. CSV
+mapping, preview, import commit, and manual entry all create the same
+normalized labor record through the shared ingestion persistence boundary.
+The employee reference is explicitly not a name, email, phone number, or
+payroll identifier; payroll and scheduling remain out of scope. Full CI passed
+on an isolated Playwright port: 333 tests passed, 2 database tests skipped
+because no container runtime was available, 13 accessibility tests passed, and
+the production build passed. Authenticated smoke checks returned 200 for
+`/api/health`, sign-in, and `/api/locations`.
 
 ---
 

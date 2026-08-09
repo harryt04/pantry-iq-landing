@@ -131,6 +131,19 @@ function numberValue(
   return decimalString(decimal(text) as Decimal)
 }
 
+function nonNegativeNumberValue(
+  value: string | undefined,
+  field: string,
+  rowNumber: number,
+) {
+  const normalized = numberValue(value, field, rowNumber)
+  if (normalized.startsWith('-'))
+    throw new CsvImportValidationError(
+      `Row ${rowNumber}: ${field} cannot be negative.`,
+    )
+  return normalized
+}
+
 function externalIdFor(
   row: string[],
   rowNumber: number,
@@ -163,7 +176,7 @@ export type PlannedItem =
 export type PlannedRow = {
   rowNumber: number
   rawItemName: string
-  item: PlannedItem
+  item: PlannedItem | null
   values: Record<string, string | Date | null>
 }
 
@@ -277,13 +290,24 @@ export function buildCsvImportPlan(input: {
   }
 
   for (const row of input.csv.rows) {
-    const rawItemName = required(
-      valueFor(row.values, input.csv.columns, input.mapping, 'rawItemName'),
-      'item name',
-      row.rowNumber,
-    )
-    const resolution = itemFor(rawItemName, input.items, resolutions, newItems)
-    if (!resolution.item) {
+    const rawItemName =
+      input.importType === 'labor'
+        ? (valueFor(row.values, input.csv.columns, input.mapping, 'role') ?? '')
+        : required(
+            valueFor(
+              row.values,
+              input.csv.columns,
+              input.mapping,
+              'rawItemName',
+            ),
+            'item name',
+            row.rowNumber,
+          )
+    const resolution =
+      input.importType === 'labor'
+        ? { item: null, unmatched: null }
+        : itemFor(rawItemName, input.items, resolutions, newItems)
+    if (!resolution.item && input.importType !== 'labor') {
       const key = normalizeExactItemName(rawItemName) || `row-${row.rowNumber}`
       const existing = unmatched.get(key)
       if (existing) {
@@ -317,6 +341,113 @@ export function buildCsvImportPlan(input: {
           ],
         })
       }
+      continue
+    }
+
+    if (input.importType === 'labor') {
+      const scheduledHoursRaw = valueFor(
+        row.values,
+        input.csv.columns,
+        input.mapping,
+        'scheduledHours',
+      )
+      const actualHoursRaw = valueFor(
+        row.values,
+        input.csv.columns,
+        input.mapping,
+        'actualHours',
+      )
+      if (!scheduledHoursRaw && !actualHoursRaw)
+        throw new CsvImportValidationError(
+          `Row ${row.rowNumber}: map scheduled hours or actual hours.`,
+        )
+      rows.push({
+        rowNumber: row.rowNumber,
+        rawItemName,
+        item: null,
+        values: {
+          shiftStart: dateValue(
+            valueFor(
+              row.values,
+              input.csv.columns,
+              input.mapping,
+              'shiftStart',
+            ),
+            'shift start',
+            row.rowNumber,
+          ),
+          shiftEnd: valueFor(
+            row.values,
+            input.csv.columns,
+            input.mapping,
+            'shiftEnd',
+          )
+            ? dateValue(
+                valueFor(
+                  row.values,
+                  input.csv.columns,
+                  input.mapping,
+                  'shiftEnd',
+                ),
+                'shift end',
+                row.rowNumber,
+              )
+            : null,
+          externalId: externalIdFor(
+            row.values,
+            row.rowNumber,
+            valueFor(
+              row.values,
+              input.csv.columns,
+              input.mapping,
+              'externalId',
+            ),
+          ),
+          employeeReference:
+            valueFor(
+              row.values,
+              input.csv.columns,
+              input.mapping,
+              'employeeReference',
+            ) ?? null,
+          role: required(
+            valueFor(row.values, input.csv.columns, input.mapping, 'role'),
+            'role',
+            row.rowNumber,
+          ),
+          scheduledHours: scheduledHoursRaw
+            ? nonNegativeNumberValue(
+                scheduledHoursRaw,
+                'scheduled hours',
+                row.rowNumber,
+              )
+            : null,
+          actualHours: actualHoursRaw
+            ? nonNegativeNumberValue(
+                actualHoursRaw,
+                'actual hours',
+                row.rowNumber,
+              )
+            : null,
+          laborCost: valueFor(
+            row.values,
+            input.csv.columns,
+            input.mapping,
+            'laborCost',
+          )
+            ? nonNegativeNumberValue(
+                valueFor(
+                  row.values,
+                  input.csv.columns,
+                  input.mapping,
+                  'laborCost',
+                ),
+                'labor cost',
+                row.rowNumber,
+              )
+            : null,
+        },
+      })
       continue
     }
 
@@ -526,6 +657,6 @@ export function buildCsvImportPlan(input: {
     unmatchedItems: [...unmatched.values()],
     items: [...input.items],
     newItems: [...newItems.values()],
-    linkedItemCount: rows.filter((row) => row.item.kind === 'existing').length,
+    linkedItemCount: rows.filter((row) => row.item?.kind === 'existing').length,
   }
 }

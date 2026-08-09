@@ -43,7 +43,7 @@ type NewItem = {
   unit: string
 }
 
-type EntryType = 'inventory' | 'purchase_order' | 'transaction'
+type EntryType = 'inventory' | 'purchase_order' | 'transaction' | 'labor'
 
 type Line = {
   item: ItemSelection | null
@@ -229,6 +229,13 @@ export function ManualEntryForm({ locationId }: { locationId: string }) {
   const [transactedAt, setTransactedAt] = React.useState(localDateTime)
   const [orderedAt, setOrderedAt] = React.useState(localDateTime)
   const [receivedAt, setReceivedAt] = React.useState('')
+  const [shiftStart, setShiftStart] = React.useState(localDateTime)
+  const [shiftEnd, setShiftEnd] = React.useState('')
+  const [employeeReference, setEmployeeReference] = React.useState('')
+  const [role, setRole] = React.useState('')
+  const [scheduledHours, setScheduledHours] = React.useState('')
+  const [actualHours, setActualHours] = React.useState('')
+  const [laborCost, setLaborCost] = React.useState('')
   const [quantity, setQuantity] = React.useState('')
   const [unitPrice, setUnitPrice] = React.useState('')
   const [totalRevenue, setTotalRevenue] = React.useState('')
@@ -273,6 +280,13 @@ export function ManualEntryForm({ locationId }: { locationId: string }) {
     setTotalRevenue('')
     setTotalCost('')
     setSupplierName('')
+    setShiftStart(localDateTime())
+    setShiftEnd('')
+    setEmployeeReference('')
+    setRole('')
+    setScheduledHours('')
+    setActualHours('')
+    setLaborCost('')
     setLines([{ item: null, quantity: '', unitCost: '', totalCost: '' }])
   }
 
@@ -294,13 +308,24 @@ export function ManualEntryForm({ locationId }: { locationId: string }) {
               totalRevenue,
               totalCost: totalCost || null,
             }
-          : {
-              entryType,
-              orderedAt: asIso(orderedAt),
-              receivedAt: receivedAt ? asIso(receivedAt) : null,
-              supplierName: supplierName || null,
-              lines,
-            }
+          : entryType === 'labor'
+            ? {
+                entryType,
+                shiftStart: asIso(shiftStart),
+                shiftEnd: shiftEnd ? asIso(shiftEnd) : null,
+                employeeReference: employeeReference || null,
+                role,
+                scheduledHours: scheduledHours || null,
+                actualHours: actualHours || null,
+                laborCost: laborCost || null,
+              }
+            : {
+                entryType,
+                orderedAt: asIso(orderedAt),
+                receivedAt: receivedAt ? asIso(receivedAt) : null,
+                supplierName: supplierName || null,
+                lines,
+              }
     try {
       const response = await fetch(
         `/api/manual-entry?locationId=${encodeURIComponent(locationId)}`,
@@ -363,6 +388,7 @@ export function ManualEntryForm({ locationId }: { locationId: string }) {
             <option value="inventory">Inventory count</option>
             <option value="purchase_order">Purchase order</option>
             <option value="transaction">Transaction</option>
+            <option value="labor">Labor shift</option>
           </NativeSelect>
         </div>
 
@@ -451,6 +477,78 @@ export function ManualEntryForm({ locationId }: { locationId: string }) {
                 value={totalCost}
                 onChange={(event) => setTotalCost(event.target.value)}
               />
+            </div>
+          </>
+        ) : null}
+
+        {entryType === 'labor' ? (
+          <>
+            <div className="app-page__form-row">
+              <Label htmlFor="labor-shift-start">
+                Shift starts (your local time)
+              </Label>
+              <Input
+                id="labor-shift-start"
+                type="datetime-local"
+                value={shiftStart}
+                onChange={(event) => setShiftStart(event.target.value)}
+                required
+              />
+              <Label htmlFor="labor-shift-end">Shift ends (optional)</Label>
+              <Input
+                id="labor-shift-end"
+                type="datetime-local"
+                value={shiftEnd}
+                onChange={(event) => setShiftEnd(event.target.value)}
+              />
+              <Label htmlFor="labor-role">Role</Label>
+              <Input
+                id="labor-role"
+                value={role}
+                onChange={(event) => setRole(event.target.value)}
+                placeholder="Line cook"
+                required
+              />
+              <Label htmlFor="labor-employee-reference">
+                Employee reference (optional)
+              </Label>
+              <Input
+                id="labor-employee-reference"
+                value={employeeReference}
+                onChange={(event) => setEmployeeReference(event.target.value)}
+                placeholder="Internal code only — no names or contact details"
+              />
+            </div>
+            <div className="app-page__form-row">
+              <Label htmlFor="labor-scheduled-hours">
+                Scheduled hours (optional)
+              </Label>
+              <Input
+                id="labor-scheduled-hours"
+                inputMode="decimal"
+                value={scheduledHours}
+                onChange={(event) => setScheduledHours(event.target.value)}
+              />
+              <Label htmlFor="labor-actual-hours">
+                Actual hours (optional)
+              </Label>
+              <Input
+                id="labor-actual-hours"
+                inputMode="decimal"
+                value={actualHours}
+                onChange={(event) => setActualHours(event.target.value)}
+              />
+              <Label htmlFor="labor-cost">Labor cost (optional)</Label>
+              <Input
+                id="labor-cost"
+                inputMode="decimal"
+                value={laborCost}
+                onChange={(event) => setLaborCost(event.target.value)}
+              />
+              <p className="app-page__help">
+                Add scheduled hours, actual hours, or both. PantryIQ stores the
+                role and an optional internal reference, not personal details.
+              </p>
             </div>
           </>
         ) : null}

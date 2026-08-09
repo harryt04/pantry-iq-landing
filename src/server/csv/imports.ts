@@ -22,6 +22,7 @@ import {
 } from './import-plan'
 import {
   normalizeInventoryCount,
+  normalizeLaborShift,
   normalizePurchaseOrder,
   normalizeTransaction,
 } from '@/src/server/ingestion/records'
@@ -195,6 +196,7 @@ function idFor(
   planItem: ImportPlan['rows'][number]['item'],
   created: Map<string, string>,
 ) {
+  if (!planItem) return undefined
   return planItem.kind === 'existing' ? planItem.id : created.get(planItem.key)
 }
 
@@ -206,6 +208,7 @@ function itemResolutionForPlan(
   const matchedItems = new Map<string, ImportHistoryItem>()
 
   for (const row of plan.rows) {
+    if (!row.item) continue
     if (row.item.kind === 'new') {
       const id = created.get(row.item.key)
       if (id)
@@ -334,7 +337,7 @@ export async function commitCsvImport(
           })
         }),
       )
-    } else {
+    } else if (upload.source === 'inventory') {
       normalized.push(
         ...plan.rows.map((row) =>
           normalizeInventoryCount({
@@ -343,6 +346,22 @@ export async function commitCsvImport(
             countedAt: row.values.countedAt as Date,
             itemId: idFor(row.item, created) as string,
             qty: row.values.qty as string,
+          }),
+        ),
+      )
+    } else {
+      normalized.push(
+        ...plan.rows.map((row) =>
+          normalizeLaborShift({
+            source: 'csv',
+            externalId: row.values.externalId as string,
+            shiftStart: row.values.shiftStart as Date,
+            shiftEnd: row.values.shiftEnd as Date | null,
+            employeeReference: row.values.employeeReference as string | null,
+            role: row.values.role as string,
+            scheduledHours: row.values.scheduledHours as string | null,
+            actualHours: row.values.actualHours as string | null,
+            laborCost: row.values.laborCost as string | null,
           }),
         ),
       )

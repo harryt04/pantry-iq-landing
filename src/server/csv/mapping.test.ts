@@ -23,6 +23,45 @@ function mappingFor(
 }
 
 describe('CSV column mapping detection', () => {
+  it('maps the labor shift fields without an item column', () => {
+    const detection = mappingFor(
+      [
+        'Shift ID',
+        'Shift Start',
+        'Shift End',
+        'Employee Code',
+        'Role',
+        'Scheduled Hours',
+        'Actual Hours',
+        'Labor Cost',
+      ],
+      [
+        [
+          'shift-1',
+          '2026-08-08T15:00:00Z',
+          '2026-08-08T23:00:00Z',
+          'staff-7',
+          'Line cook',
+          '8',
+          '7.5',
+          '135.25',
+        ],
+      ],
+      'labor',
+    )
+
+    expect(detection.mapping).toEqual({
+      'Shift ID': 'externalId',
+      'Shift Start': 'shiftStart',
+      'Shift End': 'shiftEnd',
+      'Employee Code': 'employeeReference',
+      Role: 'role',
+      'Scheduled Hours': 'scheduledHours',
+      'Actual Hours': 'actualHours',
+      'Labor Cost': 'laborCost',
+    })
+  })
+
   it('auto-maps a conventional transaction export', () => {
     const detection = mappingFor(
       [

@@ -4,6 +4,7 @@ import type { db } from '@/src/server/db/client'
 import {
   csvUploadHistory,
   inventorySnapshots,
+  laborShifts,
   purchaseOrderItems,
   purchaseOrders,
   transactions,
@@ -229,6 +230,32 @@ export async function persistNormalizedRecords(
         .returning({ id: inventorySnapshots.id })
       rowsImported += inserted.length
     }
+  }
+
+  const laborToInsert = records.filter(
+    (record): record is Extract<NormalizedIngestionRecord, { kind: 'labor' }> =>
+      record.kind === 'labor',
+  )
+  if (laborToInsert.length) {
+    const inserted = await tx
+      .insert(laborShifts)
+      .values(
+        laborToInsert.map((record) => ({
+          locationId,
+          shiftStart: record.shiftStart,
+          shiftEnd: record.shiftEnd,
+          externalId: record.externalId,
+          source: record.source,
+          employeeReference: record.employeeReference,
+          role: record.role,
+          scheduledHours: record.scheduledHours,
+          actualHours: record.actualHours,
+          laborCost: record.laborCost,
+        })),
+      )
+      .onConflictDoNothing()
+      .returning({ id: laborShifts.id })
+    rowsImported += inserted.length
   }
 
   return { rowsImported, usage }

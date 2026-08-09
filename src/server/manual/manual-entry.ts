@@ -12,12 +12,17 @@ import {
 } from '@/src/server/db/schema'
 import { enqueuePrecomputeForLocationInTransaction } from '@/src/server/metrics/scheduler'
 import type { ImportHistoryItem } from '@/src/server/csv/import-history'
-import { createIngestionHistory } from '@/src/server/ingestion/persistence'
+import {
+  createIngestionHistory,
+  persistNormalizedRecords,
+} from '@/src/server/ingestion/persistence'
+import { normalizeLaborShift } from '@/src/server/ingestion/records'
 
 export const MANUAL_ENTRY_TYPES = [
   'inventory',
   'purchase_order',
   'transaction',
+  'labor',
 ] as const
 
 export type ManualEntryType = (typeof MANUAL_ENTRY_TYPES)[number]
@@ -54,6 +59,16 @@ type ManualEntryInput =
       unitPrice: string
       totalRevenue: string
       totalCost?: string | null
+    }
+  | {
+      entryType: 'labor'
+      shiftStart: string
+      shiftEnd: string | null
+      employeeReference: string | null
+      role: string
+      scheduledHours: string | null
+      actualHours: string | null
+      laborCost: string | null
     }
   | {
       entryType: 'purchase_order'
@@ -138,6 +153,12 @@ function optionalDate(values: Record<string, unknown>, field: string) {
   return dateValue(values, field)
 }
 
+function optionalDecimal(values: Record<string, unknown>, field: string) {
+  if (!(field in values) || values[field] === null || values[field] === '')
+    return null
+  return decimal(values, field)
+}
+
 function selectionInput(value: unknown): ItemSelection {
   const values = recordInput(value)
   const itemId = values.itemId
@@ -187,6 +208,25 @@ export function validateManualEntryInput(input: unknown): ManualEntryInput {
       unitPrice: decimal(values, 'unitPrice'),
       totalRevenue: decimal(values, 'totalRevenue'),
       totalCost,
+    }
+  }
+
+  if (entryType === 'labor') {
+    const scheduledHours = optionalDecimal(values, 'scheduledHours')
+    const actualHours = optionalDecimal(values, 'actualHours')
+    if (scheduledHours === null && actualHours === null)
+      throw new ManualEntryValidationError(
+        'Scheduled or actual hours are required.',
+      )
+    return {
+      entryType,
+      shiftStart: dateValue(values, 'shiftStart').toISOString(),
+      shiftEnd: optionalDate(values, 'shiftEnd')?.toISOString() ?? null,
+      employeeReference: optionalText(values, 'employeeReference'),
+      role: requiredText(values, 'role'),
+      scheduledHours,
+      actualHours,
+      laborCost: optionalDecimal(values, 'laborCost'),
     }
   }
 
@@ -366,6 +406,22 @@ export async function createManualEntry(
           ),
         )
       entryLabel = 'Manual transaction'
+    } else if (values.entryType === 'labor') {
+      const result = await persistNormalizedRecords(tx, owned.locationId, [
+        normalizeLaborShift({
+          source: 'manual',
+          externalId: `manual-${randomUUID()}`,
+          shiftStart: new Date(values.shiftStart),
+          shiftEnd: values.shiftEnd ? new Date(values.shiftEnd) : null,
+          employeeReference: values.employeeReference,
+          role: values.role,
+          scheduledHours: values.scheduledHours,
+          actualHours: values.actualHours,
+          laborCost: values.laborCost,
+        }),
+      ])
+      rowsImported = result.rowsImported
+      entryLabel = 'Manual labor shift'
     } else {
       const order = await tx
         .insert(purchaseOrders)

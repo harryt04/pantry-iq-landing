@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
   normalizeInventoryCount,
+  normalizeLaborShift,
   normalizePurchaseOrder,
   normalizeTransaction,
 } from './records'
@@ -58,6 +59,61 @@ describe('source-independent ingestion records', () => {
       supplierName: 'Sysco',
     })
     expect(order.lines).toHaveLength(1)
+  })
+
+  it('normalizes labor with an internal employee reference', () => {
+    const labor = normalizeLaborShift({
+      source: ' csv ',
+      externalId: ' shift-42 ',
+      shiftStart: new Date('2026-08-08T15:00:00Z'),
+      shiftEnd: new Date('2026-08-08T23:00:00Z'),
+      employeeReference: ' staff-7 ',
+      role: ' Line cook ',
+      scheduledHours: '8',
+      actualHours: '7.5',
+      laborCost: '135.25',
+    })
+
+    expect(labor).toMatchObject({
+      kind: 'labor',
+      source: 'csv',
+      externalId: 'shift-42',
+      employeeReference: 'staff-7',
+      role: 'Line cook',
+      scheduledHours: '8',
+      actualHours: '7.5',
+      laborCost: '135.25',
+    })
+  })
+
+  it('requires a role and at least one hours measure', () => {
+    expect(() =>
+      normalizeLaborShift({
+        source: 'csv',
+        externalId: 'shift-1',
+        shiftStart: new Date(),
+        shiftEnd: null,
+        employeeReference: null,
+        role: 'Server',
+        scheduledHours: null,
+        actualHours: null,
+        laborCost: null,
+      }),
+    ).toThrow('hours')
+
+    expect(() =>
+      normalizeLaborShift({
+        source: 'csv',
+        externalId: 'shift-1',
+        shiftStart: new Date(),
+        shiftEnd: null,
+        employeeReference: null,
+        role: ' ',
+        scheduledHours: '8',
+        actualHours: null,
+        laborCost: null,
+      }),
+    ).toThrow('role')
   })
 
   it('rejects source records without a stable identity or canonical item', () => {

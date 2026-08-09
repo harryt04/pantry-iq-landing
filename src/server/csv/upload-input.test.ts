@@ -13,6 +13,7 @@ describe('CSV upload request validation', () => {
       'transactions',
       'purchase_orders',
       'inventory',
+      'labor',
     ])
     expect(
       validateCsvUploadHeaders({

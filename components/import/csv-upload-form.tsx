@@ -62,6 +62,7 @@ const importTypes = [
   ['transactions', 'Transactions'],
   ['purchase_orders', 'Purchase orders'],
   ['inventory', 'Inventory snapshots'],
+  ['labor', 'Labor shifts'],
 ] as const
 
 export function CsvUploadForm({ locationId }: { locationId: string }) {

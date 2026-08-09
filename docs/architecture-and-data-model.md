@@ -19,11 +19,12 @@ is the implementation-level detail underneath that contract.
 
 Every source crosses the same boundary in `src/server/ingestion/` before it
 writes canonical rows. An adapter implements `IngestionAdapter<TInput>` and
-normalizes its payload into one of three records: a transaction, a purchase
-order with normalized lines, or an inventory count. The normalized contract
-keeps the source, stable external ID, original item name, exact decimal
-strings, and canonical item ID together; adapters do not write to the
-database directly.
+normalizes its payload into one of four records: a transaction, a purchase
+order with normalized lines, an inventory count, or a labor shift. The
+normalized contract keeps the source, stable external ID, exact decimal
+strings, and canonical item ID where the record represents an inventory item;
+labor shifts instead carry a role and optional internal employee reference.
+Adapters do not write to the database directly.
 
 `persistNormalizedRecords` owns the database write path. Transactions and
 purchase orders deduplicate by `(location, source, externalId)`; inventory
@@ -43,6 +44,36 @@ one-at-a-time resolution UX, then converts its resolved plan into normalized
 records for shared persistence. Manual entries use the same normalized audit
 history helpers, so future API connectors add an adapter and do not duplicate
 normalization, deduplication, item-resolution, or history behavior.
+
+### Labor shifts (staffing data)
+
+Labor is intentionally represented at the shift level rather than as an
+employee directory or payroll ledger. This is enough for later efficiency
+metrics while minimizing personal data: `employeeReference` is an optional
+operator-controlled internal code, never a name, email address, phone number,
+or payroll identifier. Payroll, tax, and contact data are not accepted by the
+import or manual-entry paths.
+
+| Field | Type | Purpose |
+|---|---|---|
+| `id` | uuid | Primary key |
+| `locationId` | uuid FK | Which location owns the shift |
+| `shiftStart` | timestamp | Shift start in the source timezone, stored with timezone |
+| `shiftEnd` | timestamp (nullable) | Shift end when the source provides it |
+| `externalId` | text | Source shift ID for deduplication |
+| `source` | text | `csv`, `manual`, or connector name |
+| `employeeReference` | text (nullable) | Non-PII internal reference, if useful for grouping |
+| `role` | text | Role such as `line cook` or `server` |
+| `scheduledHours` | numeric (nullable) | Planned hours; distinct from actual hours |
+| `actualHours` | numeric (nullable) | Worked hours; distinct from scheduled hours |
+| `laborCost` | numeric (nullable) | Cost when supplied; absent means it cannot be calculated |
+| `createdAt` | timestamp | Row inserted |
+
+The row must contain scheduled or actual hours, but either measure may be
+missing in a partial export. Hours and cost are exact numerics, never floats.
+Rows are location-scoped and deduplicated by `(locationId, source,
+externalId)` through the same `persistNormalizedRecords` boundary as the
+other source types.
 
 ## Connector sync scheduling (`INT-06`)
 

@@ -25,6 +25,7 @@ export async function rollbackDatabase(client: DatabaseClient) {
     'inventory_snapshots',
     'purchase_order_items',
     'transactions',
+    'labor_shifts',
     'purchase_orders',
     'inventory_items',
     'locations',
