@@ -328,6 +328,29 @@ Likely categories (not finalized — see `open-questions.md`):
   naturally in chat or as dashboard widgets. Every answer should be
   traceable to specific data queries and transformations.
 
+### Interpretable context bundle (`MET-12`)
+
+The chat grounding layer receives a deterministic JSON context bundle from
+`src/server/metrics/context-bundle.ts`. The query adapter requires one
+location ID, applies that ID to every normalized-row and metric-run query,
+and exposes an ownership-wrapped entry point for authenticated callers. It
+does not expose SQL, a query tool, or a write path to the model.
+
+The bundle contains the location's business-day series for each canonical
+item (sold, ordered, and on-hand quantities), category groupings and totals,
+day-of-week and local-time distributions, and the latest persisted metric
+results. Numeric values are strings with an explicit unit and provenance;
+cannot-calculate metrics stay explicit. Inputs are ordered by stable IDs and
+timestamps, and the serialized bundle contains no current-time value, so
+identical normalized data produces byte-identical output for prompt
+caching.
+
+The documented context budget is 2,000 estimated tokens, using four JSON
+characters per token as a stable sizing estimate. If the full history is
+larger, the builder removes the oldest business-day series points first and
+records the omitted count. This preserves the newest operational picture
+while making compaction visible to the narration layer.
+
 ## Recommendation engine
 
 ### Core philosophy

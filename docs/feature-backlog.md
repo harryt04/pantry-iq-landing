@@ -165,7 +165,7 @@ that touch them carry a stated default so work never stalls.
 | MET-09 | Recommendation record and message assembly | **done** | codex | MET-07 |
 | MET-10 | Evidence trace — "show your work" data | **done** | codex | MET-09 |
 | MET-11 | Partial-data and conflicting-data rules | **done** | codex | MET-09 |
-| MET-12 | Interpretable data layer for pattern discovery | available | — | MET-02 |
+| MET-12 | Interpretable data layer for pattern discovery | **done** | codex | MET-02 |
 
 ### Dashboard
 
@@ -1757,7 +1757,7 @@ has focused regression coverage; the full CI suite passes.
 ### MET-12 — Interpretable data layer for pattern discovery
 
 ```
-Status: available   Owner: —   Claimed: —   Completed: —   Branch/PR: —
+Status: done   Owner: codex   Claimed: 2026-08-08   Completed: 2026-08-08   Branch/PR: rewrite
 ```
 
 **Blocked by:** MET-02 · **Blocks:** CHT-03
@@ -1784,16 +1784,26 @@ source. Sized to a documented token budget.
 a new figure. Model-generated SQL. Anything writing back.
 
 **Acceptance criteria.**
-- [ ] The bundle contains only values the engine computed or data the
+- [x] The bundle contains only values the engine computed or data the
       user imported — nothing derived on the fly.
-- [ ] It is byte-identical for identical data, so it caches.
-- [ ] It stays within its documented token budget for a location with a
+- [x] It is byte-identical for identical data, so it caches.
+- [x] It stays within its documented token budget for a location with a
       year of history, degrading by summarising oldest data first.
-- [ ] It is scoped to exactly one location, enforced at the query layer.
-- [ ] Every number in it carries units and provenance.
+- [x] It is scoped to exactly one location, enforced at the query layer.
+- [x] Every number in it carries units and provenance.
 
 **Verification.** Serialize a bundle for the seed location, measure its
 token count, and confirm two runs produce identical bytes.
+
+**Notes.** The deterministic bundle builder exposes item business-day
+series, category totals, day-of-week and local-time distributions, and the
+latest persisted metric results. It uses exact string arithmetic for
+aggregates, labels every numeric value with units and provenance, keeps
+cannot-calculate results explicit, and compacts oldest series points first
+to a 2,000-token JSON estimate. Four focused tests cover shape and
+provenance, byte identity, one-year compaction, and missing metrics. The
+database adapter scopes every read to one location and provides an
+ownership-checked entry point for authenticated callers.
 
 ---
 
