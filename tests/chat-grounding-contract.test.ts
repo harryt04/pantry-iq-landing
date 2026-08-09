@@ -21,6 +21,14 @@ describe('chat grounding boundary contract', () => {
     )
   })
 
+  it('loads portfolio context through the owner-scoped path', () => {
+    expect(route).toContain("scope === 'portfolio'")
+    expect(route).toContain('getPortfolioChatData(request.headers)')
+    expect(route).toContain("narrationLocationId = 'portfolio'")
+    expect(narration).toContain('checkRequiredLocationNames')
+    expect(narration).toContain('requiredLocationNames')
+  })
+
   it('keeps narration and the chat route read-only and tool-free', () => {
     expect(route).not.toMatch(/\.insert\(|\.update\(|\.delete\(/)
     expect(narration).not.toMatch(/from ['"].*\/db\//)

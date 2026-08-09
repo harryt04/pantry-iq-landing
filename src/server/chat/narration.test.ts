@@ -1,7 +1,10 @@
 import { MockLanguageModelV4, simulateReadableStream } from 'ai/test'
 import { describe, expect, it, vi } from 'vitest'
 
-import type { ContextBundle } from '@/src/server/metrics/context-bundle'
+import type {
+  ContextBundle,
+  PortfolioContextBundle,
+} from '@/src/server/metrics/context-bundle'
 import type { RecommendationRecord } from '@/src/server/metrics/recommendations'
 
 import {
@@ -76,6 +79,25 @@ const recommendation = {
     inputWindowEnd: '2026-08-01T00:00:00.000Z',
   },
 } as RecommendationRecord
+
+const portfolioContextBundle = {
+  version: 1,
+  scope: 'portfolio',
+  locations: [contextBundle],
+  compaction: {
+    omittedSeriesPoints: {
+      value: '0',
+      unit: 'series points',
+      provenance: 'portfolio context-bundle compaction',
+    },
+    omittedDetailPasses: {
+      value: '0',
+      unit: 'locations',
+      provenance: 'portfolio context-bundle compaction',
+    },
+    rule: 'oldest series points omitted first, then location detail',
+  },
+} as PortfolioContextBundle
 
 const config: NarrationConfig = {
   provider: 'anthropic',
@@ -231,6 +253,41 @@ describe('narration service', () => {
       reason: 'unmatched-number',
       unmatchedCount: 1,
     })
+  })
+
+  it('blocks portfolio narration that omits a required location name', async () => {
+    const chatGuardrailBlocked = vi.fn()
+    const service = createNarrationService({
+      config,
+      model: successfulModel(
+        [
+          'Observation: Downtown has $40 at risk.',
+          'Consider reviewing Salmon this week.',
+          'Financial impact: About $40 at risk.',
+          'Prediction: Not provided. The available history earns an observation, not a prediction.',
+          'Recommendation: Consider reviewing Salmon this week.',
+          'Show your work: Ask to review the sources, calculations, and assumptions.',
+        ].join('\n'),
+      ),
+      logger: { chatGuardrailBlocked, llmQueryCompleted: vi.fn() } as never,
+    })
+
+    const result = service.stream({
+      ...input(),
+      scope: 'portfolio',
+      contextBundle: portfolioContextBundle,
+      requiredLocationNames: ['Downtown', 'Riverside'],
+    })
+    const text = await readStream(result.textStream)
+
+    expect(text).toContain('Analysis covers: Downtown, Riverside.')
+    await expect(result.usage).resolves.toMatchObject({
+      blocked: true,
+      degraded: true,
+    })
+    expect(chatGuardrailBlocked).toHaveBeenCalledWith(
+      expect.objectContaining({ unmatchedCount: 1 }),
+    )
   })
 
   it('turns an unanswerable model response into a safe decline and records the miss', async () => {

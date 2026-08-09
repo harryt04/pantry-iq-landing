@@ -33,16 +33,17 @@ export default async function ChatPage({
   return (
     <main className="app-page chat-page" aria-labelledby="chat-title">
       <p className="app-page__eyebrow">Chat</p>
-      <h1 id="chat-title">Ask about this location.</h1>
+      <h1 id="chat-title">Ask about your operation.</h1>
       <p className="app-page__lede">
-        Ask a focused question and keep the conversation grounded in one
-        location at a time.
+        Ask a focused question about this location or your whole portfolio.
+        Every answer stays grounded in imported data.
       </p>
       <ChatSurface
         key={location.id}
         locationId={location.id}
         locationName={location.name}
         recommendations={recommendations}
+        portfolioLocationCount={locations.length}
       />
     </main>
   )

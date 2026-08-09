@@ -8,6 +8,8 @@ vi.hoisted(() => {
 import {
   CONTEXT_BUNDLE_TOKEN_BUDGET,
   buildContextBundle,
+  buildPortfolioContextBundle,
+  estimatePortfolioContextBundleTokens,
   estimateContextBundleTokens,
   type ContextBundleInput,
   type ContextBundleMetric,
@@ -175,5 +177,32 @@ describe('interpretable context bundle', () => {
         provenance: 'metric_results:margin',
       },
     ])
+  })
+
+  it('compacts a ten-location portfolio while retaining every location name', () => {
+    const inputs = Array.from({ length: 10 }, (_, index) => ({
+      ...inputWith(365),
+      location: {
+        ...location,
+        id: `location-${index + 1}`,
+        name: `Location ${index + 1}`,
+      },
+    }))
+
+    const first = buildPortfolioContextBundle(inputs)
+    const second = buildPortfolioContextBundle(inputs)
+
+    expect(first.compacted).toBe(true)
+    expect(first.estimatedTokens).toBeLessThanOrEqual(
+      CONTEXT_BUNDLE_TOKEN_BUDGET,
+    )
+    expect(first.bundle.locations.map(({ location }) => location.name)).toEqual(
+      inputs.map(({ location: inputLocation }) => inputLocation.name),
+    )
+    expect(first.bundle.compaction.omittedSeriesPoints.value).not.toBe('0')
+    expect(estimatePortfolioContextBundleTokens(first.bundle)).toBe(
+      first.estimatedTokens,
+    )
+    expect(JSON.stringify(first.bundle)).toBe(JSON.stringify(second.bundle))
   })
 })

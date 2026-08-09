@@ -217,9 +217,17 @@ export function formatFivePartAnswer(
 }
 
 /** Builds the deterministic response for a question outside the grounding boundary. */
-export function formatDeclineAnswer(alternative: string) {
+export function formatDeclineAnswer(
+  alternative: string,
+  notice = '',
+  scopeLabel = 'this location',
+) {
+  const dataScope =
+    scopeLabel === 'this location'
+      ? "from this location's imported data"
+      : `from the imported data for ${scopeLabel}`
   return [
-    "Observation: I can't answer that question from this location's imported data. Dollar impact is not available for it; consider asking, \"" +
+    `Observation: ${notice}${notice ? ' ' : ''}I can't answer that question ${dataScope}. Dollar impact is not available for it; consider asking, \"` +
       alternative +
       '\".',
     'Financial impact: Dollar impact is not available for the question asked.',

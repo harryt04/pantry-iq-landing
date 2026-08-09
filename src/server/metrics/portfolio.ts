@@ -1,6 +1,10 @@
 import { and, asc, eq, or } from 'drizzle-orm'
 
-import { buildDashboardRecommendations } from './dashboard-recommendations'
+import {
+  buildDashboardRecommendations,
+  getDashboardRecommendations,
+} from './dashboard-recommendations'
+import type { PortfolioContextBundle } from './context-bundle'
 import { getLatestSuccessfulMetricRun } from './precompute'
 import type { RecommendationRecord } from './recommendations'
 import { buildWalletImpactSummary, type WalletValue } from './wallet'
@@ -45,6 +49,13 @@ export type PortfolioRollup = {
   moneyAtRisk: PortfolioMoneyAtRisk
   locations: readonly PortfolioLocationSummary[]
   recommendations: readonly PortfolioRecommendation[]
+}
+
+export type PortfolioChatData = {
+  contextBundle: PortfolioContextBundle
+  estimatedTokens: number
+  recommendations: readonly PortfolioRecommendation[]
+  locationNames: readonly string[]
 }
 
 type Decimal = { coefficient: bigint; scale: number }
@@ -268,6 +279,50 @@ export async function getPortfolioRollup(headers: Headers) {
   )
 
   return buildPortfolioRollup(inputs)
+}
+
+/** Loads the same owner-scoped locations for cross-location narration. */
+export async function getPortfolioChatData(
+  headers: Headers,
+): Promise<PortfolioChatData | null> {
+  const { listLocations } = await import('@/src/server/locations/locations')
+  const locations = (await listLocations(headers)).filter(
+    (location) => location.isActive,
+  )
+  const { loadOwnedPortfolioContextBundle } = await import('./context-bundle')
+  const context = await loadOwnedPortfolioContextBundle(headers)
+  if (!context) return null
+
+  const contextLocationIds = new Set(
+    context.bundle.locations.map(({ location }) => location.id),
+  )
+  const recommendationGroups = await Promise.all(
+    locations
+      .filter((location) => contextLocationIds.has(location.id))
+      .map(async (location) => ({
+        location,
+        recommendations: await getDashboardRecommendations(
+          headers,
+          location.id,
+        ),
+      })),
+  )
+
+  return {
+    contextBundle: context.bundle,
+    estimatedTokens: context.estimatedTokens,
+    locationNames: context.bundle.locations.map(
+      ({ location }) => location.name,
+    ),
+    recommendations: recommendationGroups.flatMap(
+      ({ location, recommendations }) =>
+        recommendations.map((recommendation) => ({
+          ...recommendation,
+          locationId: location.id,
+          locationName: location.name,
+        })),
+    ),
+  }
 }
 
 function persistedResultInputs(result: unknown) {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { checkGrounding } from './grounding'
+import { checkGrounding, checkRequiredLocationNames } from './grounding'
 
 describe('chat grounding checks', () => {
   const context = {
@@ -30,5 +30,20 @@ describe('chat grounding checks', () => {
         { itemName: 'Table 12 Special' },
       ]),
     ).toEqual({ accepted: true, unmatchedNumbers: [] })
+  })
+
+  it('requires every portfolio location name in the final answer', () => {
+    expect(
+      checkRequiredLocationNames(
+        'The current pattern is shared by Downtown and Riverside.',
+        ['Downtown', 'Riverside'],
+      ),
+    ).toEqual({ accepted: true, missingLocationNames: [] })
+    expect(
+      checkRequiredLocationNames('The current pattern is shared by Downtown.', [
+        'Downtown',
+        'Riverside',
+      ]),
+    ).toEqual({ accepted: false, missingLocationNames: ['Riverside'] })
   })
 })

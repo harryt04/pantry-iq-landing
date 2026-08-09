@@ -102,6 +102,23 @@ export type ContextBundleResult = {
   compacted: boolean
 }
 
+export type PortfolioContextBundle = {
+  version: typeof CONTEXT_BUNDLE_VERSION
+  scope: 'portfolio'
+  locations: ContextBundle[]
+  compaction: {
+    omittedSeriesPoints: ProvenancedValue
+    omittedDetailPasses: ProvenancedValue
+    rule: 'oldest series points omitted first, then location detail'
+  }
+}
+
+export type PortfolioContextBundleResult = {
+  bundle: PortfolioContextBundle
+  estimatedTokens: number
+  compacted: boolean
+}
+
 export type ContextBundleItem = {
   id: string
   name: string
@@ -556,6 +573,12 @@ export function estimateContextBundleTokens(bundle: ContextBundle) {
   return Math.ceil(JSON.stringify(bundle).length / TOKEN_ESTIMATE_CHARS)
 }
 
+export function estimatePortfolioContextBundleTokens(
+  bundle: PortfolioContextBundle,
+) {
+  return Math.ceil(JSON.stringify(bundle).length / TOKEN_ESTIMATE_CHARS)
+}
+
 function compactBundle(bundle: ContextBundle): ContextBundleResult {
   let estimatedTokens = estimateContextBundleTokens(bundle)
   let omitted = 0
@@ -596,6 +619,161 @@ export function buildContextBundle(
   input: ContextBundleInput,
 ): ContextBundleResult {
   return compactBundle(baseBundle(input))
+}
+
+function compactPortfolioBundle(
+  bundle: PortfolioContextBundle,
+): PortfolioContextBundleResult {
+  let estimatedTokens = estimatePortfolioContextBundleTokens(bundle)
+  let omittedSeriesPoints = 0
+  let omittedDetailPasses = 0
+
+  while (estimatedTokens > CONTEXT_BUNDLE_TOKEN_BUDGET) {
+    let removedSeriesPoint = false
+    for (let batch = 0; batch < 100; batch += 1) {
+      if (estimatedTokens <= CONTEXT_BUNDLE_TOKEN_BUDGET) break
+      let oldest:
+        | {
+            locationIndex: number
+            itemIndex: number
+            date: string
+            itemId: string
+            locationId: string
+          }
+        | undefined
+
+      bundle.locations.forEach((location, locationIndex) => {
+        location.items.forEach((item, itemIndex) => {
+          const point = item.series[0]
+          if (!point) return
+          const candidate = {
+            locationIndex,
+            itemIndex,
+            date: point.date.value,
+            itemId: item.id,
+            locationId: location.location.id,
+          }
+          if (
+            !oldest ||
+            `${candidate.date}:${candidate.locationId}:${candidate.itemId}` <
+              `${oldest.date}:${oldest.locationId}:${oldest.itemId}`
+          ) {
+            oldest = candidate
+          }
+        })
+      })
+
+      if (!oldest) break
+      bundle.locations[oldest.locationIndex]?.items[
+        oldest.itemIndex
+      ]?.series.splice(0, 1)
+      omittedSeriesPoints += 1
+      removedSeriesPoint = true
+    }
+
+    if (removedSeriesPoint) {
+      bundle.compaction.omittedSeriesPoints = numberValue(
+        String(omittedSeriesPoints),
+        'series points',
+        'portfolio context-bundle compaction',
+      )
+      estimatedTokens = estimatePortfolioContextBundleTokens(bundle)
+      continue
+    }
+
+    const detailLocation = bundle.locations.find(
+      (location) =>
+        location.distributions.dayOfWeek.length > 0 ||
+        location.distributions.timeOfDay.length > 0 ||
+        location.categories.length > 0,
+    )
+    if (detailLocation) {
+      detailLocation.distributions.dayOfWeek = []
+      detailLocation.distributions.timeOfDay = []
+      detailLocation.categories = []
+      omittedDetailPasses += 1
+      bundle.compaction.omittedDetailPasses = numberValue(
+        String(omittedDetailPasses),
+        'locations',
+        'portfolio context-bundle compaction',
+      )
+      estimatedTokens = estimatePortfolioContextBundleTokens(bundle)
+      continue
+    }
+
+    const itemDetailLocation = bundle.locations.find((location) =>
+      location.items.some(
+        (item) => item.metrics.length > 0 || item.series.length > 0,
+      ),
+    )
+    if (itemDetailLocation) {
+      itemDetailLocation.items.forEach((item) => {
+        item.metrics = []
+        item.series = []
+      })
+      omittedDetailPasses += 1
+      bundle.compaction.omittedDetailPasses = numberValue(
+        String(omittedDetailPasses),
+        'locations',
+        'portfolio context-bundle compaction',
+      )
+      estimatedTokens = estimatePortfolioContextBundleTokens(bundle)
+      continue
+    }
+
+    const itemListLocation = bundle.locations.find(
+      (location) => location.items.length > 0,
+    )
+    if (itemListLocation) {
+      itemListLocation.items = []
+      omittedDetailPasses += 1
+      bundle.compaction.omittedDetailPasses = numberValue(
+        String(omittedDetailPasses),
+        'locations',
+        'portfolio context-bundle compaction',
+      )
+      estimatedTokens = estimatePortfolioContextBundleTokens(bundle)
+      continue
+    }
+
+    break
+  }
+
+  return {
+    bundle,
+    estimatedTokens,
+    compacted: omittedSeriesPoints > 0 || omittedDetailPasses > 0,
+  }
+}
+
+/** Builds one deterministic, account-level context from location bundles. */
+export function buildPortfolioContextBundle(
+  inputs: readonly ContextBundleInput[],
+): PortfolioContextBundleResult {
+  return buildPortfolioContextBundleFromBundles(inputs.map(baseBundle))
+}
+
+export function buildPortfolioContextBundleFromBundles(
+  bundles: readonly ContextBundle[],
+): PortfolioContextBundleResult {
+  return compactPortfolioBundle({
+    version: CONTEXT_BUNDLE_VERSION,
+    scope: 'portfolio',
+    locations: bundles.map((bundle) => structuredClone(bundle)),
+    compaction: {
+      omittedSeriesPoints: numberValue(
+        '0',
+        'series points',
+        'portfolio context-bundle compaction',
+      ),
+      omittedDetailPasses: numberValue(
+        '0',
+        'locations',
+        'portfolio context-bundle compaction',
+      ),
+      rule: 'oldest series points omitted first, then location detail',
+    },
+  })
 }
 
 export async function loadContextBundle(locationId: string) {
@@ -731,4 +909,22 @@ export async function loadOwnedContextBundle(
 ) {
   const owned = await requireOwnedLocation(headers, locationId)
   return loadContextBundle(owned.locationId)
+}
+
+export async function loadOwnedPortfolioContextBundle(headers: Headers) {
+  const { listLocations } = await import('@/src/server/locations/locations')
+  const ownedLocations = (await listLocations(headers)).filter(
+    (location) => location.isActive,
+  )
+  const bundles = await Promise.all(
+    ownedLocations.map((location) => loadContextBundle(location.id)),
+  )
+  const available = bundles.filter(
+    (bundle): bundle is ContextBundleResult => bundle !== null,
+  )
+  if (available.length === 0) return null
+
+  return buildPortfolioContextBundleFromBundles(
+    available.map(({ bundle }) => bundle),
+  )
 }

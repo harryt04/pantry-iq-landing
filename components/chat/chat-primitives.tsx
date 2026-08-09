@@ -9,6 +9,11 @@ import type { RecommendationRecord } from '@/src/server/metrics/recommendations'
 
 export type ChatMessageRole = 'assistant' | 'user'
 
+type ChatRecommendation = RecommendationRecord & {
+  locationId?: string
+  locationName?: string
+}
+
 export function Message({
   role,
   children,
@@ -98,7 +103,7 @@ export function parseChatAnswer(text: string): ChatAnswerPart[] | null {
 
 function matchingRecommendations(
   text: string,
-  recommendations: readonly RecommendationRecord[],
+  recommendations: readonly ChatRecommendation[],
 ) {
   const normalized = text.toLocaleLowerCase()
   return recommendations.filter((recommendation) => {
@@ -116,7 +121,7 @@ export function ChatAnswer({
   content: string
   isStreaming?: boolean
   locationId: string
-  recommendations: readonly RecommendationRecord[]
+  recommendations: readonly ChatRecommendation[]
 }) {
   const parts = isStreaming ? null : parseChatAnswer(content)
   if (!parts) return <>{content || 'Preparing a response…'}</>
@@ -136,7 +141,7 @@ export function ChatAnswer({
           matched.map((recommendation) => (
             <RecommendationWork
               key={recommendation.evidenceTraceRef.key}
-              locationId={locationId}
+              locationId={recommendation.locationId ?? locationId}
               trace={recommendation.evidenceTrace}
             />
           ))

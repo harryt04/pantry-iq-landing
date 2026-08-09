@@ -2110,6 +2110,28 @@ body {
   font-size: var(--text-sm);
 }
 
+.chat-surface__scope-switch {
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  color: var(--foreground);
+  cursor: pointer;
+  font: inherit;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  min-height: 40px;
+  padding: var(--space-2) var(--space-3);
+}
+
+.chat-surface__scope-switch:hover {
+  border-color: var(--foreground);
+}
+
+.chat-surface__scope-switch:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
 .chat-transcript {
   background: var(--card);
   border: 1px solid var(--border);

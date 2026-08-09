@@ -11,16 +11,20 @@ import {
 import {
   createNarrationService,
   type ChatTurn,
+  type NarrationRecommendation,
 } from '@/src/server/chat/narration'
 import { CHAT_HISTORY_MAX_MESSAGES } from '@/src/chat/session-memory'
 import {
   ForbiddenError,
+  requireSession,
   requireOwnedLocation,
   UnauthorizedError,
 } from '@/src/server/auth/authorization'
+import { getPortfolioChatData } from '@/src/server/metrics/portfolio'
 
 type ChatRequest = {
   locationId?: unknown
+  scope?: unknown
   question?: unknown
   history?: unknown
   overrides?: unknown
@@ -41,8 +45,10 @@ function parseRequest(value: unknown) {
     throw new Error('A location and question are required.')
   }
   const body = value as ChatRequest
+  const scope: 'portfolio' | 'location' =
+    body.scope === 'portfolio' ? 'portfolio' : 'location'
   if (
-    typeof body.locationId !== 'string' ||
+    (scope === 'location' && typeof body.locationId !== 'string') ||
     typeof body.question !== 'string' ||
     body.question.trim().length === 0 ||
     body.question.length > 4_000
@@ -56,7 +62,8 @@ function parseRequest(value: unknown) {
     ? body.overrides.slice(-5).map(parseAssumptionOverride)
     : []
   return {
-    locationId: body.locationId,
+    locationId: typeof body.locationId === 'string' ? body.locationId : null,
+    scope,
     question: body.question.trim(),
     history,
     overrides,
@@ -65,15 +72,42 @@ function parseRequest(value: unknown) {
 
 export async function POST(request: Request) {
   try {
-    const { locationId, question, history, overrides } = parseRequest(
+    const { locationId, question, history, overrides, scope } = parseRequest(
       await request.json(),
     )
-    const owned = await requireOwnedLocation(request.headers, locationId)
-    const [contextResult, baseRecommendations] = await Promise.all([
-      loadOwnedContextBundle(request.headers, owned.locationId),
-      getDashboardRecommendations(request.headers, owned.locationId),
-    ])
-    if (!contextResult) {
+    let accountId: string
+    let narrationLocationId: string
+    let contextBundle:
+      | NonNullable<
+          Awaited<ReturnType<typeof loadOwnedContextBundle>>
+        >['bundle']
+      | NonNullable<
+          Awaited<ReturnType<typeof getPortfolioChatData>>
+        >['contextBundle']
+      | null
+    let baseRecommendations: readonly NarrationRecommendation[]
+    let requiredLocationNames: readonly string[] = []
+
+    if (scope === 'portfolio') {
+      const session = await requireSession(request.headers)
+      const portfolio = await getPortfolioChatData(request.headers)
+      accountId = session.user.id
+      narrationLocationId = 'portfolio'
+      contextBundle = portfolio?.contextBundle ?? null
+      baseRecommendations = portfolio?.recommendations ?? []
+      requiredLocationNames = portfolio?.locationNames ?? []
+    } else {
+      const owned = await requireOwnedLocation(request.headers, locationId!)
+      accountId = owned.session.user.id
+      narrationLocationId = owned.locationId
+      const loaded = await Promise.all([
+        loadOwnedContextBundle(request.headers, owned.locationId),
+        getDashboardRecommendations(request.headers, owned.locationId),
+      ])
+      contextBundle = loaded[0]?.bundle ?? null
+      baseRecommendations = loaded[1]
+    }
+    if (!contextBundle) {
       return Response.json(
         { error: 'There is no completed analysis for this location yet.' },
         { status: 409 },
@@ -82,7 +116,13 @@ export async function POST(request: Request) {
 
     let recommendations = baseRecommendations
     if (overrides.length > 0) {
-      let input = await loadPrecomputeInput(owned.locationId)
+      if (scope === 'portfolio') {
+        return Response.json(
+          { error: 'Assumption questions are available for one location.' },
+          { status: 400 },
+        )
+      }
+      let input = await loadPrecomputeInput(narrationLocationId)
       for (const override of overrides) {
         input = applyAssumptionOverride(input, override)
       }
@@ -94,13 +134,15 @@ export async function POST(request: Request) {
 
     const service = createNarrationService()
     const narration = service.stream({
-      accountId: owned.session.user.id,
-      locationId: owned.locationId,
+      accountId,
+      locationId: narrationLocationId,
       queryId: crypto.randomUUID(),
       question,
       history,
-      contextBundle: contextResult.bundle,
+      contextBundle,
       recommendations,
+      scope,
+      requiredLocationNames,
     })
     const encoder = new TextEncoder()
     const stream = new ReadableStream<Uint8Array>({

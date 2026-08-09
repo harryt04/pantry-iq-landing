@@ -25,6 +25,8 @@ const overrideEngine = readFileSync(
 describe('chat surface contract', () => {
   it('keeps chat scoped and connected to the answering service', () => {
     expect(surface).toContain('Answers stay within this location.')
+    expect(surface).toContain('Ask across all locations')
+    expect(surface).toContain("scope === 'portfolio'")
     expect(surface).toContain('SUGGESTED_QUESTIONS')
     expect(surface).toContain("fetch('/api/chat'")
     expect(surface).toContain('locationId')
@@ -36,7 +38,7 @@ describe('chat surface contract', () => {
     expect(primitives).toContain('aria-label="Chat transcript"')
     expect(surface).toContain('Enter sends. Shift+Enter adds a new line.')
     expect(surface).toContain('requestSubmit()')
-    expect(surface).toContain('Ask a question about {locationName}')
+    expect(surface).toContain('Ask a question about')
   })
 
   it('renders the selected location into the chat route', () => {

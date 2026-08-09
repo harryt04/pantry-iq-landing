@@ -30,6 +30,11 @@ export type GroundingCheck = {
   unmatchedNumbers: string[]
 }
 
+export type LocationNameCheck = {
+  accepted: boolean
+  missingLocationNames: string[]
+}
+
 /**
  * Checks generated figures against the serialized, location-scoped inputs.
  * Matching is exact after harmless presentation differences such as commas,
@@ -55,5 +60,19 @@ export function checkGrounding(
   return {
     accepted: unmatchedNumbers.length === 0,
     unmatchedNumbers,
+  }
+}
+
+/** Cross-location narration must identify every location in its context. */
+export function checkRequiredLocationNames(
+  response: string,
+  requiredLocationNames: readonly string[],
+): LocationNameCheck {
+  const missingLocationNames = requiredLocationNames.filter(
+    (name) => !response.toLocaleLowerCase().includes(name.toLocaleLowerCase()),
+  )
+  return {
+    accepted: missingLocationNames.length === 0,
+    missingLocationNames,
   }
 }

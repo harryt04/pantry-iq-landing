@@ -29,6 +29,11 @@ type ChatMessage = {
   isStreaming?: boolean
 }
 
+type ChatRecommendation = RecommendationRecord & {
+  locationId?: string
+  locationName?: string
+}
+
 const SUGGESTED_QUESTIONS = [
   'What is costing me the most right now?',
   'Which items should I watch this week?',
@@ -47,14 +52,17 @@ export function ChatSurface({
   locationId,
   locationName,
   recommendations,
+  portfolioLocationCount,
 }: {
   locationId: string
   locationName: string
-  recommendations: readonly RecommendationRecord[]
+  recommendations: readonly ChatRecommendation[]
+  portfolioLocationCount: number
 }) {
   const [draft, setDraft] = React.useState('')
   const [messages, setMessages] = React.useState<ChatMessage[]>([])
   const [isStreaming, setIsStreaming] = React.useState(false)
+  const [scope, setScope] = React.useState<'location' | 'portfolio'>('location')
   const [overrides, setOverrides] = React.useState<
     NormalizedAssumptionOverride[]
   >([])
@@ -79,6 +87,16 @@ export function ChatSurface({
     setComparison(null)
     setOverrideStatus(null)
   }, [locationId])
+
+  function switchScope(nextScope: 'location' | 'portfolio') {
+    if (nextScope === scope || isStreaming) return
+    setScope(nextScope)
+    setMessages([])
+    setDraft('')
+    setOverrides([])
+    setComparison(null)
+    setOverrideStatus(null)
+  }
 
   function updateStreamingMessage(id: string, content: string) {
     setMessages((current) =>
@@ -114,8 +132,9 @@ export function ChatSurface({
         body: JSON.stringify({
           locationId,
           question: trimmedQuestion,
+          scope,
           history: messages.map(({ role, content }) => ({ role, content })),
-          overrides,
+          overrides: scope === 'location' ? overrides : [],
         }),
         headers: { 'Content-Type': 'application/json' },
         method: 'POST',
@@ -278,8 +297,28 @@ export function ChatSurface({
     >
       <div className="chat-surface__scope">
         <span className="chat-surface__scope-label">Chat scope</span>
-        <strong id="chat-surface-title">{locationName}</strong>
-        <span>Answers stay within this location.</span>
+        <strong id="chat-surface-title">
+          {scope === 'portfolio' ? 'All locations' : locationName}
+        </strong>
+        <span>
+          {scope === 'portfolio'
+            ? 'Answers name the locations in the analysis.'
+            : 'Answers stay within this location.'}
+        </span>
+        {portfolioLocationCount > 1 ? (
+          <button
+            className="chat-surface__scope-switch"
+            disabled={isStreaming}
+            onClick={() =>
+              switchScope(scope === 'portfolio' ? 'location' : 'portfolio')
+            }
+            type="button"
+          >
+            {scope === 'portfolio'
+              ? 'Use this location'
+              : 'Ask across all locations'}
+          </button>
+        ) : null}
       </div>
 
       <MessageScroller>
@@ -333,7 +372,8 @@ export function ChatSurface({
 
       <form className="chat-composer" onSubmit={handleSubmit}>
         <label className="sr-only" htmlFor="chat-composer-input">
-          Ask a question about {locationName}
+          Ask a question about{' '}
+          {scope === 'portfolio' ? 'all locations' : locationName}
         </label>
         <InputGroup className="chat-composer__group">
           <InputGroupTextarea
@@ -342,7 +382,11 @@ export function ChatSurface({
             id="chat-composer-input"
             onChange={(event) => setDraft(event.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Ask about this location…"
+            placeholder={
+              scope === 'portfolio'
+                ? 'Ask about all locations…'
+                : 'Ask about this location…'
+            }
             value={draft}
           />
           <InputGroupButton
@@ -361,114 +405,117 @@ export function ChatSurface({
         </p>
       </form>
 
-      <details className="chat-override">
-        <summary>Question an assumption</summary>
-        <div className="chat-override__body">
-          <p>
-            Choose a shelf life or cost, and PantryIQ will recalculate the
-            recommendation before asking where to apply it.
-          </p>
-          {recommendations.length === 0 ? (
-            <p className="chat-override__status" role="status">
-              There is no ranked item to adjust yet.
+      {scope === 'location' ? (
+        <details className="chat-override">
+          <summary>Question an assumption</summary>
+          <div className="chat-override__body">
+            <p>
+              Choose a shelf life or cost, and PantryIQ will recalculate the
+              recommendation before asking where to apply it.
             </p>
-          ) : (
-            <form className="chat-override__form" onSubmit={compareOverride}>
-              <label htmlFor="chat-override-item">Item</label>
-              <select
-                id="chat-override-item"
-                onChange={(event) => setOverrideItemId(event.target.value)}
-                value={overrideItemId}
-              >
-                {recommendations.map((recommendation) => (
-                  <option
-                    key={recommendation.itemId}
-                    value={recommendation.itemId}
-                  >
-                    {recommendation.itemName}
-                  </option>
-                ))}
-              </select>
-              <label htmlFor="chat-override-field">Assumption</label>
-              <select
-                id="chat-override-field"
-                onChange={(event) =>
-                  setOverrideField(event.target.value as AssumptionField)
-                }
-                value={overrideField}
-              >
-                <option value="shelfLifeDays">Shelf life (days)</option>
-                <option value="costPerUnit">Cost per unit</option>
-              </select>
-              <label htmlFor="chat-override-value">
-                New {fieldLabel(overrideField).toLocaleLowerCase()}
-              </label>
-              <input
-                id="chat-override-value"
-                inputMode={
-                  overrideField === 'shelfLifeDays' ? 'numeric' : 'decimal'
-                }
-                min="0"
-                onChange={(event) => setOverrideValue(event.target.value)}
-                required
-                step={overrideField === 'shelfLifeDays' ? '1' : '0.01'}
-                type="number"
-                value={overrideValue}
-              />
-              <button disabled={isComparing} type="submit">
-                {isComparing ? 'Recalculating…' : 'Recalculate'}
-              </button>
-            </form>
-          )}
-          {comparison ? (
-            <div className="chat-override__comparison" aria-live="polite">
-              <h3>{comparison.itemName}</h3>
-              <p>
-                {fieldLabel(comparison.field)}:{' '}
-                {comparison.beforeValue ?? 'not set'} → {comparison.afterValue}
-              </p>
-              <dl>
-                <div>
-                  <dt>Financial impact</dt>
-                  <dd>
-                    {figureLabel(comparison.before.financialImpact, '$')} →{' '}
-                    {figureLabel(comparison.after.financialImpact, '$')}
-                  </dd>
-                </div>
-                <div>
-                  <dt>Recommendation score</dt>
-                  <dd>
-                    {figureLabel(comparison.before.recommendationScore)} →{' '}
-                    {figureLabel(comparison.after.recommendationScore)}
-                  </dd>
-                </div>
-                <div>
-                  <dt>Urgency score</dt>
-                  <dd>
-                    {figureLabel(comparison.before.urgencyScore)} →{' '}
-                    {figureLabel(comparison.after.urgencyScore)}
-                  </dd>
-                </div>
-              </dl>
+            {recommendations.length === 0 ? (
               <p className="chat-override__status" role="status">
-                {overrideStatus}
+                There is no ranked item to adjust yet.
               </p>
-              <div className="chat-override__actions">
-                <button onClick={useForConversation} type="button">
-                  This conversation only
-                </button>
-                <button
-                  disabled={isSavingOverride}
-                  onClick={saveToSettings}
-                  type="button"
+            ) : (
+              <form className="chat-override__form" onSubmit={compareOverride}>
+                <label htmlFor="chat-override-item">Item</label>
+                <select
+                  id="chat-override-item"
+                  onChange={(event) => setOverrideItemId(event.target.value)}
+                  value={overrideItemId}
                 >
-                  {isSavingOverride ? 'Saving…' : 'Save to item settings'}
+                  {recommendations.map((recommendation) => (
+                    <option
+                      key={recommendation.itemId}
+                      value={recommendation.itemId}
+                    >
+                      {recommendation.itemName}
+                    </option>
+                  ))}
+                </select>
+                <label htmlFor="chat-override-field">Assumption</label>
+                <select
+                  id="chat-override-field"
+                  onChange={(event) =>
+                    setOverrideField(event.target.value as AssumptionField)
+                  }
+                  value={overrideField}
+                >
+                  <option value="shelfLifeDays">Shelf life (days)</option>
+                  <option value="costPerUnit">Cost per unit</option>
+                </select>
+                <label htmlFor="chat-override-value">
+                  New {fieldLabel(overrideField).toLocaleLowerCase()}
+                </label>
+                <input
+                  id="chat-override-value"
+                  inputMode={
+                    overrideField === 'shelfLifeDays' ? 'numeric' : 'decimal'
+                  }
+                  min="0"
+                  onChange={(event) => setOverrideValue(event.target.value)}
+                  required
+                  step={overrideField === 'shelfLifeDays' ? '1' : '0.01'}
+                  type="number"
+                  value={overrideValue}
+                />
+                <button disabled={isComparing} type="submit">
+                  {isComparing ? 'Recalculating…' : 'Recalculate'}
                 </button>
+              </form>
+            )}
+            {comparison ? (
+              <div className="chat-override__comparison" aria-live="polite">
+                <h3>{comparison.itemName}</h3>
+                <p>
+                  {fieldLabel(comparison.field)}:{' '}
+                  {comparison.beforeValue ?? 'not set'} →{' '}
+                  {comparison.afterValue}
+                </p>
+                <dl>
+                  <div>
+                    <dt>Financial impact</dt>
+                    <dd>
+                      {figureLabel(comparison.before.financialImpact, '$')} →{' '}
+                      {figureLabel(comparison.after.financialImpact, '$')}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>Recommendation score</dt>
+                    <dd>
+                      {figureLabel(comparison.before.recommendationScore)} →{' '}
+                      {figureLabel(comparison.after.recommendationScore)}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>Urgency score</dt>
+                    <dd>
+                      {figureLabel(comparison.before.urgencyScore)} →{' '}
+                      {figureLabel(comparison.after.urgencyScore)}
+                    </dd>
+                  </div>
+                </dl>
+                <p className="chat-override__status" role="status">
+                  {overrideStatus}
+                </p>
+                <div className="chat-override__actions">
+                  <button onClick={useForConversation} type="button">
+                    This conversation only
+                  </button>
+                  <button
+                    disabled={isSavingOverride}
+                    onClick={saveToSettings}
+                    type="button"
+                  >
+                    {isSavingOverride ? 'Saving…' : 'Save to item settings'}
+                  </button>
+                </div>
               </div>
-            </div>
-          ) : null}
-        </div>
-      </details>
+            ) : null}
+          </div>
+        </details>
+      ) : null}
     </section>
   )
 }

@@ -229,8 +229,8 @@ that touch them carry a stated default so work never stalls.
 |---|---|---|---|---|
 | AGG-01 | Lift the single-location scope rule | **done** | codex | MET-07, DSH-03 |
 | AGG-02 | Portfolio rollup | **done** | codex | AGG-01 |
-| AGG-03 | Location comparison | available | — | AGG-02, DSH-05 |
-| AGG-04 | Cross-location chat scope | available | — | AGG-02, CHT-03 |
+| AGG-03 | Location comparison | **done** | codex | AGG-02, DSH-05 |
+| AGG-04 | Cross-location chat scope | **done** | codex | AGG-02, CHT-03 |
 
 ### Integrations
 
@@ -3281,7 +3281,7 @@ chart marks. `npm run ci` and an authenticated `/portfolio` smoke test passed.
 ### AGG-04 — Cross-location chat scope
 
 ```
-Status: available   Owner: —   Claimed: —   Completed: —   Branch/PR: —
+Status: done   Owner: codex   Claimed: 2026-08-09   Completed: 2026-08-09   Branch/PR: rewrite
 ```
 
 **Blocked by:** AGG-02, CHT-03 · **Blocks:** —
@@ -3298,11 +3298,25 @@ same token budget, summarising harder as location count rises. Every
 answer names which locations it drew on.
 
 **Acceptance criteria.**
-- [ ] Account boundary still holds absolutely.
-- [ ] Every cross-location answer names its locations.
-- [ ] The context bundle stays within budget at ten locations.
-- [ ] `CHT-03`'s figure-matching guardrail still blocks ungrounded
+- [x] Account boundary still holds absolutely.
+- [x] Every cross-location answer names its locations.
+- [x] The context bundle stays within budget at ten locations.
+- [x] `CHT-03`'s figure-matching guardrail still blocks ungrounded
       numbers.
+
+**Notes.** Added a portfolio chat scope that loads only active locations
+from the authenticated owner's location list, compacts deterministic
+context to the shared 2,000-token budget, and requires every represented
+location name in generated answers. Missing names or ungrounded figures
+fail closed to a structured answer that names the covered locations.
+The chat surface keeps one-location assumption overrides local and offers
+an explicit all-locations toggle. Focused tests cover account-scoped
+loading contracts, location-name enforcement, ten-location compaction,
+and fallback behaviour. `npm run prettify` and `npm run ci` pass; an
+authenticated live smoke reached `/chat` and the portfolio chat route
+returned the expected no-completed-analysis response for the configured
+test account. No test account data was available to exercise a streamed
+portfolio answer.
 
 ---
 
