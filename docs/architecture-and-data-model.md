@@ -478,7 +478,11 @@ available ("you have 2 cases on-hand from Q4"), offer an explanation
 
 ### Tuning & configuration
 
-Weights and thresholds are stored as configuration, not hardcoded:
+Weights and thresholds are stored in the validated server-side metrics
+configuration, not scattered through the metric functions. The defaults are
+the values below; deployments may override any leaf value with the JSON in
+`PANTRYIQ_METRICS_CONFIG`. The process fails at startup if weight totals,
+threshold ordering, numeric types, or unknown keys are invalid.
 
 ```yaml
 recommendation_engine:
@@ -493,6 +497,24 @@ recommendation_engine:
     high_urgency: 7   # days
     medium_urgency: 14
     low_urgency: 0
+```
+
+The implementation also centralizes impact-category weights and unit/dollar
+scales, urgency component weights and history windows, the four Data
+Sufficiency component weights and prediction gate, spoilage's seven-day
+fallback window and 20% material-variance threshold, and the dashboard's
+five-item limit. `METRICS_CONFIG` is the only default source consumed by
+`MET-03` through `MET-07`; function-level options remain a deliberate seam
+for deterministic tests and future internal tuning.
+
+For example, a deployment can change ranking emphasis without a code change:
+
+```json
+{
+  "ranking": {
+    "weights": { "impact": "0.70", "urgency": "0.20", "dataSufficiency": "0.10" }
+  }
+}
 ```
 
 Per-user tuning (focus area, risk tolerance, notification frequency) is

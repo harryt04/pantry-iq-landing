@@ -1,20 +1,12 @@
 import type { MetricResult } from './definitions'
+import { METRICS_CONFIG } from './config'
 
 const DAY_MS = 24 * 60 * 60 * 1000
 const WEEK_MS = 7 * DAY_MS
 
 export const DATA_SUFFICIENCY_METRIC = 'dataSufficiency' as const
 
-export const DATA_SUFFICIENCY_DEFAULTS = {
-  dashboardHistoryDays: 7,
-  predictionHistoryWeeks: 4,
-  weights: {
-    history: 45,
-    purchaseCompleteness: 25,
-    inventoryPresence: 15,
-    patternConsistency: 15,
-  },
-} as const
+export const DATA_SUFFICIENCY_DEFAULTS = METRICS_CONFIG.sufficiency
 
 export type SufficiencyInput = {
   transactions: readonly { transactedAt: Date }[]

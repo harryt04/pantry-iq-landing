@@ -4,17 +4,11 @@
  * strings so a future dimension can be added without changing this formula.
  */
 
+import { METRICS_CONFIG } from './config'
+
 const DECIMAL_PATTERN = /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)$/
 
-export const RANKING_DEFAULTS = {
-  weights: {
-    impact: '0.40',
-    urgency: '0.40',
-    dataSufficiency: '0.20',
-  },
-  lowImpact: '0',
-  limit: 5,
-} as const
+export const RANKING_DEFAULTS = METRICS_CONFIG.ranking
 
 export type RankingCandidate = {
   itemId: string

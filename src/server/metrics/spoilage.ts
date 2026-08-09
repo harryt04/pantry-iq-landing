@@ -1,4 +1,5 @@
 import type { MetricResult } from './definitions'
+import { METRICS_CONFIG } from './config'
 
 export type SpoilageMethod = 'snapshot' | 'inferred'
 
@@ -47,8 +48,9 @@ export type SpoilageResolutionResult = {
 type Decimal = { coefficient: bigint; scale: number }
 
 const DECIMAL_PATTERN = /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)$/
-const VARIANCE_THRESHOLD_PERCENT = '20'
-const DEFAULT_FALLBACK_WINDOW_DAYS = 7
+const VARIANCE_THRESHOLD_PERCENT =
+  METRICS_CONFIG.spoilage.varianceThresholdPercent
+const DEFAULT_FALLBACK_WINDOW_DAYS = METRICS_CONFIG.spoilage.fallbackWindowDays
 
 function parseDecimal(value: string): Decimal | undefined {
   if (!DECIMAL_PATTERN.test(value)) return undefined

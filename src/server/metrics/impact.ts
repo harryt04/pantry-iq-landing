@@ -1,4 +1,5 @@
 import type { MetricResult } from './definitions'
+import { METRICS_CONFIG } from './config'
 
 type Decimal = { coefficient: bigint; scale: number }
 
@@ -10,14 +11,9 @@ const DECIMAL_PATTERN = /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)$/
  * without changing the metric contract.
  */
 export const IMPACT_DEFAULTS = {
-  weights: {
-    currentSpoilage: 40,
-    overordering: 25,
-    marginLoss: 20,
-    historicalSpoilage: 15,
-  },
-  highImpactDollars: '100',
-  unitSignalScale: '10',
+  weights: METRICS_CONFIG.impact.weights,
+  highImpactDollars: METRICS_CONFIG.impact.thresholds.highImpactDollars,
+  unitSignalScale: METRICS_CONFIG.impact.unitSignalScale,
 } as const
 
 export type ImpactWeights = Partial<{

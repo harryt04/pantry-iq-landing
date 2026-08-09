@@ -23,6 +23,7 @@ import {
   rollupImpact,
   type ImpactMetricResult,
 } from './impact'
+import { METRICS_CONFIG } from './config'
 import {
   resolveSpoilage,
   type SpoilageResolution,
@@ -518,7 +519,7 @@ function rollupMetric(
       method: methods.size === 1 ? ([...methods][0] ?? null) : 'mixed',
       fallbackWindowDays: Math.max(
         ...resolutions.map((item) => item.fallbackWindowDays),
-        7,
+        METRICS_CONFIG.spoilage.fallbackWindowDays,
       ),
       figures: resolutions.flatMap((item) => item.figures),
       variances: resolutions.flatMap((item) => item.variances),

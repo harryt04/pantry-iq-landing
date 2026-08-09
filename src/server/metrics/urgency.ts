@@ -1,23 +1,13 @@
 import type { MetricResult } from './definitions'
+import { METRICS_CONFIG } from './config'
 
 const DAY_MS = 24 * 60 * 60 * 1000
-const TREND_WINDOW_DAYS = 7
 
 /**
  * Thresholds and weights are deliberately exported as a configuration seam.
  * MET-08 can replace this object without changing the urgency contract.
  */
-export const URGENCY_DEFAULTS = {
-  weights: {
-    shelfLife: 50,
-    trendAcceleration: 30,
-    supplierLeadTime: 20,
-  },
-  highUrgencyDays: 7,
-  mediumUrgencyDays: 14,
-  lowUrgencyDays: 0,
-  minimumTrendHistoryWeeks: 2,
-} as const
+export const URGENCY_DEFAULTS = METRICS_CONFIG.urgency
 
 export type UrgencyOptions = {
   weights?: Partial<{
@@ -29,6 +19,7 @@ export type UrgencyOptions = {
   mediumUrgencyDays?: number
   lowUrgencyDays?: number
   minimumTrendHistoryWeeks?: number
+  trendWindowDays?: number
 }
 
 export type UrgencyOrder = {
@@ -195,6 +186,10 @@ function resolveConfig(options: UrgencyOptions) {
         URGENCY_DEFAULTS.minimumTrendHistoryWeeks,
       ),
     ),
+    trendWindowDays: Math.max(
+      1,
+      validThreshold(options.trendWindowDays, URGENCY_DEFAULTS.trendWindowDays),
+    ),
   }
 }
 
@@ -307,8 +302,8 @@ function trendComponent(
   }
 
   const end = last.transactedAt.getTime()
-  const recentStart = end - TREND_WINDOW_DAYS * DAY_MS
-  const priorStart = end - TREND_WINDOW_DAYS * 2 * DAY_MS
+  const recentStart = end - config.trendWindowDays * DAY_MS
+  const priorStart = end - config.trendWindowDays * 2 * DAY_MS
   const priorSales = sales.filter((sale) => {
     const timestamp = sale.transactedAt.getTime()
     return timestamp >= priorStart && timestamp < recentStart

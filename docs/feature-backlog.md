@@ -161,7 +161,7 @@ that touch them carry a stated default so work never stalls.
 | MET-05 | Impact score | **done** | codex | MET-03 |
 | MET-06 | Urgency score | **done** | codex | MET-03 |
 | MET-07 | Ranking and top-N selection | **done** | codex | MET-04, MET-05, MET-06 |
-| MET-08 | Tuning configuration | available | — | MET-07 |
+| MET-08 | Tuning configuration | claimed | codex | MET-07 |
 | MET-09 | Recommendation record and message assembly | available | — | MET-07 |
 | MET-10 | Evidence trace — "show your work" data | available | — | MET-09 |
 | MET-11 | Partial-data and conflicting-data rules | available | — | MET-09 |
@@ -1578,7 +1578,7 @@ dashboard.
 ### MET-08 — Tuning configuration
 
 ```
-Status: available   Owner: —   Claimed: —   Completed: —   Branch/PR: —
+Status: done   Owner: codex   Claimed: 2026-08-08   Completed: 2026-08-08   Branch/PR: rewrite
 ```
 
 **Blocked by:** MET-07 · **Blocks:** —
@@ -1599,14 +1599,17 @@ that fails loudly at startup on a bad configuration.
 A settings UI for any of this.
 
 **Acceptance criteria.**
-- [ ] Every magic number from MET-03 through MET-07 is sourced here.
-- [ ] Weights that do not sum as expected fail at startup with a clear
+- [x] Every magic number from MET-03 through MET-07 is sourced here.
+- [x] Weights that do not sum as expected fail at startup with a clear
       message.
-- [ ] Defaults match the documented YAML.
-- [ ] Changing a weight changes ranking with no code change.
+- [x] Defaults match the documented YAML.
+- [x] Changing a weight changes ranking with no code change.
 
 **Verification.** Grep the engine for numeric literals; the only ones
-left are structural.
+left are structural. Added a JSON deployment override, strict validation,
+startup loading, and focused coverage for defaults, override-driven ranking,
+weight totals, threshold ordering, and unknown keys. Full CI is the final
+verification for this ticket.
 
 ---
 
