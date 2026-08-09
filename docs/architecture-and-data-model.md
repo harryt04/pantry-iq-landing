@@ -354,8 +354,28 @@ Three dimensions feed the ranking formula defined in
 `mvp-scope-and-decisions.md` (Impact 40% / Urgency 40% / Data Sufficiency
 20%):
 
-- **Impact (0–100):** calculated from spoilage cost, overordering cost,
-  margin loss. Higher = more money at risk.
+- **Impact (0–100):** calculated from current spoilage risk, historical
+  spoilage, overordering cost, and margin loss. Higher = more money at
+  risk. Each category keeps its own exact dollar contribution so the
+  eventual recommendation can trace a wallet figure back to its sources.
+
+  The current implementation uses a configuration seam (to be centralized
+  by `MET-08`) with weights of current spoilage 0.40, overordering 0.25,
+  margin loss 0.20, and historical spoilage 0.15. A category with missing
+  inputs is suppressed and the remaining weights are renormalized; a
+  missing category never becomes an unexplained zero.
+
+  Current spoilage risk is `on-hand × unit cost`. Historical spoilage is the
+  sum of positive quantities from the `MET-03` spoilage figures multiplied by
+  unit cost. Overordering is positive `ordered − sold` multiplied by unit
+  cost. Margin loss is positive cost of sales less revenue, using imported
+  transaction cost when complete and the weighted purchase cost otherwise.
+  Dollar values are normalized against a configurable $100 high-impact
+  ceiling to produce the 0–100 category score. When a category has a usable
+  quantity signal but no cost, its score falls back to units against a
+  configurable ten-unit scale and explicitly reports that dollars cannot be
+  calculated. The composite is exact integer arithmetic with active weights
+  renormalized.
 - **Urgency (0–100):** calculated from shelf life remaining, trend
   acceleration, supplier lead time. Higher = action needed sooner.
 - **Data Sufficiency (0–100)** *(called "Confidence" in earlier drafts of

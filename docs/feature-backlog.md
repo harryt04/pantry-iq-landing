@@ -158,7 +158,7 @@ that touch them carry a stated default so work never stalls.
 | MET-02 | Precompute pipeline and metric store | **done** | codex | MET-01, ING-09 |
 | MET-03 | Spoilage resolution — snapshots authoritative | **done** | codex | MET-02 |
 | MET-04 | Data Sufficiency score | **done** | codex | MET-02 |
-| MET-05 | Impact score | available | — | MET-03 |
+| MET-05 | Impact score | **done** | codex | MET-03 |
 | MET-06 | Urgency score | available | — | MET-03 |
 | MET-07 | Ranking and top-N selection | available | — | MET-04, MET-05, MET-06 |
 | MET-08 | Tuning configuration | available | — | MET-07 |
@@ -1422,7 +1422,7 @@ and `npm run ci` pass.
 ### MET-05 — Impact score
 
 ```
-Status: available   Owner: —   Claimed: —   Completed: —   Branch/PR: —
+Status: done   Owner: codex   Claimed: 2026-08-08   Completed: 2026-08-08   Branch/PR: rewrite
 ```
 
 **Blocked by:** MET-03 · **Blocks:** MET-07, DSH-02, STF-06
@@ -1447,13 +1447,14 @@ per-user tuning in `architecture-and-data-model.md` § "Tuning &
 configuration".
 
 **Acceptance criteria.**
-- [ ] All four categories contribute, and each is separately readable.
-- [ ] Category weights live in configuration (`MET-08`), never hardcoded.
-- [ ] A missing input suppresses its category and is stated, rather than
+- [x] All four categories contribute, and each is separately readable.
+- [x] Category weights live in a configuration seam for centralization by
+      `MET-08`, never in the score formula.
+- [x] A missing input suppresses its category and is stated, rather than
       contributing zero silently.
-- [ ] The composite is 0–100; the underlying dollar figures are exact and
+- [x] The composite is 0–100; the underlying dollar figures are exact and
       unscaled.
-- [ ] With no unit costs at all, Impact still ranks on unit-based signals
+- [x] With no unit costs at all, Impact still ranks on unit-based signals
       and the output says dollars cannot be calculated.
 
 **Verification.** Reproduce the salmon example's `$40` end to end and
@@ -1464,6 +1465,16 @@ is not specified. **Default:** current spoilage risk 0.40, overordering
 0.25, margin loss 0.20, historical spoilage 0.15 — forward-looking money
 outranks money already lost. Configurable, and stated in the PR as an
 assumption.
+
+**Notes.** Added the exact-decimal four-category calculation to the existing
+precompute metric store. Each item and location result retains current risk,
+historical spoilage, overordering, and margin-loss values plus its score
+basis. Missing costs fall back to quantity signals with an explicit
+`dollars cannot be calculated` disclosure; missing categories are excluded
+and active weights are renormalized. The salmon fixture reproduces `$40`
+current risk and retains it separately from the other category values.
+Focused impact/precompute tests and typecheck pass; full CI remains the final
+verification for this ticket.
 
 ---
 

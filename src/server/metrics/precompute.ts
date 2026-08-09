@@ -19,6 +19,11 @@ import {
   type MetricResult,
 } from './definitions'
 import {
+  calculateImpact,
+  rollupImpact,
+  type ImpactMetricResult,
+} from './impact'
+import {
   resolveSpoilage,
   type SpoilageResolution,
   type SpoilageResolutionResult,
@@ -35,6 +40,7 @@ export const PRECOMPUTED_METRICS = [
   'margin',
   'variance',
   DATA_SUFFICIENCY_METRIC,
+  'impact',
 ] as const
 
 export type PrecomputedMetric = (typeof PRECOMPUTED_METRICS)[number]
@@ -51,6 +57,7 @@ export type PrecomputeSale = {
   itemId: string | null
   qty: string
   revenue: string
+  totalCost?: string | null
   transactedAt: Date
 }
 
@@ -246,12 +253,35 @@ function metricSet(
     ) ??
     item.costPerUnit ??
     undefined
+  const costOfSales =
+    itemSales.length > 0 &&
+    itemSales.every((sale) => typeof sale.totalCost === 'string')
+      ? sumDecimals(itemSales.map((sale) => sale.totalCost as string))
+      : undefined
   const common = { unit: item.unit, currency: 'USD' }
   const sufficiency = calculateDataSufficiency({
     transactions: itemSales,
     purchaseOrders: itemOrders.map(({ orderedAt }) => ({ orderedAt })),
     inventorySnapshots: itemSnapshots.map(({ countedAt }) => ({ countedAt })),
   })
+
+  const spoilage = resolveSpoilage({
+    sales: itemSales.map(({ qty, transactedAt }) => ({
+      qty,
+      transactedAt,
+    })),
+    orders: itemOrders.map(({ qty, orderedAt }) => ({ qty, orderedAt })),
+    snapshots: itemSnapshots,
+    periodEnd: now,
+  })
+  const historicalSpoilageQty = sumDecimals(
+    spoilage.resolution.figures
+      .filter((figure) => {
+        const value = parseDecimal(figure.value)
+        return value !== undefined && value.coefficient > 0n
+      })
+      .map((figure) => figure.value),
+  )
 
   return [
     calculated(
@@ -301,6 +331,22 @@ function metricSet(
       }),
     ),
     calculated(DATA_SUFFICIENCY_METRIC, sufficiency),
+    calculated(
+      'impact',
+      calculateImpact({
+        ...(onHand === undefined ? {} : { qtyOnHand: onHand }),
+        ...(historicalSpoilageQty === undefined
+          ? {}
+          : { historicalSpoilageQty }),
+        ...(ordered === undefined ? {} : { qtyOrdered: ordered }),
+        ...(sold === undefined ? {} : { qtySold: sold }),
+        ...(revenue === undefined ? {} : { revenue }),
+        ...(costOfSales === undefined ? {} : { costOfSales }),
+        ...(unitCost === undefined ? {} : { unitCost }),
+        unit: item.unit,
+        currency: 'USD',
+      }),
+    ),
   ]
 }
 
@@ -329,6 +375,17 @@ function rollupMetric(
     (metric): metric is StoredMetric & { value: string } =>
       metric.status === 'calculated' && metric.value !== null,
   )
+
+  if (metricKey === 'impact') {
+    const impactResults = values
+      .map((metric) => metric.result)
+      .filter(
+        (result): result is ImpactMetricResult =>
+          'categories' in result && 'weights' in result,
+      )
+    return calculated(metricKey, rollupImpact(impactResults))
+  }
+
   if (calculatedValues.length !== values.length || values.length === 0) {
     return unavailableRollup(
       metricKey,
@@ -508,6 +565,7 @@ async function loadPrecomputeInput(
         itemId: transactions.menuItemId,
         qty: transactions.qty,
         revenue: transactions.totalRevenue,
+        totalCost: transactions.totalCost,
         transactedAt: transactions.transactedAt,
       })
       .from(transactions)
