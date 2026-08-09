@@ -29,6 +29,10 @@ import { parseCsvRows } from './parser'
 import { CSV_IMPORT_TYPES, type CsvImportType } from './upload-input'
 import type { ItemResolutionCandidate } from './item-resolution'
 import { enqueuePrecomputeForLocationInTransaction } from '@/src/server/metrics/scheduler'
+import type {
+  ImportHistoryItem,
+  ImportItemResolutionAudit,
+} from './import-history'
 
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
@@ -189,6 +193,50 @@ function idFor(
   created: Map<string, string>,
 ) {
   return planItem.kind === 'existing' ? planItem.id : created.get(planItem.key)
+}
+
+function itemResolutionForPlan(
+  plan: ImportPlan,
+  created: ReadonlyMap<string, string>,
+): ImportItemResolutionAudit {
+  const createdItems = new Map<string, ImportHistoryItem>()
+  const matchedItems = new Map<string, ImportHistoryItem>()
+
+  for (const row of plan.rows) {
+    if (row.item.kind === 'new') {
+      const id = created.get(row.item.key)
+      if (id)
+        createdItems.set(row.item.key, {
+          id,
+          canonicalName: row.item.input.canonicalName.trim(),
+          displayName: row.item.input.displayName.trim(),
+        })
+      continue
+    }
+    if (row.item.kind !== 'existing') continue
+    const existingItem = row.item as Extract<
+      ImportPlan['rows'][number]['item'],
+      { kind: 'existing' }
+    >
+    const item = plan.items.find(
+      (candidate) => candidate.id === existingItem.id,
+    )
+    if (item)
+      matchedItems.set(item.id, {
+        id: item.id,
+        canonicalName: item.canonicalName,
+        displayName: item.displayName,
+      })
+  }
+
+  return {
+    created: [...createdItems.values()].sort((a, b) =>
+      a.canonicalName.localeCompare(b.canonicalName),
+    ),
+    matched: [...matchedItems.values()].sort((a, b) =>
+      a.canonicalName.localeCompare(b.canonicalName),
+    ),
+  }
 }
 
 export async function commitCsvImport(
@@ -396,9 +444,16 @@ export async function commitCsvImport(
         )
     }
 
+    const itemResolution = itemResolutionForPlan(plan, created)
+
     await tx
       .update(csvUploadHistory)
-      .set({ rowsImported, unmatchedItems: [], status: 'imported' })
+      .set({
+        rowsImported,
+        itemResolution,
+        unmatchedItems: [],
+        status: 'imported',
+      })
       .where(
         and(
           eq(csvUploadHistory.id, upload.id),
@@ -423,6 +478,8 @@ export async function listImportHistory(headers: Headers, locationId: string) {
       rowsImported: csvUploadHistory.rowsImported,
       status: csvUploadHistory.status,
       uploadedAt: csvUploadHistory.uploadedAt,
+      mappingUsed: csvUploadHistory.mappingUsed,
+      itemResolution: csvUploadHistory.itemResolution,
     })
     .from(csvUploadHistory)
     .where(eq(csvUploadHistory.locationId, owned.locationId))

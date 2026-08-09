@@ -199,7 +199,7 @@ that touch them carry a stated default so work never stalls.
 | SET-01 | Account settings | **done** | codex | FND-08 |
 | SET-02 | Location management | **done** | codex | FND-08, ING-01 |
 | SET-03 | Item master management | **done** | codex | FND-08, ING-07 |
-| SET-04 | Import history drill-down | available | — | FND-08, ING-09 |
+| SET-04 | Import history drill-down | **done** | codex | FND-08, ING-09 |
 | SET-05 | Shelf-life defaults and category taxonomy | **done** | codex | SET-03 |
 
 ### Marketing site
@@ -2558,7 +2558,7 @@ checks pass.
 ### SET-04 — Import history drill-down
 
 ```
-Status: available   Owner: —   Claimed: —   Completed: —   Branch/PR: —
+Status: done   Owner: codex   Claimed: 2026-08-08   Completed: 2026-08-08   Branch/PR: rewrite
 ```
 
 **Blocked by:** FND-08, ING-09 · **Blocks:** —
@@ -2576,10 +2576,18 @@ items created or matched.
 **Scope — out.** Deleting imports — data is immutable for audit.
 
 **Acceptance criteria.**
-- [ ] Every import appears, including manual entries.
-- [ ] The mapping used is fully recoverable.
-- [ ] Items created versus matched are distinguishable.
-- [ ] No delete affordance exists anywhere on this screen.
+- [x] Every import appears, including manual entries.
+- [x] The mapping used is fully recoverable.
+- [x] Items created versus matched are distinguishable.
+- [x] No delete affordance exists anywhere on this screen.
+
+**Notes.** History remains location-scoped through the shared ownership
+helper. Each imported CSV now stores its applied mapping and item-resolution
+audit (created versus matched canonical items); manual entries write the same
+audit shape. The import page presents those records in keyboard-accessible
+expanders with no destructive action. Prettier, `npm run ci`, and live health,
+redirect, and unauthenticated history-route smoke checks pass. Authenticated
+walkthrough was unavailable because `.env.local` contains no test account.
 
 ---
 

@@ -25,6 +25,10 @@ const metricStoreMigration = readFileSync(
   new URL('../../drizzle/0008_metric_store.sql', import.meta.url),
   'utf8',
 )
+const importHistoryMigration = readFileSync(
+  new URL('../../drizzle/0009_loose_epoch.sql', import.meta.url),
+  'utf8',
+)
 
 const canonicalTables = [
   'csv_upload_history',
@@ -150,6 +154,12 @@ describe('canonical migration contract', () => {
   it('adds an explicit archive state for location management', () => {
     expect(locationManagementMigration).toMatch(
       /ALTER TABLE "locations" ADD COLUMN "is_active" boolean DEFAULT true NOT NULL/,
+    )
+  })
+
+  it('keeps item-resolution evidence durable for history drill-downs', () => {
+    expect(importHistoryMigration).toContain(
+      'ALTER TABLE "csv_upload_history" ADD COLUMN "item_resolution" jsonb',
     )
   })
 })

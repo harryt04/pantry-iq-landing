@@ -12,6 +12,7 @@ import {
   transactions,
 } from '@/src/server/db/schema'
 import { enqueuePrecomputeForLocationInTransaction } from '@/src/server/metrics/scheduler'
+import type { ImportHistoryItem } from '@/src/server/csv/import-history'
 
 export const MANUAL_ENTRY_TYPES = [
   'inventory',
@@ -224,6 +225,7 @@ async function resolveItem(
     const [item] = await tx
       .select({
         id: inventoryItems.id,
+        canonicalName: inventoryItems.canonicalName,
         displayName: inventoryItems.displayName,
         isActive: inventoryItems.isActive,
       })
@@ -239,7 +241,7 @@ async function resolveItem(
       throw new ManualEntryValidationError(
         'Choose an active item from this location.',
       )
-    return item
+    return { ...item, created: false }
   }
 
   const newItem = selection.newItem
@@ -248,6 +250,7 @@ async function resolveItem(
   const [existing] = await tx
     .select({
       id: inventoryItems.id,
+      canonicalName: inventoryItems.canonicalName,
       displayName: inventoryItems.displayName,
       isActive: inventoryItems.isActive,
     })
@@ -264,7 +267,7 @@ async function resolveItem(
       throw new ManualEntryValidationError(
         'That item is archived. Choose an active item or use a different name.',
       )
-    return existing
+    return { ...existing, created: false }
   }
 
   const [created] = await tx
@@ -278,12 +281,28 @@ async function resolveItem(
     })
     .returning({
       id: inventoryItems.id,
+      canonicalName: inventoryItems.canonicalName,
       displayName: inventoryItems.displayName,
       isActive: inventoryItems.isActive,
     })
   if (!created)
     throw new ManualEntryValidationError('The new item could not be saved.')
-  return created
+  return { ...created, created: true }
+}
+
+function addHistoryItem(
+  items: Map<string, ImportHistoryItem>,
+  item: {
+    id: string
+    canonicalName: string
+    displayName: string
+  },
+) {
+  items.set(item.id, {
+    id: item.id,
+    canonicalName: item.canonicalName,
+    displayName: item.displayName,
+  })
 }
 
 export async function createManualEntry(
@@ -297,9 +316,18 @@ export async function createManualEntry(
   return db.transaction(async (tx) => {
     let rowsImported = 1
     let entryLabel = 'Manual entry'
+    const createdItems = new Map<string, ImportHistoryItem>()
+    const matchedItems = new Map<string, ImportHistoryItem>()
+    const recordItem = (item: Awaited<ReturnType<typeof resolveItem>>) => {
+      if (item.created) addHistoryItem(createdItems, item)
+      else addHistoryItem(matchedItems, item)
+      return item
+    }
 
     if (values.entryType === 'inventory') {
-      const item = await resolveItem(tx, owned.locationId, values.item)
+      const item = recordItem(
+        await resolveItem(tx, owned.locationId, values.item),
+      )
       await tx.insert(inventorySnapshots).values({
         locationId: owned.locationId,
         inventoryItemId: item.id,
@@ -309,7 +337,9 @@ export async function createManualEntry(
       })
       entryLabel = 'Manual inventory count'
     } else if (values.entryType === 'transaction') {
-      const item = await resolveItem(tx, owned.locationId, values.item)
+      const item = recordItem(
+        await resolveItem(tx, owned.locationId, values.item),
+      )
       await tx.insert(transactions).values({
         locationId: owned.locationId,
         transactedAt: new Date(values.transactedAt),
@@ -354,7 +384,9 @@ export async function createManualEntry(
           'The purchase order could not be saved.',
         )
       for (const line of values.lines) {
-        const item = await resolveItem(tx, owned.locationId, line.item)
+        const item = recordItem(
+          await resolveItem(tx, owned.locationId, line.item),
+        )
         await tx.insert(purchaseOrderItems).values({
           purchaseOrderId: orderId,
           locationId: owned.locationId,
@@ -389,6 +421,14 @@ export async function createManualEntry(
         source: 'manual',
         rowsImported,
         mappingUsed: { entryType: values.entryType, source: 'manual' },
+        itemResolution: {
+          created: [...createdItems.values()].sort((a, b) =>
+            a.canonicalName.localeCompare(b.canonicalName),
+          ),
+          matched: [...matchedItems.values()].sort((a, b) =>
+            a.canonicalName.localeCompare(b.canonicalName),
+          ),
+        },
         unmatchedItems: [],
         storageKey: null,
         status: 'imported',

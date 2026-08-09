@@ -403,6 +403,7 @@ export const csvUploadHistory = pgTable(
     source: text('source').notNull(),
     rowsImported: integer('rows_imported').notNull(),
     mappingUsed: jsonb('mapping_used').notNull(),
+    itemResolution: jsonb('item_resolution'),
     unmatchedItems: jsonb('unmatched_items'),
     storageKey: text('storage_key'),
     status: text('status').notNull().default('imported'),
