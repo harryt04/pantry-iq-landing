@@ -357,6 +357,28 @@ four-week transaction gate is met, and a missing dollar figure is stored as
 rows for the same item. Its deterministic `evidenceTraceRef` identifies the
 item and input window that `MET-10` will expand into the full trace.
 
+`MET-10` expands that reference into the required `evidenceTrace` field on
+the same JSON recommendation record. The trace is versioned and contains:
+
+- `sources`: imported filename, source type, imported row count, and upload
+  timestamp. Manual entries use the same history record, so they remain
+  auditable without pretending they came from a file.
+- `calculations`: every metric result, each nested impact/category or
+  urgency/component result, and the final ranking score and rank. Each entry
+  retains string-valued inputs, units, the operator or calculation rule, and
+  the exact result (or the cannot-calculate explanation).
+- `assumptions`: configuration and item assumptions with their value, origin
+  (`user-set`, `category-default`, or `system-default`), and the settings or
+  deployment path where the value can be changed.
+
+Trace assembly is deterministic: source rows are ordered by upload time and
+filename, configuration keys are sorted, and no current-time value is added
+to the trace. A recommendation is rejected if the trace has no source,
+calculation, or assumption, so rendering layers can treat the trace as a
+required artifact rather than an optional debug aid. The existing metric
+result JSON already stores the exact inputs and evidence, so this does not
+need a second persistence table or a floating-point conversion.
+
 ### Scoring dimensions (implementation detail)
 
 Three dimensions feed the ranking formula defined in

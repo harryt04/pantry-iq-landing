@@ -1,4 +1,10 @@
 import type { RankedRecommendation } from './ranking'
+import { METRICS_CONFIG } from './config'
+import {
+  buildEvidenceTrace,
+  type EvidenceSourceInput,
+  type EvidenceTrace,
+} from './evidence'
 
 export const RECOMMENDATION_METRIC_KEY = 'recommendation' as const
 
@@ -14,6 +20,7 @@ export type RecommendationItem = {
   itemName: string
   unit: string
   purchaseOrderCount: number
+  shelfLifeDays?: number | null
   metrics: readonly MetricResultShape[]
 }
 
@@ -67,6 +74,7 @@ export type RecommendationRecord = {
     inputWindowStart: string
     inputWindowEnd: string
   }
+  evidenceTrace: EvidenceTrace
 }
 
 type ObjectRecord = Record<string, unknown>
@@ -199,6 +207,12 @@ export function assembleRecommendationRecords(input: {
   rankedItems: readonly RankedRecommendation[]
   inputWindowStart: Date
   inputWindowEnd: Date
+  sources?: readonly EvidenceSourceInput[]
+  sourceCounts?: {
+    transactions: number
+    purchaseOrders: number
+    snapshots: number
+  }
 }): RecommendationRecord[] {
   const itemById = new Map(input.items.map((item) => [item.itemId, item]))
   const inputWindowStart = input.inputWindowStart.toISOString()
@@ -252,6 +266,21 @@ export function assembleRecommendationRecords(input: {
           inputWindowStart,
           inputWindowEnd,
         },
+        evidenceTrace: buildEvidenceTrace({
+          metrics: item.metrics,
+          ranked,
+          ...(input.sources ? { sources: input.sources } : {}),
+          sourceCounts: input.sourceCounts ?? {
+            transactions: 0,
+            purchaseOrders: item.purchaseOrderCount,
+            snapshots: 0,
+          },
+          sourceTimestamp: input.inputWindowEnd,
+          ...(item.shelfLifeDays === undefined
+            ? {}
+            : { shelfLifeDays: item.shelfLifeDays }),
+          config: METRICS_CONFIG,
+        }),
       } satisfies RecommendationRecord,
     ]
   })

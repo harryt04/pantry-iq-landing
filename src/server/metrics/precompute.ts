@@ -3,6 +3,7 @@ import { and, asc, desc, eq } from 'drizzle-orm'
 import {
   inventoryItems,
   inventorySnapshots,
+  csvUploadHistory,
   metricResults,
   metricRollups,
   metricRuns,
@@ -40,6 +41,7 @@ import {
   RECOMMENDATION_METRIC_KEY,
   type RecommendationRecord,
 } from './recommendations'
+import type { EvidenceSourceInput } from './evidence'
 
 export const PRECOMPUTED_METRICS = [
   'sellThrough',
@@ -91,6 +93,7 @@ export type PrecomputeInput = {
   sales: readonly PrecomputeSale[]
   orders: readonly PrecomputeOrder[]
   snapshots: readonly PrecomputeSnapshot[]
+  sources?: readonly EvidenceSourceInput[]
 }
 
 export type StoredMetric = {
@@ -596,6 +599,9 @@ export function buildPrecomputeResults(
         itemId: item.id,
         itemName: item.displayName ?? item.id,
         unit: item.unit,
+        ...(item.shelfLifeDays === undefined
+          ? {}
+          : { shelfLifeDays: item.shelfLifeDays }),
         purchaseOrderCount: input.orders.filter(
           (order) => order.itemId === item.id,
         ).length,
@@ -606,6 +612,12 @@ export function buildPrecomputeResults(
       rankedItems,
       inputWindowStart,
       inputWindowEnd,
+      ...(input.sources ? { sources: input.sources } : {}),
+      sourceCounts: {
+        transactions: input.sales.length,
+        purchaseOrders: input.orders.length,
+        snapshots: input.snapshots.length,
+      },
     }),
     inputWindowStart,
     inputWindowEnd,
@@ -616,7 +628,7 @@ async function loadPrecomputeInput(
   locationId: string,
 ): Promise<PrecomputeInput> {
   const { db } = await import('@/src/server/db/client')
-  const [items, sales, orders, snapshots] = await Promise.all([
+  const [items, sales, orders, snapshots, sources] = await Promise.all([
     db
       .select({
         id: inventoryItems.id,
@@ -660,9 +672,24 @@ async function loadPrecomputeInput(
       })
       .from(inventorySnapshots)
       .where(eq(inventorySnapshots.locationId, locationId)),
+    db
+      .select({
+        filename: csvUploadHistory.filename,
+        source: csvUploadHistory.source,
+        rowCount: csvUploadHistory.rowsImported,
+        uploadedAt: csvUploadHistory.uploadedAt,
+      })
+      .from(csvUploadHistory)
+      .where(
+        and(
+          eq(csvUploadHistory.locationId, locationId),
+          eq(csvUploadHistory.status, 'imported'),
+        ),
+      )
+      .orderBy(asc(csvUploadHistory.uploadedAt), asc(csvUploadHistory.id)),
   ])
 
-  return { items, sales, orders, snapshots }
+  return { items, sales, orders, snapshots, sources }
 }
 
 export async function runPrecomputeForLocation(

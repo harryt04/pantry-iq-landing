@@ -163,7 +163,7 @@ that touch them carry a stated default so work never stalls.
 | MET-07 | Ranking and top-N selection | **done** | codex | MET-04, MET-05, MET-06 |
 | MET-08 | Tuning configuration | **done** | codex | MET-07 |
 | MET-09 | Recommendation record and message assembly | **done** | codex | MET-07 |
-| MET-10 | Evidence trace — "show your work" data | available | — | MET-09 |
+| MET-10 | Evidence trace — "show your work" data | **done** | codex | MET-09 |
 | MET-11 | Partial-data and conflicting-data rules | available | — | MET-09 |
 | MET-12 | Interpretable data layer for pattern discovery | available | — | MET-02 |
 
@@ -1664,7 +1664,7 @@ metrics share one run boundary without introducing a second persistence path.
 ### MET-10 — Evidence trace, the "show your work" data
 
 ```
-Status: available   Owner: —   Claimed: —   Completed: —   Branch/PR: —
+Status: done   Owner: codex   Claimed: 2026-08-08   Completed: 2026-08-08   Branch/PR: rewrite
 ```
 
 **Blocked by:** MET-09 · **Blocks:** DSH-04, CHT-05
@@ -1688,18 +1688,25 @@ default, or system default), and where the user can change it.
 **Scope — out.** Rendering (`DSH-04`, `CHT-05`).
 
 **Acceptance criteria.**
-- [ ] Every figure in a recommendation appears in its trace with the
+- [x] Every figure in a recommendation appears in its trace with the
       arithmetic that produced it.
-- [ ] Sources cite filename, row count, and upload date.
-- [ ] Every assumption states whether it is the user's value or our
+- [x] Sources cite filename, row count, and upload date.
+- [x] Every assumption states whether it is the user's value or our
       guess, and where to edit it.
-- [ ] A recommendation cannot be created without a complete trace —
+- [x] A recommendation cannot be created without a complete trace —
       enforce it, do not merely test it.
-- [ ] Traces reproduce: re-running the engine over unchanged data
+- [x] Traces reproduce: re-running the engine over unchanged data
       produces an identical trace.
 
 **Verification.** Recompute the salmon example's `$40` by hand from the
 trace alone.
+
+**Notes.** Recommendations now carry a versioned `evidenceTrace` beside the
+existing deterministic reference. It includes source-file provenance,
+metric and ranking calculations, and editable assumptions. Trace assembly
+rejects empty source/calculation/assumption sets and is covered by the
+salmon example regression. The existing JSONB metric-result store persists
+the trace without a schema migration.
 
 ---
 

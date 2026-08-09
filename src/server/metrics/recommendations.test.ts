@@ -38,6 +38,26 @@ describe('recommendation records', () => {
             countedAt: new Date('2026-08-08T12:00:00.000Z'),
           },
         ],
+        sources: [
+          {
+            filename: 'salmon-sales.csv',
+            source: 'transactions',
+            rowCount: 4,
+            uploadedAt: new Date('2026-08-08T10:00:00.000Z'),
+          },
+          {
+            filename: 'salmon-orders.csv',
+            source: 'purchase_orders',
+            rowCount: 3,
+            uploadedAt: new Date('2026-08-08T11:00:00.000Z'),
+          },
+          {
+            filename: 'salmon-counts.csv',
+            source: 'inventory_snapshots',
+            rowCount: 1,
+            uploadedAt: new Date('2026-08-08T12:00:00.000Z'),
+          },
+        ],
       },
       now,
     )
@@ -85,6 +105,52 @@ describe('recommendation records', () => {
       inputWindowStart: '2026-07-01T12:00:00.000Z',
       inputWindowEnd: '2026-08-08T12:00:00.000Z',
     })
+    const trace = result.recommendations[0]?.evidenceTrace
+    expect(trace?.version).toBe(1)
+    expect(trace?.sources).toEqual([
+      {
+        filename: 'salmon-sales.csv',
+        source: 'transactions',
+        rowCount: 4,
+        uploadedAt: '2026-08-08T10:00:00.000Z',
+      },
+      {
+        filename: 'salmon-orders.csv',
+        source: 'purchase_orders',
+        rowCount: 3,
+        uploadedAt: '2026-08-08T11:00:00.000Z',
+      },
+      {
+        filename: 'salmon-counts.csv',
+        source: 'inventory_snapshots',
+        rowCount: 1,
+        uploadedAt: '2026-08-08T12:00:00.000Z',
+      },
+    ])
+    expect(trace?.calculations).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: 'metric:sellThrough',
+          operator: 'qtySold / qtyOrdered × 100',
+          inputs: { qtySold: '0', qtyOrdered: '3', unit: 'lb' },
+          result: '0',
+        }),
+        expect.objectContaining({
+          id: 'metric:impact.currentSpoilage.amount',
+          result: '40',
+        }),
+        expect.objectContaining({ id: 'ranking:score', result: '29.2' }),
+      ]),
+    )
+    expect(trace?.assumptions).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          name: 'metrics.ranking.weights.impact',
+          value: '0.40',
+          origin: 'system-default',
+        }),
+      ]),
+    )
   })
 
   it('keeps financial impact null when the item has no cost data', () => {
