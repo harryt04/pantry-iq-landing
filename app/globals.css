@@ -924,6 +924,106 @@ body {
   font-size: var(--text-md);
 }
 
+.wallet-impact {
+  display: grid;
+  gap: var(--space-5);
+  margin-top: var(--space-8);
+}
+
+.wallet-impact__heading {
+  align-items: end;
+  display: flex;
+  gap: var(--space-6);
+  justify-content: space-between;
+}
+
+.wallet-impact__heading h2 {
+  font-size: var(--text-xl);
+  letter-spacing: -0.025em;
+  margin: 0;
+}
+
+.wallet-impact__heading .app-page__eyebrow {
+  margin-bottom: var(--space-2);
+}
+
+.wallet-impact-card {
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--signal-watch);
+  border-radius: var(--radius-surface);
+  box-shadow: none;
+  gap: var(--space-4);
+  max-width: 920px;
+}
+
+.wallet-impact-card [data-slot='card-header'] {
+  padding: var(--space-5) var(--space-5) 0;
+}
+
+.wallet-impact-card [data-slot='card-content'] {
+  display: grid;
+  gap: var(--space-4);
+  padding: 0 var(--space-5) var(--space-5);
+}
+
+.wallet-impact-card__lead {
+  font-size: var(--text-2xl);
+  font-weight: 600;
+  margin: 0;
+}
+
+.wallet-impact-card__details {
+  border-top: 1px solid var(--border);
+  display: grid;
+  gap: var(--space-5);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 0;
+  padding-top: var(--space-4);
+}
+
+.wallet-impact-card__details div {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.wallet-impact-card__details dt,
+.wallet-impact-card__details p,
+.wallet-impact-card__note,
+.wallet-impact-card__computed {
+  color: var(--muted-foreground);
+  font-size: var(--text-sm);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.wallet-impact-card__details dd {
+  font-size: var(--text-xl);
+  font-weight: 600;
+  margin: 0;
+}
+
+.wallet-impact-card__note {
+  border-left: 3px solid var(--signal-watch);
+  padding-left: var(--space-3);
+}
+
+.wallet-impact-card__computed {
+  border-top: 1px solid var(--border);
+  padding-top: var(--space-3);
+}
+
+@media (max-width: 800px) {
+  .wallet-impact__heading {
+    align-items: start;
+    flex-direction: column;
+    gap: var(--space-3);
+  }
+
+  .wallet-impact-card__details {
+    grid-template-columns: 1fr;
+  }
+}
+
 .trend-summary-grid {
   display: grid;
   gap: var(--space-5);

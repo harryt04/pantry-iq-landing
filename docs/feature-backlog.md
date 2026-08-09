@@ -172,7 +172,7 @@ that touch them carry a stated default so work never stalls.
 | ID | Title | Status | Owner | Blocked by |
 |---|---|---|---|---|
 | DSH-01 | Insufficient-data state | **done** | codex | FND-08, MET-04 |
-| DSH-02 | Wallet impact summary | available | — | DSH-01, MET-05 |
+| DSH-02 | Wallet impact summary | **done** | codex | DSH-01, MET-05 |
 | DSH-03 | Recommendation card | available | — | DSH-01, MET-09 |
 | DSH-04 | Show-your-work disclosure | available | — | DSH-03, MET-10 |
 | DSH-05 | Chart primitives — pattern-first | **done** | codex | FND-07 |
@@ -1853,7 +1853,7 @@ database service is not reachable.
 ### DSH-02 — Wallet impact summary
 
 ```
-Status: available   Owner: —   Claimed: —   Completed: —   Branch/PR: —
+Status: done   Owner: codex   Claimed: 2026-08-08   Completed: 2026-08-08   Branch/PR: rewrite
 ```
 
 **Blocked by:** DSH-01, MET-05 · **Blocks:** —
@@ -1876,14 +1876,27 @@ figure.
 **Scope — out.** Charts.
 
 **Acceptance criteria.**
-- [ ] The dollar figure is the largest element on the card.
-- [ ] No percentage leads.
-- [ ] No animated number counters — explicitly banned.
-- [ ] Uncalculable values state why, and where to supply what is missing.
-- [ ] Screen is legible desaturated.
+- [x] The dollar figure is the largest element on the card.
+- [x] No percentage leads.
+- [x] No animated number counters — explicitly banned.
+- [x] Uncalculable values state why, and where to supply what is missing.
+- [x] Screen is legible desaturated.
 
 **Verification.** Desaturate a screenshot. Then check every figure
 against the metric store.
+
+**Notes.** Added an owner-scoped reader for the latest successful `impact`
+rollup and a pure exact-decimal summary that preserves the current-spoilage
+figure separately while totaling the available dollar categories. The
+dashboard now shows the wallet summary only after the seven-day data gate,
+with a dollar-first lead, current-week spoilage, margin comparison, and UTC
+last-computed timestamp. Unit-only and missing-run states explain why a
+dollar figure is unavailable instead of showing zero. The card uses no chart,
+animation, or colour-only encoding. Focused wallet tests, formatting, full
+CI (209 tests, 13 accessibility checks, and production build), health-route
+smoke test, and sign-in route smoke test pass. Authenticated walkthrough was
+not possible because `.env.local` has no test-account credentials and the
+database service is unavailable.
 
 ---
 
