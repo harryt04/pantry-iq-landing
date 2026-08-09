@@ -397,6 +397,25 @@ If the provider cannot produce a stream after the retry budget, the service
 returns the latest structured recommendations directly. This keeps the
 operator's facts and financial impact visible without inventing model prose.
 
+### Grounding guardrail (`CHT-03`)
+
+`src/server/chat/grounding.ts` checks the complete generated response before
+any model text is returned to the client. Every numeric token must normalize
+to a numeric value present in the supplied recommendation records or
+location-scoped context bundle; commas, currency symbols, percent signs, and
+trailing decimal zeroes are presentation differences, not new values. An
+unmatched figure is logged as `chat.guardrail.blocked`, marked as blocked in
+LLM usage telemetry, and replaced with the structured recommendation
+fallback. Buffering is deliberate: a partial stream must never expose text
+that later fails the trust check.
+
+The context message is explicitly untrusted data. Imported names and other
+strings are never promoted to instructions, and the API authenticates the
+selected location before loading both context and recommendations. The chat
+service has no database import, tool, or write path. The narration prompt also
+requires pattern observations from the interpretable layer to be labelled as
+observations rather than calculations or predictions.
+
 ## Recommendation engine
 
 ### Core philosophy

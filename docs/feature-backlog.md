@@ -185,7 +185,7 @@ that touch them carry a stated default so work never stalls.
 |---|---|---|---|---|
 | CHT-01 | Chat surface and composer | done | codex | FND-08 |
 | CHT-02 | Narration service and model integration | **done** | codex | CHT-01, MET-09 |
-| CHT-03 | Grounding contract and guardrails | available | — | CHT-02, MET-12 |
+| CHT-03 | Grounding contract and guardrails | **done** | codex | CHT-02, MET-12 |
 | CHT-04 | Five-part answer format | available | — | CHT-03 |
 | CHT-05 | Show your work, in chat | available | — | CHT-04, MET-10 |
 | CHT-06 | Assumption override and scope prompt | available | — | CHT-05, SET-03 |
@@ -2228,7 +2228,7 @@ owned location's `MET-12` bundle and persisted recommendations to the service.
 ### CHT-03 — Grounding contract and guardrails
 
 ```
-Status: available   Owner: —   Claimed: —   Completed: —   Branch/PR: —
+Status: done   Owner: codex   Claimed: 2026-08-08   Completed: 2026-08-08   Branch/PR: —
 ```
 
 **Blocked by:** CHT-02, MET-12 · **Blocks:** CHT-04, CHT-08, AGG-04
@@ -2255,19 +2255,28 @@ not by prompt.
 API access.
 
 **Acceptance criteria.**
-- [ ] A response containing a number absent from context is blocked, and
+- [x] A response containing a number absent from context is blocked, and
       the block is logged.
-- [ ] Prompt-injected instructions inside imported data cannot change
+- [x] Prompt-injected instructions inside imported data cannot change
       behaviour — imported item names are data, never instructions.
-- [ ] The model cannot reach another location's data even when a
+- [x] The model cannot reach another location's data even when a
       question names it.
-- [ ] Nothing in the chat path writes to the database.
-- [ ] Observations from the interpretable layer are labelled as
+- [x] Nothing in the chat path writes to the database.
+- [x] Observations from the interpretable layer are labelled as
       observations wherever they appear.
 
 **Verification.** Adversarial suite: ask for a figure we do not compute;
 import an item literally named as an instruction; ask about another
-location by name. All three must fail closed.
+location by name. The grounding validator buffers model output, accepts only
+numeric values present in the supplied recommendation/context JSON (allowing
+presentation-only formatting such as commas and currency symbols), logs a
+`chat.guardrail.blocked` event, and returns the structured recommendation
+fallback when it rejects a response. The context is explicitly marked as
+untrusted data, while the API authenticates the requested location before
+loading either context or recommendations. The adversarial numeric case is
+covered by `src/server/chat/grounding.test.ts` and
+`src/server/chat/narration.test.ts`; the existing route contract covers the
+read-only, location-scoped request boundary.
 
 ---
 

@@ -95,7 +95,7 @@ function input() {
   }
 }
 
-function successfulModel() {
+function successfulModel(text = 'Grounded answer.') {
   return new MockLanguageModelV4({
     provider: 'anthropic.messages',
     modelId: 'test-haiku',
@@ -104,7 +104,7 @@ function successfulModel() {
         chunks: [
           { type: 'stream-start', warnings: [] },
           { type: 'text-start', id: 'text-1' },
-          { type: 'text-delta', id: 'text-1', delta: 'Grounded answer.' },
+          { type: 'text-delta', id: 'text-1', delta: text },
           { type: 'text-end', id: 'text-1' },
           {
             type: 'finish',
@@ -194,6 +194,32 @@ describe('narration service', () => {
     expect(text).toContain('Salmon')
     expect(usage).toMatchObject({ degraded: true, costMicros: 0 })
     expect(result.fallbackRecommendations).toEqual([recommendation])
+  })
+
+  it('blocks an unmatched figure, logs the block, and falls back to structured data', async () => {
+    const chatGuardrailBlocked = vi.fn()
+    const service = createNarrationService({
+      config,
+      model: successfulModel('The impact is $9,999.'),
+      logger: { chatGuardrailBlocked, llmQueryCompleted: vi.fn() } as never,
+    })
+
+    const result = service.stream(input())
+    const text = await readStream(result.textStream)
+
+    expect(text).toContain('Narration is unavailable.')
+    expect(text).toContain('Salmon')
+    expect(text).not.toContain('9,999')
+    await expect(result.usage).resolves.toMatchObject({
+      blocked: true,
+      degraded: true,
+    })
+    expect(chatGuardrailBlocked).toHaveBeenCalledWith({
+      accountId: 'account-1',
+      queryId: 'query-1',
+      reason: 'unmatched-number',
+      unmatchedCount: 1,
+    })
   })
 
   it('uses safe defaults and rejects unknown providers', () => {

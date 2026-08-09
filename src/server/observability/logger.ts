@@ -54,6 +54,14 @@ export interface LlmQueryFields {
   cacheHit?: boolean
   firstTokenMs?: number | null
   degraded?: boolean
+  blocked?: boolean
+}
+
+export interface ChatGuardrailFields {
+  accountId: string
+  queryId: string
+  reason: 'unmatched-number'
+  unmatchedCount: number
 }
 
 const SENSITIVE_KEY =
@@ -200,6 +208,13 @@ export class Logger {
   llmQueryCompleted(fields: LlmQueryFields): void {
     this.info('LLM query completed', {
       event: 'llm.query.completed',
+      ...fields,
+    })
+  }
+
+  chatGuardrailBlocked(fields: ChatGuardrailFields): void {
+    this.warn('Chat response blocked by grounding guardrail', {
+      event: 'chat.guardrail.blocked',
       ...fields,
     })
   }

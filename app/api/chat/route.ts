@@ -54,8 +54,8 @@ export async function POST(request: Request) {
     const { locationId, question, history } = parseRequest(await request.json())
     const owned = await requireOwnedLocation(request.headers, locationId)
     const [contextResult, recommendations] = await Promise.all([
-      loadOwnedContextBundle(request.headers, locationId),
-      getDashboardRecommendations(request.headers, locationId),
+      loadOwnedContextBundle(request.headers, owned.locationId),
+      getDashboardRecommendations(request.headers, owned.locationId),
     ])
     if (!contextResult) {
       return Response.json(
