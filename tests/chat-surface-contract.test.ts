@@ -15,13 +15,12 @@ const page = readFileSync(
 )
 
 describe('chat surface contract', () => {
-  it('keeps chat scoped and useful before the answering service exists', () => {
+  it('keeps chat scoped and connected to the answering service', () => {
     expect(surface).toContain('Answers stay within this location.')
     expect(surface).toContain('SUGGESTED_QUESTIONS')
-    expect(surface).toContain('streamStubbedReply')
-    expect(surface).toContain(
-      'The grounded answering service will use checked operational data here.',
-    )
+    expect(surface).toContain("fetch('/api/chat'")
+    expect(surface).toContain('locationId')
+    expect(surface).toContain('history: messages.map')
   })
 
   it('uses accessible transcript and composer semantics', () => {

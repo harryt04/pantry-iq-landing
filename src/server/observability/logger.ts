@@ -49,6 +49,11 @@ export interface LlmQueryFields {
   /** Millionths of the billing currency unit; integers avoid float drift. */
   costMicros: number
   currency: string
+  cacheReadTokens?: number
+  cacheWriteTokens?: number
+  cacheHit?: boolean
+  firstTokenMs?: number | null
+  degraded?: boolean
 }
 
 const SENSITIVE_KEY =
@@ -59,7 +64,9 @@ const BEARER_TOKEN = /\bBearer\s+[A-Za-z0-9._~+/=-]+/gi
 const QUERY_SECRET =
   /([?&](?:token|password|secret|api[-_]?key|access_token|refresh_token)=)[^&\s]+/gi
 const REDACTED = '[REDACTED]'
-const SAFE_OPERATIONAL_TOKEN_KEY = /^(?:input|output)Tokens$/
+const SAFE_OPERATIONAL_TOKEN_KEY =
+  /^(?:input|output|cacheRead|cacheWrite)Tokens$/
+const SAFE_OPERATIONAL_TIMING_KEY = /^firstTokenMs$/
 
 function redactText(value: string): string {
   return value
@@ -70,7 +77,11 @@ function redactText(value: string): string {
 function redactRuntimeValue(key: string, value: unknown): SafeLogValue {
   const isNumericTokenCount =
     SAFE_OPERATIONAL_TOKEN_KEY.test(key) && typeof value === 'number'
-  if (SENSITIVE_KEY.test(key) && !isNumericTokenCount) return REDACTED
+  const isNumericTiming =
+    SAFE_OPERATIONAL_TIMING_KEY.test(key) &&
+    (typeof value === 'number' || value === null)
+  if (SENSITIVE_KEY.test(key) && !isNumericTokenCount && !isNumericTiming)
+    return REDACTED
   if (IMPORTED_ROW_KEY.test(key)) return '[REDACTED_IMPORTED_ROW]'
 
   if (

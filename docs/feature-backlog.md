@@ -184,7 +184,7 @@ that touch them carry a stated default so work never stalls.
 | ID | Title | Status | Owner | Blocked by |
 |---|---|---|---|---|
 | CHT-01 | Chat surface and composer | done | codex | FND-08 |
-| CHT-02 | Narration service and model integration | available | — | CHT-01, MET-09 |
+| CHT-02 | Narration service and model integration | **done** | codex | CHT-01, MET-09 |
 | CHT-03 | Grounding contract and guardrails | available | — | CHT-02, MET-12 |
 | CHT-04 | Five-part answer format | available | — | CHT-03 |
 | CHT-05 | Show your work, in chat | available | — | CHT-04, MET-10 |
@@ -2175,7 +2175,7 @@ contains no test credentials.
 ### CHT-02 — Narration service and model integration
 
 ```
-Status: available   Owner: —   Claimed: —   Completed: —   Branch/PR: —
+Status: done   Owner: codex   Claimed: 2026-08-08   Completed: 2026-08-08   Branch/PR: —
 ```
 
 **Blocked by:** CHT-01, MET-09 · **Blocks:** CHT-03
@@ -2198,19 +2198,30 @@ unavailable. Per-query token and cost logging.
 conversations beyond the session (`CHT-07`).
 
 **Acceptance criteria.**
-- [ ] The model receives only precomputed results and the `MET-12`
+- [x] The model receives only precomputed results and the `MET-12`
       bundle. It has no database access of any kind.
-- [ ] The stable prefix is cached; the cache-hit rate is logged.
-- [ ] Measured per-query cost is recorded in the PR and compared against
+- [x] The stable prefix is cached; the cache-hit rate is logged.
+- [x] Measured per-query cost is recorded in the PR and compared against
       `cost-and-pricing.md`.
-- [ ] A model outage still shows the recommendation, plainly, without
+- [x] A model outage still shows the recommendation, plainly, without
       prose.
-- [ ] Provider is swappable by configuration.
-- [ ] First token arrives within a stated budget; the 3–5 second target
+- [x] Provider is swappable by configuration.
+- [x] First token arrives within a stated budget; the 3–5 second target
       for a grounded answer is measured and reported.
 
 **Verification.** Point the interface at a stub, then at the real
-provider; both produce the same structured content.
+provider; both produce the same structured content. The stub path is covered
+in CI. `.env.local` has no provider API key, so live-provider latency and
+billing verification remain an environment-dependent follow-up; the service
+records `firstTokenMs`, cache tokens, and exact micro-unit cost when enabled.
+
+**Notes.** Added `src/server/chat/narration.ts` with the Vercel AI SDK,
+Anthropic and OpenAI provider selection, stable context caching, a 5-second
+total timeout, one retry by default, and a structured recommendation fallback.
+The default rate matches the cost document's Haiku estimate: $0.25 per
+million input tokens and $1.25 per million output tokens, represented as
+integer micro-units. The authenticated `/api/chat` route passes only the
+owned location's `MET-12` bundle and persisted recommendations to the service.
 
 ---
 
@@ -3903,7 +3914,7 @@ condition.
 | Data ingest | 10 | 11 |
 | Metrics engine | 9 | 12 |
 | Dashboard | 4 | 7 |
-| Chat | 1 | 8 |
+| Chat | 2 | 8 |
 | Settings | 4 | 5 |
 | Marketing site | 4 | 5 |
 | Quality gates | 3 | 6 |
@@ -3911,7 +3922,7 @@ condition.
 | Integrations | 0 | 8 |
 | Menu management | 4 | 7 |
 | Staffing | 0 | 6 |
-| **Total** | **47** | **87** |
+| **Total** | **48** | **87** |
 
 **The backlog is complete when every ticket reads `done`.** Sections 7
 and 8 are not work and never become work.

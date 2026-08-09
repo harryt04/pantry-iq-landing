@@ -28,28 +28,6 @@ const SUGGESTED_QUESTIONS = [
   'Why are my margins changing?',
 ]
 
-function stubbedReply(question: string) {
-  return `Stubbed response: I received “${question}” for this location. The grounded answering service will use checked operational data here.`
-}
-
-function wait(milliseconds: number) {
-  return new Promise<void>((resolve) =>
-    window.setTimeout(resolve, milliseconds),
-  )
-}
-
-async function streamStubbedReply(
-  text: string,
-  onUpdate: (content: string) => void,
-) {
-  let content = ''
-  for (const word of text.split(' ')) {
-    content = content ? `${content} ${word}` : word
-    onUpdate(content)
-    await wait(24)
-  }
-}
-
 export function ChatSurface({
   locationId,
   locationName,
@@ -69,7 +47,7 @@ export function ChatSurface({
     )
   }
 
-  function submitQuestion(question: string) {
+  async function submitQuestion(question: string) {
     const trimmedQuestion = question.trim()
     if (!trimmedQuestion || isStreaming) return
 
@@ -90,9 +68,44 @@ export function ChatSurface({
     setDraft('')
     setIsStreaming(true)
 
-    void streamStubbedReply(stubbedReply(trimmedQuestion), (content) => {
+    try {
+      const response = await fetch('/api/chat', {
+        body: JSON.stringify({
+          locationId,
+          question: trimmedQuestion,
+          history: messages.map(({ role, content }) => ({ role, content })),
+        }),
+        headers: { 'Content-Type': 'application/json' },
+        method: 'POST',
+      })
+      if (!response.ok || !response.body) {
+        const payload = (await response.json().catch(() => null)) as {
+          error?: string
+        } | null
+        throw new Error(
+          payload?.error ?? 'The chat response could not be started.',
+        )
+      }
+
+      const reader = response.body.getReader()
+      const decoder = new TextDecoder()
+      let content = ''
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+        content += decoder.decode(value, { stream: true })
+        updateStreamingMessage(assistantId, content)
+      }
+      content += decoder.decode()
       updateStreamingMessage(assistantId, content)
-    }).then(() => {
+    } catch (error) {
+      updateStreamingMessage(
+        assistantId,
+        error instanceof Error
+          ? error.message
+          : 'The chat response could not be started.',
+      )
+    } finally {
       setMessages((current) =>
         current.map((message) =>
           message.id === assistantId
@@ -101,7 +114,7 @@ export function ChatSurface({
         ),
       )
       setIsStreaming(false)
-    })
+    }
   }
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {

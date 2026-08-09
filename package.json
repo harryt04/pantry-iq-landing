@@ -30,9 +30,12 @@
     "jobs:precompute": "tsx --env-file-if-exists=.env.local src/server/metrics/worker.ts"
   },
   "dependencies": {
+    "@ai-sdk/anthropic": "^4.0.36",
+    "@ai-sdk/openai": "^4.0.36",
     "@aws-sdk/client-s3": "^3.1106.0",
     "@base-ui/react": "^1.7.0",
     "@better-auth/drizzle-adapter": "^1.6.26",
+    "ai": "^7.0.58",
     "better-auth": "^1.6.26",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

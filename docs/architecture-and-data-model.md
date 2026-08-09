@@ -375,6 +375,28 @@ larger, the builder removes the oldest business-day series points first and
 records the omitted count. This preserves the newest operational picture
 while making compaction visible to the narration layer.
 
+### Narration service (`CHT-02`)
+
+`src/server/chat/narration.ts` is the only boundary between the deterministic
+engine and a language model. It accepts a question, optional in-session turns,
+persisted `MET-09` recommendation records, and one `MET-12` context bundle. It
+does not import the database client, expose tools, or provide a write path.
+The trust rules live in the AI SDK `instructions` field; the stable JSON
+context is a separate cache-marked message so providers can reuse it without
+caching the user's changing question.
+
+The provider is selected by `NARRATION_PROVIDER` (`anthropic` or `openai`) and
+the model by `NARRATION_MODEL`. `NARRATION_TIMEOUT_MS` defaults to 5,000 and
+`NARRATION_MAX_RETRIES` defaults to one. Anthropic receives an ephemeral cache
+breakpoint; other providers receive the same stable context without an
+Anthropic-specific option. Each completed or degraded query emits the typed
+`llm.query.completed` event with input/output tokens, cache read/write counts,
+cache-hit status, first-token milliseconds, and integer USD micro-unit cost.
+
+If the provider cannot produce a stream after the retry budget, the service
+returns the latest structured recommendations directly. This keeps the
+operator's facts and financial impact visible without inventing model prose.
+
 ## Recommendation engine
 
 ### Core philosophy
