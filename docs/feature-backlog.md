@@ -264,7 +264,7 @@ that touch them carry a stated default so work never stalls.
 | STF-01 | Labor data model and import | **done** | codex | INT-01 |
 | STF-02 | Labor efficiency metrics | **done** | codex | STF-01, MET-01 |
 | STF-03 | Demand forecasting | **done** | codex | MET-02 |
-| STF-04 | External signals — weather and local events | available | — | STF-03 |
+| STF-04 | External signals — weather and local events | **done** | codex | STF-03 |
 | STF-05 | Shift-level recommendations | available | — | STF-04, STF-02 |
 | STF-06 | Labor cost in the Impact score | available | — | STF-02, MET-05 |
 
@@ -3856,7 +3856,7 @@ unavailable.
 ### MNU-06 — Menu recommendations in the engine
 
 ```
-Status: claimed   Owner: codex   Claimed: 2026-08-09   Completed: —   Branch/PR: —
+Status: done   Owner: codex   Claimed: 2026-08-09   Completed: 2026-08-09   Branch/PR: rewrite
 ```
 
 **Blocked by:** MNU-04, MET-09 · **Blocks:** —
@@ -4064,7 +4064,7 @@ and no invented zeroes.
 ### STF-04 — External signals, weather and local events
 
 ```
-Status: available   Owner: —   Claimed: —   Completed: —   Branch/PR: —
+Status: done   Owner: codex   Claimed: 2026-08-09   Completed: 2026-08-09   Branch/PR: rewrite
 ```
 
 **Blocked by:** STF-03 · **Blocks:** STF-05
@@ -4087,12 +4087,23 @@ against actual sales before either is allowed to influence a forecast.
 its correlation is demonstrated in that location's own data.
 
 **Acceptance criteria.**
-- [ ] External data is attributed to its source in every trace.
-- [ ] A signal with no demonstrated correlation for a location does not
+- [x] External data is attributed to its source in every trace.
+- [x] A signal with no demonstrated correlation for a location does not
       affect that location's forecast.
-- [ ] An unavailable provider degrades the forecast rather than breaking
+- [x] An unavailable provider degrades the forecast rather than breaking
       it.
-- [ ] Provider cost is logged, per `QAG-05`.
+- [x] Provider cost is logged, per `QAG-05`.
+
+**Notes.** Added provider-neutral normalized weather/event signal features,
+durable fetch status and integer micro-unit provider-cost records, and
+location-scoped provenance on every signal. Correlation requires 14 paired
+business dates and an absolute coefficient of at least 0.30; only qualified
+conditions can select comparable forecast history. Missing or unqualified
+signals leave the deterministic sales forecast unchanged. The Staffing page
+shows whether external data was applied, retained without demonstrated
+correlation, or unavailable. No concrete third-party provider is hardcoded;
+the sync boundary accepts an injected provider so API credentials and vendor
+choice remain outside the deterministic engine.
 
 ---
 

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { buildDemandForecast } from './demand-forecast'
+import type { ExternalSignalInput } from './external-signals'
 
 function dateAt(day: string, hour: number) {
   return new Date(`${day}T${String(hour).padStart(2, '0')}:00:00Z`)
@@ -101,5 +102,60 @@ describe('demand forecasting', () => {
       covers: { status: 'cannot-calculate', value: null },
       sales: { status: 'cannot-calculate', value: null },
     })
+  })
+
+  it('uses a demonstrated external condition to choose comparable history', () => {
+    const sales = Array.from({ length: 35 }, (_, index) => {
+      const day = addDays('2025-01-01', index)
+      const condition = Math.floor(index / 7) % 2 === 1
+      return {
+        transactedAt: dateAt(day, 10),
+        qty: condition ? '10' : '1',
+        revenue: condition ? '100' : '10',
+      }
+    })
+    const externalSignals: ExternalSignalInput[] = Array.from(
+      { length: 42 },
+      (_, index) => {
+        const businessDate = addDays('2025-01-01', index)
+        const condition = Math.floor(index / 7) % 2 === 1
+        const timestamp = dateAt(businessDate, 12)
+        return {
+          id: `weather-${businessDate}`,
+          kind: 'weather',
+          source: 'test-weather',
+          externalId: `weather-${businessDate}`,
+          businessDate,
+          status: index < 35 ? 'observed' : 'forecast',
+          feature: 'rain',
+          condition: condition ? 'rain' : 'clear',
+          value: condition ? '1' : '0',
+          retrievedAt: timestamp,
+          validFrom: timestamp,
+          validTo: new Date(`${businessDate}T23:59:59.000Z`),
+        }
+      },
+    )
+
+    const result = buildDemandForecast({
+      timezone: 'UTC',
+      businessDayBoundary: '04:00',
+      sales,
+      externalSignals,
+      asOf: dateAt('2025-02-05', 12),
+    })
+    const firstForecast = result.periods.find(
+      (period) =>
+        period.businessDate === '2025-02-06' && period.dayPart === 'Morning',
+    )
+
+    expect(result.externalSignals.status).toBe('applied')
+    expect(firstForecast?.basis).toContain(
+      'demonstrated external-signal condition',
+    )
+    expect(firstForecast?.sales.value).toBe('100')
+    expect(result.trace.sources).toContainEqual(
+      expect.objectContaining({ source: 'test-weather', rowCount: 42 }),
+    )
   })
 })

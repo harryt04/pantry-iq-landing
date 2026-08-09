@@ -145,6 +145,18 @@ export function LaborEfficiencyView({
         reason?: string
       }
       trace: { calculations: unknown[] }
+      externalSignals: {
+        status: 'applied' | 'not-demonstrated' | 'unavailable'
+        appliedCount: number
+        correlations: Array<{
+          source: string
+          feature: string
+          observations: number
+          coefficient: string | null
+          qualified: boolean
+          reason: string
+        }>
+      }
       reason?: string
     }
   }
@@ -248,6 +260,18 @@ function DemandForecastView({
       reason?: string
     }
     trace: { calculations: unknown[] }
+    externalSignals: {
+      status: 'applied' | 'not-demonstrated' | 'unavailable'
+      appliedCount: number
+      correlations: Array<{
+        source: string
+        feature: string
+        observations: number
+        coefficient: string | null
+        qualified: boolean
+        reason: string
+      }>
+    }
     reason?: string
   }
 }) {
@@ -331,6 +355,14 @@ function DemandForecastView({
             <p>
               <strong>Trace:</strong> {forecast.trace.calculations.length}{' '}
               forecast calculations are available for the show-your-work record.
+            </p>
+            <p>
+              <strong>External signals:</strong>{' '}
+              {forecast.externalSignals.status === 'applied'
+                ? `${forecast.externalSignals.appliedCount} demonstrated signal condition${forecast.externalSignals.appliedCount === 1 ? '' : 's'} used to select comparable history.`
+                : forecast.externalSignals.status === 'not-demonstrated'
+                  ? 'Provider data is retained, but no signal has enough demonstrated correlation to change this forecast.'
+                  : 'No weather or local-event provider data is available; the imported-sales forecast remains in use.'}
             </p>
           </>
         )}

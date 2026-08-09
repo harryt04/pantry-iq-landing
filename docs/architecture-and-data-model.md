@@ -123,6 +123,33 @@ percentage error where the actual is non-zero. Accuracy is visible beside the
 forecast internally; missing backtest coverage is reported rather than
 treated as zero accuracy.
 
+### External staffing signals (STF-04)
+
+Weather and local-event providers cross a provider-neutral normalization
+boundary before persistence. Each normalized feature is a row in
+`external_signals`, retaining its location, business date, observed-versus-
+forecast status, validity window, provider, stable external ID, feature,
+condition, exact numeric value, raw payload, retrieval time, and source URL.
+Provider requests are recorded in `external_signal_fetches`, including row
+count, status, currency, and integer micro-unit cost. A failed request is
+durable and does not erase the last successful signal set.
+
+Signals are context, not authority. For each `(kind, source, feature)`, the
+deterministic engine pairs signal values with daily imported sales. A feature
+must have at least 14 paired business dates and an absolute Pearson
+coefficient of at least 0.30 before it is eligible. An eligible feature can
+only select historical periods with the same condition as the target date;
+the forecast arithmetic remains the exact decimal trailing mean. A signal
+without demonstrated correlation is recorded in the trace but cannot change
+the forecast. If provider rows are missing, malformed, or have too few paired
+dates, the baseline sales forecast continues and states that the external
+input was unavailable or not demonstrated.
+
+Every external source is added to the forecast evidence trace, and each
+correlation decision records the provider, feature, paired-date count,
+coefficient, threshold, and outcome. The model never fetches or interprets
+provider data; it receives only the deterministic forecast and its trace.
+
 ## Connector sync scheduling (`INT-06`)
 
 Each connected source is registered with the `pantryiq.connector-sync` pg-boss
@@ -376,7 +403,9 @@ FKs), `purchase_orders` (locationId FK), `purchase_order_items`
 `metric_rollups` (runId, locationId FKs), `recipes` (locationId, menuItemId
 FKs), `recipe_ingredients` (recipeId, ingredientItemId or subRecipeId FKs),
 `item_unit_conversions` (locationId, inventoryItemId FKs),
-`recipe_cost_history` (locationId, recipeId FKs).
+`recipe_cost_history` (locationId, recipeId FKs),
+`external_signal_fetches` (locationId FK), `external_signals`
+(locationId, fetchId FKs).
 
 Indices: `transactions(locationId, transactedAt)` for time-range queries;
 `transactions(locationId, menuItemId)` for item-level analysis;
@@ -390,7 +419,9 @@ exact conversion lookup; `recipe_cost_history(locationId, recipeId,
 calculatedAt)` for cost movement and evidence lookup; `metric_runs(locationId,
 startedAt)` for latest-run selection; `metric_results(locationId,
 inventoryItemId, metricKey)` and `metric_rollups(locationId, metricKey)` for
-scoped reads.
+scoped reads; `external_signal_fetches(locationId, requestedAt)` for provider
+cost and failure history; `external_signals(locationId, businessDate, kind)`
+for forecast joins.
 
 Donation adds (provisional): `recipient_organisations` (userId FK),
 `donation_offers` (locationId, inventoryItemId FKs), `donation_claims`
@@ -494,10 +525,13 @@ Likely categories (not finalized — see `open-questions.md`):
   show its work and it can't retrace its reasoning, the output is treated
   as unreliable (potential hallucination), and the user is always free to
   disregard an analysis that can't be justified with data.
-- **Implementation:** internal database queries only (SQL/ORM), no
-  external APIs in MVP. Response format is structured data presentable
-  naturally in chat or as dashboard widgets. Every answer should be
-  traceable to specific data queries and transformations.
+- **Implementation:** narration uses internal database queries only (SQL/ORM)
+  and never calls external APIs. The separate STF-04 signal adapters may
+  fetch weather or event data before precompute, but the model receives only
+  the deterministic forecast and its provenance. Response format is
+  structured data presentable naturally in chat or as dashboard widgets.
+  Every answer should be traceable to specific data queries and
+  transformations.
 
 ### Interpretable context bundle (`MET-12`)
 

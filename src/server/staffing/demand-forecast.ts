@@ -3,6 +3,12 @@ import type {
   EvidenceSourceInput,
   EvidenceTrace,
 } from '@/src/server/metrics/evidence'
+import {
+  evaluateExternalSignals,
+  signalGroupKey,
+  type ExternalSignalInfluence,
+  type ExternalSignalInput,
+} from './external-signals'
 
 const MIN_HISTORY_DAYS = 28
 const MIN_REFERENCE_PERIODS = 2
@@ -24,6 +30,7 @@ export type DemandForecastInput = {
   sales: readonly DemandForecastSale[]
   asOf?: Date
   sources?: readonly EvidenceSourceInput[]
+  externalSignals?: readonly ExternalSignalInput[]
 }
 
 export type ForecastMetric = {
@@ -62,6 +69,7 @@ export type DemandForecastResult = {
   periods: DemandForecastPeriod[]
   accuracy: DemandForecastAccuracy
   trace: EvidenceTrace
+  externalSignals: ExternalSignalInfluence
   reason?: string
 }
 
@@ -298,9 +306,18 @@ function forecastFor(
   date: string,
   dayPartKey: string,
   buckets: readonly Bucket[],
-): { covers: string | null; sales: string | null; references: number } {
+  signalContext?: {
+    signals: readonly ExternalSignalInput[]
+    qualifiedKeys: ReadonlySet<string>
+  },
+): {
+  covers: string | null
+  sales: string | null
+  references: number
+  conditioned: boolean
+} {
   const weekday = dayOfWeek(date)
-  const references = buckets
+  const baseReferences = buckets
     .filter(
       (bucket) =>
         bucket.date < date &&
@@ -308,12 +325,38 @@ function forecastFor(
         bucket.dayPart === dayPartKey,
     )
     .slice(-MAX_REFERENCE_PERIODS)
+  const targetSignals = signalContext?.signals.filter(
+    (signal) =>
+      signal.businessDate === date &&
+      signalContext.qualifiedKeys.has(signalGroupKey(signal)),
+  )
+  const conditionedReferences =
+    targetSignals && targetSignals.length > 0
+      ? baseReferences.filter((reference) =>
+          targetSignals.some((target) =>
+            signalContext?.signals.some(
+              (signal) =>
+                signal.businessDate === reference.date &&
+                signalGroupKey(signal) === signalGroupKey(target) &&
+                signal.condition === target.condition,
+            ),
+          ),
+        )
+      : []
+  const conditioned = conditionedReferences.length >= MIN_REFERENCE_PERIODS
+  const references = conditioned ? conditionedReferences : baseReferences
   if (references.length < MIN_REFERENCE_PERIODS)
-    return { covers: null, sales: null, references: references.length }
+    return {
+      covers: null,
+      sales: null,
+      references: references.length,
+      conditioned,
+    }
   return {
     covers: average(references.map((reference) => reference.covers)),
     sales: average(references.map((reference) => reference.sales)),
     references: references.length,
+    conditioned,
   }
 }
 
@@ -341,6 +384,10 @@ function percentageError(actual: string, predicted: string) {
 function accuracyFor(
   buckets: readonly Bucket[],
   historyDates: readonly string[],
+  signalContext?: {
+    signals: readonly ExternalSignalInput[]
+    qualifiedKeys: ReadonlySet<string>
+  },
 ) {
   const targetDates = historyDates.slice(-7)
   const coversErrors: string[] = []
@@ -358,6 +405,7 @@ function accuracyFor(
         date,
         part.key,
         buckets.filter((bucket) => bucket.date < date),
+        signalContext,
       )
       if (forecast.covers === null || forecast.sales === null) continue
       const coversError = absoluteError(actual.covers, forecast.covers)
@@ -397,24 +445,37 @@ function traceFor(
   input: DemandForecastInput,
   periods: readonly DemandForecastPeriod[],
   accuracy: DemandForecastAccuracy,
+  externalSignals: ExternalSignalInfluence,
 ): EvidenceTrace {
   const asOf = input.asOf ?? new Date()
   const calculations: EvidenceCalculation[] = periods.flatMap((period) => {
     if (period.covers.value === null || period.sales.value === null) return []
-    return [
-      {
-        id: `forecast:${period.id}`,
-        operator: 'mean of the latest same-weekday, same-day-part periods',
-        inputs: {
-          referencePeriods: String(period.referencePeriods),
-          weekday: period.dayOfWeek,
-          dayPart: period.dayPart,
-        },
-        units: { covers: 'imported transaction quantity', sales: 'currency' },
-        result: `covers=${period.covers.value}; sales=${period.sales.value}`,
-        explanation: period.basis,
+    const calculation: EvidenceCalculation = {
+      id: `forecast:${period.id}`,
+      operator: 'mean of the latest same-weekday, same-day-part periods',
+      inputs: {
+        referencePeriods: String(period.referencePeriods),
+        weekday: period.dayOfWeek,
+        dayPart: period.dayPart,
       },
-    ]
+      units: { covers: 'imported transaction quantity', sales: 'currency' },
+      result: `covers=${period.covers.value}; sales=${period.sales.value}`,
+      explanation: period.basis,
+    }
+    const calculationsForPeriod = [calculation]
+    if (period.basis.includes('demonstrated external-signal condition')) {
+      calculationsForPeriod.push({
+        id: `external-signal:influence:${period.id}`,
+        operator:
+          'select prior periods matching a demonstrated external-signal condition',
+        inputs: { businessDate: period.businessDate },
+        units: { result: 'conditioned forecast history' },
+        result: String(period.referencePeriods),
+        explanation:
+          'Only correlation-qualified signal conditions can change the comparable history set.',
+      })
+    }
+    return calculationsForPeriod
   })
   if (accuracy.status === 'calculated') {
     calculations.push({
@@ -431,21 +492,28 @@ function traceFor(
       result: `coversMae=${accuracy.coversMae}; salesMae=${accuracy.salesMae}; coversMape=${accuracy.coversMape}; salesMape=${accuracy.salesMape}`,
     })
   }
+  calculations.push(...externalSignals.traceCalculations)
   return {
     version: 1,
-    sources: input.sources
-      ? input.sources.map((source) => ({
-          ...source,
-          uploadedAt: source.uploadedAt.toISOString(),
-        }))
-      : [
-          {
-            filename: 'normalized transaction records',
-            source: 'transactions',
-            rowCount: input.sales.length,
-            uploadedAt: asOf.toISOString(),
-          },
-        ],
+    sources: [
+      ...(input.sources
+        ? input.sources.map((source) => ({
+            ...source,
+            uploadedAt: source.uploadedAt.toISOString(),
+          }))
+        : [
+            {
+              filename: 'normalized transaction records',
+              source: 'transactions',
+              rowCount: input.sales.length,
+              uploadedAt: asOf.toISOString(),
+            },
+          ]),
+      ...externalSignals.sources.map((source) => ({
+        ...source,
+        uploadedAt: source.uploadedAt.toISOString(),
+      })),
+    ],
     calculations,
     assumptions: [
       {
@@ -481,6 +549,7 @@ export function buildDemandForecast(
     'Trailing mean of up to eight same-weekday, same-day-part periods.'
   const historyRequirement =
     'At least 28 distinct business days of transaction history.'
+  const externalSignalRows = input.externalSignals ?? []
 
   if (boundary === null) {
     const accuracy: DemandForecastAccuracy = {
@@ -499,7 +568,13 @@ export function buildDemandForecast(
       historyDays: 0,
       periods: [],
       accuracy,
-      trace: traceFor(input, [], accuracy),
+      externalSignals: evaluateExternalSignals(externalSignalRows, []),
+      trace: traceFor(
+        input,
+        [],
+        accuracy,
+        evaluateExternalSignals(externalSignalRows, []),
+      ),
       ...(accuracy.reason ? { reason: accuracy.reason } : {}),
     }
   }
@@ -539,7 +614,26 @@ export function buildDemandForecast(
   const historyDates = [
     ...new Set(bucketRows.map((bucket) => bucket.date)),
   ].sort()
-  const accuracy = accuracyFor(bucketRows, historyDates)
+  const dailySales = historyDates.map((date) => {
+    let total: Decimal = { coefficient: 0n, scale: 0 }
+    for (const bucket of bucketRows.filter((row) => row.date === date)) {
+      total = add(total, parseDecimal(bucket.sales) as Decimal)
+    }
+    return { businessDate: date, sales: decimalToString(total) }
+  })
+  const externalSignals = evaluateExternalSignals(
+    externalSignalRows,
+    dailySales,
+  )
+  const signalContext = {
+    signals: externalSignalRows,
+    qualifiedKeys: new Set(
+      externalSignals.correlations
+        .filter((result) => result.qualified)
+        .map((result) => result.key),
+    ),
+  }
+  const accuracy = accuracyFor(bucketRows, historyDates, signalContext)
   if (historyDates.length < MIN_HISTORY_DAYS) {
     return {
       status: 'suppressed',
@@ -548,7 +642,8 @@ export function buildDemandForecast(
       historyDays: historyDates.length,
       periods: [],
       accuracy,
-      trace: traceFor(input, [], accuracy),
+      externalSignals,
+      trace: traceFor(input, [], accuracy, externalSignals),
       reason: `forecast suppressed until ${MIN_HISTORY_DAYS} distinct business days are available`,
     }
   }
@@ -562,7 +657,8 @@ export function buildDemandForecast(
       historyDays: historyDates.length,
       periods: [],
       accuracy,
-      trace: traceFor(input, [], accuracy),
+      externalSignals,
+      trace: traceFor(input, [], accuracy, externalSignals),
       reason: 'forecast date could not be calculated for the location timezone',
     }
   }
@@ -571,7 +667,7 @@ export function buildDemandForecast(
   for (let day = 1; day <= FORECAST_DAYS; day += 1) {
     const date = addDateDays(today, day)
     for (const part of DAY_PARTS) {
-      const forecast = forecastFor(date, part.key, bucketRows)
+      const forecast = forecastFor(date, part.key, bucketRows, signalContext)
       const reason =
         forecast.references < MIN_REFERENCE_PERIODS
           ? 'not enough same-weekday, same-day-part history'
@@ -581,7 +677,7 @@ export function buildDemandForecast(
         businessDate: date,
         dayOfWeek: dayOfWeek(date),
         dayPart: part.label,
-        basis: `${forecast.references} prior ${dayOfWeek(date)} ${part.label.toLowerCase()} periods`,
+        basis: `${forecast.references} prior ${dayOfWeek(date)} ${part.label.toLowerCase()} periods${forecast.conditioned ? ' with a demonstrated external-signal condition' : ''}`,
         referencePeriods: forecast.references,
         covers: metric(
           forecast.covers,
@@ -600,6 +696,7 @@ export function buildDemandForecast(
     historyDays: historyDates.length,
     periods,
     accuracy,
-    trace: traceFor(input, periods, accuracy),
+    externalSignals,
+    trace: traceFor(input, periods, accuracy, externalSignals),
   }
 }

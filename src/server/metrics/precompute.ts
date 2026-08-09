@@ -5,6 +5,7 @@ import {
   inventorySnapshots,
   itemUnitConversions,
   csvUploadHistory,
+  externalSignals,
   metricResults,
   metricRollups,
   metricRuns,
@@ -55,6 +56,7 @@ import {
   buildDemandForecast,
   type DemandForecastResult,
 } from '@/src/server/staffing/demand-forecast'
+import type { ExternalSignalInput } from '@/src/server/staffing/external-signals'
 import {
   assembleMenuRecommendationRecords,
   buildMenuRecommendationCandidates,
@@ -133,6 +135,7 @@ export type PrecomputeInput = {
   reconciliation?: readonly ReconciliationConflict[]
   menuRecommendations?: MenuRecommendationInput
   demandForecast?: DemandForecastResult
+  externalSignals?: readonly ExternalSignalInput[]
 }
 
 export type StoredMetric = {
@@ -783,6 +786,7 @@ export async function loadPrecomputeInput(
   const { db } = await import('@/src/server/db/client')
   const [
     locationContext,
+    signalRows,
     items,
     sales,
     orders,
@@ -801,6 +805,24 @@ export async function loadPrecomputeInput(
       .from(locations)
       .where(eq(locations.id, locationId))
       .limit(1),
+    db
+      .select({
+        id: externalSignals.id,
+        kind: externalSignals.kind,
+        source: externalSignals.source,
+        externalId: externalSignals.externalId,
+        businessDate: externalSignals.businessDate,
+        status: externalSignals.status,
+        feature: externalSignals.feature,
+        condition: externalSignals.condition,
+        value: externalSignals.value,
+        retrievedAt: externalSignals.retrievedAt,
+        validFrom: externalSignals.validFrom,
+        validTo: externalSignals.validTo,
+        sourceUrl: externalSignals.sourceUrl,
+      })
+      .from(externalSignals)
+      .where(eq(externalSignals.locationId, locationId)),
     db
       .select({
         id: inventoryItems.id,
@@ -1104,6 +1126,12 @@ export async function loadPrecomputeInput(
           revenue: sale.revenue,
         })),
         sources,
+        externalSignals: signalRows.map((signal) => ({
+          ...signal,
+          kind: signal.kind as 'weather' | 'event',
+          status: signal.status as 'observed' | 'forecast',
+          value: signal.value,
+        })),
       })
     : undefined
 
@@ -1116,6 +1144,12 @@ export async function loadPrecomputeInput(
     reconciliation,
     menuRecommendations,
     ...(demandForecast ? { demandForecast } : {}),
+    externalSignals: signalRows.map((signal) => ({
+      ...signal,
+      kind: signal.kind as 'weather' | 'event',
+      status: signal.status as 'observed' | 'forecast',
+      value: signal.value,
+    })),
   }
 }
 

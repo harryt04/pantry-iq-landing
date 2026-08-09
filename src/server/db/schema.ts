@@ -517,6 +517,95 @@ export const laborShifts = pgTable(
   ],
 )
 
+export const externalSignalFetches = pgTable(
+  'external_signal_fetches',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    locationId: uuid('location_id')
+      .notNull()
+      .references(() => locations.id, { onDelete: 'cascade' }),
+    source: text('source').notNull(),
+    requestedAt: timestamp('requested_at', { withTimezone: true }).notNull(),
+    completedAt: timestamp('completed_at', { withTimezone: true }),
+    status: text('status').notNull(),
+    rowCount: integer('row_count').notNull().default(0),
+    costMicros: numeric('cost_micros').notNull().default('0'),
+    currency: text('currency').notNull().default('USD'),
+    error: text('error'),
+    createdAt,
+  },
+  (table) => [
+    index('external_signal_fetches_location_requested_at_idx').on(
+      table.locationId,
+      table.requestedAt,
+    ),
+    check(
+      'external_signal_fetches_status_check',
+      sql`${table.status} in ('succeeded', 'failed')`,
+    ),
+    check(
+      'external_signal_fetches_non_negative_check',
+      sql`${table.rowCount} >= 0 and ${table.costMicros} >= 0`,
+    ),
+  ],
+)
+
+export const externalSignals = pgTable(
+  'external_signals',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    locationId: uuid('location_id')
+      .notNull()
+      .references(() => locations.id, { onDelete: 'cascade' }),
+    fetchId: uuid('fetch_id').references(() => externalSignalFetches.id, {
+      onDelete: 'set null',
+    }),
+    kind: text('kind').notNull(),
+    businessDate: text('business_date').notNull(),
+    validFrom: timestamp('valid_from', { withTimezone: true }).notNull(),
+    validTo: timestamp('valid_to', { withTimezone: true }).notNull(),
+    status: text('status').notNull(),
+    source: text('source').notNull(),
+    externalId: text('external_id').notNull(),
+    feature: text('feature').notNull(),
+    condition: text('condition').notNull(),
+    value: numeric('value').notNull(),
+    rawData: jsonb('raw_data').notNull(),
+    sourceUrl: text('source_url'),
+    retrievedAt: timestamp('retrieved_at', { withTimezone: true }).notNull(),
+    createdAt,
+  },
+  (table) => [
+    uniqueIndex('external_signals_location_source_external_feature_idx').on(
+      table.locationId,
+      table.source,
+      table.externalId,
+      table.feature,
+    ),
+    index('external_signals_location_date_idx').on(
+      table.locationId,
+      table.businessDate,
+    ),
+    index('external_signals_location_kind_date_idx').on(
+      table.locationId,
+      table.kind,
+      table.businessDate,
+    ),
+    check(
+      'external_signals_kind_check',
+      sql`${table.kind} in ('weather', 'event')`,
+    ),
+    check(
+      'external_signals_status_check',
+      sql`${table.status} in ('observed', 'forecast')`,
+    ),
+    check(
+      'external_signals_valid_period_check',
+      sql`${table.validTo} >= ${table.validFrom}`,
+    ),
+  ],
+)
+
 export const csvUploadHistory = pgTable(
   'csv_upload_history',
   {
