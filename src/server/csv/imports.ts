@@ -37,6 +37,8 @@ import type {
   ImportHistoryItem,
   ImportItemResolutionAudit,
 } from './import-history'
+import { createLogger } from '@/src/server/observability/logger'
+import { recordImportEvent } from '@/src/server/observability/store'
 
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
@@ -99,6 +101,7 @@ async function uploadForSession(headers: Headers, uploadId: string) {
     throw new CsvImportNotFoundError()
   return {
     ...upload,
+    accountId: session.user.id,
     source: upload.source as CsvImportType,
     storageKey: upload.storageKey,
   }
@@ -245,7 +248,7 @@ function itemResolutionForPlan(
   }
 }
 
-export async function commitCsvImport(
+async function commitCsvImportInternal(
   headers: Headers,
   uploadId: string,
   resolutions?: Readonly<Record<string, ImportItemResolution>>,
@@ -402,6 +405,82 @@ export async function commitCsvImport(
 
     return summaryFor(upload, plan, { rowsImported })
   })
+}
+
+export async function commitCsvImport(
+  headers: Headers,
+  uploadId: string,
+  resolutions?: Readonly<Record<string, ImportItemResolution>>,
+  storage?: ObjectStorage,
+) {
+  const logger = createLogger({ service: 'pantryiq.csv.import' })
+  const upload = await uploadForSession(headers, uploadId)
+
+  try {
+    const summary = await commitCsvImportInternal(
+      headers,
+      uploadId,
+      resolutions,
+      storage,
+    )
+    logger.importCompleted({
+      accountId: upload.accountId,
+      locationId: upload.locationId,
+      importId: upload.id,
+      rowsImported: summary.rowsImported,
+    })
+    try {
+      await recordImportEvent({
+        accountId: upload.accountId,
+        locationId: upload.locationId,
+        referenceId: upload.id,
+        status: 'succeeded',
+        occurredAt: new Date(),
+        rowsImported: summary.rowsImported,
+      })
+    } catch (telemetryError) {
+      const failure =
+        telemetryError instanceof Error
+          ? telemetryError
+          : new Error(String(telemetryError))
+      logger.error('Import telemetry could not be recorded', failure, {
+        event: 'observability.write.failed',
+        accountId: upload.accountId,
+        locationId: upload.locationId,
+      })
+    }
+    return summary
+  } catch (error) {
+    const failure = error instanceof Error ? error : new Error(String(error))
+    logger.importFailed(
+      {
+        accountId: upload.accountId,
+        locationId: upload.locationId,
+        importId: upload.id,
+      },
+      failure,
+    )
+    try {
+      await recordImportEvent({
+        accountId: upload.accountId,
+        locationId: upload.locationId,
+        referenceId: upload.id,
+        status: 'failed',
+        occurredAt: new Date(),
+      })
+    } catch (telemetryError) {
+      const telemetryFailure =
+        telemetryError instanceof Error
+          ? telemetryError
+          : new Error(String(telemetryError))
+      logger.error('Import telemetry could not be recorded', telemetryFailure, {
+        event: 'observability.write.failed',
+        accountId: upload.accountId,
+        locationId: upload.locationId,
+      })
+    }
+    throw error
+  }
 }
 
 export async function listImportHistory(headers: Headers, locationId: string) {

@@ -36,6 +36,7 @@ const canonicalTables = [
   'metric_runs',
   'metric_results',
   'metric_rollups',
+  'observability_events',
 ] as const
 
 const canonicalIndexes = [
@@ -72,6 +73,9 @@ const canonicalIndexes = [
   'metric_results_location_item_key_idx',
   'metric_rollups_run_key_idx',
   'metric_rollups_location_key_idx',
+  'observability_events_account_occurred_at_idx',
+  'observability_events_location_occurred_at_idx',
+  'observability_events_type_reference_idx',
 ] as const
 
 const canonicalColumns = [
@@ -343,6 +347,20 @@ const canonicalColumns = [
   ['metric_rollups', 'value', true, 'numeric'],
   ['metric_rollups', 'result', false, 'jsonb'],
   ['metric_rollups', 'created_at', false, 'timestamp with time zone'],
+  ['observability_events', 'id', false, 'uuid'],
+  ['observability_events', 'account_id', true, 'uuid'],
+  ['observability_events', 'location_id', true, 'uuid'],
+  ['observability_events', 'event_type', false, 'text'],
+  ['observability_events', 'status', false, 'text'],
+  ['observability_events', 'reference_id', false, 'text'],
+  ['observability_events', 'occurred_at', false, 'timestamp with time zone'],
+  ['observability_events', 'duration_ms', true, 'integer'],
+  ['observability_events', 'rows_imported', true, 'integer'],
+  ['observability_events', 'input_tokens', true, 'integer'],
+  ['observability_events', 'output_tokens', true, 'integer'],
+  ['observability_events', 'cost_micros', true, 'numeric'],
+  ['observability_events', 'currency', true, 'text'],
+  ['observability_events', 'created_at', false, 'timestamp with time zone'],
 ] as const
 
 async function expectCanonicalSchema(sql: ReturnType<typeof postgres>) {
@@ -466,6 +484,7 @@ describe.skipIf(!integrationDatabaseEnabled())(
           ('public.metric_runs'),
           ('public.metric_results'),
           ('public.metric_rollups'),
+          ('public.observability_events'),
           ('drizzle.__drizzle_migrations')
         ) as tables(table_name)
       `

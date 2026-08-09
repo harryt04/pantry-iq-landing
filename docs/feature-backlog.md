@@ -220,7 +220,7 @@ that touch them carry a stated default so work never stalls.
 | QAG-02 | Greyscale chart check | **done** | codex | QAG-01, DSH-05 |
 | QAG-03 | Test strategy and harness | **in-review** | codex | FND-03 |
 | QAG-04 | CSV upload security hardening | **done** | codex | FND-02 |
-| QAG-05 | Observability and error tracking | **in-review** | codex | FND-03 |
+| QAG-05 | Observability and error tracking | **done** | codex | FND-03 |
 | QAG-06 | Data isolation and ownership authorization | **done** | codex | FND-05, QAG-03 |
 
 ### Cross-location aggregation
@@ -3058,7 +3058,7 @@ completed, so a late stream error cannot expose a partial file.
 ### QAG-05 — Observability and error tracking
 
 ```
-Status: in-review   Owner: codex   Claimed: 2026-08-08   Completed: —   Branch/PR: —
+Status: done   Owner: codex   Claimed: 2026-08-08   Completed: 2026-08-09   Branch/PR: rewrite
 ```
 
 **Blocked by:** FND-03 · **Blocks:** —
@@ -3078,9 +3078,9 @@ success and failure rates.
 **Scope — out.** Product analytics on user behaviour.
 
 **Acceptance criteria.**
-- [ ] A failed precompute run raises an alert.
-- [ ] Metric staleness per location is queryable.
-- [ ] LLM spend is attributable per account and per day.
+- [x] A failed precompute run raises an alert.
+- [x] Metric staleness per location is queryable.
+- [x] LLM spend is attributable per account and per day.
 - [x] No log line contains a password, token, or full imported row.
 
 **Verification.**
@@ -3107,10 +3107,14 @@ validation, and the exact staleness threshold boundary. The registry is delibera
 in-process until the producers and persistent telemetry store arrive; it
 provides the typed seam those integrations will consume.
 
-The remaining acceptance criteria require `MET-02`'s precompute pipeline,
-the LLM narration service, and import execution paths. They are intentionally
-left in review until those producers exist; this ticket must then compose
-the logger with Sentry/OpenTelemetry and persisted health/cost signals.
+`observability_events` is now the durable telemetry store. The precompute
+scheduler records success/failure events and logs failed runs through its
+injectable error reporter; the authenticated `/api/observability` route makes
+staleness, import rates, and daily LLM spend queryable with owner scoping.
+Import commit and the narration service record their typed producer events
+without blocking the user request when telemetry storage itself is degraded.
+The migration and schema contract cover the exact numeric cost field, and
+scheduler coverage verifies both the alert and failure path.
 
 ---
 

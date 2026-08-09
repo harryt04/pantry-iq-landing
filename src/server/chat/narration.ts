@@ -13,6 +13,7 @@ import type {
 } from '@/src/server/metrics/context-bundle'
 import type { RecommendationRecord } from '@/src/server/metrics/recommendations'
 import { createLogger, type Logger } from '@/src/server/observability/logger'
+import { recordLlmQueryEvent } from '@/src/server/observability/store'
 import {
   CHAT_HISTORY_TOKEN_BUDGET,
   trimSessionHistory,
@@ -108,6 +109,11 @@ export type NarrationResult = {
   usage: Promise<NarrationUsage>
   fallbackRecommendations: readonly NarrationRecommendation[]
 }
+
+type PersistNarrationUsage = (
+  input: Pick<NarrationInput, 'accountId' | 'locationId' | 'queryId'>,
+  usage: NarrationUsage,
+) => Promise<void> | void
 
 type Environment = Record<string, string | undefined>
 
@@ -249,6 +255,7 @@ export function createNarrationService(
     model?: LanguageModel
     logger?: Logger
     misses?: ChatMissRecorder
+    onQueryCompleted?: PersistNarrationUsage
     now?: () => number
   } = {},
 ) {
@@ -258,6 +265,64 @@ export function createNarrationService(
     options.logger ?? createLogger({ service: 'pantryiq.chat.narration' })
   const misses = options.misses ?? chatMisses
   const now = options.now ?? Date.now
+  const onQueryCompleted =
+    options.onQueryCompleted ??
+    (process.env.DATABASE_URL
+      ? async (
+          input: Pick<NarrationInput, 'accountId' | 'locationId' | 'queryId'>,
+          usage: NarrationUsage,
+        ) => {
+          await recordLlmQueryEvent({
+            accountId: input.accountId,
+            locationId: input.locationId,
+            referenceId: input.queryId,
+            status: 'succeeded',
+            occurredAt: new Date(now()),
+            inputTokens: usage.inputTokens,
+            outputTokens: usage.outputTokens,
+            costMicros: usage.costMicros,
+            currency: usage.currency,
+          })
+        }
+      : undefined)
+
+  async function persistUsage(
+    input: Pick<NarrationInput, 'accountId' | 'locationId' | 'queryId'>,
+    usage: NarrationUsage,
+  ) {
+    try {
+      await onQueryCompleted?.(input, usage)
+    } catch (error) {
+      const failure = error instanceof Error ? error : new Error(String(error))
+      logger.error?.('LLM telemetry could not be recorded', failure, {
+        event: 'observability.write.failed',
+        accountId: input.accountId,
+        queryId: input.queryId,
+      })
+    }
+  }
+
+  async function logAndPersistUsage(
+    input: Pick<NarrationInput, 'accountId' | 'locationId' | 'queryId'>,
+    usage: NarrationUsage,
+  ) {
+    logger.llmQueryCompleted({
+      accountId: input.accountId,
+      queryId: input.queryId,
+      model: usage.model,
+      inputTokens: usage.inputTokens,
+      outputTokens: usage.outputTokens,
+      costMicros: usage.costMicros,
+      currency: usage.currency,
+      cacheReadTokens: usage.cacheReadTokens,
+      cacheWriteTokens: usage.cacheWriteTokens,
+      cacheHit: usage.cacheHit,
+      firstTokenMs: usage.firstTokenMs,
+      degraded: usage.degraded,
+      blocked: usage.blocked,
+    })
+    await persistUsage(input, usage)
+  }
 
   return {
     stream(input: NarrationInput): NarrationResult {
@@ -333,21 +398,7 @@ export function createNarrationService(
               }
               misses.record(miss)
               logger.chatMissRecorded(miss)
-              logger.llmQueryCompleted({
-                accountId: input.accountId,
-                queryId: input.queryId,
-                model: recorded.model,
-                inputTokens: recorded.inputTokens,
-                outputTokens: recorded.outputTokens,
-                costMicros: recorded.costMicros,
-                currency: recorded.currency,
-                cacheReadTokens: recorded.cacheReadTokens,
-                cacheWriteTokens: recorded.cacheWriteTokens,
-                cacheHit: recorded.cacheHit,
-                firstTokenMs: recorded.firstTokenMs,
-                degraded: recorded.degraded,
-                blocked: recorded.blocked,
-              })
+              await logAndPersistUsage(input, recorded)
               resolveUsage(recorded)
               yield formatDeclineAnswer(
                 declineAlternative(narrationInput.recommendations),
@@ -397,21 +448,7 @@ export function createNarrationService(
               degraded: !accepted,
               blocked: !accepted,
             }
-            logger.llmQueryCompleted({
-              accountId: input.accountId,
-              queryId: input.queryId,
-              model: recorded.model,
-              inputTokens: recorded.inputTokens,
-              outputTokens: recorded.outputTokens,
-              costMicros: recorded.costMicros,
-              currency: recorded.currency,
-              cacheReadTokens: recorded.cacheReadTokens,
-              cacheWriteTokens: recorded.cacheWriteTokens,
-              cacheHit: recorded.cacheHit,
-              firstTokenMs: recorded.firstTokenMs,
-              degraded: recorded.degraded,
-              blocked: recorded.blocked,
-            })
+            await logAndPersistUsage(input, recorded)
             resolveUsage(recorded)
             if (!accepted) {
               yield formatFivePartAnswer(
@@ -441,21 +478,7 @@ export function createNarrationService(
           degraded: true,
           blocked: false,
         }
-        logger.llmQueryCompleted({
-          accountId: input.accountId,
-          queryId: input.queryId,
-          model: recorded.model,
-          inputTokens: 0,
-          outputTokens: 0,
-          costMicros: 0,
-          currency: recorded.currency,
-          cacheReadTokens: 0,
-          cacheWriteTokens: 0,
-          cacheHit: false,
-          firstTokenMs: null,
-          degraded: true,
-          blocked: false,
-        })
+        await logAndPersistUsage(input, recorded)
         resolveUsage(recorded)
         yield formatFivePartAnswer(
           input.recommendations,

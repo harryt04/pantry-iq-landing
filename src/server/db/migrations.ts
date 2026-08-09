@@ -16,6 +16,7 @@ export async function rollbackDatabase(client: DatabaseClient) {
     'external_signals',
     'external_signal_fetches',
     'reconciliation_conflicts',
+    'observability_events',
     'metric_rollups',
     'metric_results',
     'metric_runs',

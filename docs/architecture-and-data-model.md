@@ -412,6 +412,17 @@ or failing. Readers select the latest successful run, so an interrupted
 precompute cannot expose partial results. A failed run retains its error and
 can be surfaced by the observability layer.
 
+### Operational telemetry
+
+`observability_events` is the durable, redaction-safe operational ledger for
+precompute runs, imports, and LLM queries. It stores identifiers, statuses,
+timestamps, durations, row/token counts, and integer micro-unit costs only —
+never passwords, provider tokens, or imported rows. A unique event type and
+reference ID makes producer retries idempotent. Precompute health and import
+success rates are location-scoped; LLM spend is account-scoped and grouped by
+UTC day. The authenticated `/api/observability` query exposes these signals
+without exposing another account's locations or spend.
+
 ### Required tables & indices summary
 
 Tables: `locations` (userId FK), `transactions` (locationId, menuItemId
@@ -425,7 +436,8 @@ FKs), `recipe_ingredients` (recipeId, ingredientItemId or subRecipeId FKs),
 `item_unit_conversions` (locationId, inventoryItemId FKs),
 `recipe_cost_history` (locationId, recipeId FKs),
 `external_signal_fetches` (locationId FK), `external_signals`
-(locationId, fetchId FKs).
+(locationId, fetchId FKs), `observability_events` (optional accountId and
+locationId FKs).
 
 Indices: `transactions(locationId, transactedAt)` for time-range queries;
 `transactions(locationId, menuItemId)` for item-level analysis;
@@ -441,7 +453,10 @@ startedAt)` for latest-run selection; `metric_results(locationId,
 inventoryItemId, metricKey)` and `metric_rollups(locationId, metricKey)` for
 scoped reads; `external_signal_fetches(locationId, requestedAt)` for provider
 cost and failure history; `external_signals(locationId, businessDate, kind)`
-for forecast joins.
+for forecast joins; `observability_events(locationId, occurredAt)`,
+`observability_events(accountId, occurredAt)`, and
+`observability_events(eventType, referenceId)` for operational queries and
+idempotent writes.
 
 Donation adds (provisional): `recipient_organisations` (userId FK),
 `donation_offers` (locationId, inventoryItemId FKs), `donation_claims`

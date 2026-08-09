@@ -37,6 +37,10 @@ const reconciliationMigration = readFileSync(
   new URL('../../drizzle/0011_boring_bulldozer.sql', import.meta.url),
   'utf8',
 )
+const observabilityMigration = readFileSync(
+  new URL('../../drizzle/0014_young_ikaris.sql', import.meta.url),
+  'utf8',
+)
 
 const canonicalTables = [
   'csv_upload_history',
@@ -195,6 +199,18 @@ describe('canonical migration contract', () => {
     )
     expect(reconciliationMigration).toMatch(
       /reconciliation_conflicts_status_check[\s\S]*'unresolved', 'resolved'/,
+    )
+  })
+
+  it('stores redaction-safe operational telemetry with exact cost units', () => {
+    expect(observabilityMigration).toMatch(
+      /CREATE TABLE "observability_events"[\s\S]*"event_type" text NOT NULL[\s\S]*"reference_id" text NOT NULL[\s\S]*"cost_micros" numeric/,
+    )
+    expect(observabilityMigration).toMatch(
+      /observability_events_type_reference_idx/,
+    )
+    expect(observabilityMigration).not.toMatch(
+      /\b(?:real|float|double precision)\b/i,
     )
   })
 })

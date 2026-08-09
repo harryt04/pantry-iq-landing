@@ -633,6 +633,60 @@ export const csvUploadHistory = pgTable(
   ],
 )
 
+export const observabilityEvents = pgTable(
+  'observability_events',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    accountId: uuid('account_id').references(() => user.id, {
+      onDelete: 'cascade',
+    }),
+    locationId: uuid('location_id').references(() => locations.id, {
+      onDelete: 'cascade',
+    }),
+    eventType: text('event_type').notNull(),
+    status: text('status').notNull(),
+    referenceId: text('reference_id').notNull(),
+    occurredAt: timestamp('occurred_at', { withTimezone: true }).notNull(),
+    durationMs: integer('duration_ms'),
+    rowsImported: integer('rows_imported'),
+    inputTokens: integer('input_tokens'),
+    outputTokens: integer('output_tokens'),
+    costMicros: numeric('cost_micros'),
+    currency: text('currency'),
+    createdAt,
+  },
+  (table) => [
+    uniqueIndex('observability_events_type_reference_idx').on(
+      table.eventType,
+      table.referenceId,
+    ),
+    index('observability_events_location_occurred_at_idx').on(
+      table.locationId,
+      table.occurredAt,
+    ),
+    index('observability_events_account_occurred_at_idx').on(
+      table.accountId,
+      table.occurredAt,
+    ),
+    check(
+      'observability_events_type_check',
+      sql`${table.eventType} in ('precompute', 'import', 'llm-query')`,
+    ),
+    check(
+      'observability_events_status_check',
+      sql`${table.status} in ('succeeded', 'failed')`,
+    ),
+    check(
+      'observability_events_non_negative_check',
+      sql`(${table.durationMs} is null or ${table.durationMs} >= 0)
+        and (${table.rowsImported} is null or ${table.rowsImported} >= 0)
+        and (${table.inputTokens} is null or ${table.inputTokens} >= 0)
+        and (${table.outputTokens} is null or ${table.outputTokens} >= 0)
+        and (${table.costMicros} is null or ${table.costMicros} >= 0)`,
+    ),
+  ],
+)
+
 export const reconciliationConflicts = pgTable(
   'reconciliation_conflicts',
   {

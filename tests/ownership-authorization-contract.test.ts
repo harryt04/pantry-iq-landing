@@ -37,6 +37,10 @@ const protectedRoutes: readonly RouteContract[] = [
   { file: 'locations/route.ts', markers: ['listLocations', 'createLocation'] },
   { file: 'manual-entry/route.ts', markers: ['createManualEntry'] },
   {
+    file: 'observability/route.ts',
+    markers: ['requireSession', 'getPrecomputeHealth', 'listDailyLlmSpend'],
+  },
+  {
     file: 'recipes/route.ts',
     markers: ['listRecipes', 'getRecipe', 'saveRecipe'],
   },

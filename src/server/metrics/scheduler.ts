@@ -3,6 +3,7 @@ import { fromDrizzle, PgBoss, type SendOptions } from 'pg-boss'
 
 import { locations } from '@/src/server/db/schema'
 import { createLogger, type Logger } from '@/src/server/observability/logger'
+import { recordPrecomputeEvent } from '@/src/server/observability/store'
 
 import { runPrecomputeForLocation } from './precompute'
 
@@ -30,6 +31,9 @@ export type PrecomputeSchedulerOptions = {
   listLocationIds: () => Promise<string[]>
   run: (locationId: string) => Promise<{ id: string; completedAt: Date | null }>
   logger?: Pick<Logger, 'info' | 'error'>
+  telemetry?: (
+    event: Parameters<typeof recordPrecomputeEvent>[0],
+  ) => Promise<void>
   now?: () => Date
 }
 
@@ -63,6 +67,28 @@ export function createPrecomputeScheduler(options: PrecomputeSchedulerOptions) {
       const run = await options.run(locationId)
       const completedAt = run.completedAt ?? now()
       const durationMs = completedAt.getTime() - startedAt.getTime()
+      try {
+        await options.telemetry?.({
+          locationId,
+          referenceId: run.id,
+          status: 'succeeded',
+          occurredAt: completedAt,
+          durationMs,
+        })
+      } catch (telemetryError) {
+        const failure =
+          telemetryError instanceof Error
+            ? telemetryError
+            : new Error(String(telemetryError))
+        options.logger?.error(
+          'Precompute telemetry could not be recorded',
+          failure,
+          {
+            event: 'observability.write.failed',
+            locationId,
+          },
+        )
+      }
       options.logger?.info('Precompute completed', {
         event: 'precompute.completed',
         locationId,
@@ -73,6 +99,27 @@ export function createPrecomputeScheduler(options: PrecomputeSchedulerOptions) {
       })
     } catch (error) {
       const failure = error instanceof Error ? error : new Error(String(error))
+      try {
+        await options.telemetry?.({
+          locationId,
+          referenceId: jobId,
+          status: 'failed',
+          occurredAt: now(),
+        })
+      } catch (telemetryError) {
+        const telemetryFailure =
+          telemetryError instanceof Error
+            ? telemetryError
+            : new Error(String(telemetryError))
+        options.logger?.error(
+          'Precompute telemetry could not be recorded',
+          telemetryFailure,
+          {
+            event: 'observability.write.failed',
+            locationId,
+          },
+        )
+      }
       options.logger?.error('Precompute failed', failure, {
         event: 'precompute.failed',
         locationId,
@@ -189,6 +236,7 @@ function defaultSchedulerInstance() {
       return { id: run.id, completedAt: run.completedAt }
     },
     logger,
+    telemetry: recordPrecomputeEvent,
   })
   return defaultScheduler
 }
