@@ -19,6 +19,7 @@ import type {
   LaborEfficiencyResult,
 } from '@/src/server/staffing/labor-efficiency'
 import type { DemandForecastPeriod } from '@/src/server/staffing/demand-forecast'
+import type { StaffingRecommendationRecord } from '@/src/server/metrics/recommendations'
 
 function figure(value: string | null, suffix = '') {
   return value === null ? '—' : `${value}${suffix}`
@@ -159,6 +160,7 @@ export function LaborEfficiencyView({
       }
       reason?: string
     }
+    shiftRecommendations: StaffingRecommendationRecord[]
   }
 }) {
   return (
@@ -189,6 +191,8 @@ export function LaborEfficiencyView({
       )}
 
       <DemandForecastView forecast={result.forecast} />
+
+      <ShiftRecommendationsView recommendations={result.shiftRecommendations} />
 
       {result.exclusions.length > 0 ? (
         <Card className="state-edge--watch">
@@ -229,6 +233,94 @@ export function LaborEfficiencyView({
         </CardContent>
       </Card>
     </main>
+  )
+}
+
+function riskLabel(
+  status: StaffingRecommendationRecord['risks']['understaffing']['status'],
+) {
+  if (status === 'possible') return 'Possible'
+  if (status === 'not-indicated') return 'Not indicated'
+  return 'Cannot calculate'
+}
+
+function ShiftRecommendationsView({
+  recommendations,
+}: {
+  recommendations: StaffingRecommendationRecord[]
+}) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Consider staffing by shift</CardTitle>
+        <CardDescription>
+          These are suggestions from the demand forecast and historical sales
+          per labor hour. PantryIQ does not publish a schedule or write to a
+          rostering system.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        {recommendations.length === 0 ? (
+          <p>
+            There is not enough comparable forecast and role history to make a
+            shift suggestion yet.
+          </p>
+        ) : (
+          <div className="overflow-x-auto">
+            <Table>
+              <TableCaption>
+                Forecast ranges use held-out sales error when it can be
+                calculated. Both staffing risks stay visible.
+              </TableCaption>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Shift</TableHead>
+                  <TableHead>Role</TableHead>
+                  <TableHead className="figure">Forecast sales</TableHead>
+                  <TableHead className="figure">Consider hours</TableHead>
+                  <TableHead>Forecast basis</TableHead>
+                  <TableHead>Risks</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {recommendations.map((recommendation) => (
+                  <TableRow key={recommendation.id}>
+                    <TableCell>
+                      <strong>{recommendation.businessDate}</strong>
+                      <br />
+                      {recommendation.dayPart}
+                    </TableCell>
+                    <TableCell>{recommendation.role}</TableCell>
+                    <TableCell className="figure">
+                      {recommendation.forecastSales} USD
+                    </TableCell>
+                    <TableCell className="figure">
+                      {recommendation.recommendedHours} h
+                    </TableCell>
+                    <TableCell>
+                      <p>{recommendation.forecastBasis}.</p>
+                      <p>{recommendation.uncertainty.detail}</p>
+                    </TableCell>
+                    <TableCell>
+                      <p>
+                        <strong>Under:</strong>{' '}
+                        {riskLabel(recommendation.risks.understaffing.status)} —{' '}
+                        {recommendation.risks.understaffing.detail}
+                      </p>
+                      <p>
+                        <strong>Over:</strong>{' '}
+                        {riskLabel(recommendation.risks.overstaffing.status)} —{' '}
+                        {recommendation.risks.overstaffing.detail}
+                      </p>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+      </CardContent>
+    </Card>
   )
 }
 

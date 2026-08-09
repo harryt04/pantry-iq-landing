@@ -17,6 +17,8 @@ import {
   buildDemandForecast,
   type DemandForecastResult,
 } from './demand-forecast'
+import { buildShiftRecommendations } from './shift-recommendations'
+import type { StaffingRecommendationRecord } from '@/src/server/metrics/recommendations'
 
 const LOOKBACK_DAYS = 365
 
@@ -24,10 +26,16 @@ const LOOKBACK_DAYS = 365
 export async function getLaborEfficiency(
   headers: Headers,
   locationId: string,
-): Promise<LaborEfficiencyResult & { forecast: DemandForecastResult }> {
+): Promise<
+  LaborEfficiencyResult & {
+    forecast: DemandForecastResult
+    shiftRecommendations: StaffingRecommendationRecord[]
+  }
+> {
   const owned = await requireOwnedLocation(headers, locationId)
   const periodStart = new Date(Date.now() - LOOKBACK_DAYS * 24 * 60 * 60 * 1000)
   const signalWindowEnd = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000)
+  const asOf = new Date()
 
   const [location, sales, labor, signalRows] = await Promise.all([
     db
@@ -108,18 +116,28 @@ export async function getLaborEfficiency(
     })),
     labor,
   })
+  const forecast = buildDemandForecast({
+    timezone: selectedLocation.timezone,
+    businessDayBoundary: selectedLocation.businessDayBoundary,
+    sales,
+    externalSignals: signalRows.map((signal) => ({
+      ...signal,
+      kind: signal.kind as 'weather' | 'event',
+      status: signal.status as 'observed' | 'forecast',
+      value: signal.value,
+    })),
+    asOf,
+  })
   return {
     ...efficiency,
-    forecast: buildDemandForecast({
+    forecast,
+    shiftRecommendations: buildShiftRecommendations({
+      forecast,
+      sales,
+      labor,
       timezone: selectedLocation.timezone,
       businessDayBoundary: selectedLocation.businessDayBoundary,
-      sales,
-      externalSignals: signalRows.map((signal) => ({
-        ...signal,
-        kind: signal.kind as 'weather' | 'event',
-        status: signal.status as 'observed' | 'forecast',
-        value: signal.value,
-      })),
+      asOf,
     }),
   }
 }

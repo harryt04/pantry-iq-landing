@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { buildPrecomputeResults } from './precompute'
+import { buildDemandForecast } from '@/src/server/staffing/demand-forecast'
 import type { ReconciliationConflict } from '@/src/server/ingestion/reconciliation'
 import {
   PRECOMPUTE_DAILY_CRON,
@@ -39,6 +40,58 @@ const input = {
 } as const
 
 describe('precompute results', () => {
+  it('stores ranked staffing suggestions beside the forecast rollup', () => {
+    const sales = Array.from({ length: 35 }, (_, index) => {
+      const date = new Date('2025-01-01T10:00:00.000Z')
+      date.setUTCDate(date.getUTCDate() + index)
+      return {
+        itemId: null,
+        qty: '1',
+        revenue: String(10 + index),
+        transactedAt: date,
+      }
+    })
+    const demandForecast = buildDemandForecast({
+      timezone: 'UTC',
+      businessDayBoundary: '04:00',
+      sales,
+      asOf: new Date('2025-02-05T12:00:00.000Z'),
+    })
+    const labor = sales.map((sale, index) => ({
+      id: `shift-${index}`,
+      shiftStart: sale.transactedAt,
+      shiftEnd: new Date(sale.transactedAt.getTime() + 2 * 60 * 60 * 1000),
+      role: 'Line cook',
+      scheduledHours: '2',
+      actualHours: '2',
+      laborCost: '40',
+    }))
+
+    const output = buildPrecomputeResults(
+      {
+        items: [],
+        sales,
+        orders: [],
+        snapshots: [],
+        labor,
+        timezone: 'UTC',
+        businessDayBoundary: '04:00',
+        demandForecast,
+      },
+      new Date('2025-02-05T12:00:00.000Z'),
+    )
+
+    expect(output.staffingRecommendations.length).toBeGreaterThan(0)
+    expect(output.rollups).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          metricKey: 'staffingRecommendations',
+          status: 'calculated',
+        }),
+      ]),
+    )
+  })
+
   it('persists every MET-01 metric with exact evidence', () => {
     const output = buildPrecomputeResults(input, now)
     const metrics = output.itemResults[0]?.metrics

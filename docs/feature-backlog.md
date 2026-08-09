@@ -265,7 +265,7 @@ that touch them carry a stated default so work never stalls.
 | STF-02 | Labor efficiency metrics | **done** | codex | STF-01, MET-01 |
 | STF-03 | Demand forecasting | **done** | codex | MET-02 |
 | STF-04 | External signals — weather and local events | **done** | codex | STF-03 |
-| STF-05 | Shift-level recommendations | available | — | STF-04, STF-02 |
+| STF-05 | Shift-level recommendations | **done** | codex | STF-04, STF-02 |
 | STF-06 | Labor cost in the Impact score | available | — | STF-02, MET-05 |
 
 ## 5. Tickets
@@ -4110,7 +4110,7 @@ choice remain outside the deterministic engine.
 ### STF-05 — Shift-level recommendations
 
 ```
-Status: available   Owner: —   Claimed: —   Completed: —   Branch/PR: —
+Status: done   Owner: codex   Claimed: 2026-08-09   Completed: 2026-08-09   Branch/PR: rewrite
 ```
 
 **Blocked by:** STF-04, STF-02 · **Blocks:** —
@@ -4131,12 +4131,21 @@ error range.
 rostering system. The product recommends; the operator decides.
 
 **Acceptance criteria.**
-- [ ] Recommendations are suggestions and read as suggestions.
-- [ ] Each states the forecast it rests on and how uncertain that
+- [x] Recommendations are suggestions and read as suggestions.
+- [x] Each states the forecast it rests on and how uncertain that
       forecast is.
-- [ ] Nothing writes to any scheduling system.
-- [ ] Understaffing and overstaffing risks are both surfaced — the cost
+- [x] Nothing writes to any scheduling system.
+- [x] Understaffing and overstaffing risks are both surfaced — the cost
       of a bad Friday is not only labor dollars.
+
+**Notes.** Shift suggestions are calculated from the next seven-business-day
+forecast and exact historical role/day-part sales per actual labor hour.
+They are assembled through the shared recommendation evidence path and
+ranked by the existing Impact × Urgency × Data Sufficiency formula. Each
+record carries forecast basis, sales MAE-derived hour bounds when available,
+and separate under- and overstaffing risk states. The Staffing page makes
+the suggestion framing and read-only boundary explicit; no scheduling system
+is written. Focused staffing, recommendation, and precompute tests pass.
 
 ---
 
@@ -4184,10 +4193,10 @@ condition.
 | Marketing site | 5 | 5 |
 | Quality gates | 4 | 6 |
 | Cross-location | 4 | 4 |
-| Integrations | 7 | 8 |
+| Integrations | 8 | 8 |
 | Menu management | 7 | 7 |
-| Staffing | 0 | 6 |
-| **Total** | **78** | **87** |
+| Staffing | 5 | 6 |
+| **Total** | **84** | **87** |
 
 **The backlog is complete when every ticket reads `done`.** Sections 7
 and 8 are not work and never become work.

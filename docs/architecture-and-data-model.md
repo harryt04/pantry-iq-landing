@@ -123,6 +123,26 @@ percentage error where the actual is non-zero. Accuracy is visible beside the
 forecast internally; missing backtest coverage is reported rather than
 treated as zero accuracy.
 
+### Shift-level recommendations (STF-05)
+
+Shift recommendations are a read-only output of the deterministic precompute
+pipeline. For each forecasted day part and role with comparable history, the
+engine calculates historical role/day-part sales per actual labor hour, then
+divides forecast sales by that productivity to produce suggested hours. The
+forecast basis, reference count, productivity observations, and exact decimal
+inputs are retained in the same evidence trace contract as inventory
+recommendations. The output is assembled through the shared recommendation
+message path and ranked with the existing Impact × Urgency × Data Sufficiency
+formula; it never writes to a schedule or rostering system.
+
+When held-out sales MAE is available, the point forecast is accompanied by a
+lower and upper sales range and the corresponding labor-hour range. A
+comparable average scheduled-hours baseline is used only when imported
+scheduled hours are present. The UI surfaces both possible understaffing and
+possible overstaffing, including an explicit cannot-calculate state when the
+baseline or error range is missing. A missing error range does not turn into a
+zero: the point suggestion remains visible and is labelled as less certain.
+
 ### External staffing signals (STF-04)
 
 Weather and local-event providers cross a provider-neutral normalization

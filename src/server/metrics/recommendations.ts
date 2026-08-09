@@ -2,6 +2,7 @@ import type { RankedRecommendation } from './ranking'
 import { METRICS_CONFIG } from './config'
 import {
   buildEvidenceTrace,
+  type EvidenceAssumption,
   type EvidenceSourceInput,
   type EvidenceTrace,
 } from './evidence'
@@ -16,6 +17,67 @@ export const RECOMMENDATION_METRIC_KEY = 'recommendation' as const
 
 export type MenuRecommendationType =
   'margin-erosion' | 'recipe-variance' | 'ingredient-cost-increase'
+
+export type StaffingRisk = {
+  status: 'possible' | 'not-indicated' | 'cannot-calculate'
+  detail: string
+}
+
+export type StaffingRecommendationDraft = {
+  id: string
+  role: string
+  businessDate: string
+  dayPart: string
+  forecastSales: string
+  forecastBasis: string
+  referencePeriods: number
+  historicalSalesPerLaborHour: string
+  historicalObservations: number
+  baselineScheduledHours: string | null
+  uncertainty: {
+    status: 'calculated' | 'cannot-calculate'
+    salesMae: string | null
+    lowerSales: string | null
+    upperSales: string | null
+    lowerHours: string | null
+    upperHours: string | null
+    detail: string
+  }
+  recommendedHours: string
+  risks: {
+    understaffing: StaffingRisk
+    overstaffing: StaffingRisk
+  }
+  scores: {
+    impact: string
+    urgency: string
+    dataSufficiency: string
+  }
+  evidenceMetrics: readonly MetricResultShape[]
+  additionalAssumptions: readonly EvidenceAssumption[]
+}
+
+export type StaffingRecommendationRecord = Omit<
+  StaffingRecommendationDraft,
+  'evidenceMetrics' | 'additionalAssumptions' | 'scores'
+> & {
+  version: 1
+  rank: number
+  score: string
+  scores: StaffingRecommendationDraft['scores']
+  suggestedAction: {
+    framing: 'consider'
+    action: 'schedule-hours'
+    hours: string
+    timeHorizon: string
+  }
+  evidenceTraceRef: {
+    key: string
+    businessDate: string
+    role: string
+  }
+  evidenceTrace: EvidenceTrace
+}
 
 export function recommendationMetricKey(
   recommendation: Pick<RecommendationRecord, 'recommendationType'>,
@@ -322,6 +384,68 @@ export function assembleRecommendationRecords(input: {
             : {}),
         }),
       } satisfies RecommendationRecord,
+    ]
+  })
+}
+
+/**
+ * Uses the same recommendation assembly and evidence contract as inventory
+ * findings, while keeping staffing advice read-only and role/shift scoped.
+ */
+export function assembleStaffingRecommendationRecords(input: {
+  drafts: readonly StaffingRecommendationDraft[]
+  ranked: readonly RankedRecommendation[]
+  sources?: readonly EvidenceSourceInput[]
+  sourceTimestamp: Date
+}): StaffingRecommendationRecord[] {
+  const draftById = new Map(input.drafts.map((draft) => [draft.id, draft]))
+
+  return input.ranked.flatMap((ranked) => {
+    const draft = draftById.get(ranked.itemId)
+    if (!draft) return []
+
+    const evidenceTrace = buildEvidenceTrace({
+      metrics: draft.evidenceMetrics,
+      ranked,
+      ...(input.sources ? { sources: input.sources } : {}),
+      sourceCounts: { transactions: 0, purchaseOrders: 0, snapshots: 0 },
+      sourceTimestamp: input.sourceTimestamp,
+      additionalAssumptions: draft.additionalAssumptions,
+      config: METRICS_CONFIG,
+    })
+
+    return [
+      {
+        version: 1,
+        id: draft.id,
+        role: draft.role,
+        businessDate: draft.businessDate,
+        dayPart: draft.dayPart,
+        rank: ranked.rank,
+        score: ranked.score,
+        forecastSales: draft.forecastSales,
+        forecastBasis: draft.forecastBasis,
+        referencePeriods: draft.referencePeriods,
+        historicalSalesPerLaborHour: draft.historicalSalesPerLaborHour,
+        historicalObservations: draft.historicalObservations,
+        baselineScheduledHours: draft.baselineScheduledHours,
+        uncertainty: draft.uncertainty,
+        recommendedHours: draft.recommendedHours,
+        risks: draft.risks,
+        scores: draft.scores,
+        suggestedAction: {
+          framing: 'consider',
+          action: 'schedule-hours',
+          hours: draft.recommendedHours,
+          timeHorizon: `${draft.dayPart.toLowerCase()} on ${draft.businessDate}`,
+        },
+        evidenceTraceRef: {
+          key: `staffing-recommendation:${draft.id}`,
+          businessDate: draft.businessDate,
+          role: draft.role,
+        },
+        evidenceTrace,
+      } satisfies StaffingRecommendationRecord,
     ]
   })
 }

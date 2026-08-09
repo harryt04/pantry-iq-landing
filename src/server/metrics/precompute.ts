@@ -9,6 +9,7 @@ import {
   metricResults,
   metricRollups,
   metricRuns,
+  laborShifts,
   locations,
   recipeCostHistory,
   recipeIngredients,
@@ -58,6 +59,10 @@ import {
 } from '@/src/server/staffing/demand-forecast'
 import type { ExternalSignalInput } from '@/src/server/staffing/external-signals'
 import {
+  buildShiftRecommendations,
+  type ShiftRecommendationInput,
+} from '@/src/server/staffing/shift-recommendations'
+import {
   assembleMenuRecommendationRecords,
   buildMenuRecommendationCandidates,
   type MenuRecommendationInput,
@@ -84,7 +89,9 @@ export const PRECOMPUTED_METRICS = [
 ] as const
 
 export type PrecomputedMetric =
-  (typeof PRECOMPUTED_METRICS)[number] | 'demandForecast'
+  | (typeof PRECOMPUTED_METRICS)[number]
+  | 'demandForecast'
+  | 'staffingRecommendations'
 
 type Decimal = { coefficient: bigint; scale: number }
 
@@ -131,6 +138,9 @@ export type PrecomputeInput = {
   sales: readonly PrecomputeSale[]
   orders: readonly PrecomputeOrder[]
   snapshots: readonly PrecomputeSnapshot[]
+  labor?: ShiftRecommendationInput['labor']
+  timezone?: string
+  businessDayBoundary?: string
   sources?: readonly EvidenceSourceInput[]
   reconciliation?: readonly ReconciliationConflict[]
   menuRecommendations?: MenuRecommendationInput
@@ -157,6 +167,7 @@ export type PrecomputeOutput = {
   rollups: StoredMetric[]
   rankedItems: RankedRecommendation[]
   recommendations: RecommendationRecord[]
+  staffingRecommendations: ReturnType<typeof buildShiftRecommendations>
   inputWindowStart: Date
   inputWindowEnd: Date
 }
@@ -681,6 +692,31 @@ function forecastRollup(forecast: DemandForecastResult): StoredMetric {
   }
 }
 
+function staffingRecommendationsRollup(
+  recommendations: ReturnType<typeof buildShiftRecommendations>,
+): StoredMetric {
+  const result: MetricResult<string> =
+    recommendations.length === 0
+      ? {
+          status: 'cannot-calculate',
+          reason: 'no shift-level recommendation has enough comparable data',
+          inputs: { recommendationCount: '0' },
+          units: { value: 'staffing recommendations' },
+        }
+      : {
+          status: 'calculated',
+          value: String(recommendations.length),
+          inputs: { recommendationCount: String(recommendations.length) },
+          units: { value: 'staffing recommendations' },
+        }
+  return {
+    metricKey: 'staffingRecommendations',
+    status: result.status,
+    value: result.status === 'calculated' ? result.value : null,
+    result: { ...result, recommendations } as unknown as StoredMetric['result'],
+  }
+}
+
 export function buildPrecomputeResults(
   input: PrecomputeInput,
   now = new Date(),
@@ -765,6 +801,18 @@ export function buildPrecomputeResults(
       : {}),
   })
 
+  const staffingRecommendations = input.demandForecast
+    ? buildShiftRecommendations({
+        forecast: input.demandForecast,
+        sales: input.sales,
+        labor: input.labor ?? [],
+        timezone: input.timezone ?? 'UTC',
+        businessDayBoundary: input.businessDayBoundary ?? '04:00',
+        ...(input.sources ? { sources: input.sources } : {}),
+        asOf: now,
+      })
+    : []
+
   return {
     itemResults,
     rollups: [
@@ -772,9 +820,13 @@ export function buildPrecomputeResults(
         rollupMetric(metricKey, metricSets, input),
       ),
       ...(input.demandForecast ? [forecastRollup(input.demandForecast)] : []),
+      ...(input.demandForecast && (input.labor?.length ?? 0) > 0
+        ? [staffingRecommendationsRollup(staffingRecommendations)]
+        : []),
     ],
     rankedItems,
     recommendations: [...inventoryRecommendations, ...menuRecommendations],
+    staffingRecommendations,
     inputWindowStart,
     inputWindowEnd,
   }
@@ -789,6 +841,7 @@ export async function loadPrecomputeInput(
     signalRows,
     items,
     sales,
+    labor,
     orders,
     snapshots,
     sources,
@@ -848,6 +901,18 @@ export async function loadPrecomputeInput(
       })
       .from(transactions)
       .where(eq(transactions.locationId, locationId)),
+    db
+      .select({
+        id: laborShifts.id,
+        shiftStart: laborShifts.shiftStart,
+        shiftEnd: laborShifts.shiftEnd,
+        role: laborShifts.role,
+        scheduledHours: laborShifts.scheduledHours,
+        actualHours: laborShifts.actualHours,
+        laborCost: laborShifts.laborCost,
+      })
+      .from(laborShifts)
+      .where(eq(laborShifts.locationId, locationId)),
     db
       .select({
         itemId: purchaseOrderItems.inventoryItemId,
@@ -1138,6 +1203,13 @@ export async function loadPrecomputeInput(
   return {
     items: normalizedItems,
     sales: includedSales,
+    labor,
+    ...(forecastLocation
+      ? {
+          timezone: forecastLocation.timezone,
+          businessDayBoundary: forecastLocation.businessDayBoundary,
+        }
+      : {}),
     orders: includedOrders,
     snapshots: includedSnapshots,
     sources,
