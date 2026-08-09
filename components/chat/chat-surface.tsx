@@ -5,10 +5,12 @@ import { ArrowUp, Send } from 'lucide-react'
 
 import {
   Bubble,
+  ChatAnswer,
   Message,
   MessageScroller,
   type ChatMessageRole,
 } from '@/components/chat/chat-primitives'
+import type { RecommendationRecord } from '@/src/server/metrics/recommendations'
 import {
   InputGroup,
   InputGroupButton,
@@ -31,9 +33,11 @@ const SUGGESTED_QUESTIONS = [
 export function ChatSurface({
   locationId,
   locationName,
+  recommendations,
 }: {
   locationId: string
   locationName: string
+  recommendations: readonly RecommendationRecord[]
 }) {
   const [draft, setDraft] = React.useState('')
   const [messages, setMessages] = React.useState<ChatMessage[]>([])
@@ -173,7 +177,16 @@ export function ChatSurface({
                 isStreaming={message.isStreaming ?? false}
                 role={message.role}
               >
-                {message.content || 'Preparing a response…'}
+                {message.role === 'assistant' ? (
+                  <ChatAnswer
+                    content={message.content}
+                    isStreaming={message.isStreaming ?? false}
+                    locationId={locationId}
+                    recommendations={recommendations}
+                  />
+                ) : (
+                  message.content || 'Preparing a response…'
+                )}
               </Bubble>
             </Message>
           ))

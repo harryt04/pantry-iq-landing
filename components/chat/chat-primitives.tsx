@@ -4,6 +4,8 @@ import * as React from 'react'
 
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { cn } from '@/lib/utils'
+import { RecommendationWork } from '@/components/dashboard/recommendation-work'
+import type { RecommendationRecord } from '@/src/server/metrics/recommendations'
 
 export type ChatMessageRole = 'assistant' | 'user'
 
@@ -56,5 +58,94 @@ export function MessageScroller({ children }: { children: React.ReactNode }) {
         {children}
       </div>
     </ScrollArea>
+  )
+}
+
+const ANSWER_PARTS = [
+  'Observation',
+  'Financial impact',
+  'Prediction',
+  'Recommendation',
+  'Show your work',
+] as const
+
+export type ChatAnswerPart = {
+  label: (typeof ANSWER_PARTS)[number]
+  content: string
+}
+
+/** Parses the validated five-part answer without duplicating its server contract. */
+export function parseChatAnswer(text: string): ChatAnswerPart[] | null {
+  const pattern =
+    /(?:^|\n)\s*\**(Observation|Financial impact|Prediction|Recommendation|Show your work)\**\s*:\s*/gi
+  const matches = [...text.matchAll(pattern)]
+  if (matches.length !== ANSWER_PARTS.length) return null
+
+  const parts = matches.map((match, index) => {
+    const label = match[1]
+    const start = (match.index ?? 0) + match[0].length
+    const end = matches[index + 1]?.index ?? text.length
+    return {
+      label: label as ChatAnswerPart['label'],
+      content: text.slice(start, end).trim(),
+    }
+  })
+
+  return parts.every((part, index) => part.label === ANSWER_PARTS[index])
+    ? parts
+    : null
+}
+
+function matchingRecommendations(
+  text: string,
+  recommendations: readonly RecommendationRecord[],
+) {
+  const normalized = text.toLocaleLowerCase()
+  return recommendations.filter((recommendation) => {
+    const itemName = recommendation.itemName.trim().toLocaleLowerCase()
+    return itemName.length > 0 && normalized.includes(itemName)
+  })
+}
+
+export function ChatAnswer({
+  content,
+  isStreaming = false,
+  locationId,
+  recommendations,
+}: {
+  content: string
+  isStreaming?: boolean
+  locationId: string
+  recommendations: readonly RecommendationRecord[]
+}) {
+  const parts = isStreaming ? null : parseChatAnswer(content)
+  if (!parts) return <>{content || 'Preparing a response…'}</>
+
+  const matched = matchingRecommendations(content, recommendations)
+
+  return (
+    <div className="chat-answer">
+      {parts.map((part) => (
+        <section className="chat-answer__part" key={part.label}>
+          <h3>{part.label}</h3>
+          <p>{part.content}</p>
+        </section>
+      ))}
+      <div className="chat-answer__evidence" aria-label="Chat evidence">
+        {matched.length > 0 ? (
+          matched.map((recommendation) => (
+            <RecommendationWork
+              key={recommendation.evidenceTraceRef.key}
+              locationId={locationId}
+              trace={recommendation.evidenceTrace}
+            />
+          ))
+        ) : (
+          <p className="recommendation-work__unverified" role="status">
+            Output unverified — this answer has no matching evidence trace.
+          </p>
+        )}
+      </div>
+    </div>
   )
 }

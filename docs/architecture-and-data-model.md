@@ -416,6 +416,18 @@ service has no database import, tool, or write path. The narration prompt also
 requires pattern observations from the interpretable layer to be labelled as
 observations rather than calculations or predictions.
 
+### Chat evidence disclosure (`CHT-05`)
+
+The chat page receives the same location-scoped persisted recommendation
+records as the dashboard. After the validated five-part answer finishes
+streaming, the client renders its sections and matches named recommendation
+items to their persisted `evidenceTrace`. It reuses the dashboard's
+`RecommendationWork` component, so sources, calculations, assumptions, and
+item-settings edit links have one disclosure implementation and remain
+collapsed by default. If a response names no recommendation with a complete
+trace, chat displays an explicit unverified notice instead of presenting an
+unsupported explanation as trustworthy.
+
 ## Recommendation engine
 
 ### Core philosophy

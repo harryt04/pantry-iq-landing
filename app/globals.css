@@ -2047,6 +2047,32 @@ body {
   min-height: 88px;
 }
 
+.chat-answer {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.chat-answer__part {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.chat-answer__part h3 {
+  font-size: var(--text-xs);
+  letter-spacing: 0.08em;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.chat-answer__part p {
+  margin: 0;
+}
+
+.chat-answer__evidence {
+  border-top: 1px solid var(--border);
+  padding-top: var(--space-3);
+}
+
 .chat-composer {
   background: var(--background);
   display: grid;

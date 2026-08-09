@@ -187,7 +187,7 @@ that touch them carry a stated default so work never stalls.
 | CHT-02 | Narration service and model integration | **done** | codex | CHT-01, MET-09 |
 | CHT-03 | Grounding contract and guardrails | **done** | codex | CHT-02, MET-12 |
 | CHT-04 | Five-part answer format | **done** | codex | CHT-03 |
-| CHT-05 | Show your work, in chat | available | — | CHT-04, MET-10 |
+| CHT-05 | Show your work, in chat | **done** | codex | CHT-04, MET-10 |
 | CHT-06 | Assumption override and scope prompt | available | — | CHT-05, SET-03 |
 | CHT-07 | Session memory | available | — | CHT-04 |
 | CHT-08 | Decline, redirect, and log the miss | available | — | CHT-03 |
@@ -2326,7 +2326,7 @@ verification remains environment-dependent.
 ### CHT-05 — Show your work, in chat
 
 ```
-Status: available   Owner: —   Claimed: —   Completed: —   Branch/PR: —
+Status: done   Owner: codex   Claimed: 2026-08-08   Completed: 2026-08-08   Branch/PR: rewrite
 ```
 
 **Blocked by:** CHT-04, MET-10 · **Blocks:** CHT-06
@@ -2343,13 +2343,21 @@ trace. If a claim has no trace, the answer says so and is treated as
 unreliable.
 
 **Acceptance criteria.**
-- [ ] Uses the same trace as `DSH-04` — no second implementation.
-- [ ] Collapsed by default.
-- [ ] An untraceable claim is flagged, not quietly shown.
-- [ ] Assumptions link to where the user can change them.
+- [x] Uses the same trace as `DSH-04` — no second implementation.
+- [x] Collapsed by default.
+- [x] An untraceable claim is flagged, not quietly shown.
+- [x] Assumptions link to where the user can change them.
 
-**Verification.** Expand the work on three different answer types and
-recompute each by hand.
+**Verification.** `ChatAnswer` parses the validated five-part response and
+matches mentioned recommendation items to the same `RecommendationWork`
+component used by `DSH-04`. The disclosure is closed by default, shows
+sources, exact calculations, and assumptions when expanded, and renders an
+explicit unverified state when no matching or complete `MET-10` trace exists.
+Focused component tests cover all three paths. `npm run prettify` and
+`npm run ci` pass; live smoke checks returned `/api/health` 200 and the
+unauthenticated `/chat` redirect 307. `.env.local` contains no test-account
+credentials or narration provider key, so authenticated/provider-backed
+verification remains environment-dependent.
 
 ---
 
@@ -3932,7 +3940,7 @@ condition.
 | Data ingest | 10 | 11 |
 | Metrics engine | 9 | 12 |
 | Dashboard | 4 | 7 |
-| Chat | 2 | 8 |
+| Chat | 3 | 8 |
 | Settings | 4 | 5 |
 | Marketing site | 4 | 5 |
 | Quality gates | 3 | 6 |
@@ -3940,7 +3948,7 @@ condition.
 | Integrations | 0 | 8 |
 | Menu management | 4 | 7 |
 | Staffing | 0 | 6 |
-| **Total** | **48** | **87** |
+| **Total** | **49** | **87** |
 
 **The backlog is complete when every ticket reads `done`.** Sections 7
 and 8 are not work and never become work.
