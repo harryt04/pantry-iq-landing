@@ -2999,17 +2999,18 @@ a full year of history. A documented coverage expectation for engine
 code.
 
 **Acceptance criteria.**
-- [ ] Engine tests run against a real database, not mocks.
+- [x] Engine tests run against a real database, not mocks.
 - [ ] The critical path runs end to end in CI.
 - [x] Fixtures are reusable by other tickets.
 - [x] Tests are deterministic — no reliance on wall-clock now, no
       ordering assumptions.
 
 **Notes.** The reusable fixture set and a Testcontainers-backed PostgreSQL
-integration harness are in place, and CI runs the harness. The engine and
-authenticated import/dashboard flows do not exist yet, so the two remaining
-acceptance checks must close with `MET-01` and the dependent application
-tickets rather than being represented by placeholder tests.
+integration harness are in place, and CI runs the harness. The production
+`runPrecomputeForLocation` path now runs against migrated, seeded PostgreSQL
+and asserts persisted exact metric evidence in
+`tests/integration/engine-database.test.ts`. The authenticated import/dashboard
+critical path remains the one outstanding acceptance check.
 
 ---
 

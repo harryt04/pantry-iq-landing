@@ -8,5 +8,8 @@ export default defineConfig({
   },
   test: {
     include: ['**/*.test.ts', '**/*.test.tsx'],
+    // TEST_DATABASE_URL points multiple integration files at one disposable
+    // database, and migration tests intentionally reset it.
+    fileParallelism: process.env.TEST_DATABASE_URL === undefined,
   },
 })
