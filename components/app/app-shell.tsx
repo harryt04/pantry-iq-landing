@@ -32,6 +32,7 @@ const navigation = [
   { href: '/dashboard', label: 'Dashboard' },
   { href: '/chat', label: 'Chat' },
   { href: '/import', label: 'Import' },
+  { href: '/usage', label: 'Usage' },
   { href: '/settings', label: 'Settings' },
 ]
 

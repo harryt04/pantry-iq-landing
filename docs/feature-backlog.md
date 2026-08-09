@@ -252,7 +252,7 @@ that touch them carry a stated default so work never stalls.
 | MNU-01 | Recipe and ingredient data model | **done** | codex | ING-07 |
 | MNU-02 | Recipe builder | **done** | codex | MNU-01, FND-07 |
 | MNU-03 | Plate costing | **done** | codex | MNU-02, MET-01 |
-| MNU-04 | Theoretical vs. actual usage | available | — | MNU-03, MET-03 |
+| MNU-04 | Theoretical vs. actual usage | **done** | codex | MNU-03, MET-03 |
 | MNU-05 | Menu engineering matrix | **done** | codex | MNU-03, DSH-05 |
 | MNU-06 | Menu recommendations in the engine | available | — | MNU-04, MET-09 |
 | MNU-07 | Ingredient-level waste attribution | available | — | MNU-04 |
@@ -3654,7 +3654,7 @@ database/container runtime.
 ### MNU-04 — Theoretical versus actual usage
 
 ```
-Status: available   Owner: —   Claimed: —   Completed: —   Branch/PR: —
+Status: done   Owner: codex   Claimed: 2026-08-08   Completed: 2026-08-08   Branch/PR: rewrite
 ```
 
 **Blocked by:** MNU-03, MET-03 · **Blocks:** MNU-06, MNU-07
@@ -3672,12 +3672,22 @@ explanations — over-portioning, waste, theft, or a wrong recipe — and
 none of them assumed.
 
 **Acceptance criteria.**
-- [ ] Variance is computed per ingredient, not only per menu item.
-- [ ] Snapshots remain authoritative for actual usage.
-- [ ] Explanations are offered, never asserted.
-- [ ] A wrong recipe is named as a candidate explanation — it usually is.
-- [ ] Ingredients used in items without recipes are excluded and the
+- [x] Variance is computed per ingredient, not only per menu item.
+- [x] Snapshots remain authoritative for actual usage.
+- [x] Explanations are offered, never asserted.
+- [x] A wrong recipe is named as a candidate explanation — it usually is.
+- [x] Ingredients used in items without recipes are excluded and the
       exclusion is stated.
+
+**Notes.** Added an owner-scoped ingredient usage view and deterministic
+recipe expansion through nested recipes. The engine compares theoretical
+usage with purchases bridged by the latest two physical counts, converts all
+quantities without floats, and reports missing counts or missing recipes
+without inventing zeros or causes. The UI prints each ingredient's
+theoretical, actual, and variance quantities and keeps possible explanations
+explicitly provisional. Focused tests and type checking pass; live database
+verification remains unavailable because this workspace has no test account
+credentials or reachable PostgreSQL runtime.
 
 ---
 

@@ -304,6 +304,31 @@ Calculated on-the-fly or cached:
 - **Margin** = revenue − (qty sold × unit cost)
 - **Variance** = (ordered − sold − on-hand) / ordered × 100%
 
+#### Theoretical versus actual ingredient usage (MNU-04)
+
+The usage view expands each active recipe through its optional sub-recipe
+tree, applies the recipe's effective output (`outputQuantity × yieldFactor ×
+(1 − wasteFactor)`), and multiplies that requirement by sold menu-item
+quantity. Ingredient lines are converted into the canonical inventory-item
+unit with the same exact-decimal conversion rules used by plate costing.
+Division that cannot be represented as a terminating decimal is rounded
+half-up to six places; no JavaScript floating-point arithmetic is used.
+
+Actual usage is calculated per ingredient only when two physical inventory
+snapshots exist in the selected period:
+
+```
+actual usage = beginning on-hand + purchases between counts − ending on-hand
+variance = actual usage − theoretical usage
+```
+
+Snapshots remain authoritative. Missing counts are reported as
+“cannot-calculate” rather than treated as zero. A positive variance is shown
+as an observation with possible explanations — over-portioning, unrecorded
+waste, theft or loss, or a recipe that may be wrong — and none is asserted as
+the cause. Sales for menu items without an active recipe are excluded and the
+exclusion is stated; their ingredients are never assigned by assumption.
+
 How to handle missing prices/inventory when computing these, and which
 formula is authoritative for waste vs. variance, are open — see
 `open-questions.md`.
