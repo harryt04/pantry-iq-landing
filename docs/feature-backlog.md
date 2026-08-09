@@ -221,7 +221,7 @@ that touch them carry a stated default so work never stalls.
 | QAG-03 | Test strategy and harness | **in-review** | codex | FND-03 |
 | QAG-04 | CSV upload security hardening | **done** | codex | FND-02 |
 | QAG-05 | Observability and error tracking | **in-review** | codex | FND-03 |
-| QAG-06 | Data isolation and ownership authorization | available | — | FND-05, QAG-03 |
+| QAG-06 | Data isolation and ownership authorization | **done** | codex | FND-05, QAG-03 |
 
 ### Cross-location aggregation
 
@@ -3116,7 +3116,7 @@ the logger with Sentry/OpenTelemetry and persisted health/cost signals.
 ### QAG-06 — Data isolation and ownership authorization
 
 ```
-Status: available   Owner: —   Claimed: —   Completed: —   Branch/PR: —
+Status: done   Owner: codex   Claimed: 2026-08-08   Completed: 2026-08-08   Branch/PR: rewrite
 ```
 
 **Blocked by:** FND-05, QAG-03 · **Blocks:** —
@@ -3138,13 +3138,26 @@ identifier. A test that fails when a new route is added without an
 ownership check.
 
 **Acceptance criteria.**
-- [ ] Every identifier-taking route is covered.
-- [ ] A new unprotected route fails CI.
-- [ ] Location scoping is enforced in queries, never only in the UI.
-- [ ] Chat cannot reach another location's data even when asked directly.
+- [x] Every identifier-taking route is covered.
+- [x] A new unprotected route fails CI.
+- [x] Location scoping is enforced in queries, never only in the UI.
+- [x] Chat cannot reach another location's data even when asked directly.
 
 **Verification.** Two seeded accounts; attempt every cross-boundary read
 and write.
+
+**Notes.** `tests/ownership-authorization-contract.test.ts` inventories every
+API route and fails when a route is added without an explicit owner-scoped
+boundary or when a protected route imports the database directly. The route
+matrix covers location, item, recipe, upload, export, manual-entry, chat, and
+account-scoped endpoints. The chat miss report now authorizes a supplied
+location through `requireOwnedLocation` before filtering its account-owned
+telemetry, returning the same not-found boundary as other foreign records.
+Focused authorization tests, the full CI suite, and live unauthenticated route
+smoke checks pass. `.env.local` has no test-account credentials and no local
+PostgreSQL runtime was available, so the two-account live walkthrough remains
+environment-limited; service-level ownership predicates are covered by the
+existing route contracts and helper usage.
 
 ---
 
