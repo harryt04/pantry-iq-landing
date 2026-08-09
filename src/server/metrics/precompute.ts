@@ -3,10 +3,14 @@ import { and, asc, desc, eq } from 'drizzle-orm'
 import {
   inventoryItems,
   inventorySnapshots,
+  itemUnitConversions,
   csvUploadHistory,
   metricResults,
   metricRollups,
   metricRuns,
+  recipeCostHistory,
+  recipeIngredients,
+  recipes,
   purchaseOrderItems,
   purchaseOrders,
   transactions,
@@ -35,13 +39,23 @@ import {
   DATA_SUFFICIENCY_METRIC,
 } from './sufficiency'
 import { calculateUrgency, rollupUrgency } from './urgency'
-import { rankPrecomputedItems, type RankedRecommendation } from './ranking'
+import {
+  precomputedRankingCandidates,
+  rankRecommendations,
+  type RankedRecommendation,
+} from './ranking'
 import {
   assembleRecommendationRecords,
-  RECOMMENDATION_METRIC_KEY,
+  recommendationMetricKey,
   type RecommendationRecord,
 } from './recommendations'
 import type { EvidenceSourceInput } from './evidence'
+import {
+  assembleMenuRecommendationRecords,
+  buildMenuRecommendationCandidates,
+  type MenuRecommendationInput,
+} from '@/src/server/menu/menu-recommendations'
+import { buildUsageVariance } from '@/src/server/menu/usage-variance'
 
 export const PRECOMPUTED_METRICS = [
   'sellThrough',
@@ -64,6 +78,8 @@ export type PrecomputeItem = {
   unit: string
   costPerUnit: string | null
   shelfLifeDays?: number | null
+  itemType?: 'ingredient' | 'menu_item'
+  menuPrice?: string | null
 }
 
 export type PrecomputeSale = {
@@ -94,6 +110,7 @@ export type PrecomputeInput = {
   orders: readonly PrecomputeOrder[]
   snapshots: readonly PrecomputeSnapshot[]
   sources?: readonly EvidenceSourceInput[]
+  menuRecommendations?: MenuRecommendationInput
 }
 
 export type StoredMetric = {
@@ -176,6 +193,42 @@ function sumDecimals(values: readonly string[]): string | undefined {
     total = add(total, parsed)
   }
   return decimalToString(total)
+}
+
+function subtractDecimalStrings(left: string, right: string) {
+  const parsedLeft = parseDecimal(left)
+  const parsedRight = parseDecimal(right)
+  if (!parsedLeft || !parsedRight) return undefined
+  return decimalToString(
+    add(parsedLeft, {
+      coefficient: -parsedRight.coefficient,
+      scale: parsedRight.scale,
+    }),
+  )
+}
+
+function compareDecimalStrings(left: string, right: string) {
+  const parsedLeft = parseDecimal(left)
+  const parsedRight = parseDecimal(right)
+  if (!parsedLeft || !parsedRight) return 0
+  const scale = Math.max(parsedLeft.scale, parsedRight.scale)
+  const leftValue =
+    parsedLeft.coefficient * 10n ** BigInt(scale - parsedLeft.scale)
+  const rightValue =
+    parsedRight.coefficient * 10n ** BigInt(scale - parsedRight.scale)
+  return leftValue < rightValue ? -1 : leftValue > rightValue ? 1 : 0
+}
+
+function averageDecimals(values: readonly string[]) {
+  const total = sumDecimals(values)
+  if (total === undefined || values.length === 0) return undefined
+  return decimalToString(
+    divide(
+      parseDecimal(total)!,
+      { coefficient: BigInt(values.length), scale: 0 },
+      RATIO_SCALE,
+    ),
+  )
 }
 
 function divide(left: Decimal, right: Decimal, scale: number): Decimal {
@@ -586,7 +639,61 @@ export function buildPrecomputeResults(
     metrics: metricSet(item, input.sales, input.orders, input.snapshots, now),
   }))
   const metricSets = itemResults.map((item) => item.metrics)
-  const rankedItems = rankPrecomputedItems(itemResults)
+  const menuCandidates = buildMenuRecommendationCandidates(
+    input.menuRecommendations ?? {},
+  )
+  const rankedItems = rankRecommendations([
+    ...precomputedRankingCandidates(itemResults),
+    ...menuCandidates.map((candidate) => ({
+      itemId: candidate.candidateId,
+      dimensions: candidate.dimensions,
+    })),
+  ])
+  const inventoryItemIds = new Set(itemResults.map((item) => item.itemId))
+  const rankedInventoryItems = rankedItems.filter((item) =>
+    inventoryItemIds.has(item.itemId),
+  )
+  const rankedMenuItems = rankedItems.filter((item) =>
+    menuCandidates.some((candidate) => candidate.candidateId === item.itemId),
+  )
+
+  const inventoryRecommendations = assembleRecommendationRecords({
+    items: input.items.map((item) => ({
+      itemId: item.id,
+      itemName: item.displayName ?? item.id,
+      unit: item.unit,
+      ...(item.shelfLifeDays === undefined
+        ? {}
+        : { shelfLifeDays: item.shelfLifeDays }),
+      purchaseOrderCount: input.orders.filter(
+        (order) => order.itemId === item.id,
+      ).length,
+      sales: input.sales
+        .filter((sale) => sale.itemId === item.id)
+        .map(({ qty, transactedAt }) => ({ qty, transactedAt })),
+      metrics:
+        itemResults.find((result) => result.itemId === item.id)?.metrics ?? [],
+    })),
+    rankedItems: rankedInventoryItems,
+    inputWindowStart,
+    inputWindowEnd,
+    currentDate: now,
+    ...(input.sources ? { sources: input.sources } : {}),
+    sourceCounts: {
+      transactions: input.sales.length,
+      purchaseOrders: input.orders.length,
+      snapshots: input.snapshots.length,
+    },
+  })
+  const menuRecommendations = assembleMenuRecommendationRecords({
+    candidates: menuCandidates,
+    ranked: rankedMenuItems,
+    inputWindowStart,
+    inputWindowEnd,
+    ...(input.menuRecommendations?.sources
+      ? { sources: input.menuRecommendations.sources }
+      : {}),
+  })
 
   return {
     itemResults,
@@ -594,35 +701,7 @@ export function buildPrecomputeResults(
       rollupMetric(metricKey, metricSets, input),
     ),
     rankedItems,
-    recommendations: assembleRecommendationRecords({
-      items: input.items.map((item) => ({
-        itemId: item.id,
-        itemName: item.displayName ?? item.id,
-        unit: item.unit,
-        ...(item.shelfLifeDays === undefined
-          ? {}
-          : { shelfLifeDays: item.shelfLifeDays }),
-        purchaseOrderCount: input.orders.filter(
-          (order) => order.itemId === item.id,
-        ).length,
-        sales: input.sales
-          .filter((sale) => sale.itemId === item.id)
-          .map(({ qty, transactedAt }) => ({ qty, transactedAt })),
-        metrics:
-          itemResults.find((result) => result.itemId === item.id)?.metrics ??
-          [],
-      })),
-      rankedItems,
-      inputWindowStart,
-      inputWindowEnd,
-      currentDate: now,
-      ...(input.sources ? { sources: input.sources } : {}),
-      sourceCounts: {
-        transactions: input.sales.length,
-        purchaseOrders: input.orders.length,
-        snapshots: input.snapshots.length,
-      },
-    }),
+    recommendations: [...inventoryRecommendations, ...menuRecommendations],
     inputWindowStart,
     inputWindowEnd,
   }
@@ -632,7 +711,17 @@ export async function loadPrecomputeInput(
   locationId: string,
 ): Promise<PrecomputeInput> {
   const { db } = await import('@/src/server/db/client')
-  const [items, sales, orders, snapshots, sources] = await Promise.all([
+  const [
+    items,
+    sales,
+    orders,
+    snapshots,
+    sources,
+    costHistory,
+    recipeRows,
+    recipeIngredientRows,
+    conversions,
+  ] = await Promise.all([
     db
       .select({
         id: inventoryItems.id,
@@ -640,6 +729,8 @@ export async function loadPrecomputeInput(
         unit: inventoryItems.unit,
         costPerUnit: inventoryItems.costPerUnit,
         shelfLifeDays: inventoryItems.shelfLifeDays,
+        itemType: inventoryItems.itemType,
+        menuPrice: inventoryItems.menuPrice,
       })
       .from(inventoryItems)
       .where(eq(inventoryItems.locationId, locationId))
@@ -691,9 +782,292 @@ export async function loadPrecomputeInput(
         ),
       )
       .orderBy(asc(csvUploadHistory.uploadedAt), asc(csvUploadHistory.id)),
+    db
+      .select({
+        menuItemId: recipes.menuItemId,
+        calculatedAt: recipeCostHistory.calculatedAt,
+        batchCost: recipeCostHistory.batchCost,
+        costPerOutput: recipeCostHistory.costPerOutput,
+        menuPrice: recipeCostHistory.menuPrice,
+      })
+      .from(recipeCostHistory)
+      .innerJoin(recipes, eq(recipes.id, recipeCostHistory.recipeId))
+      .where(
+        and(
+          eq(recipeCostHistory.locationId, locationId),
+          eq(recipeCostHistory.status, 'complete'),
+          eq(recipes.isActive, true),
+        ),
+      )
+      .orderBy(desc(recipeCostHistory.calculatedAt)),
+    db
+      .select({
+        id: recipes.id,
+        menuItemId: recipes.menuItemId,
+        outputQuantity: recipes.outputQuantity,
+        outputUnit: recipes.outputUnit,
+        yieldFactor: recipes.yieldFactor,
+        wasteFactor: recipes.wasteFactor,
+      })
+      .from(recipes)
+      .where(
+        and(eq(recipes.locationId, locationId), eq(recipes.isActive, true)),
+      ),
+    db
+      .select({
+        recipeId: recipeIngredients.recipeId,
+        ingredientItemId: recipeIngredients.ingredientItemId,
+        subRecipeId: recipeIngredients.subRecipeId,
+        quantity: recipeIngredients.quantity,
+        unit: recipeIngredients.unit,
+      })
+      .from(recipeIngredients)
+      .innerJoin(recipes, eq(recipes.id, recipeIngredients.recipeId))
+      .where(
+        and(eq(recipes.locationId, locationId), eq(recipes.isActive, true)),
+      ),
+    db
+      .select({
+        inventoryItemId: itemUnitConversions.inventoryItemId,
+        fromUnit: itemUnitConversions.fromUnit,
+        toUnit: itemUnitConversions.toUnit,
+        factor: itemUnitConversions.factor,
+      })
+      .from(itemUnitConversions)
+      .where(eq(itemUnitConversions.locationId, locationId)),
   ])
 
-  return { items, sales, orders, snapshots, sources }
+  const normalizedItems: PrecomputeItem[] = items.map((item) => ({
+    ...item,
+    itemType: item.itemType === 'menu_item' ? 'menu_item' : 'ingredient',
+  }))
+  const menuItems = normalizedItems.filter(
+    (item) => item.itemType === 'menu_item',
+  )
+  const latestCostByMenuItem = new Map<string, (typeof costHistory)[number]>()
+  const previousCostByMenuItem = new Map<string, (typeof costHistory)[number]>()
+  for (const history of costHistory) {
+    if (!latestCostByMenuItem.has(history.menuItemId)) {
+      latestCostByMenuItem.set(history.menuItemId, history)
+    } else if (!previousCostByMenuItem.has(history.menuItemId)) {
+      previousCostByMenuItem.set(history.menuItemId, history)
+    }
+  }
+  const unitsSoldByMenuItem = new Map<string, string>()
+  for (const sale of sales) {
+    if (!sale.itemId || !menuItems.some((item) => item.id === sale.itemId))
+      continue
+    const total = sumDecimals([
+      unitsSoldByMenuItem.get(sale.itemId) ?? '0',
+      sale.qty,
+    ])
+    if (total !== undefined) unitsSoldByMenuItem.set(sale.itemId, total)
+  }
+  const marginRows = menuItems.flatMap((item) => {
+    const history = latestCostByMenuItem.get(item.id)
+    if (!history?.costPerOutput || !item.menuPrice) return []
+    const marginPerItem = subtractDecimalStrings(
+      item.menuPrice,
+      history.costPerOutput,
+    )
+    if (marginPerItem === undefined) return []
+    return [{ item, marginPerItem }]
+  })
+  const marginThreshold = averageDecimals(
+    marginRows.map((row) => row.marginPerItem),
+  )
+  const menuRecommendations: MenuRecommendationInput = {
+    marginErosion:
+      marginThreshold === undefined
+        ? []
+        : marginRows.flatMap(({ item, marginPerItem }) => {
+            const unitsSold = unitsSoldByMenuItem.get(item.id)
+            if (
+              !unitsSold ||
+              compareDecimalStrings(marginPerItem, marginThreshold) >= 0
+            )
+              return []
+            return [
+              {
+                itemId: item.id,
+                itemName: item.displayName ?? item.id,
+                unit: 'plates',
+                marginPerItem,
+                marginThreshold,
+                unitsSold,
+              },
+            ]
+          }),
+    ingredientCostIncrease: menuItems.flatMap((item) => {
+      const current = latestCostByMenuItem.get(item.id)
+      const previous = previousCostByMenuItem.get(item.id)
+      const unitsSold = unitsSoldByMenuItem.get(item.id)
+      if (
+        !current?.batchCost ||
+        !previous?.batchCost ||
+        !current.menuPrice ||
+        !previous.menuPrice ||
+        !unitsSold
+      )
+        return []
+      return [
+        {
+          ingredientItemId: item.id,
+          ingredientName: item.displayName ?? item.id,
+          unit: 'plates',
+          previousBatchCost: previous.batchCost,
+          currentBatchCost: current.batchCost,
+          previousMenuPrice: previous.menuPrice,
+          currentMenuPrice: current.menuPrice,
+          unitsSold,
+        },
+      ]
+    }),
+    recipeVariance: buildRecipeVarianceRecommendations({
+      items: normalizedItems,
+      sales,
+      orders,
+      snapshots,
+      recipeRows,
+      recipeIngredientRows,
+      conversions,
+    }),
+    sources: [
+      ...sources,
+      ...(costHistory.length > 0
+        ? [
+            {
+              filename: 'recipe cost history',
+              source: 'recipe_cost_history',
+              rowCount: costHistory.length,
+              uploadedAt: costHistory[0]?.calculatedAt ?? new Date(),
+            },
+          ]
+        : []),
+    ],
+  }
+
+  return {
+    items: normalizedItems,
+    sales,
+    orders,
+    snapshots,
+    sources,
+    menuRecommendations,
+  }
+}
+
+type PrecomputeRecipeRow = {
+  id: string
+  menuItemId: string
+  outputQuantity: string
+  outputUnit: string
+  yieldFactor: string
+  wasteFactor: string
+}
+
+type PrecomputeRecipeIngredientRow = {
+  recipeId: string
+  ingredientItemId: string | null
+  subRecipeId: string | null
+  quantity: string
+  unit: string
+}
+
+type PrecomputeConversionRow = {
+  inventoryItemId: string
+  fromUnit: string
+  toUnit: string
+  factor: string
+}
+
+function buildRecipeVarianceRecommendations(input: {
+  items: readonly PrecomputeItem[]
+  sales: readonly PrecomputeSale[]
+  orders: readonly PrecomputeOrder[]
+  snapshots: readonly PrecomputeSnapshot[]
+  recipeRows: readonly PrecomputeRecipeRow[]
+  recipeIngredientRows: readonly PrecomputeRecipeIngredientRow[]
+  conversions: readonly PrecomputeConversionRow[]
+}) {
+  const itemById = new Map(input.items.map((item) => [item.id, item]))
+  const ingredientsByRecipe = new Map<
+    string,
+    Array<{
+      ingredientItemId?: string
+      subRecipeId?: string
+      quantity: string
+      unit: string
+    }>
+  >()
+  for (const row of input.recipeIngredientRows) {
+    const ingredients = ingredientsByRecipe.get(row.recipeId) ?? []
+    ingredients.push({
+      quantity: row.quantity,
+      unit: row.unit,
+      ...(row.ingredientItemId
+        ? { ingredientItemId: row.ingredientItemId }
+        : {}),
+      ...(row.subRecipeId ? { subRecipeId: row.subRecipeId } : {}),
+    })
+    ingredientsByRecipe.set(row.recipeId, ingredients)
+  }
+
+  const result = buildUsageVariance({
+    inventoryItems: input.items.map((item) => ({
+      id: item.id,
+      displayName: item.displayName ?? item.id,
+      unit: item.unit,
+    })),
+    recipes: input.recipeRows.map((recipe) => ({
+      ...recipe,
+      ingredients: ingredientsByRecipe.get(recipe.id) ?? [],
+    })),
+    sales: input.sales.flatMap((sale) =>
+      sale.itemId
+        ? [
+            {
+              menuItemId: sale.itemId,
+              qty: sale.qty,
+              transactedAt: sale.transactedAt,
+            },
+          ]
+        : [],
+    ),
+    purchases: input.orders.flatMap((order) =>
+      order.itemId
+        ? [
+            {
+              inventoryItemId: order.itemId,
+              qty: order.qty,
+              unit: itemById.get(order.itemId)?.unit ?? 'units',
+              orderedAt: order.orderedAt,
+            },
+          ]
+        : [],
+    ),
+    snapshots: input.snapshots.map((snapshot) => ({
+      inventoryItemId: snapshot.itemId,
+      qty: snapshot.qty,
+      countedAt: snapshot.countedAt,
+    })),
+    conversions: input.conversions,
+  })
+
+  return result.rows.flatMap((row) => {
+    if (row.status !== 'calculated' || row.variance === null) return []
+    return [
+      {
+        ingredientItemId: row.ingredientItemId,
+        ingredientName: row.ingredientName,
+        unit: row.unit,
+        variance: row.variance,
+        variancePercent: row.variancePercent,
+        ingredientCostPerUnit:
+          itemById.get(row.ingredientItemId)?.costPerUnit ?? null,
+      },
+    ]
+  })
 }
 
 export async function runPrecomputeForLocation(
@@ -739,7 +1113,7 @@ export async function runPrecomputeForLocation(
           runId: run.id,
           locationId,
           inventoryItemId: recommendation.itemId,
-          metricKey: RECOMMENDATION_METRIC_KEY,
+          metricKey: recommendationMetricKey(recommendation),
           status: 'calculated' as const,
           value: recommendation.score,
           result: recommendation,

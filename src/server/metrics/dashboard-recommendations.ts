@@ -1,4 +1,4 @@
-import { and, asc, eq } from 'drizzle-orm'
+import { and, asc, eq, or } from 'drizzle-orm'
 
 import { getLatestSuccessfulMetricRun } from './precompute'
 import type { RecommendationRecord } from './recommendations'
@@ -72,7 +72,15 @@ export async function getDashboardRecommendations(
       and(
         eq(metricResults.locationId, owned.locationId),
         eq(metricResults.runId, run.id),
-        eq(metricResults.metricKey, 'recommendation'),
+        or(
+          eq(metricResults.metricKey, 'recommendation'),
+          eq(metricResults.metricKey, 'recommendation:margin-erosion'),
+          eq(metricResults.metricKey, 'recommendation:recipe-variance'),
+          eq(
+            metricResults.metricKey,
+            'recommendation:ingredient-cost-increase',
+          ),
+        ),
         eq(metricResults.status, 'calculated'),
       ),
     )

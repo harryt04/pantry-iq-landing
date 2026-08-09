@@ -13,6 +13,17 @@ import {
 
 export const RECOMMENDATION_METRIC_KEY = 'recommendation' as const
 
+export type MenuRecommendationType =
+  'margin-erosion' | 'recipe-variance' | 'ingredient-cost-increase'
+
+export function recommendationMetricKey(
+  recommendation: Pick<RecommendationRecord, 'recommendationType'>,
+) {
+  return recommendation.recommendationType
+    ? `${RECOMMENDATION_METRIC_KEY}:${recommendation.recommendationType}`
+    : RECOMMENDATION_METRIC_KEY
+}
+
 type MetricResultShape = {
   metricKey: string
   status: 'calculated' | 'cannot-calculate'
@@ -73,6 +84,14 @@ export type RecommendationRecord = {
     framing: 'consider'
     action: 'reduce-next-order-or-pull-from-menu' | 'review-item'
     timeHorizon: 'this week'
+  }
+  recommendationType?: MenuRecommendationType
+  recipeDerived?: true
+  menuFinding?: {
+    label: string
+    detail: string
+    value: string | null
+    unit: string
   }
   dataFindings: PartialDataFinding[]
   evidenceTraceRef: {

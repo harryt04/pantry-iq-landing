@@ -268,6 +268,7 @@ export function buildEvidenceTrace(input: {
   sourceTimestamp: Date
   shelfLifeDays?: number | null
   config: MetricsConfig
+  additionalAssumptions?: readonly EvidenceAssumption[]
 }): EvidenceTrace {
   const calculations = input.metrics.flatMap((metric) => [
     calculationForMetric(metric),
@@ -319,7 +320,10 @@ export function buildEvidenceTrace(input: {
     version: 1,
     sources,
     calculations,
-    assumptions: assumptionsFor(input.config, input.shelfLifeDays),
+    assumptions: [
+      ...assumptionsFor(input.config, input.shelfLifeDays),
+      ...(input.additionalAssumptions ?? []),
+    ],
   } satisfies EvidenceTrace
   assertCompleteTrace(trace)
   return trace

@@ -555,6 +555,18 @@ required artifact rather than an optional debug aid. The existing metric
 result JSON already stores the exact inputs and evidence, so this does not
 need a second persistence table or a floating-point conversion.
 
+`MNU-06` adds recipe-derived candidates for plate-margin erosion, positive
+theoretical-versus-actual recipe variance, and ingredient cost increases where
+the recorded menu price has not moved. These candidates use the same
+`rankRecommendations` function and global five-item limit as inventory
+findings. Their persisted metric keys are `recommendation:<type>` so multiple
+menu findings for one inventory item do not collide with the existing unique
+metric-result index. Every menu record carries `recipeDerived: true`, a
+human-readable finding, and a complete trace whose calculation explanation
+starts with “Recipe-derived figure.” Missing ingredient prices keep dollar
+impact null; the variance remains a quantity observation rather than a made-up
+financial result.
+
 `MET-11` adds a deterministic `dataFindings` array to each recommendation.
 It is separate from the recommendation's facts and prediction so a missing
 input cannot become a silent zero or an unlabelled prediction. The four

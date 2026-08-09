@@ -254,7 +254,7 @@ that touch them carry a stated default so work never stalls.
 | MNU-03 | Plate costing | **done** | codex | MNU-02, MET-01 |
 | MNU-04 | Theoretical vs. actual usage | **done** | codex | MNU-03, MET-03 |
 | MNU-05 | Menu engineering matrix | **done** | codex | MNU-03, DSH-05 |
-| MNU-06 | Menu recommendations in the engine | available | — | MNU-04, MET-09 |
+| MNU-06 | Menu recommendations in the engine | **done** | codex | MNU-04, MET-09 |
 | MNU-07 | Ingredient-level waste attribution | available | — | MNU-04 |
 
 ### Staffing
@@ -3164,7 +3164,7 @@ existing route contracts and helper usage.
 ### AGG-01 — Lift the single-location scope rule
 
 ```
-Status: available   Owner: —   Claimed: —   Completed: —   Branch/PR: —
+Status: done   Owner: codex   Claimed: 2026-08-08   Completed: 2026-08-08   Branch/PR: rewrite
 ```
 
 **Blocked by:** MET-07, DSH-03 · **Blocks:** AGG-02
@@ -3755,12 +3755,23 @@ repriced. Each scored through the existing Impact, Urgency, and Data
 Sufficiency dimensions and ranked by `MET-07`.
 
 **Acceptance criteria.**
-- [ ] No second ranking implementation is introduced.
-- [ ] Menu recommendations carry full `MET-10` traces.
-- [ ] They compete on equal terms with spoilage recommendations for the
+- [x] No second ranking implementation is introduced.
+- [x] Menu recommendations carry full `MET-10` traces.
+- [x] They compete on equal terms with spoilage recommendations for the
       top five.
-- [ ] Recipe-derived figures are labelled as recipe-derived, since a
+- [x] Recipe-derived figures are labelled as recipe-derived, since a
       wrong recipe silently poisons them.
+
+**Notes.** Added exact-decimal menu candidate builders for plate-margin
+erosion, theoretical-versus-actual recipe variance, and ingredient cost
+increases without a corresponding menu-price change. Precompute loads the
+location-scoped recipe inputs, sends all candidates through the existing
+`rankRecommendations` function, and persists type-specific recommendation
+keys so one item can carry more than one menu finding. Dashboard and Chat
+render the recipe-derived label; evidence traces include the recipe sources,
+ranking calculation, and a `recipeDerived` assumption. `npm run prettify` and
+`npm run ci` pass (274 tests passed; 2 database integration tests skipped
+because no container runtime is available).
 
 ---
 

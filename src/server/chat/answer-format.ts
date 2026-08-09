@@ -142,6 +142,9 @@ function impactBasisLabel(
 }
 
 function observationFacts(recommendation: RecommendationRecord) {
+  if (recommendation.menuFinding) {
+    return `${recommendation.menuFinding.label}: ${recommendation.menuFinding.detail}`
+  }
   const { observation } = recommendation
   if (
     observation.quantityOrdered !== null &&

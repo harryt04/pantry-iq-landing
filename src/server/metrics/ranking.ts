@@ -37,6 +37,28 @@ export type PrecomputedRankingItem = {
   }[]
 }
 
+export function precomputedRankingCandidates(
+  items: readonly PrecomputedRankingItem[],
+): RankingCandidate[] {
+  return items.flatMap((item) => {
+    const metrics = new Map(
+      item.metrics.map((metric) => [metric.metricKey, metric]),
+    )
+    const dimensions = Object.fromEntries(
+      ['impact', 'urgency', 'dataSufficiency'].flatMap((key) => {
+        const metric = metrics.get(key)
+        return metric?.status === 'calculated' && metric.value !== null
+          ? [[key, metric.value]]
+          : []
+      }),
+    )
+
+    return Object.keys(dimensions).length === 3
+      ? [{ itemId: item.itemId, dimensions }]
+      : []
+  })
+}
+
 type Decimal = { coefficient: bigint; scale: number }
 
 function parseDecimal(value: string, label: string): Decimal {
@@ -245,23 +267,5 @@ export function rankPrecomputedItems(
   items: readonly PrecomputedRankingItem[],
   options: RankingOptions = {},
 ) {
-  const candidates = items.flatMap((item) => {
-    const metrics = new Map(
-      item.metrics.map((metric) => [metric.metricKey, metric]),
-    )
-    const dimensions = Object.fromEntries(
-      ['impact', 'urgency', 'dataSufficiency'].flatMap((key) => {
-        const metric = metrics.get(key)
-        return metric?.status === 'calculated' && metric.value !== null
-          ? [[key, metric.value]]
-          : []
-      }),
-    )
-
-    return Object.keys(dimensions).length === 3
-      ? [{ itemId: item.itemId, dimensions }]
-      : []
-  })
-
-  return rankRecommendations(candidates, options)
+  return rankRecommendations(precomputedRankingCandidates(items), options)
 }

@@ -444,7 +444,7 @@ export async function getDashboardItemDeepDives(
   ])
 
   const recommendationRows: RecommendationInput[] = metricRows
-    .filter((row) => row.metricKey === 'recommendation')
+    .filter((row) => row.metricKey.startsWith('recommendation'))
     .map((row) => ({ itemId: row.itemId, result: row.result }))
   const recommendations = buildDashboardRecommendations(
     recommendationRows,
@@ -456,7 +456,9 @@ export async function getDashboardItemDeepDives(
     sales,
     orders,
     snapshots,
-    metrics: metricRows.filter((row) => row.metricKey !== 'recommendation'),
+    metrics: metricRows.filter(
+      (row) => !row.metricKey.startsWith('recommendation'),
+    ),
     recommendations,
   })
 }
