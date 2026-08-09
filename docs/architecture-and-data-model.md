@@ -413,6 +413,16 @@ proportionally rebalance all existing weights against the new total. See
 the worked example (adding a 0.15-weight "Seasonality" dimension) in
 `mvp-scope-and-decisions.md`.
 
+`MET-07` applies this formula with exact decimal-string arithmetic. The
+default low-impact floor is `0`, so the dashboard selects the five highest
+scoring items whenever at least five items have all three calculated ranking
+dimensions; items below a configured floor or missing any required dimension
+are suppressed. Ranking compares the unrounded weighted mean, then breaks an
+exact score tie by higher Impact and finally by ascending canonical item ID.
+The displayed rank score is rounded half-up to two decimal places. This keeps
+the selection deterministic without presenting a floating-point calculation
+as evidence.
+
 ### Dashboard alert format
 Each alert shows: item name, observation ("0% sell-through this month"),
 impact ("$40 waste risk"), a call to action ("reduce order this week" /

@@ -160,7 +160,7 @@ that touch them carry a stated default so work never stalls.
 | MET-04 | Data Sufficiency score | **done** | codex | MET-02 |
 | MET-05 | Impact score | **done** | codex | MET-03 |
 | MET-06 | Urgency score | **done** | codex | MET-03 |
-| MET-07 | Ranking and top-N selection | available | — | MET-04, MET-05, MET-06 |
+| MET-07 | Ranking and top-N selection | **done** | codex | MET-04, MET-05, MET-06 |
 | MET-08 | Tuning configuration | available | — | MET-07 |
 | MET-09 | Recommendation record and message assembly | available | — | MET-07 |
 | MET-10 | Evidence trace — "show your work" data | available | — | MET-09 |
@@ -1527,7 +1527,7 @@ skipped because no database/container runtime is available.
 ### MET-07 — Ranking and top-N selection
 
 ```
-Status: available   Owner: —   Claimed: —   Completed: —   Branch/PR: —
+Status: done   Owner: codex   Claimed: 2026-08-08   Completed: 2026-08-08   Branch/PR: rewrite
 ```
 
 **Blocked by:** MET-04, MET-05, MET-06 · **Blocks:** MET-08, MET-09,
@@ -1548,14 +1548,24 @@ calculation and its weight, with existing weights rebalancing
 proportionally.
 
 **Acceptance criteria.**
-- [ ] The formula matches the document exactly, including the divisor.
-- [ ] Adding a fourth dimension in a test rebalances the other three
+- [x] The formula matches the document exactly, including the divisor.
+- [x] Adding a fourth dimension in a test rebalances the other three
       proportionally without touching their code.
-- [ ] Ties break deterministically; the rule is documented.
-- [ ] Exactly five recommendations reach the dashboard.
+- [x] Ties break deterministically; the rule is documented.
+- [x] Exactly five recommendations reach the dashboard.
 
 **Verification.** Add a throwaway 0.15-weight dimension in a test and
 confirm the worked example in the architecture document reproduces.
+
+**Notes.** Added a generic exact-arithmetic ranking layer with the default
+Impact 0.40 / Urgency 0.40 / Data Sufficiency 0.20 weights, configurable
+fourth dimensions, a default `low_impact` floor of zero, and a five-item
+limit. Precompute now exposes ranked candidates without persisting a second
+recommendation record; `MET-09` will add that durable message structure.
+Incomplete metrics are suppressed rather than treated as unexplained zeroes.
+Ties compare the unrounded weighted mean, then higher Impact, then ascending
+canonical item ID. Focused ranking and precompute tests pass; full CI is the
+final verification for this ticket.
 
 **Decisions to confirm.** Minimum per-dimension thresholds versus always
 showing five is open (`open-questions.md` §1, Q4). **Default:** always
@@ -3773,8 +3783,8 @@ condition.
 | Area | Done | Total |
 |---|---|---|
 | Foundation | 8 | 8 |
-| Data ingest | 9 | 11 |
-| Metrics engine | 1 | 12 |
+| Data ingest | 10 | 11 |
+| Metrics engine | 7 | 12 |
 | Dashboard | 2 | 7 |
 | Chat | 1 | 8 |
 | Settings | 4 | 5 |
@@ -3784,7 +3794,7 @@ condition.
 | Integrations | 0 | 8 |
 | Menu management | 4 | 7 |
 | Staffing | 0 | 6 |
-| **Total** | **36** | **87** |
+| **Total** | **43** | **87** |
 
 **The backlog is complete when every ticket reads `done`.** Sections 7
 and 8 are not work and never become work.

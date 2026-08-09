@@ -78,6 +78,13 @@ describe('precompute results', () => {
       '11',
       '0',
     ])
+    expect(output.rankedItems).toMatchObject([
+      {
+        itemId: 'item-1',
+        rank: 1,
+        score: '7.4',
+      },
+    ])
   })
 
   it('is deterministic when the source rows and run time are unchanged', () => {

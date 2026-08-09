@@ -33,6 +33,7 @@ import {
   DATA_SUFFICIENCY_METRIC,
 } from './sufficiency'
 import { calculateUrgency, rollupUrgency } from './urgency'
+import { rankPrecomputedItems, type RankedRecommendation } from './ranking'
 
 export const PRECOMPUTED_METRICS = [
   'sellThrough',
@@ -102,6 +103,7 @@ export type PrecomputeOutput = {
     metrics: StoredMetric[]
   }>
   rollups: StoredMetric[]
+  rankedItems: RankedRecommendation[]
   inputWindowStart: Date
   inputWindowEnd: Date
 }
@@ -579,6 +581,7 @@ export function buildPrecomputeResults(
     rollups: PRECOMPUTED_METRICS.map((metricKey) =>
       rollupMetric(metricKey, metricSets, input),
     ),
+    rankedItems: rankPrecomputedItems(itemResults),
     inputWindowStart,
     inputWindowEnd,
   }
