@@ -35,6 +35,11 @@ import {
 } from './sufficiency'
 import { calculateUrgency, rollupUrgency } from './urgency'
 import { rankPrecomputedItems, type RankedRecommendation } from './ranking'
+import {
+  assembleRecommendationRecords,
+  RECOMMENDATION_METRIC_KEY,
+  type RecommendationRecord,
+} from './recommendations'
 
 export const PRECOMPUTED_METRICS = [
   'sellThrough',
@@ -53,6 +58,7 @@ type Decimal = { coefficient: bigint; scale: number }
 
 export type PrecomputeItem = {
   id: string
+  displayName?: string
   unit: string
   costPerUnit: string | null
   shelfLifeDays?: number | null
@@ -105,6 +111,7 @@ export type PrecomputeOutput = {
   }>
   rollups: StoredMetric[]
   rankedItems: RankedRecommendation[]
+  recommendations: RecommendationRecord[]
   inputWindowStart: Date
   inputWindowEnd: Date
 }
@@ -576,13 +583,30 @@ export function buildPrecomputeResults(
     metrics: metricSet(item, input.sales, input.orders, input.snapshots, now),
   }))
   const metricSets = itemResults.map((item) => item.metrics)
+  const rankedItems = rankPrecomputedItems(itemResults)
 
   return {
     itemResults,
     rollups: PRECOMPUTED_METRICS.map((metricKey) =>
       rollupMetric(metricKey, metricSets, input),
     ),
-    rankedItems: rankPrecomputedItems(itemResults),
+    rankedItems,
+    recommendations: assembleRecommendationRecords({
+      items: input.items.map((item) => ({
+        itemId: item.id,
+        itemName: item.displayName ?? item.id,
+        unit: item.unit,
+        purchaseOrderCount: input.orders.filter(
+          (order) => order.itemId === item.id,
+        ).length,
+        metrics:
+          itemResults.find((result) => result.itemId === item.id)?.metrics ??
+          [],
+      })),
+      rankedItems,
+      inputWindowStart,
+      inputWindowEnd,
+    }),
     inputWindowStart,
     inputWindowEnd,
   }
@@ -596,6 +620,7 @@ async function loadPrecomputeInput(
     db
       .select({
         id: inventoryItems.id,
+        displayName: inventoryItems.displayName,
         unit: inventoryItems.unit,
         costPerUnit: inventoryItems.costPerUnit,
         shelfLifeDays: inventoryItems.shelfLifeDays,
@@ -667,8 +692,8 @@ export async function runPrecomputeForLocation(
         .returning({ id: metricRuns.id })
       if (!run) throw new Error('The metric run could not be started.')
 
-      await tx.insert(metricResults).values(
-        output.itemResults.flatMap((item) =>
+      await tx.insert(metricResults).values([
+        ...output.itemResults.flatMap((item) =>
           item.metrics.map((metric) => ({
             runId: run.id,
             locationId,
@@ -679,7 +704,16 @@ export async function runPrecomputeForLocation(
             result: metric.result,
           })),
         ),
-      )
+        ...output.recommendations.map((recommendation) => ({
+          runId: run.id,
+          locationId,
+          inventoryItemId: recommendation.itemId,
+          metricKey: RECOMMENDATION_METRIC_KEY,
+          status: 'calculated' as const,
+          value: recommendation.score,
+          result: recommendation,
+        })),
+      ])
       await tx.insert(metricRollups).values(
         output.rollups.map((metric) => ({
           runId: run.id,

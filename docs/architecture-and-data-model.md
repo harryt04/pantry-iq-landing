@@ -348,6 +348,15 @@ POs, inventory snapshots), how metrics were calculated (order count,
 sell-through %, spoilage estimate), and what assumptions were made
 (shelf life, unit cost).
 
+`MET-09` assembles a versioned structured recommendation from the ranked
+item metrics. It keeps observation facts, financial impact, prediction, and
+the suggested action in separate fields; a prediction is absent until the
+four-week transaction gate is met, and a missing dollar figure is stored as
+`null` with an explanation. The record is stored with its metric run under
+`metric_results.metric_key = 'recommendation'`, alongside the source metric
+rows for the same item. Its deterministic `evidenceTraceRef` identifies the
+item and input window that `MET-10` will expand into the full trace.
+
 ### Scoring dimensions (implementation detail)
 
 Three dimensions feed the ranking formula defined in

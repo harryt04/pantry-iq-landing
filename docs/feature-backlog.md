@@ -161,8 +161,8 @@ that touch them carry a stated default so work never stalls.
 | MET-05 | Impact score | **done** | codex | MET-03 |
 | MET-06 | Urgency score | **done** | codex | MET-03 |
 | MET-07 | Ranking and top-N selection | **done** | codex | MET-04, MET-05, MET-06 |
-| MET-08 | Tuning configuration | claimed | codex | MET-07 |
-| MET-09 | Recommendation record and message assembly | available | — | MET-07 |
+| MET-08 | Tuning configuration | **done** | codex | MET-07 |
+| MET-09 | Recommendation record and message assembly | **done** | codex | MET-07 |
 | MET-10 | Evidence trace — "show your work" data | available | — | MET-09 |
 | MET-11 | Partial-data and conflicting-data rules | available | — | MET-09 |
 | MET-12 | Interpretable data layer for pattern discovery | available | — | MET-02 |
@@ -1616,7 +1616,7 @@ verification for this ticket.
 ### MET-09 — Recommendation record and message assembly
 
 ```
-Status: available   Owner: —   Claimed: —   Completed: —   Branch/PR: —
+Status: done   Owner: codex   Claimed: 2026-08-08   Completed: 2026-08-08   Branch/PR: rewrite
 ```
 
 **Blocked by:** MET-07 · **Blocks:** MET-10, MET-11, DSH-03, CHT-02,
@@ -1640,18 +1640,24 @@ Structured output — prose generation belongs to `CHT-02` and to the
 dashboard renderer.
 
 **Acceptance criteria.**
-- [ ] Observation and prediction are structurally separate fields.
-- [ ] No confidence value is ever attached to an observation.
-- [ ] Predictions carry their basis ("4 weeks of transactions") as data,
+- [x] Observation and prediction are structurally separate fields.
+- [x] No confidence value is ever attached to an observation.
+- [x] Predictions carry their basis ("4 weeks of transactions") as data,
       not prose.
-- [ ] The action is phrased as a suggestion, per `voice-and-tone.md`
+- [x] The action is phrased as a suggestion, per `voice-and-tone.md`
       §2.5 — "consider", never an imperative.
-- [ ] Financial impact is null and explained, rather than zero, when it
+- [x] Financial impact is null and explained, rather than zero, when it
       cannot be calculated.
-- [ ] The salmon example reproduces field for field.
+- [x] The salmon example reproduces field for field.
 
 **Verification.** Assemble the salmon example and diff it against
-`voice-and-tone.md` §3.
+`voice-and-tone.md` §3. Added deterministic assembly tests for the salmon
+record, the four-week prediction gate, suggestion framing, and missing-dollar
+handling. Recommendation records are persisted alongside each metric run.
+
+**Notes.** Recommendations use the existing append-only metric store under a
+dedicated `recommendation` metric key, so the record and the exact source
+metrics share one run boundary without introducing a second persistence path.
 
 ---
 
@@ -3787,7 +3793,7 @@ condition.
 |---|---|---|
 | Foundation | 8 | 8 |
 | Data ingest | 10 | 11 |
-| Metrics engine | 7 | 12 |
+| Metrics engine | 8 | 12 |
 | Dashboard | 2 | 7 |
 | Chat | 1 | 8 |
 | Settings | 4 | 5 |
@@ -3797,7 +3803,7 @@ condition.
 | Integrations | 0 | 8 |
 | Menu management | 4 | 7 |
 | Staffing | 0 | 6 |
-| **Total** | **43** | **87** |
+| **Total** | **44** | **87** |
 
 **The backlog is complete when every ticket reads `done`.** Sections 7
 and 8 are not work and never become work.
