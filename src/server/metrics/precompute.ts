@@ -628,7 +628,7 @@ export function buildPrecomputeResults(
   }
 }
 
-async function loadPrecomputeInput(
+export async function loadPrecomputeInput(
   locationId: string,
 ): Promise<PrecomputeInput> {
   const { db } = await import('@/src/server/db/client')

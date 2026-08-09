@@ -13,6 +13,14 @@ const page = readFileSync(
   new URL('../app/(app)/chat/page.tsx', import.meta.url),
   'utf8',
 )
+const overrideRoute = readFileSync(
+  new URL('../app/api/chat/override/route.ts', import.meta.url),
+  'utf8',
+)
+const overrideEngine = readFileSync(
+  new URL('../src/server/chat/assumption-override.ts', import.meta.url),
+  'utf8',
+)
 
 describe('chat surface contract', () => {
   it('keeps chat scoped and connected to the answering service', () => {
@@ -35,5 +43,17 @@ describe('chat surface contract', () => {
     expect(page).toContain('getAppShellData()')
     expect(page).toContain('<ChatSurface')
     expect(page).toContain('locationName={location.name}')
+  })
+
+  it('requires an explicit scope after an engine-backed assumption comparison', () => {
+    expect(surface).toContain('Question an assumption')
+    expect(surface).toContain('This conversation only')
+    expect(surface).toContain('Save to item settings')
+    expect(surface).toContain("fetch('/api/chat/override'")
+    expect(surface).toContain('overrides,')
+    expect(overrideRoute).toContain('requireOwnedLocation')
+    expect(overrideRoute).toContain('compareAssumptionOverride')
+    expect(overrideEngine).toContain("'deterministic-precompute'")
+    expect(overrideEngine).toContain('buildPrecomputeResults')
   })
 })

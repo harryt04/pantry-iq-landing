@@ -2104,6 +2104,130 @@ body {
   margin: 0;
 }
 
+.chat-override {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-surface);
+}
+
+.chat-override summary {
+  cursor: pointer;
+  font-weight: 600;
+  min-height: 44px;
+  padding: var(--space-3) var(--space-4);
+}
+
+.chat-override__body {
+  border-top: 1px solid var(--border);
+  display: grid;
+  gap: var(--space-4);
+  padding: var(--space-4);
+}
+
+.chat-override__body > p {
+  color: var(--muted-foreground);
+  margin: 0;
+  max-width: 64ch;
+}
+
+.chat-override__form {
+  align-items: end;
+  display: grid;
+  gap: var(--space-2);
+  grid-template-columns:
+    minmax(150px, 1.2fr) minmax(150px, 1fr) minmax(130px, 0.8fr)
+    auto;
+}
+
+.chat-override__form label {
+  grid-row: 1;
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.chat-override__form select,
+.chat-override__form input,
+.chat-override__form button,
+.chat-override__actions button {
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  color: var(--foreground);
+  font: inherit;
+  min-height: 44px;
+  padding: var(--space-2) var(--space-3);
+}
+
+.chat-override__form select,
+.chat-override__form input {
+  grid-row: 2;
+  width: 100%;
+}
+
+.chat-override__form button,
+.chat-override__actions button {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.chat-override__form button:hover,
+.chat-override__actions button:hover {
+  border-color: var(--foreground);
+}
+
+.chat-override__form button:disabled,
+.chat-override__actions button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.chat-override__comparison {
+  background: var(--muted);
+  border: 1px solid var(--border);
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4);
+}
+
+.chat-override__comparison h3,
+.chat-override__comparison p {
+  margin: 0;
+}
+
+.chat-override__comparison dl {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+}
+
+.chat-override__comparison dl div {
+  align-items: baseline;
+  display: flex;
+  gap: var(--space-3);
+  justify-content: space-between;
+}
+
+.chat-override__comparison dt {
+  color: var(--muted-foreground);
+}
+
+.chat-override__comparison dd {
+  font-family: var(--font-mono);
+  margin: 0;
+}
+
+.chat-override__status {
+  color: var(--muted-foreground);
+  font-size: var(--text-sm);
+  margin: 0;
+}
+
+.chat-override__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
 @media (max-width: 760px) {
   .app-shell__header-inner {
     gap: var(--space-2);
@@ -2130,6 +2254,17 @@ body {
 
   .chat-suggestion {
     min-height: 52px;
+  }
+
+  .chat-override__form {
+    grid-template-columns: 1fr;
+  }
+
+  .chat-override__form label,
+  .chat-override__form select,
+  .chat-override__form input,
+  .chat-override__form button {
+    grid-row: auto;
   }
 
   .chat-bubble {

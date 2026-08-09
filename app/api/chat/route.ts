@@ -1,6 +1,14 @@
 import { getDashboardRecommendations } from '@/src/server/metrics/dashboard-recommendations'
 import { loadOwnedContextBundle } from '@/src/server/metrics/context-bundle'
 import {
+  applyAssumptionOverride,
+  parseAssumptionOverride,
+} from '@/src/server/chat/assumption-override'
+import {
+  buildPrecomputeResults,
+  loadPrecomputeInput,
+} from '@/src/server/metrics/precompute'
+import {
   createNarrationService,
   type ChatTurn,
 } from '@/src/server/chat/narration'
@@ -14,6 +22,7 @@ type ChatRequest = {
   locationId?: unknown
   question?: unknown
   history?: unknown
+  overrides?: unknown
 }
 
 function isChatTurn(value: unknown): value is ChatTurn {
@@ -42,18 +51,24 @@ function parseRequest(value: unknown) {
   const history = Array.isArray(body.history)
     ? body.history.filter(isChatTurn).slice(-12)
     : []
+  const overrides = Array.isArray(body.overrides)
+    ? body.overrides.slice(-5).map(parseAssumptionOverride)
+    : []
   return {
     locationId: body.locationId,
     question: body.question.trim(),
     history,
+    overrides,
   }
 }
 
 export async function POST(request: Request) {
   try {
-    const { locationId, question, history } = parseRequest(await request.json())
+    const { locationId, question, history, overrides } = parseRequest(
+      await request.json(),
+    )
     const owned = await requireOwnedLocation(request.headers, locationId)
-    const [contextResult, recommendations] = await Promise.all([
+    const [contextResult, baseRecommendations] = await Promise.all([
       loadOwnedContextBundle(request.headers, owned.locationId),
       getDashboardRecommendations(request.headers, owned.locationId),
     ])
@@ -62,6 +77,18 @@ export async function POST(request: Request) {
         { error: 'There is no completed analysis for this location yet.' },
         { status: 409 },
       )
+    }
+
+    let recommendations = baseRecommendations
+    if (overrides.length > 0) {
+      let input = await loadPrecomputeInput(owned.locationId)
+      for (const override of overrides) {
+        input = applyAssumptionOverride(input, override)
+      }
+      recommendations = buildPrecomputeResults(
+        input,
+        new Date(),
+      ).recommendations
     }
 
     const service = createNarrationService()

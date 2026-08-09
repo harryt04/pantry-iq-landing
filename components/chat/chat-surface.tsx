@@ -11,6 +11,11 @@ import {
   type ChatMessageRole,
 } from '@/components/chat/chat-primitives'
 import type { RecommendationRecord } from '@/src/server/metrics/recommendations'
+import type {
+  AssumptionComparison,
+  AssumptionField,
+  NormalizedAssumptionOverride,
+} from '@/src/server/chat/assumption-override'
 import {
   InputGroup,
   InputGroupButton,
@@ -30,6 +35,14 @@ const SUGGESTED_QUESTIONS = [
   'Why are my margins changing?',
 ]
 
+function figureLabel(value: string | null, prefix = '') {
+  return value === null ? 'not available' : `${prefix}${value}`
+}
+
+function fieldLabel(field: AssumptionField) {
+  return field === 'shelfLifeDays' ? 'Shelf life (days)' : 'Cost per unit'
+}
+
 export function ChatSurface({
   locationId,
   locationName,
@@ -42,6 +55,22 @@ export function ChatSurface({
   const [draft, setDraft] = React.useState('')
   const [messages, setMessages] = React.useState<ChatMessage[]>([])
   const [isStreaming, setIsStreaming] = React.useState(false)
+  const [overrides, setOverrides] = React.useState<
+    NormalizedAssumptionOverride[]
+  >([])
+  const [overrideItemId, setOverrideItemId] = React.useState(
+    recommendations[0]?.itemId ?? '',
+  )
+  const [overrideField, setOverrideField] =
+    React.useState<AssumptionField>('shelfLifeDays')
+  const [overrideValue, setOverrideValue] = React.useState('')
+  const [comparison, setComparison] =
+    React.useState<AssumptionComparison | null>(null)
+  const [overrideStatus, setOverrideStatus] = React.useState<string | null>(
+    null,
+  )
+  const [isComparing, setIsComparing] = React.useState(false)
+  const [isSavingOverride, setIsSavingOverride] = React.useState(false)
 
   function updateStreamingMessage(id: string, content: string) {
     setMessages((current) =>
@@ -78,6 +107,7 @@ export function ChatSurface({
           locationId,
           question: trimmedQuestion,
           history: messages.map(({ role, content }) => ({ role, content })),
+          overrides,
         }),
         headers: { 'Content-Type': 'application/json' },
         method: 'POST',
@@ -130,6 +160,106 @@ export function ChatSurface({
     if (event.key !== 'Enter' || event.shiftKey) return
     event.preventDefault()
     event.currentTarget.form?.requestSubmit()
+  }
+
+  async function compareOverride(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    if (!overrideItemId || !overrideValue.trim() || isComparing) return
+    setIsComparing(true)
+    setOverrideStatus(null)
+    try {
+      const response = await fetch('/api/chat/override', {
+        body: JSON.stringify({
+          field: overrideField,
+          itemId: overrideItemId,
+          locationId,
+          value: overrideValue.trim(),
+        }),
+        headers: { 'Content-Type': 'application/json' },
+        method: 'POST',
+      })
+      const payload = (await response.json().catch(() => null)) as {
+        comparison?: AssumptionComparison
+        override?: NormalizedAssumptionOverride
+        error?: string
+      } | null
+      if (!response.ok || !payload?.comparison || !payload.override) {
+        throw new Error(
+          payload?.error ?? 'The assumption could not be recalculated.',
+        )
+      }
+      setComparison(payload.comparison)
+      setOverrideStatus(
+        'How should PantryIQ use this change? Nothing has been saved yet.',
+      )
+    } catch (error) {
+      setOverrideStatus(
+        error instanceof Error
+          ? error.message
+          : 'The assumption could not be recalculated.',
+      )
+    } finally {
+      setIsComparing(false)
+    }
+  }
+
+  function useForConversation() {
+    if (!comparison) return
+    setOverrides((current) => [
+      ...current.filter(
+        (override) =>
+          !(
+            override.itemId === comparison.itemId &&
+            override.field === comparison.field
+          ),
+      ),
+      {
+        itemId: comparison.itemId,
+        field: comparison.field,
+        value: comparison.afterValue,
+      },
+    ])
+    setOverrideStatus(
+      `${comparison.itemName} uses ${fieldLabel(comparison.field).toLocaleLowerCase()} ${comparison.afterValue} for this conversation.`,
+    )
+  }
+
+  async function saveToSettings() {
+    if (!comparison || isSavingOverride) return
+    setIsSavingOverride(true)
+    setOverrideStatus(null)
+    try {
+      const response = await fetch(
+        `/api/items/${encodeURIComponent(comparison.itemId)}?locationId=${encodeURIComponent(locationId)}`,
+        {
+          body: JSON.stringify({
+            [comparison.field]: comparison.afterValue,
+          }),
+          headers: { 'Content-Type': 'application/json' },
+          method: 'PATCH',
+        },
+      )
+      const payload = (await response.json().catch(() => null)) as {
+        error?: string
+      } | null
+      if (!response.ok) {
+        throw new Error(
+          payload?.error ?? 'The item setting could not be saved.',
+        )
+      }
+      useForConversation()
+      setOverrideStatus(
+        `${comparison.itemName} is saved to item settings and applied to this conversation.`,
+      )
+    } catch (error) {
+      setOverrideStatus(
+        error instanceof Error
+          ? error.message
+          : 'The item setting could not be saved.',
+      )
+    } finally {
+      setIsSavingOverride(false)
+    }
   }
 
   return (
@@ -222,6 +352,115 @@ export function ChatSurface({
           {isStreaming ? ' Response is streaming.' : ''}
         </p>
       </form>
+
+      <details className="chat-override">
+        <summary>Question an assumption</summary>
+        <div className="chat-override__body">
+          <p>
+            Choose a shelf life or cost, and PantryIQ will recalculate the
+            recommendation before asking where to apply it.
+          </p>
+          {recommendations.length === 0 ? (
+            <p className="chat-override__status" role="status">
+              There is no ranked item to adjust yet.
+            </p>
+          ) : (
+            <form className="chat-override__form" onSubmit={compareOverride}>
+              <label htmlFor="chat-override-item">Item</label>
+              <select
+                id="chat-override-item"
+                onChange={(event) => setOverrideItemId(event.target.value)}
+                value={overrideItemId}
+              >
+                {recommendations.map((recommendation) => (
+                  <option
+                    key={recommendation.itemId}
+                    value={recommendation.itemId}
+                  >
+                    {recommendation.itemName}
+                  </option>
+                ))}
+              </select>
+              <label htmlFor="chat-override-field">Assumption</label>
+              <select
+                id="chat-override-field"
+                onChange={(event) =>
+                  setOverrideField(event.target.value as AssumptionField)
+                }
+                value={overrideField}
+              >
+                <option value="shelfLifeDays">Shelf life (days)</option>
+                <option value="costPerUnit">Cost per unit</option>
+              </select>
+              <label htmlFor="chat-override-value">
+                New {fieldLabel(overrideField).toLocaleLowerCase()}
+              </label>
+              <input
+                id="chat-override-value"
+                inputMode={
+                  overrideField === 'shelfLifeDays' ? 'numeric' : 'decimal'
+                }
+                min="0"
+                onChange={(event) => setOverrideValue(event.target.value)}
+                required
+                step={overrideField === 'shelfLifeDays' ? '1' : '0.01'}
+                type="number"
+                value={overrideValue}
+              />
+              <button disabled={isComparing} type="submit">
+                {isComparing ? 'Recalculating…' : 'Recalculate'}
+              </button>
+            </form>
+          )}
+          {comparison ? (
+            <div className="chat-override__comparison" aria-live="polite">
+              <h3>{comparison.itemName}</h3>
+              <p>
+                {fieldLabel(comparison.field)}:{' '}
+                {comparison.beforeValue ?? 'not set'} → {comparison.afterValue}
+              </p>
+              <dl>
+                <div>
+                  <dt>Financial impact</dt>
+                  <dd>
+                    {figureLabel(comparison.before.financialImpact, '$')} →{' '}
+                    {figureLabel(comparison.after.financialImpact, '$')}
+                  </dd>
+                </div>
+                <div>
+                  <dt>Recommendation score</dt>
+                  <dd>
+                    {figureLabel(comparison.before.recommendationScore)} →{' '}
+                    {figureLabel(comparison.after.recommendationScore)}
+                  </dd>
+                </div>
+                <div>
+                  <dt>Urgency score</dt>
+                  <dd>
+                    {figureLabel(comparison.before.urgencyScore)} →{' '}
+                    {figureLabel(comparison.after.urgencyScore)}
+                  </dd>
+                </div>
+              </dl>
+              <p className="chat-override__status" role="status">
+                {overrideStatus}
+              </p>
+              <div className="chat-override__actions">
+                <button onClick={useForConversation} type="button">
+                  This conversation only
+                </button>
+                <button
+                  disabled={isSavingOverride}
+                  onClick={saveToSettings}
+                  type="button"
+                >
+                  {isSavingOverride ? 'Saving…' : 'Save to item settings'}
+                </button>
+              </div>
+            </div>
+          ) : null}
+        </div>
+      </details>
     </section>
   )
 }

@@ -428,6 +428,24 @@ collapsed by default. If a response names no recommendation with a complete
 trace, chat displays an explicit unverified notice instead of presenting an
 unsupported explanation as trustworthy.
 
+### Assumption override and scope (`CHT-06`)
+
+Chat exposes an explicit assumption comparison for the supported item inputs
+that the current deterministic engine can recalculate: shelf life and cost
+per unit. `src/server/chat/assumption-override.ts` validates the proposed
+value, clones the selected item, and runs `buildPrecomputeResults` twice with
+the same fixed input timestamp. The response contains the old and new
+financial-impact, recommendation-score, and urgency figures, plus the
+assumption values used. The model is not involved in this calculation.
+
+The comparison is always followed by a scope choice. "This conversation
+only" keeps the normalized override in client session state and sends it with
+later chat questions. "Save to item settings" requires an explicit click and
+uses the existing owner-scoped `PATCH /api/items/:itemId` path; that path
+invalidates the item's precompute through the normal scheduler. The model has
+no write path, and no override is persisted merely because an operator
+questioned an assumption.
+
 ## Recommendation engine
 
 ### Core philosophy

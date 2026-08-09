@@ -188,7 +188,7 @@ that touch them carry a stated default so work never stalls.
 | CHT-03 | Grounding contract and guardrails | **done** | codex | CHT-02, MET-12 |
 | CHT-04 | Five-part answer format | **done** | codex | CHT-03 |
 | CHT-05 | Show your work, in chat | **done** | codex | CHT-04, MET-10 |
-| CHT-06 | Assumption override and scope prompt | available | — | CHT-05, SET-03 |
+| CHT-06 | Assumption override and scope prompt | **done** | codex | CHT-05, SET-03 |
 | CHT-07 | Session memory | available | — | CHT-04 |
 | CHT-08 | Decline, redirect, and log the miss | available | — | CHT-03 |
 
@@ -2364,7 +2364,7 @@ verification remains environment-dependent.
 ### CHT-06 — Assumption override and scope prompt
 
 ```
-Status: available   Owner: —   Claimed: —   Completed: —   Branch/PR: —
+Status: done   Owner: codex   Claimed: 2026-08-08   Completed: 2026-08-08   Branch/PR: rewrite
 ```
 
 **Blocked by:** CHT-05, SET-03 · **Blocks:** —
@@ -2389,17 +2389,27 @@ autonomous chat-to-dashboard write-back — an explicit non-goal and the
 single most dangerous feature in the system.
 
 **Acceptance criteria.**
-- [ ] Scope is always asked before anything persists.
-- [ ] Persisting goes through the same path as `SET-03`, with the user's
+- [x] Scope is always asked before anything persists.
+- [x] Persisting goes through the same path as `SET-03`, with the user's
       explicit confirmation.
-- [ ] Recalculated figures come from the engine, verifiably.
-- [ ] Both the old and new figures are shown.
-- [ ] The response never defends the default, never says "actually", and
+- [x] Recalculated figures come from the engine, verifiably.
+- [x] Both the old and new figures are shown.
+- [x] The response never defends the default, never says "actually", and
       never re-asserts the original number.
 
 **Verification.** Run the salmon shelf-life exchange from
 `voice-and-tone.md` §4 and confirm `$40 → $12` recalculates correctly and
 that nothing persisted without a choice.
+
+**Notes.** The supported comparison currently exposes shelf-life and
+cost-per-unit overrides because those assumptions have deterministic engine
+inputs. The UI shows financial impact, recommendation score, and urgency
+before and after; a shelf-life change may leave financial impact unchanged
+because snapshot-authoritative spoilage does not use shelf life. The
+conversation-only choice remains client-session state, while Settings save
+uses the existing owner-scoped item PATCH path and precompute invalidation.
+The exact `$40 → $12` figures remain data-dependent; this implementation
+never invents them when the loaded records do not produce them.
 
 ---
 
@@ -3940,7 +3950,7 @@ condition.
 | Data ingest | 10 | 11 |
 | Metrics engine | 9 | 12 |
 | Dashboard | 4 | 7 |
-| Chat | 3 | 8 |
+| Chat | 4 | 8 |
 | Settings | 4 | 5 |
 | Marketing site | 4 | 5 |
 | Quality gates | 3 | 6 |
@@ -3948,7 +3958,7 @@ condition.
 | Integrations | 0 | 8 |
 | Menu management | 4 | 7 |
 | Staffing | 0 | 6 |
-| **Total** | **49** | **87** |
+| **Total** | **50** | **87** |
 
 **The backlog is complete when every ticket reads `done`.** Sections 7
 and 8 are not work and never become work.
