@@ -94,4 +94,42 @@ describe('impact score', () => {
     expect(result.categories.historicalSpoilage.status).toBe('suppressed')
     expect(result.inputs.weightTotal).toBe('100')
   })
+
+  it('scores positive labor cost variance from exact hours and cost', () => {
+    const result = calculateImpact({
+      laborCost: '100.00',
+      actualHours: '10',
+      scheduledHours: '8',
+      currency: 'USD',
+    })
+
+    expect(result).toMatchObject({ status: 'calculated', value: '20' })
+    expect(result.categories.laborCostVariance).toMatchObject({
+      status: 'calculated',
+      value: '20',
+      score: '20',
+      scoreBasis: 'dollars',
+    })
+    expect(result.weights).toMatchObject({
+      currentSpoilage: 32,
+      overordering: 20,
+      marginLoss: 16,
+      historicalSpoilage: 12,
+      laborCostVariance: 20,
+    })
+  })
+
+  it('suppresses labor variance when scheduled hours are missing', () => {
+    const result = calculateImpact({
+      laborCost: '100',
+      actualHours: '10',
+      currency: 'USD',
+    })
+
+    expect(result.status).toBe('cannot-calculate')
+    expect(result.categories.laborCostVariance).toMatchObject({
+      status: 'suppressed',
+      reason: 'labor cost, actual hours, and scheduled hours are unavailable',
+    })
+  })
 })

@@ -147,6 +147,41 @@ describe('precompute results', () => {
     ])
   })
 
+  it('adds complete labor cost variance to the location impact rollup', () => {
+    const output = buildPrecomputeResults(
+      {
+        ...input,
+        labor: [
+          {
+            id: 'shift-1',
+            shiftStart: new Date('2026-08-01T10:00:00.000Z'),
+            shiftEnd: new Date('2026-08-01T18:00:00.000Z'),
+            role: 'Line cook',
+            scheduledHours: '8',
+            actualHours: '10',
+            laborCost: '100',
+          },
+        ],
+      },
+      now,
+    )
+    const impact = output.rollups.find(
+      (metric) => metric.metricKey === 'impact',
+    )
+
+    expect(impact?.result).toMatchObject({
+      status: 'calculated',
+      categories: {
+        laborCostVariance: {
+          status: 'calculated',
+          value: '20',
+          score: '20',
+          scoreBasis: 'dollars',
+        },
+      },
+    })
+  })
+
   it('is deterministic when the source rows and run time are unchanged', () => {
     expect(buildPrecomputeResults(input, now)).toEqual(
       buildPrecomputeResults(input, now),

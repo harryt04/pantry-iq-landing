@@ -9,6 +9,7 @@ import {
   type StaffingRisk,
 } from '@/src/server/metrics/recommendations'
 import { rankRecommendations } from '@/src/server/metrics/ranking'
+import { calculateImpact } from '@/src/server/metrics/impact'
 
 import type { DemandForecastResult } from './demand-forecast'
 import type { LaborEfficiencyShift } from './labor-efficiency'
@@ -32,6 +33,8 @@ type RoleHistory = {
   actualHours: string
   scheduledHours: string | null
   scheduledObservations: number
+  laborCost: string | null
+  laborCostObservations: number
   observations: number
 }
 
@@ -283,6 +286,15 @@ function roleHistories(input: ShiftRecommendationInput): RoleHistory[] {
       scheduledHours: scheduledValues.length > 0 ? sum(scheduledValues) : null,
       scheduledObservations:
         (existing?.scheduledObservations ?? 0) + (scheduled ? 1 : 0),
+      laborCost:
+        existing?.laborCost === null
+          ? null
+          : shift.laborCost && parseDecimal(shift.laborCost)
+            ? sum([existing?.laborCost ?? '0', shift.laborCost])
+            : null,
+      laborCostObservations:
+        (existing?.laborCostObservations ?? 0) +
+        (shift.laborCost && parseDecimal(shift.laborCost) ? 1 : 0),
       observations: (existing?.observations ?? 0) + 1,
     })
   }
@@ -378,6 +390,20 @@ export function buildShiftRecommendations(
           ? `Sales MAE of ${input.forecast.accuracy.salesMae} USD creates a ${lowerHours}–${upperHours} hour range.`
           : 'A forecast error range is not available yet; the hours suggestion is based on the point forecast only.'
       const impact = scoreSpread(lowerHours, upperHours, recommendedHours)
+      const laborImpact =
+        history.laborCost !== null &&
+        history.scheduledHours !== null &&
+        history.scheduledObservations === history.observations &&
+        history.laborCostObservations === history.observations
+          ? calculateImpact({
+              laborCost: history.laborCost,
+              actualHours: history.actualHours,
+              scheduledHours: history.scheduledHours,
+              currency: 'USD',
+            })
+          : null
+      const impactScore =
+        laborImpact?.status === 'calculated' ? laborImpact.value : impact
       drafts.push({
         id: `${period.id}:${history.role}`,
         role: history.role,
@@ -404,7 +430,7 @@ export function buildShiftRecommendations(
           overstaffing: risk(baselineScheduledHours, upperHours, 'over'),
         },
         scores: {
-          impact,
+          impact: impactScore,
           urgency: String(Math.max(10, 100 - periodIndex * 10)),
           dataSufficiency: String(Math.min(100, history.observations * 20)),
         },
@@ -461,6 +487,19 @@ export function buildShiftRecommendations(
                     units: { value: 'labor hours range' },
                   },
           },
+          ...(laborImpact
+            ? [
+                {
+                  metricKey: 'laborCostVariance',
+                  status: laborImpact.status,
+                  value:
+                    laborImpact.status === 'calculated'
+                      ? laborImpact.value
+                      : null,
+                  result: laborImpact,
+                },
+              ]
+            : []),
         ],
         additionalAssumptions: [
           {
@@ -477,6 +516,17 @@ export function buildShiftRecommendations(
             origin: 'system-default',
             editPath: 'Import → labor shifts',
           },
+          ...(laborImpact
+            ? [
+                {
+                  name: 'staffing.laborCostVariance',
+                  value:
+                    'positive labor cost above the scheduled-hours baseline, using the observed labor cost per actual hour',
+                  origin: 'system-default' as const,
+                  editPath: 'Import → labor shifts',
+                },
+              ]
+            : []),
         ] satisfies readonly EvidenceAssumption[],
       })
     }

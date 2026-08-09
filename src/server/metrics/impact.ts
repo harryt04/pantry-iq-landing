@@ -21,6 +21,7 @@ export type ImpactWeights = Partial<{
   overordering: number
   marginLoss: number
   historicalSpoilage: number
+  laborCostVariance: number
 }>
 
 export type ImpactOptions = {
@@ -39,6 +40,15 @@ export type ImpactInput = {
   unitCost?: string
   unit?: string
   currency?: string
+  laborCost?: string
+  actualHours?: string
+  scheduledHours?: string
+}
+
+export type LaborCostVarianceInput = {
+  laborCost?: string
+  actualHours?: string
+  scheduledHours?: string
 }
 
 export type ImpactCategoryKey = keyof typeof IMPACT_DEFAULTS.weights
@@ -257,6 +267,10 @@ function resolveConfig(options: ImpactOptions) {
         options.weights?.historicalSpoilage,
         IMPACT_DEFAULTS.weights.historicalSpoilage,
       ),
+      laborCostVariance: validWeight(
+        options.weights?.laborCostVariance,
+        IMPACT_DEFAULTS.weights.laborCostVariance,
+      ),
     },
     highImpactDollars:
       options.highImpactDollars ?? IMPACT_DEFAULTS.highImpactDollars,
@@ -414,14 +428,59 @@ export function calculateImpact(
       highImpactDollars,
       unitSignalScale,
     ),
+    laborCostVariance: category(
+      calculateLaborCostVariance({
+        ...(input.laborCost === undefined
+          ? {}
+          : { laborCost: input.laborCost }),
+        ...(input.actualHours === undefined
+          ? {}
+          : { actualHours: input.actualHours }),
+        ...(input.scheduledHours === undefined
+          ? {}
+          : { scheduledHours: input.scheduledHours }),
+      }),
+      undefined,
+      'labor cost, actual hours, and scheduled hours are unavailable',
+      input,
+      highImpactDollars,
+      unitSignalScale,
+    ),
   } satisfies Record<ImpactCategoryKey, ImpactCategory>
 
   return finalizeImpact(categories, input, options)
 }
 
+/**
+ * Returns the positive cost of labor hours worked beyond the scheduled hours.
+ * The observed labor cost supplies the exact hourly rate; no payroll rate is
+ * inferred when either hours measure is missing.
+ */
+export function calculateLaborCostVariance(
+  input: LaborCostVarianceInput,
+): string | undefined {
+  const laborCost = input.laborCost ? parseDecimal(input.laborCost) : undefined
+  const actualHours = input.actualHours
+    ? parseDecimal(input.actualHours)
+    : undefined
+  const scheduledHours = input.scheduledHours
+    ? parseDecimal(input.scheduledHours)
+    : undefined
+  if (!laborCost || !actualHours || !scheduledHours) return undefined
+  if (laborCost.coefficient < 0n || actualHours.coefficient <= 0n)
+    return undefined
+
+  const excessHours = subtract(actualHours, scheduledHours)
+  if (excessHours.coefficient <= 0n) return '0'
+  return decimalToString(
+    divide(multiply(laborCost, excessHours), actualHours, 6),
+  )
+}
+
 export function rollupImpact(
   results: readonly ImpactMetricResult[],
   options: ImpactOptions = {},
+  labor?: LaborCostVarianceInput,
 ): ImpactMetricResult {
   const config = resolveConfig(options)
   const categories = Object.fromEntries(
@@ -439,24 +498,45 @@ export function rollupImpact(
         unitSignals.every((signal) => signal !== undefined)
           ? sum(unitSignals as string[])
           : undefined
-      const scored = scoreFor(
-        value,
-        unitSignal,
-        config.highImpactDollars,
-        config.unitSignalScale,
-      )
+      const laborVariance =
+        key === 'laborCostVariance' && labor
+          ? calculateLaborCostVariance(labor)
+          : undefined
+      const scored =
+        key === 'laborCostVariance' && labor
+          ? scoreFor(
+              laborVariance,
+              undefined,
+              config.highImpactDollars,
+              config.unitSignalScale,
+            )
+          : scoreFor(
+              value,
+              unitSignal,
+              config.highImpactDollars,
+              config.unitSignalScale,
+            )
       const result: ImpactCategory =
         scored.scoreBasis === 'none'
           ? {
               status: 'suppressed',
               ...scored,
-              inputs: { itemCount: String(available.length) },
-              reason: 'no complete category signals are available',
+              inputs:
+                key === 'laborCostVariance' && labor
+                  ? inputsOf(labor)
+                  : { itemCount: String(available.length) },
+              reason:
+                key === 'laborCostVariance' && labor
+                  ? 'labor cost variance needs complete positive actual hours and scheduled hours'
+                  : 'no complete category signals are available',
             }
           : {
               status: 'calculated',
               ...scored,
-              inputs: { itemCount: String(available.length) },
+              inputs:
+                key === 'laborCostVariance' && labor
+                  ? inputsOf(labor)
+                  : { itemCount: String(available.length) },
             }
       return [key, result]
     }),

@@ -81,7 +81,7 @@ file. Each entry says what it supersedes. **These are closed.**
 | **D7** | **No billing, payment, subscription, or entitlement tickets.** Every account is fully entitled. The pricing tension in [`open-questions.md`](open-questions.md) §2 stays open and is not resolved by building anything. |
 | **D8** | **No phases.** The only ordering is `Blocked by`. The Phase 2 / Phase 3 sequencing in `mvp-scope-and-decisions.md` is superseded as a *scheduling* device; its content survives as tickets here. |
 | **D9** | **AI grounding — the model never calculates.** A deterministic engine precomputes every arithmetic result. The model receives those results and narrates them. Separately, normalized non-arithmetic data stays available to the model in interpretable form so patterns nobody anticipated can still surface — but anything the model notices there is an **observation**, never a computed figure, and is labelled as such. This chooses one architecture where `architecture-and-data-model.md` §"AI / data query layer" left several open. |
-| **D10** | **Impact score composition** — all four candidate categories are in: current spoilage risk, historical spoilage, overordering cost, and margin loss. This answers `open-questions.md` §1, Q1. |
+| **D10** | **Impact score composition** — current spoilage risk, historical spoilage, overordering cost, margin loss, and positive labor cost variance are in. This answers `open-questions.md` §1, Q1. |
 | **D11** | **Spoilage authority** — inventory snapshots are ground truth. PO + transaction math (`ordered − sold − on-hand`) is the fallback that fills the gaps between counts. This answers `open-questions.md` §4, "Spoilage calculation priority", and Q6. |
 
 ### 3.1 The vision `FND-01` must design for
@@ -266,7 +266,7 @@ that touch them carry a stated default so work never stalls.
 | STF-03 | Demand forecasting | **done** | codex | MET-02 |
 | STF-04 | External signals — weather and local events | **done** | codex | STF-03 |
 | STF-05 | Shift-level recommendations | **done** | codex | STF-04, STF-02 |
-| STF-06 | Labor cost in the Impact score | available | — | STF-02, MET-05 |
+| STF-06 | Labor cost in the Impact score | **done** | codex | STF-02, MET-05 |
 
 ## 5. Tickets
 
@@ -4152,7 +4152,7 @@ is written. Focused staffing, recommendation, and precompute tests pass.
 ### STF-06 — Labor cost in the Impact score
 
 ```
-Status: available   Owner: —   Claimed: —   Completed: —   Branch/PR: —
+Status: done   Owner: codex   Claimed: 2026-08-09   Completed: 2026-08-09   Branch/PR: rewrite
 ```
 
 **Blocked by:** STF-02, MET-05 · **Blocks:** —
@@ -4169,11 +4169,21 @@ alongside the four in D10. Weights rebalanced proportionally per the
 documented procedure. Configuration updated in `MET-08`.
 
 **Acceptance criteria.**
-- [ ] Existing Impact behaviour is unchanged for locations with no labor
+- [x] Existing Impact behaviour is unchanged for locations with no labor
       data.
-- [ ] Weights rebalance proportionally; the arithmetic is in the PR.
-- [ ] Labor recommendations compete on equal terms for the top five.
-- [ ] D10 in §3 of this file is updated to record the fifth category.
+- [x] Weights rebalance proportionally; the arithmetic is in the PR.
+- [x] Labor recommendations compete on equal terms for the top five.
+- [x] D10 in §3 of this file is updated to record the fifth category.
+
+**Notes.** Added `laborCostVariance` as the fifth exact-decimal Impact
+category. The prior weights were multiplied by 0.80 (40/25/20/15 becomes
+32/20/16/12) and the new category receives 20, preserving the 100-point
+total. Variance is the positive cost of actual hours above scheduled hours,
+using observed labor cost per actual hour; incomplete labor rows suppress the
+category. Item Impact remains unchanged without labor data, the location
+rollup uses complete labor rows, and staffing recommendations use the shared
+labor Impact score when role/day-part history is complete. Focused tests,
+`npm run prettify`, `npm run ci`, and authenticated smoke validation passed.
 
 ---
 
@@ -4195,8 +4205,8 @@ condition.
 | Cross-location | 4 | 4 |
 | Integrations | 8 | 8 |
 | Menu management | 7 | 7 |
-| Staffing | 5 | 6 |
-| **Total** | **84** | **87** |
+| Staffing | 6 | 6 |
+| **Total** | **85** | **87** |
 
 **The backlog is complete when every ticket reads `done`.** Sections 7
 and 8 are not work and never become work.

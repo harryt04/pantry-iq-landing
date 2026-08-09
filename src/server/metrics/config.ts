@@ -9,10 +9,11 @@ const DECIMAL_PATTERN = /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)$/
 export const DEFAULT_METRICS_CONFIG = {
   impact: {
     weights: {
-      currentSpoilage: 40,
-      overordering: 25,
-      marginLoss: 20,
-      historicalSpoilage: 15,
+      currentSpoilage: 32,
+      overordering: 20,
+      marginLoss: 16,
+      historicalSpoilage: 12,
+      laborCostVariance: 20,
     },
     thresholds: {
       highImpactDollars: '100',
@@ -246,7 +247,13 @@ function validateConfig(config: Record<string, unknown>): MetricsConfig {
 
   const validatedImpactWeights = validateIntegerWeights(
     impactWeights,
-    ['currentSpoilage', 'overordering', 'marginLoss', 'historicalSpoilage'],
+    [
+      'currentSpoilage',
+      'overordering',
+      'marginLoss',
+      'historicalSpoilage',
+      'laborCostVariance',
+    ],
     100,
   )
   const validatedUrgencyWeights = validateIntegerWeights(

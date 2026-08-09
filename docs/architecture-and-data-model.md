@@ -772,15 +772,27 @@ Three dimensions feed the ranking formula defined in
 20%):
 
 - **Impact (0–100):** calculated from current spoilage risk, historical
-  spoilage, overordering cost, and margin loss. Higher = more money at
+  spoilage, overordering cost, margin loss, and positive labor cost
+  variance. Higher = more money at
   risk. Each category keeps its own exact dollar contribution so the
   eventual recommendation can trace a wallet figure back to its sources.
 
   The current implementation uses a configuration seam (to be centralized
-  by `MET-08`) with weights of current spoilage 0.40, overordering 0.25,
-  margin loss 0.20, and historical spoilage 0.15. A category with missing
+  by `MET-08`) with weights of current spoilage 0.32, overordering 0.20,
+  margin loss 0.16, historical spoilage 0.12, and labor cost variance 0.20.
+  A category with missing
   inputs is suppressed and the remaining weights are renormalized; a
   missing category never becomes an unexplained zero.
+
+  Labor cost variance is the positive cost of actual hours above scheduled
+  hours: `labor cost × (actual hours − scheduled hours) / actual hours`.
+  The observed labor cost supplies the hourly rate; the category is
+  suppressed when labor cost, actual hours, or scheduled hours is missing,
+  invalid, or actual hours are zero. At the location rollup it is calculated
+  from complete labor rows. Staffing recommendations use the same category
+  score when their comparable role/day-part history contains complete labor
+  costs and scheduled hours; otherwise their existing uncertainty score is
+  retained.
 
   Current spoilage risk is `on-hand × unit cost`. Historical spoilage is the
   sum of positive quantities from the `MET-03` spoilage figures multiplied by

@@ -29,6 +29,7 @@ import {
 import {
   calculateImpact,
   rollupImpact,
+  type LaborCostVarianceInput,
   type ImpactMetricResult,
 } from './impact'
 import { METRICS_CONFIG } from './config'
@@ -229,6 +230,29 @@ function sumDecimals(values: readonly string[]): string | undefined {
     total = add(total, parsed)
   }
   return decimalToString(total)
+}
+
+function laborVarianceInput(
+  labor: readonly NonNullable<PrecomputeInput['labor']>[number][],
+): LaborCostVarianceInput | undefined {
+  if (labor.length === 0) return undefined
+  if (
+    labor.some(
+      (shift) =>
+        shift.laborCost === null ||
+        shift.actualHours === null ||
+        shift.scheduledHours === null,
+    )
+  )
+    return undefined
+
+  const laborCost = sumDecimals(labor.map((shift) => shift.laborCost!))
+  const actualHours = sumDecimals(labor.map((shift) => shift.actualHours!))
+  const scheduledHours = sumDecimals(
+    labor.map((shift) => shift.scheduledHours!),
+  )
+  if (!laborCost || !actualHours || !scheduledHours) return undefined
+  return { laborCost, actualHours, scheduledHours }
 }
 
 function subtractDecimalStrings(left: string, right: string) {
@@ -513,7 +537,10 @@ function rollupMetric(
         (result): result is ImpactMetricResult =>
           'categories' in result && 'weights' in result,
       )
-    return calculated(metricKey, rollupImpact(impactResults))
+    return calculated(
+      metricKey,
+      rollupImpact(impactResults, {}, laborVarianceInput(input.labor ?? [])),
+    )
   }
 
   if (metricKey === 'urgency') {

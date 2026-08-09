@@ -60,6 +60,7 @@ describe('shift-level recommendations', () => {
       expect.arrayContaining([
         expect.objectContaining({ id: 'metric:staffingForecast' }),
         expect.objectContaining({ id: 'metric:staffingProductivity' }),
+        expect.objectContaining({ id: 'metric:laborCostVariance' }),
         expect.objectContaining({ id: 'ranking:score' }),
       ]),
     )
