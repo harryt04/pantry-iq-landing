@@ -104,6 +104,9 @@ Summary:
 | `BETTER_AUTH_SECRET` | yes | Session signing secret for Better Auth |
 | `BETTER_AUTH_URL` | yes | Base URL Better Auth issues callbacks against |
 | `CONNECTOR_CREDENTIAL_KEY` | yes in production | Encryption key for connector OAuth credentials; generate a separate secret from the auth key |
+| `SQUARE_CLIENT_ID` / `SQUARE_CLIENT_SECRET` | when Square is enabled (`INT-03`) | Square OAuth application credentials; never expose the secret to the browser |
+| `SQUARE_WEBHOOK_SIGNATURE_KEY` / `SQUARE_WEBHOOK_URL` | when Square webhooks are enabled (`INT-03`) | Square signs the webhook URL plus raw body; keep both values aligned with the Developer Dashboard |
+| `SQUARE_API_BASE_URL` | optional (`INT-03`) | Override with `https://connect.squareupsandbox.com` for Square Sandbox testing |
 | `S3_ENDPOINT` / `S3_ACCESS_KEY_ID` / `S3_SECRET_ACCESS_KEY` / `S3_BUCKET` | later (`ING-02`) | S3-compatible object storage for raw CSV uploads |
 | `S3_REGION` / `S3_FORCE_PATH_STYLE` | optional (`ING-02`) | S3-compatible client settings; defaults to `auto` and virtual-hosted style |
 | `RESEND_API_KEY` | later | Transactional email — auth flows only, never notifications |

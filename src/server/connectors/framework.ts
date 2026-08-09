@@ -9,7 +9,10 @@ import {
   connectorWebhookDeliveries,
   locations,
 } from '@/src/server/db/schema'
-import { requireOwnedLocation } from '@/src/server/auth/authorization'
+import {
+  requireSession,
+  requireOwnedLocation,
+} from '@/src/server/auth/authorization'
 import {
   createIngestionHistory,
   persistNormalizedRecords,
@@ -190,6 +193,36 @@ async function getOwnedConnection(userId: string, connectionId: string) {
   if (!connection)
     throw new ConnectorStateError('The connector connection is not available.')
   return connection
+}
+
+/**
+ * Disconnecting is deliberately a durable state transition. Imported rows
+ * remain available for audit, while the bearer credential is replaced by a
+ * non-secret sentinel so a later sync cannot resume accidentally.
+ */
+export async function disconnectConnectorConnection(input: {
+  headers: Headers
+  connectionId: string
+  now?: Date
+}) {
+  const session = await requireSession(input.headers)
+  const connection = await getOwnedConnection(
+    session.user.id,
+    input.connectionId,
+  )
+  const now = input.now ?? new Date()
+
+  await db
+    .update(connectorConnections)
+    .set({
+      status: 'disconnected',
+      encryptedCredentials: 'disconnected',
+      lastError: null,
+      updatedAt: now,
+    })
+    .where(eq(connectorConnections.id, connection.id))
+
+  return { connectionId: connection.id, locationId: connection.locationId }
 }
 
 async function refreshIfNeeded(

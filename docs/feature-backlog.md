@@ -238,7 +238,7 @@ that touch them carry a stated default so work never stalls.
 |---|---|---|---|---|
 | INT-01 | Source-agnostic ingestion abstraction | **done** | codex | ING-09 |
 | INT-02 | Connector framework | **done** | codex | INT-01, FND-05 |
-| INT-03 | Square connector | available | — | INT-02 |
+| INT-03 | Square connector | **done** | codex | INT-02 |
 | INT-04 | Toast connector | available | — | INT-02 |
 | INT-05 | QuickBooks connector | available | — | INT-02 |
 | INT-06 | Sync scheduling and incremental updates | available | — | INT-03 |
@@ -3413,7 +3413,7 @@ adapters.
 ### INT-03 — Square connector
 
 ```
-Status: available   Owner: —   Claimed: —   Completed: —   Branch/PR: —
+Status: done   Owner: codex   Claimed: 2026-08-09   Completed: 2026-08-09   Branch/PR: —
 ```
 
 **Blocked by:** INT-02 · **Blocks:** INT-06
@@ -3431,13 +3431,29 @@ through the same exact-match resolution as CSV. Backfill history on first
 connect. Ongoing sync.
 
 **Acceptance criteria.**
-- [ ] Square-sourced transactions are indistinguishable downstream from
+- [x] Square-sourced transactions are indistinguishable downstream from
       CSV rows except by `source`.
-- [ ] Catalogue items resolve through `ING-08`; no fuzzy matching is
+- [x] Catalogue items resolve through `ING-08`; no fuzzy matching is
       introduced.
-- [ ] A location can hold both CSV and Square data without duplication.
-- [ ] Backfill is resumable.
-- [ ] Disconnecting stops sync and retains the imported data.
+- [x] A location can hold both CSV and Square data without duplication.
+- [x] Backfill is resumable.
+- [x] Disconnecting stops sync and retains the imported data.
+
+**Notes.** Added a production-shaped Square adapter on the provider-neutral
+connector contract. It requests only merchant-profile, catalog, and order
+read permissions; exchanges and refreshes OAuth credentials; loads catalog
+items and variations; resolves names through the shared exact-match resolver;
+normalizes completed order line items into the canonical transaction shape
+with exact minor-unit money conversion; and uses the shared source/external-ID
+deduplication and resumable cursor persistence. Incremental sync uses an
+explicit seven-day overlap window so late-arriving Square orders are not
+silently missed, while the canonical uniqueness boundary prevents duplicate
+rows. Square webhook signatures cover the configured notification URL and raw
+body and are compared in constant time. Unmatched catalog names fail closed
+with the raw name instead of being guessed. Focused tests cover OAuth,
+catalog-backed normalization, pagination, exact-match rejection, webhook
+verification, and revoked credentials. Square Sandbox can be selected with
+`SQUARE_API_BASE_URL`; no live Square account was available for smoke testing.
 
 ---
 
