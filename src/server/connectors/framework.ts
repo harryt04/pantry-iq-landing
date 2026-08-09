@@ -25,6 +25,7 @@ import {
 } from './credentials'
 import { enqueuePrecomputeForLocation } from '@/src/server/metrics/scheduler'
 import { withConnectorRetry } from './retry'
+import type { ConnectorStatusRecord } from './health'
 import {
   ConnectorAuthorizationRevokedError,
   type ConnectorAdapter,
@@ -364,7 +365,7 @@ export async function syncConnectorConnection(input: {
 export async function listConnectorConnectionStatuses(input: {
   headers: Headers
   locationId?: string
-}) {
+}): Promise<ConnectorStatusRecord[]> {
   const session = await requireSession(input.headers)
   const conditions = [eq(locations.userId, session.user.id)]
   if (input.locationId)

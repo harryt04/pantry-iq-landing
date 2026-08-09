@@ -1999,6 +1999,59 @@ body {
   margin: 0;
 }
 
+.connection-health-notice {
+  align-items: start;
+  background: var(--signal-risk-soft);
+  border: 1px solid var(--signal-risk);
+  border-left: 5px solid var(--signal-risk);
+  border-radius: var(--radius-surface);
+  display: grid;
+  gap: var(--space-4);
+  grid-template-columns: auto 1fr;
+  margin-top: var(--space-7);
+  max-width: 840px;
+  padding: var(--space-5);
+}
+
+.connection-health-notice__icon {
+  align-items: center;
+  border: 2px solid currentColor;
+  border-radius: 50%;
+  display: flex;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  height: 28px;
+  justify-content: center;
+  line-height: 1;
+  width: 28px;
+}
+
+.connection-health-notice h2 {
+  font-size: var(--text-lg);
+  margin: var(--space-1) 0 var(--space-3);
+}
+
+.connection-health-notice__list {
+  display: grid;
+  gap: var(--space-4);
+  margin: 0;
+  padding-left: var(--space-5);
+}
+
+.connection-health-notice__list li {
+  padding-left: var(--space-1);
+}
+
+.connection-health-notice__list p {
+  line-height: 1.5;
+  margin: var(--space-1) 0 var(--space-2);
+}
+
+.connection-health-notice__list a {
+  color: inherit;
+  font-weight: 600;
+}
+
 .app-page__help,
 .app-page__status {
   color: var(--muted-foreground);

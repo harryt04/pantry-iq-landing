@@ -241,9 +241,9 @@ that touch them carry a stated default so work never stalls.
 | INT-03 | Square connector | **done** | codex | INT-02 |
 | INT-04 | Toast connector | **done** | codex | INT-02 |
 | INT-05 | QuickBooks connector | **done** | codex | INT-02 |
-| INT-06 | Sync scheduling and incremental updates | available | — | INT-03 |
+| INT-06 | Sync scheduling and incremental updates | **done** | codex | INT-03 |
 | INT-07 | Deduplication and cross-source reconciliation | available | — | INT-06 |
-| INT-08 | Connection health and failure surfacing | available | — | INT-06 |
+| INT-08 | Connection health and failure surfacing | **done** | codex | INT-06 |
 
 ### Menu management
 
@@ -3602,7 +3602,7 @@ for that period. Never silently merge.
 ### INT-08 — Connection health and failure surfacing
 
 ```
-Status: available   Owner: —   Claimed: —   Completed: —   Branch/PR: —
+Status: done   Owner: codex   Claimed: 2026-08-09   Completed: 2026-08-09   Branch/PR: rewrite
 ```
 
 **Blocked by:** INT-06 · **Blocks:** —
@@ -3620,12 +3620,22 @@ notice when data is stale, stating how stale and what it means for the
 numbers on screen. A reconnect path.
 
 **Acceptance criteria.**
-- [ ] Stale data is disclosed on the dashboard itself, not only in
+- [x] Stale data is disclosed on the dashboard itself, not only in
       settings.
-- [ ] Status is carried by text and icon, never by colour alone.
-- [ ] Error copy says what happened, what it means, and what to do.
-- [ ] A revoked authorization is distinguishable from a transient
+- [x] Status is carried by text and icon, never by colour alone.
+- [x] Error copy says what happened, what it means, and what to do.
+- [x] A revoked authorization is distinguishable from a transient
       failure.
+
+**Notes.** Added deterministic connection health classification: a source is
+stale after 24 hours without a successful sync, while failed and revoked
+states remain distinct. The dashboard now renders an owner-scoped alert with
+plain-language impact, elapsed sync age, a text-and-icon signal, and a
+location-scoped review/reconnect path. The existing `/api/connectors/status`
+surface remains credential-free. The 24-hour stale threshold is the stated
+default because the scheduler runs every fifteen minutes; it can be tuned when
+the open alert-threshold decision is closed. Focused health and dashboard
+coverage plus the full CI suite pass.
 
 ---
 
@@ -4109,17 +4119,17 @@ condition.
 |---|---|---|
 | Foundation | 8 | 8 |
 | Data ingest | 11 | 11 |
-| Metrics engine | 9 | 12 |
-| Dashboard | 4 | 7 |
-| Chat | 4 | 8 |
-| Settings | 4 | 5 |
-| Marketing site | 4 | 5 |
-| Quality gates | 3 | 6 |
-| Cross-location | 1 | 4 |
-| Integrations | 0 | 8 |
-| Menu management | 4 | 7 |
+| Metrics engine | 12 | 12 |
+| Dashboard | 7 | 7 |
+| Chat | 8 | 8 |
+| Settings | 5 | 5 |
+| Marketing site | 5 | 5 |
+| Quality gates | 4 | 6 |
+| Cross-location | 4 | 4 |
+| Integrations | 7 | 8 |
+| Menu management | 7 | 7 |
 | Staffing | 0 | 6 |
-| **Total** | **52** | **87** |
+| **Total** | **78** | **87** |
 
 **The backlog is complete when every ticket reads `done`.** Sections 7
 and 8 are not work and never become work.
