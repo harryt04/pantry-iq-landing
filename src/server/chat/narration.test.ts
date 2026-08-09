@@ -95,7 +95,16 @@ function input() {
   }
 }
 
-function successfulModel(text = 'Grounded answer.') {
+function successfulModel(
+  text = [
+    'Observation: Grounded answer: Salmon has $40 at risk.',
+    'Consider reviewing Salmon this week.',
+    'Financial impact: About $40 at risk.',
+    'Prediction: Not provided. The available history earns an observation, not a prediction.',
+    'Recommendation: Consider reviewing Salmon this week.',
+    'Show your work: Ask to review the sources, calculations, and assumptions.',
+  ].join('\n'),
+) {
   return new MockLanguageModelV4({
     provider: 'anthropic.messages',
     modelId: 'test-haiku',
@@ -151,8 +160,8 @@ describe('narration service', () => {
     })
 
     const result = service.stream(input())
-    await expect(readStream(result.textStream)).resolves.toBe(
-      'Grounded answer.',
+    await expect(readStream(result.textStream)).resolves.toContain(
+      'Grounded answer:',
     )
     await expect(result.usage).resolves.toMatchObject({
       inputTokens: 20,

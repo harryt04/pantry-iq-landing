@@ -186,7 +186,7 @@ that touch them carry a stated default so work never stalls.
 | CHT-01 | Chat surface and composer | done | codex | FND-08 |
 | CHT-02 | Narration service and model integration | **done** | codex | CHT-01, MET-09 |
 | CHT-03 | Grounding contract and guardrails | **done** | codex | CHT-02, MET-12 |
-| CHT-04 | Five-part answer format | available | — | CHT-03 |
+| CHT-04 | Five-part answer format | **done** | codex | CHT-03 |
 | CHT-05 | Show your work, in chat | available | — | CHT-04, MET-10 |
 | CHT-06 | Assumption override and scope prompt | available | — | CHT-05, SET-03 |
 | CHT-07 | Session memory | available | — | CHT-04 |
@@ -2283,7 +2283,7 @@ read-only, location-scoped request boundary.
 ### CHT-04 — Five-part answer format
 
 ```
-Status: available   Owner: —   Claimed: —   Completed: —   Branch/PR: —
+Status: done   Owner: codex   Claimed: 2026-08-08   Completed: 2026-08-08   Branch/PR: —
 ```
 
 **Blocked by:** CHT-03 · **Blocks:** CHT-05, CHT-07
@@ -2302,15 +2302,24 @@ recommendation, and show-your-work on demand — rendered from the
 Follow-up affordances.
 
 **Acceptance criteria.**
-- [ ] The five parts appear in order and are individually identifiable.
-- [ ] Predictions are labelled and carry their basis.
-- [ ] Observations never carry a confidence label.
-- [ ] The money and the action land in the first two sentences.
-- [ ] Output contains nothing from the banned-language list.
+- [x] The five parts appear in order and are individually identifiable.
+- [x] Predictions are labelled and carry their basis.
+- [x] Observations never carry a confidence label.
+- [x] The money and the action land in the first two sentences.
+- [x] Output contains nothing from the banned-language list.
 
-**Verification.** Ask "What am I wasting money on?" against the seed
-data and compare the response against `voice-and-tone.md` §3 line by
-line.
+**Verification.** `src/server/chat/answer-format.ts` validates the five
+labels, their order, the opening money/action requirement, prediction
+bases, confidence language, and the banned-language list after the model
+has finished streaming. Noncompliant or unavailable narration is replaced
+with a deterministic answer built from the persisted `MET-09`
+`RecommendationRecord`; the fallback keeps the same five-part shape.
+Focused chat tests cover the deterministic salmon example, missing format,
+confidence language, grounding, provider failure, and model output. `npm
+run prettify` and `npm run ci` pass; live smoke checks returned `/api/health`
+200 and the unauthenticated `/chat` redirect 307. `.env.local` contains no
+test-account credentials or provider key, so authenticated/provider-backed
+verification remains environment-dependent.
 
 ---
 

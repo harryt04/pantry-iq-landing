@@ -60,7 +60,7 @@ export interface LlmQueryFields {
 export interface ChatGuardrailFields {
   accountId: string
   queryId: string
-  reason: 'unmatched-number'
+  reason: 'unmatched-number' | 'answer-format'
   unmatchedCount: number
 }
 
