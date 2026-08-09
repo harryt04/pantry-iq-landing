@@ -68,6 +68,12 @@ describe('precompute results', () => {
       inputs: { qtySold: '3', qtyOrdered: '5' },
       units: { value: '%' },
     })
+    expect(
+      output.rollups.find((metric) => metric.metricKey === 'spoilageEstimate')
+        ?.result,
+    ).toMatchObject({
+      inputs: { orderedQuantity: '5' },
+    })
     expect(output.rollups.map((metric) => metric.value)).toEqual([
       '60',
       '1',

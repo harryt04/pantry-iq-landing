@@ -4,6 +4,12 @@ import { buildDashboardRecommendations } from './dashboard-recommendations'
 import { getLatestSuccessfulMetricRun } from './precompute'
 import type { RecommendationRecord } from './recommendations'
 import { buildWalletImpactSummary, type WalletValue } from './wallet'
+import {
+  buildLocationComparison,
+  spoilageRateFromTotals,
+  type LocationComparison,
+  type LocationComparisonInput,
+} from './location-comparison'
 
 export type PortfolioLocationInput = {
   locationId: string
@@ -262,4 +268,114 @@ export async function getPortfolioRollup(headers: Headers) {
   )
 
   return buildPortfolioRollup(inputs)
+}
+
+function persistedResultInputs(result: unknown) {
+  if (typeof result !== 'object' || result === null) return {}
+  const inputs = (result as { inputs?: unknown }).inputs
+  if (typeof inputs !== 'object' || inputs === null) return {}
+  return inputs as Record<string, unknown>
+}
+
+function persistedMetricValue(
+  rows: readonly {
+    metricKey: string
+    status: string
+    value: string | null
+    result: unknown
+  }[],
+  metricKey: string,
+) {
+  const row = rows.find((candidate) => candidate.metricKey === metricKey)
+  return row?.status === 'calculated' ? (row.value ?? null) : null
+}
+
+/** Reads the latest owner-scoped runs and compares only identical run windows. */
+export async function getPortfolioLocationComparison(
+  headers: Headers,
+): Promise<LocationComparison> {
+  const { db } = await import('@/src/server/db/client')
+  const { listLocations } = await import('@/src/server/locations/locations')
+  const { metricRollups } = await import('@/src/server/db/schema')
+  const ownedLocations = (await listLocations(headers)).filter(
+    (location) => location.isActive,
+  )
+
+  const inputs = await Promise.all(
+    ownedLocations.map(async (location): Promise<LocationComparisonInput> => {
+      const run = await getLatestSuccessfulMetricRun(location.id)
+      if (!run) {
+        return {
+          locationId: location.id,
+          locationName: location.name,
+          period: null,
+          dataSufficiency: { status: 'cannot-calculate', value: null },
+          metrics: {
+            spoilageRate: null,
+            margin: null,
+            sellThrough: null,
+            moneyAtRisk: null,
+          },
+        }
+      }
+
+      const rows = await db
+        .select({
+          metricKey: metricRollups.metricKey,
+          status: metricRollups.status,
+          value: metricRollups.value,
+          result: metricRollups.result,
+        })
+        .from(metricRollups)
+        .where(
+          and(
+            eq(metricRollups.locationId, location.id),
+            eq(metricRollups.runId, run.id),
+          ),
+        )
+
+      const spoilageRow = rows.find(
+        (row) => row.metricKey === 'spoilageEstimate',
+      )
+      const orderedQuantity = persistedResultInputs(
+        spoilageRow?.result,
+      ).orderedQuantity
+      const impactRow = rows.find((row) => row.metricKey === 'impact')
+      const wallet = buildWalletImpactSummary({
+        impact: impactRow?.result ?? null,
+        margin: undefined,
+        computedAt: run.completedAt ?? run.startedAt,
+      })
+      const dataSufficiency = persistedMetricValue(rows, 'dataSufficiency')
+
+      return {
+        locationId: location.id,
+        locationName: location.name,
+        period: {
+          start: run.inputWindowStart.toISOString(),
+          end: run.inputWindowEnd.toISOString(),
+        },
+        dataSufficiency: {
+          status: dataSufficiency === null ? 'cannot-calculate' : 'calculated',
+          value: dataSufficiency,
+        },
+        metrics: {
+          spoilageRate: spoilageRateFromTotals(
+            spoilageRow?.status === 'calculated'
+              ? (spoilageRow.value ?? null)
+              : null,
+            typeof orderedQuantity === 'string' ? orderedQuantity : null,
+          ),
+          margin: persistedMetricValue(rows, 'margin'),
+          sellThrough: persistedMetricValue(rows, 'sellThrough'),
+          moneyAtRisk:
+            wallet.moneyAtRisk.status === 'calculated'
+              ? wallet.moneyAtRisk.amount
+              : null,
+        },
+      }
+    }),
+  )
+
+  return buildLocationComparison(inputs)
 }

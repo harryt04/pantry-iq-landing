@@ -567,6 +567,12 @@ function rollupMetric(
   }
 
   if (metricKey === 'spoilageEstimate') {
+    const itemIds = new Set(input.items.map((item) => item.id))
+    const orderedQuantity = sumDecimals(
+      input.orders
+        .filter((order) => order.itemId !== null && itemIds.has(order.itemId))
+        .map((order) => order.qty),
+    )
     const resolutions = calculatedValues
       .map(spoilageResolutionOf)
       .filter(
@@ -593,6 +599,7 @@ function rollupMetric(
       inputs: {
         itemCount: String(values.length),
         calculatedItemCount: String(calculatedValues.length),
+        ...(orderedQuantity === undefined ? {} : { orderedQuantity }),
       },
       units: { value: 'location rollup' },
     }

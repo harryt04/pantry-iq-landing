@@ -3243,7 +3243,7 @@ authenticated local smoke test passed.
 ### AGG-03 — Location comparison
 
 ```
-Status: available   Owner: —   Claimed: —   Completed: —   Branch/PR: —
+Status: done   Owner: codex   Claimed: 2026-08-09   Completed: 2026-08-09   Branch/PR: rewrite
 ```
 
 **Blocked by:** AGG-02, DSH-05 · **Blocks:** —
@@ -3260,11 +3260,21 @@ horizontal bars, not grouped or stacked charts. Locations with differing
 data coverage are marked as such rather than compared misleadingly.
 
 **Acceptance criteria.**
-- [ ] Locations with different data sufficiency are visibly flagged, not
+- [x] Locations with different data sufficiency are visibly flagged, not
       silently ranked against each other.
-- [ ] Every mark prints its value and carries its pattern.
-- [ ] Passes the greyscale gate.
-- [ ] No comparison is shown where the underlying periods differ.
+- [x] Every mark prints its value and carries its pattern.
+- [x] Passes the greyscale gate.
+- [x] No comparison is shown where the underlying periods differ.
+
+**Notes.** `/portfolio` now compares spoilage rate, margin, sell-through, and
+money at risk using the latest owner-scoped metric runs. Comparison input
+windows must match exactly; otherwise the page explains the mismatch and
+renders no bars. Uneven Data Sufficiency scores stay visible beside an
+explicit coverage warning. Ranked bars use the shared pattern-first chart
+primitive, print exact persisted values, and support negative margins with a
+zero baseline. Pure comparison and component tests cover exact rate
+arithmetic, missing values, coverage variance, period mismatch, and printed
+chart marks. `npm run ci` and an authenticated `/portfolio` smoke test passed.
 
 ---
 
@@ -4027,11 +4037,11 @@ condition.
 | Settings | 4 | 5 |
 | Marketing site | 4 | 5 |
 | Quality gates | 3 | 6 |
-| Cross-location | 0 | 4 |
+| Cross-location | 1 | 4 |
 | Integrations | 0 | 8 |
 | Menu management | 4 | 7 |
 | Staffing | 0 | 6 |
-| **Total** | **51** | **87** |
+| **Total** | **52** | **87** |
 
 **The backlog is complete when every ticket reads `done`.** Sections 7
 and 8 are not work and never become work.

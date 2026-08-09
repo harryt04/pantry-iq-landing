@@ -150,7 +150,8 @@ export function RankedBarChart({
 
   const seriesById = new Map(series.map((entry, index) => [entry.id, index]))
   const sortedData = [...data].sort((a, b) => b.value - a.value)
-  const maxValue = Math.max(...sortedData.map(({ value }) => value), 0)
+  const minimumValue = Math.min(...sortedData.map(({ value }) => value), 0)
+  const maximumValue = Math.max(...sortedData.map(({ value }) => value), 0)
   const chartWidth = Math.max(width, 560)
   const left = 184
   const right = 112
@@ -158,6 +159,8 @@ export function RankedBarChart({
   const top = 16
   const height = top + Math.max(sortedData.length, 1) * rowHeight + 16
   const plotWidth = chartWidth - left - right
+  const valueRange = maximumValue - minimumValue || 1
+  const zeroX = left + ((0 - minimumValue) / valueRange) * plotWidth
 
   return (
     <ChartFrame ariaLabel={ariaLabel} width={chartWidth}>
@@ -189,11 +192,11 @@ export function RankedBarChart({
 
           const encoding = getChartEncoding(seriesIndex)
           const barY = top + rowIndex * rowHeight + 10
-          const barWidth =
-            maxValue > 0 ? (datum.value / maxValue) * plotWidth : 0
-          const visibleBarWidth = Math.max(barWidth, 1)
+          const barWidth = (datum.value / valueRange) * plotWidth
+          const visibleBarWidth = Math.max(Math.abs(barWidth), 1)
           const valueLabel = datum.valueLabel ?? String(datum.value)
           const seriesLabel = series[seriesIndex]?.label
+          const barX = datum.value < 0 ? zeroX + barWidth : zeroX
 
           return (
             <g
@@ -210,7 +213,7 @@ export function RankedBarChart({
               </text>
               <rect
                 className="chart-mark"
-                x={left}
+                x={barX}
                 y={barY}
                 width={visibleBarWidth}
                 height={36}
@@ -220,8 +223,9 @@ export function RankedBarChart({
               />
               <text
                 className="chart-value"
-                x={left + visibleBarWidth + 8}
+                x={datum.value < 0 ? barX - 8 : barX + visibleBarWidth + 8}
                 y={barY + 23}
+                textAnchor={datum.value < 0 ? 'end' : 'start'}
               >
                 {valueLabel}
               </text>

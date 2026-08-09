@@ -1,10 +1,18 @@
 import { headers } from 'next/headers'
 
+import { LocationComparisonView } from '@/components/dashboard/location-comparison'
 import { PortfolioRollupView } from '@/components/dashboard/portfolio-rollup'
-import { getPortfolioRollup } from '@/src/server/metrics/portfolio'
+import {
+  getPortfolioLocationComparison,
+  getPortfolioRollup,
+} from '@/src/server/metrics/portfolio'
 
 export default async function PortfolioPage() {
-  const rollup = await getPortfolioRollup(await headers())
+  const requestHeaders = await headers()
+  const [rollup, comparison] = await Promise.all([
+    getPortfolioRollup(requestHeaders),
+    getPortfolioLocationComparison(requestHeaders),
+  ])
 
   return (
     <main className="app-page" aria-labelledby="portfolio-title">
@@ -17,6 +25,7 @@ export default async function PortfolioPage() {
         replace a location dashboard; it helps you decide which one to open.
       </p>
       <PortfolioRollupView rollup={rollup} />
+      <LocationComparisonView comparison={comparison} />
     </main>
   )
 }
