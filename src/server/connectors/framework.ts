@@ -94,6 +94,7 @@ export async function completeConnectorAuthorization(input: {
   adapter: ConnectorAdapter
   code: string
   state: string
+  providerAccountId?: string
   now?: Date
 }): Promise<{
   connectionId: string
@@ -126,6 +127,9 @@ export async function completeConnectorAuthorization(input: {
   const authorization = await input.adapter.exchangeCode({
     code: input.code,
     redirectUri: claimedState.redirectUri,
+    ...(input.providerAccountId
+      ? { providerAccountId: input.providerAccountId }
+      : {}),
   })
   const encryptedCredentials = encryptConnectorTokens(authorization.tokens)
 

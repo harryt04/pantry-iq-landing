@@ -240,7 +240,7 @@ that touch them carry a stated default so work never stalls.
 | INT-02 | Connector framework | **done** | codex | INT-01, FND-05 |
 | INT-03 | Square connector | **done** | codex | INT-02 |
 | INT-04 | Toast connector | **done** | codex | INT-02 |
-| INT-05 | QuickBooks connector | available | — | INT-02 |
+| INT-05 | QuickBooks connector | **done** | codex | INT-02 |
 | INT-06 | Sync scheduling and incremental updates | available | — | INT-03 |
 | INT-07 | Deduplication and cross-source reconciliation | available | — | INT-06 |
 | INT-08 | Connection health and failure surfacing | available | — | INT-06 |
@@ -3496,7 +3496,7 @@ smoke testing.
 ### INT-05 — QuickBooks connector
 
 ```
-Status: available   Owner: —   Claimed: —   Completed: —   Branch/PR: —
+Status: done   Owner: codex   Claimed: 2026-08-09   Completed: 2026-08-09   Branch/PR: rewrite
 ```
 
 **Blocked by:** INT-02 · **Blocks:** —
@@ -3514,11 +3514,25 @@ purchase orders with line items and unit costs. Map vendors to supplier
 names.
 
 **Acceptance criteria.**
-- [ ] Imported bills populate unit costs on existing items where they
+- [x] Imported bills populate unit costs on existing items where they
       match exactly.
-- [ ] Items unresolvable by exact match go to the `ING-08` queue rather
+- [x] Items unresolvable by exact match go to the `ING-08` queue rather
       than being guessed.
-- [ ] Currency and tax handling are explicit, documented, and tested.
+- [x] Currency and tax handling are explicit, documented, and tested.
+
+**Notes.** Added a provider-specific adapter on the shared connector
+contract. QuickBooks OAuth carries the callback realm ID through the
+framework, bills are queried with resumable `STARTPOSITION` cursors, and
+vendor/item references are resolved through exact names (with paged
+reference lookups when the bill omits a name). Item-based bill lines become
+canonical purchase orders with decimal-safe unit and total costs. The
+configured three-letter location currency and explicit tax mode reject
+silent conversion or tax ambiguity. Unmatched items fail closed through the
+shared `ING-08` exact-resolution boundary rather than being guessed.
+QuickBooks webhook signatures use the raw body and verifier-token HMAC.
+Focused tests and the full CI pipeline pass; authenticated local smoke
+testing also passed. No live QuickBooks account was available for external
+API smoke testing.
 
 ---
 

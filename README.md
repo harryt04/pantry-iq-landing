@@ -107,6 +107,13 @@ Summary:
 | `SQUARE_CLIENT_ID` / `SQUARE_CLIENT_SECRET` | when Square is enabled (`INT-03`) | Square OAuth application credentials; never expose the secret to the browser |
 | `SQUARE_WEBHOOK_SIGNATURE_KEY` / `SQUARE_WEBHOOK_URL` | when Square webhooks are enabled (`INT-03`) | Square signs the webhook URL plus raw body; keep both values aligned with the Developer Dashboard |
 | `SQUARE_API_BASE_URL` | optional (`INT-03`) | Override with `https://connect.squareupsandbox.com` for Square Sandbox testing |
+| `TOAST_CLIENT_ID` / `TOAST_CLIENT_SECRET` / `TOAST_RESTAURANT_EXTERNAL_ID` | when Toast is enabled (`INT-04`) | Toast machine-client credentials and the restaurant external ID; never expose credentials to the browser |
+| `TOAST_WEBHOOK_SECRET` / `TOAST_WEBHOOK_URL` | when Toast webhooks are enabled (`INT-04`) | Toast signs the raw body plus its timestamp; keep the secret aligned with the Toast configuration |
+| `TOAST_API_BASE_URL` | optional (`INT-04`) | Override with the Toast sandbox host for connector tests |
+| `QUICKBOOKS_CLIENT_ID` / `QUICKBOOKS_CLIENT_SECRET` | when QuickBooks is enabled (`INT-05`) | Intuit OAuth application credentials; never expose the secret to the browser |
+| `QUICKBOOKS_VERIFIER_TOKEN` | when QuickBooks webhooks are enabled (`INT-05`) | Intuit HMAC-SHA256 webhook verifier token |
+| `QUICKBOOKS_CURRENCY_CODE` / `QUICKBOOKS_TAX_MODE` | when QuickBooks is enabled (`INT-05`) | Location currency and explicit `include` or `exclude` tax policy; mismatches are rejected |
+| `QUICKBOOKS_API_BASE_URL` / `QUICKBOOKS_OAUTH_BASE_URL` | optional (`INT-05`) | Override the API and OAuth hosts for sandbox testing |
 | `S3_ENDPOINT` / `S3_ACCESS_KEY_ID` / `S3_SECRET_ACCESS_KEY` / `S3_BUCKET` | later (`ING-02`) | S3-compatible object storage for raw CSV uploads |
 | `S3_REGION` / `S3_FORCE_PATH_STYLE` | optional (`ING-02`) | S3-compatible client settings; defaults to `auto` and virtual-hosted style |
 | `RESEND_API_KEY` | later | Transactional email — auth flows only, never notifications |

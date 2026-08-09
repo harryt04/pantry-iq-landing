@@ -37,6 +37,8 @@ export interface ConnectorAdapter {
   exchangeCode(input: {
     code: string
     redirectUri: string
+    /** Provider callbacks such as QuickBooks return the account ID beside the code. */
+    providerAccountId?: string
   }): Promise<ConnectorAuthorization>
   refreshTokens(tokens: ConnectorTokens): Promise<ConnectorTokens>
   backfill(input: {
