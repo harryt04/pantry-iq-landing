@@ -111,6 +111,23 @@ describe('recommendation card', () => {
     expect(openWorkMarkup).toContain('Edit in item settings')
   })
 
+  it('opens the evidence and removes app-only actions in the marketing variant', () => {
+    const markup = renderToStaticMarkup(
+      <RecommendationCard
+        locationId="marketing-proof"
+        recommendation={baseRecommendation}
+        variant="marketing"
+      />,
+    )
+
+    expect(markup).toContain('data-variant="marketing"')
+    expect(markup).toContain('data-state="open"')
+    expect(markup).toContain('qtySold / qtyOrdered × 100')
+    expect(markup).toContain('Change in item settings')
+    expect(markup).not.toContain('Ask about this')
+    expect(markup).not.toContain('/settings?locationId=marketing-proof')
+  })
+
   it('keeps short-history recommendations explicitly observational', () => {
     const { prediction: _prediction, ...shortHistoryRecommendation } =
       baseRecommendation

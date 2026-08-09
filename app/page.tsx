@@ -1,4 +1,5 @@
 import { SiteHeader } from './site-header'
+import { RecommendationProof } from '@/components/marketing/recommendation-proof'
 
 export default function Home() {
   return (
@@ -56,6 +57,8 @@ export default function Home() {
             </div>
           </div>
         </section>
+
+        <RecommendationProof />
 
         <section
           className="landing-problem"

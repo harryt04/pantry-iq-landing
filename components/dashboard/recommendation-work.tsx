@@ -46,10 +46,12 @@ export function RecommendationWork({
   locationId,
   trace,
   defaultOpen = false,
+  showEditLinks = true,
 }: {
   locationId: string
   trace: EvidenceTrace | null | undefined
   defaultOpen?: boolean
+  showEditLinks?: boolean
 }) {
   if (!hasCompleteTrace(trace)) {
     return (
@@ -123,12 +125,16 @@ export function RecommendationWork({
                   <span className="figure">{assumption.value}</span>
                 </span>
                 <span>{originLabel(assumption.origin)}</span>
-                {assumption.name.startsWith('item.') ? (
+                {assumption.name.startsWith('item.') && showEditLinks ? (
                   <Link
                     href={`/settings?locationId=${encodeURIComponent(locationId)}#item-master`}
                   >
                     Edit in item settings
                   </Link>
+                ) : assumption.name.startsWith('item.') ? (
+                  <span className="recommendation-work__note">
+                    Change in item settings
+                  </span>
                 ) : (
                   <span className="recommendation-work__note">
                     Change at {assumption.editPath}

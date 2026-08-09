@@ -75,10 +75,12 @@ export function RecommendationCard({
   locationId,
   recommendation,
   variant = 'dashboard',
+  workDefaultOpen,
 }: {
   locationId: string
   recommendation: RecommendationRecord
   variant?: RecommendationCardVariant
+  workDefaultOpen?: boolean
 }) {
   const severity = recommendationSeverity(recommendation.score)
   const severityInfo = severityLabel(severity)
@@ -127,14 +129,18 @@ export function RecommendationCard({
           <RecommendationWork
             locationId={locationId}
             trace={recommendation.evidenceTrace}
+            defaultOpen={workDefaultOpen ?? variant === 'marketing'}
+            showEditLinks={variant !== 'marketing'}
           />
-          <Button asChild size="sm" variant="secondary">
-            <Link
-              href={`/chat?locationId=${encodeURIComponent(locationId)}&itemId=${encodeURIComponent(recommendation.itemId)}`}
-            >
-              Ask about this
-            </Link>
-          </Button>
+          {variant !== 'marketing' ? (
+            <Button asChild size="sm" variant="secondary">
+              <Link
+                href={`/chat?locationId=${encodeURIComponent(locationId)}&itemId=${encodeURIComponent(recommendation.itemId)}`}
+              >
+                Ask about this
+              </Link>
+            </Button>
+          ) : null}
         </div>
       </CardContent>
     </Card>

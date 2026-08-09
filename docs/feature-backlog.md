@@ -208,7 +208,7 @@ that touch them carry a stated default so work never stalls.
 |---|---|---|---|---|
 | MKT-01 | Site shell, nav, and theming | **done** | codex | FND-06 |
 | MKT-02 | Landing page — hero through final CTA | **done** | codex | MKT-01 |
-| MKT-03 | Proof section — a real recommendation card | available | — | MKT-02, DSH-03 |
+| MKT-03 | Proof section — a real recommendation card | **done** | codex | MKT-02, DSH-03 |
 | MKT-04 | Pricing section | **done** | codex | MKT-02 |
 | MKT-05 | Claims-discipline audit | **done** | codex | MKT-02 |
 
@@ -2725,7 +2725,7 @@ the optional gstack browser binary is not built in this environment.
 ### MKT-03 — Proof section, a real recommendation card
 
 ```
-Status: available   Owner: —   Claimed: —   Completed: —   Branch/PR: —
+Status: done   Owner: codex   Claimed: 2026-08-08   Completed: 2026-08-08   Branch/PR: rewrite
 ```
 
 **Blocked by:** MKT-02, DSH-03 · **Blocks:** —
@@ -2742,9 +2742,20 @@ feature, that feature ships").
 **Scope — out.** A mockup, a screenshot, or a hand-built lookalike.
 
 **Acceptance criteria.**
-- [ ] It uses the shipped component, not a copy.
-- [ ] Every feature visible in it exists in the product.
-- [ ] The arithmetic shown is real and correct.
+- [x] It uses the shipped component, not a copy.
+- [x] Every feature visible in it exists in the product.
+- [x] The arithmetic shown is real and correct.
+
+**Notes.** Added a public worked-example section that renders the shipped
+`RecommendationCard` with a deterministic `buildPrecomputeResults` output.
+The evidence disclosure is expanded by default, with imported source rows,
+exact calculations, and assumptions visible. Marketing mode suppresses
+app-only chat/settings links while preserving the product card itself. The
+example is covered by server-rendered regression tests and passes the landing
+page accessibility gate in both themes, including the 16px mobile body-copy
+floor. `npm run prettify` and `npm run ci` pass; live `/` and `/api/health`
+smoke checks returned 200. No test-account credentials are present in
+`.env.local`, so authenticated login verification was not applicable.
 
 ---
 
