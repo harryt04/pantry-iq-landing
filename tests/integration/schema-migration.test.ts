@@ -137,6 +137,7 @@ const canonicalColumns = [
   ['csv_upload_history', 'source', false, 'text'],
   ['csv_upload_history', 'rows_imported', false, 'integer'],
   ['csv_upload_history', 'mapping_used', false, 'jsonb'],
+  ['csv_upload_history', 'item_resolution', true, 'jsonb'],
   ['csv_upload_history', 'unmatched_items', true, 'jsonb'],
   ['csv_upload_history', 'storage_key', true, 'text'],
   ['csv_upload_history', 'status', false, 'text'],
