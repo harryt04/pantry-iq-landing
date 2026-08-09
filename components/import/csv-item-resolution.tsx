@@ -35,6 +35,8 @@ export function CsvItemResolution({
 }) {
   const current = unmatchedItems[0]
   const [search, setSearch] = React.useState('')
+  const [canonicalName, setCanonicalName] = React.useState('')
+  const [displayName, setDisplayName] = React.useState('')
   const [category, setCategory] = React.useState('')
   const [unit, setUnit] = React.useState('each')
   const [shelfLifeDays, setShelfLifeDays] = React.useState('')
@@ -42,6 +44,8 @@ export function CsvItemResolution({
   React.useEffect(() => {
     if (!current) return
     setSearch('')
+    setCanonicalName(current.rawItemName.trim())
+    setDisplayName(current.rawItemName.trim())
     setCategory('')
     setUnit('each')
     setShelfLifeDays('')
@@ -64,14 +68,15 @@ export function CsvItemResolution({
 
   function createNewItem(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    const trimmedName = currentItem.rawItemName.trim()
-    if (!trimmedName || !unit.trim()) return
+    const trimmedCanonicalName = canonicalName.trim()
+    const trimmedDisplayName = displayName.trim()
+    if (!trimmedCanonicalName || !trimmedDisplayName || !unit.trim()) return
     const parsedShelfLife = shelfLifeDays.trim()
       ? Number(shelfLifeDays)
       : suggestedDays
     onCreateNew(currentItem.rawItemName, {
-      canonicalName: trimmedName,
-      displayName: trimmedName,
+      canonicalName: trimmedCanonicalName,
+      displayName: trimmedDisplayName,
       category: category.trim() || null,
       unit: unit.trim(),
       shelfLifeDays:
@@ -151,6 +156,28 @@ export function CsvItemResolution({
 
       <form className="app-page__form-row" onSubmit={createNewItem}>
         <p className="csv-mapping__source-label">Or create a new item</p>
+        <Label htmlFor="new-item-canonical-name">Canonical name</Label>
+        <Input
+          id="new-item-canonical-name"
+          value={canonicalName}
+          onChange={(event) => setCanonicalName(event.target.value)}
+          aria-describedby="new-item-canonical-help"
+          required
+        />
+        <p id="new-item-canonical-help" className="app-page__help">
+          Used for exact matching and kept unchanged after this import.
+        </p>
+        <Label htmlFor="new-item-display-name">Display name</Label>
+        <Input
+          id="new-item-display-name"
+          value={displayName}
+          onChange={(event) => setDisplayName(event.target.value)}
+          aria-describedby="new-item-display-help"
+          required
+        />
+        <p id="new-item-display-help" className="app-page__help">
+          This is the name you&apos;ll see in PantryIQ.
+        </p>
         <Label htmlFor="new-item-category">Category (optional)</Label>
         <Input
           id="new-item-category"

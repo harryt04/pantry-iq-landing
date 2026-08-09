@@ -145,7 +145,7 @@ that touch them carry a stated default so work never stalls.
 | ING-05 | Column mapping — uncertain-column resolution | **done** | codex | ING-04, FND-07 |
 | ING-06 | Mapping persistence and reuse | **done** | codex | ING-05 |
 | ING-07 | Canonical item master | **done** | codex | FND-04 |
-| ING-08 | Item name resolution — exact match only | **in-review** | codex | ING-07, ING-05 |
+| ING-08 | Item name resolution — exact match only | **done** | codex | ING-07, ING-05 |
 | ING-09 | Import commit, confirmation, and history | **done** | codex | ING-06, ING-08 |
 | ING-10 | Manual entry | **done** | codex | ING-09 |
 | ING-11 | CSV export — the trust fallback | **done** | codex | ING-09 |
@@ -1003,7 +1003,7 @@ exists in this ticket's scope.
 ### ING-08 — Item name resolution, exact match only
 
 ```
-Status: in-review   Owner: codex   Claimed: 2026-08-08   Completed: —   Branch/PR: —
+Status: done   Owner: codex   Claimed: 2026-08-08   Completed: 2026-08-09   Branch/PR: rewrite
 ```
 
 **Blocked by:** ING-07, ING-05 · **Blocks:** ING-09
@@ -1030,14 +1030,14 @@ user may override.
 **Scope — out.** Fuzzy matching of any kind, at any confidence, ever.
 
 **Acceptance criteria.**
-- [ ] Only exact matches link automatically.
-- [ ] The customization-stripping rules are listed in code, testable, and
+- [x] Only exact matches link automatically.
+- [x] The customization-stripping rules are listed in code, testable, and
       documented in the PR.
-- [ ] Unmatched items appear one at a time.
-- [ ] Import cannot proceed with an unresolved item.
-- [ ] Suggested shelf life is labelled as a suggestion and is editable at
+- [x] Unmatched items appear one at a time.
+- [x] Import cannot proceed with an unresolved item.
+- [x] Suggested shelf life is labelled as a suggestion and is editable at
       the point of creation.
-- [ ] `rawItemName` is preserved on every imported row for the audit
+- [x] `rawItemName` is preserved on every imported row for the audit
       trail regardless of what it matched.
 
 **Verification.** Import a file mixing exact matches, customized
@@ -1050,9 +1050,10 @@ whitespace normalization plus the explicit modifier rules in
 contract preserves every raw item name, groups unresolved rows with up to
 five context examples, blocks continuation while the queue is non-empty,
 and exposes a category-keyed shelf-life suggestion as an editable value.
-`ING-09` must wire this contract to the full stored-file row stream and its
-atomic commit before this ticket can be signed off against the live import
-flow.
+The contract is wired to the full stored-file row stream and atomic commit
+in `ING-09`. New-item creation captures separate canonical and display
+names while keeping the canonical value exact-matchable and immutable after
+import.
 
 **Decisions to confirm.** Shelf-life default source is open
 (`open-questions.md` §4). **Default:** a committed lookup table keyed by
@@ -4009,7 +4010,7 @@ condition.
 | Area | Done | Total |
 |---|---|---|
 | Foundation | 8 | 8 |
-| Data ingest | 10 | 11 |
+| Data ingest | 11 | 11 |
 | Metrics engine | 9 | 12 |
 | Dashboard | 4 | 7 |
 | Chat | 4 | 8 |
@@ -4020,7 +4021,7 @@ condition.
 | Integrations | 0 | 8 |
 | Menu management | 4 | 7 |
 | Staffing | 0 | 6 |
-| **Total** | **50** | **87** |
+| **Total** | **51** | **87** |
 
 **The backlog is complete when every ticket reads `done`.** Sections 7
 and 8 are not work and never become work.

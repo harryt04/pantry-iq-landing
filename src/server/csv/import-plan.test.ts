@@ -82,7 +82,7 @@ describe('CSV import planning', () => {
       resolutions: {
         'new soup': {
           canonicalName: 'new soup',
-          displayName: 'New soup',
+          displayName: 'Soup of the Day',
           category: 'soup',
           unit: 'each',
           shelfLifeDays: 3,
@@ -94,6 +94,13 @@ describe('CSV import planning', () => {
     expect(resolved.rows[0]?.item).toMatchObject({
       kind: 'new',
       key: 'new soup',
+    })
+    expect(resolved.newItems[0]?.input).toEqual({
+      canonicalName: 'new soup',
+      displayName: 'Soup of the Day',
+      category: 'soup',
+      unit: 'each',
+      shelfLifeDays: 3,
     })
   })
 
