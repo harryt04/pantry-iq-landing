@@ -8,6 +8,7 @@ import {
   metricResults,
   metricRollups,
   metricRuns,
+  locations,
   recipeCostHistory,
   recipeIngredients,
   recipes,
@@ -51,6 +52,10 @@ import {
 } from './recommendations'
 import type { EvidenceSourceInput } from './evidence'
 import {
+  buildDemandForecast,
+  type DemandForecastResult,
+} from '@/src/server/staffing/demand-forecast'
+import {
   assembleMenuRecommendationRecords,
   buildMenuRecommendationCandidates,
   type MenuRecommendationInput,
@@ -76,7 +81,8 @@ export const PRECOMPUTED_METRICS = [
   'urgency',
 ] as const
 
-export type PrecomputedMetric = (typeof PRECOMPUTED_METRICS)[number]
+export type PrecomputedMetric =
+  (typeof PRECOMPUTED_METRICS)[number] | 'demandForecast'
 
 type Decimal = { coefficient: bigint; scale: number }
 
@@ -126,6 +132,7 @@ export type PrecomputeInput = {
   sources?: readonly EvidenceSourceInput[]
   reconciliation?: readonly ReconciliationConflict[]
   menuRecommendations?: MenuRecommendationInput
+  demandForecast?: DemandForecastResult
 }
 
 export type StoredMetric = {
@@ -639,6 +646,38 @@ function rollupMetric(
   })
 }
 
+function forecastRollup(forecast: DemandForecastResult): StoredMetric {
+  const suppressed = forecast.status === 'suppressed'
+  const calculablePeriods = forecast.periods.filter(
+    (period) =>
+      period.covers.status === 'calculated' &&
+      period.sales.status === 'calculated',
+  ).length
+  const result: MetricResult<string> = suppressed
+    ? {
+        status: 'cannot-calculate',
+        reason: forecast.reason ?? 'forecast is suppressed',
+        inputs: { historyDays: String(forecast.historyDays) },
+        units: { value: 'forecast' },
+      }
+    : {
+        status: 'calculated',
+        value: String(calculablePeriods),
+        inputs: {
+          historyDays: String(forecast.historyDays),
+          periodCount: String(forecast.periods.length),
+          calculablePeriods: String(calculablePeriods),
+        },
+        units: { value: 'forecast periods' },
+      }
+  return {
+    metricKey: 'demandForecast',
+    status: result.status,
+    value: suppressed ? null : String(calculablePeriods),
+    result: { ...result, forecast } as unknown as StoredMetric['result'],
+  }
+}
+
 export function buildPrecomputeResults(
   input: PrecomputeInput,
   now = new Date(),
@@ -725,9 +764,12 @@ export function buildPrecomputeResults(
 
   return {
     itemResults,
-    rollups: PRECOMPUTED_METRICS.map((metricKey) =>
-      rollupMetric(metricKey, metricSets, input),
-    ),
+    rollups: [
+      ...PRECOMPUTED_METRICS.map((metricKey) =>
+        rollupMetric(metricKey, metricSets, input),
+      ),
+      ...(input.demandForecast ? [forecastRollup(input.demandForecast)] : []),
+    ],
     rankedItems,
     recommendations: [...inventoryRecommendations, ...menuRecommendations],
     inputWindowStart,
@@ -740,6 +782,7 @@ export async function loadPrecomputeInput(
 ): Promise<PrecomputeInput> {
   const { db } = await import('@/src/server/db/client')
   const [
+    locationContext,
     items,
     sales,
     orders,
@@ -750,6 +793,14 @@ export async function loadPrecomputeInput(
     recipeIngredientRows,
     conversions,
   ] = await Promise.all([
+    db
+      .select({
+        timezone: locations.timezone,
+        businessDayBoundary: locations.businessDayBoundary,
+      })
+      .from(locations)
+      .where(eq(locations.id, locationId))
+      .limit(1),
     db
       .select({
         id: inventoryItems.id,
@@ -1042,6 +1093,20 @@ export async function loadPrecomputeInput(
     ],
   }
 
+  const forecastLocation = locationContext[0]
+  const demandForecast = forecastLocation
+    ? buildDemandForecast({
+        timezone: forecastLocation.timezone,
+        businessDayBoundary: forecastLocation.businessDayBoundary,
+        sales: includedSales.map((sale) => ({
+          transactedAt: sale.transactedAt,
+          qty: sale.qty,
+          revenue: sale.revenue,
+        })),
+        sources,
+      })
+    : undefined
+
   return {
     items: normalizedItems,
     sales: includedSales,
@@ -1050,6 +1115,7 @@ export async function loadPrecomputeInput(
     sources,
     reconciliation,
     menuRecommendations,
+    ...(demandForecast ? { demandForecast } : {}),
   }
 }
 

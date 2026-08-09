@@ -8,6 +8,10 @@ import {
   buildLaborEfficiencyMetrics,
   type LaborEfficiencyResult,
 } from './labor-efficiency'
+import {
+  buildDemandForecast,
+  type DemandForecastResult,
+} from './demand-forecast'
 
 const LOOKBACK_DAYS = 365
 
@@ -15,7 +19,7 @@ const LOOKBACK_DAYS = 365
 export async function getLaborEfficiency(
   headers: Headers,
   locationId: string,
-): Promise<LaborEfficiencyResult> {
+): Promise<LaborEfficiencyResult & { forecast: DemandForecastResult }> {
   const owned = await requireOwnedLocation(headers, locationId)
   const periodStart = new Date(Date.now() - LOOKBACK_DAYS * 24 * 60 * 60 * 1000)
 
@@ -31,6 +35,7 @@ export async function getLaborEfficiency(
     db
       .select({
         transactedAt: transactions.transactedAt,
+        qty: transactions.qty,
         revenue: transactions.totalRevenue,
         totalCost: transactions.totalCost,
       })
@@ -63,10 +68,22 @@ export async function getLaborEfficiency(
   const selectedLocation = location[0]
   if (!selectedLocation) throw new Error('That location could not be loaded.')
 
-  return buildLaborEfficiencyMetrics({
+  const efficiency = buildLaborEfficiencyMetrics({
     timezone: selectedLocation.timezone,
     businessDayBoundary: selectedLocation.businessDayBoundary,
-    sales,
+    sales: sales.map(({ transactedAt, revenue, totalCost }) => ({
+      transactedAt,
+      revenue,
+      totalCost,
+    })),
     labor,
   })
+  return {
+    ...efficiency,
+    forecast: buildDemandForecast({
+      timezone: selectedLocation.timezone,
+      businessDayBoundary: selectedLocation.businessDayBoundary,
+      sales,
+    }),
+  }
 }

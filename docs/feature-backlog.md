@@ -263,7 +263,7 @@ that touch them carry a stated default so work never stalls.
 |---|---|---|---|---|
 | STF-01 | Labor data model and import | **done** | codex | INT-01 |
 | STF-02 | Labor efficiency metrics | **done** | codex | STF-01, MET-01 |
-| STF-03 | Demand forecasting | available | — | MET-02 |
+| STF-03 | Demand forecasting | **done** | codex | MET-02 |
 | STF-04 | External signals — weather and local events | available | — | STF-03 |
 | STF-05 | Shift-level recommendations | available | — | STF-04, STF-02 |
 | STF-06 | Labor cost in the Impact score | available | — | STF-02, MET-05 |
@@ -4017,7 +4017,7 @@ to `/account` during smoke testing.
 ### STF-03 — Demand forecasting
 
 ```
-Status: available   Owner: —   Claimed: —   Completed: —   Branch/PR: —
+Status: done   Owner: codex   Claimed: 2026-08-09   Completed: 2026-08-09   Branch/PR: rewrite
 ```
 
 **Blocked by:** MET-02 · **Blocks:** STF-04
@@ -4040,12 +4040,24 @@ tracked against outcomes over time.
 unexplainable prediction is unusable here regardless of its accuracy.
 
 **Acceptance criteria.**
-- [ ] The method is documented and its arithmetic appears in `MET-10`
+- [x] The method is documented and its arithmetic appears in `MET-10`
       traces.
-- [ ] Forecasts are suppressed below the documented history minimum.
-- [ ] Accuracy is measured against actuals and visible internally.
-- [ ] Every forecast is labelled a prediction and states its basis.
-- [ ] No forecast is produced inside a model call.
+- [x] Forecasts are suppressed below the documented history minimum.
+- [x] Accuracy is measured against actuals and visible internally.
+- [x] Every forecast is labelled a prediction and states its basis.
+- [x] No forecast is produced inside a model call.
+
+**Notes.** Added a deterministic, exact-decimal forecast engine using a
+trailing mean of up to eight same-weekday, same-day-part periods. Forecasts
+cover the next seven business days, are suppressed before 28 distinct
+business days, and leave day parts without two comparable periods explicitly
+uncalculable. Rolling seven-date holdout accuracy reports quantity and sales
+MAE/MAPE. Each result carries a MET-10-shaped evidence trace with source rows,
+arithmetic, method, history, and source-quantity assumptions. Metric
+precompute persists the forecast rollup, and Staffing renders the prediction,
+basis, method, held-out accuracy, and trace count. Four focused tests cover
+history suppression, exact reference arithmetic, business-day boundaries,
+and no invented zeroes.
 
 ---
 

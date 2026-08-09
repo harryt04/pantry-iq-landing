@@ -99,6 +99,30 @@ but no sales, or sales but no labor, is excluded. Prime cost is withheld when
 any sale in the period lacks `totalCost`, because a partial food-cost sum
 would misstate the result.
 
+### Demand forecasting (STF-03)
+
+Demand forecasting is deterministic arithmetic and runs with metric
+precompute, never inside a model call. It uses transaction `qty` as the
+source-provided cover-or-unit measure and `totalRevenue` as sales. No cover
+conversion is inferred. Transactions are grouped using the location timezone
+and business-day boundary, then split into the same four relative day parts as
+staffing analysis.
+
+The method is a trailing mean of up to the eight latest periods with the same
+weekday and day part. A forecast is suppressed until 28 distinct business
+days exist; an individual period remains explicitly uncalculable unless at
+least two comparable historical periods exist. The next seven business days
+are returned with the weekday, day part, reference count, and prediction
+basis. Each persisted forecast rollup includes an evidence trace with the
+reference arithmetic and assumptions, so the result can be checked through
+the same show-your-work contract as other metric output.
+
+Accuracy is measured by a rolling seven-date holdout over historical periods.
+The trace records mean absolute error for quantity and sales and mean absolute
+percentage error where the actual is non-zero. Accuracy is visible beside the
+forecast internally; missing backtest coverage is reported rather than
+treated as zero accuracy.
+
 ## Connector sync scheduling (`INT-06`)
 
 Each connected source is registered with the `pantryiq.connector-sync` pg-boss

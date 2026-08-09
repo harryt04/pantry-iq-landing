@@ -18,6 +18,7 @@ import type {
   LaborEfficiencyPeriod,
   LaborEfficiencyResult,
 } from '@/src/server/staffing/labor-efficiency'
+import type { DemandForecastPeriod } from '@/src/server/staffing/demand-forecast'
 
 function figure(value: string | null, suffix = '') {
   return value === null ? '—' : `${value}${suffix}`
@@ -127,7 +128,26 @@ function PeriodTable({
 export function LaborEfficiencyView({
   result,
 }: {
-  result: LaborEfficiencyResult
+  result: LaborEfficiencyResult & {
+    forecast: {
+      status: 'calculated' | 'suppressed'
+      method: string
+      historyRequirement: string
+      historyDays: number
+      periods: DemandForecastPeriod[]
+      accuracy: {
+        status: 'calculated' | 'cannot-calculate'
+        observations: number
+        coversMae: string | null
+        salesMae: string | null
+        coversMape: string | null
+        salesMape: string | null
+        reason?: string
+      }
+      trace: { calculations: unknown[] }
+      reason?: string
+    }
+  }
 }) {
   return (
     <main className="app-page" aria-labelledby="staffing-title">
@@ -155,6 +175,8 @@ export function LaborEfficiencyView({
           <PeriodTable dimension="day-of-week" periods={result.periods} />
         </div>
       )}
+
+      <DemandForecastView forecast={result.forecast} />
 
       {result.exclusions.length > 0 ? (
         <Card className="state-edge--watch">
@@ -195,5 +217,124 @@ export function LaborEfficiencyView({
         </CardContent>
       </Card>
     </main>
+  )
+}
+
+function forecastFigure(
+  value: string | null,
+  units: string,
+  status: DemandForecastPeriod['covers']['status'],
+) {
+  if (status !== 'calculated' || value === null) return '—'
+  return `${value} ${units}`
+}
+
+function DemandForecastView({
+  forecast,
+}: {
+  forecast: {
+    status: 'calculated' | 'suppressed'
+    method: string
+    historyRequirement: string
+    historyDays: number
+    periods: DemandForecastPeriod[]
+    accuracy: {
+      status: 'calculated' | 'cannot-calculate'
+      observations: number
+      coversMae: string | null
+      salesMae: string | null
+      coversMape: string | null
+      salesMape: string | null
+      reason?: string
+    }
+    trace: { calculations: unknown[] }
+    reason?: string
+  }
+}) {
+  const byDate = new Map<string, DemandForecastPeriod[]>()
+  for (const period of forecast.periods) {
+    const rows = byDate.get(period.businessDate) ?? []
+    rows.push(period)
+    byDate.set(period.businessDate, rows)
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Demand forecast</CardTitle>
+        <CardDescription>
+          A prediction for the next seven business days. It uses imported
+          transaction quantity as the source&apos;s cover or unit measure, plus
+          revenue, grouped by business day and day part.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        {forecast.status === 'suppressed' ? (
+          <p>
+            {forecast.reason} You have {forecast.historyDays} of the required{' '}
+            {forecast.historyRequirement.toLowerCase()}
+          </p>
+        ) : (
+          <>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableCaption>
+                  Every prediction states its weekday/day-part basis. A dash
+                  means there are not two comparable periods to use.
+                </TableCaption>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Day part</TableHead>
+                    <TableHead className="figure">Predicted covers</TableHead>
+                    <TableHead className="figure">Predicted sales</TableHead>
+                    <TableHead>Basis</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {[...byDate.entries()].flatMap(([date, periods]) =>
+                    periods.map((period) => (
+                      <TableRow key={period.id}>
+                        <TableCell>
+                          <strong>{date}</strong>
+                          <br />
+                          {period.dayOfWeek}
+                        </TableCell>
+                        <TableCell>{period.dayPart}</TableCell>
+                        <TableCell className="figure">
+                          {forecastFigure(
+                            period.covers.value,
+                            'units',
+                            period.covers.status,
+                          )}
+                        </TableCell>
+                        <TableCell className="figure">
+                          {forecastFigure(
+                            period.sales.value,
+                            'USD',
+                            period.sales.status,
+                          )}
+                        </TableCell>
+                        <TableCell>{period.basis}</TableCell>
+                      </TableRow>
+                    )),
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+            <p>
+              <strong>Method:</strong> {forecast.method}{' '}
+              {forecast.accuracy.status === 'calculated'
+                ? `Held-out accuracy covers ${forecast.accuracy.observations} observations: ${forecast.accuracy.coversMae} units covers MAE and ${forecast.accuracy.salesMae} USD sales MAE.`
+                : forecast.accuracy.reason}
+            </p>
+            <p>
+              <strong>Trace:</strong> {forecast.trace.calculations.length}{' '}
+              forecast calculations are available for the show-your-work record.
+            </p>
+          </>
+        )}
+      </CardContent>
+    </Card>
   )
 }
