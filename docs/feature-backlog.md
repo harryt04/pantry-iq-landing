@@ -159,7 +159,7 @@ that touch them carry a stated default so work never stalls.
 | MET-03 | Spoilage resolution — snapshots authoritative | **done** | codex | MET-02 |
 | MET-04 | Data Sufficiency score | **done** | codex | MET-02 |
 | MET-05 | Impact score | **done** | codex | MET-03 |
-| MET-06 | Urgency score | available | — | MET-03 |
+| MET-06 | Urgency score | **done** | codex | MET-03 |
 | MET-07 | Ranking and top-N selection | available | — | MET-04, MET-05, MET-06 |
 | MET-08 | Tuning configuration | available | — | MET-07 |
 | MET-09 | Recommendation record and message assembly | available | — | MET-07 |
@@ -1481,7 +1481,7 @@ verification for this ticket.
 ### MET-06 — Urgency score
 
 ```
-Status: available   Owner: —   Claimed: —   Completed: —   Branch/PR: —
+Status: done   Owner: codex   Claimed: 2026-08-08   Completed: 2026-08-08   Branch/PR: rewrite
 ```
 
 **Blocked by:** MET-03 · **Blocks:** MET-07
@@ -1499,15 +1499,28 @@ acceleration, and supplier lead time where known. Conservative — biased
 urgency.
 
 **Acceptance criteria.**
-- [ ] Missing shelf life lowers urgency; it never defaults to urgent.
-- [ ] Shelf life is read from the item's editable value, and the value
+- [x] Missing shelf life lowers urgency; it never defaults to urgent.
+- [x] Shelf life is read from the item's editable value, and the value
       used is exposed for `MET-10`.
-- [ ] Trend acceleration requires enough history to be meaningful and is
+- [x] Trend acceleration requires enough history to be meaningful and is
       suppressed otherwise.
-- [ ] Thresholds come from configuration (`MET-08`).
+- [x] Thresholds come from configuration (`MET-08`).
 
 **Verification.** An item with no shelf life set must never outrank an
 identical item with a known two-day shelf life.
+
+**Notes.** Added a deterministic 0–100 urgency scorer with configuration-
+shaped weights for shelf-life remaining, seven-day trend acceleration, and
+derived supplier lead time. Shelf life is anchored to the latest inventory
+count (or latest order when no count exists); missing shelf life and missing
+completed lead-time history are explicit conservative zero components. Trend
+acceleration requires two weeks and caps a zero prior-week baseline at 50.
+Completed purchase orders provide rounded average lead time from
+`receivedAt − orderedAt`. Precompute stores urgency per item and uses the
+maximum item urgency as the location rollup, since scores are not additive.
+Focused tests, formatting, full CI (178 tests, 13 accessibility checks, and
+production build) passed. The local PostgreSQL integration tests remain
+skipped because no database/container runtime is available.
 
 ---
 

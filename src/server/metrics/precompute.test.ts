@@ -42,7 +42,7 @@ describe('precompute results', () => {
     const output = buildPrecomputeResults(input, now)
     const metrics = output.itemResults[0]?.metrics
 
-    expect(metrics).toHaveLength(7)
+    expect(metrics).toHaveLength(8)
     expect(metrics?.map((metric) => metric.metricKey)).toEqual([
       'sellThrough',
       'spoilageEstimate',
@@ -51,6 +51,7 @@ describe('precompute results', () => {
       'variance',
       'dataSufficiency',
       'impact',
+      'urgency',
     ])
     expect(metrics?.map((metric) => metric.value)).toEqual([
       '60',
@@ -60,6 +61,7 @@ describe('precompute results', () => {
       '20',
       '15',
       '11',
+      '0',
     ])
     expect(metrics?.[0]?.result).toMatchObject({
       status: 'calculated',
@@ -74,6 +76,7 @@ describe('precompute results', () => {
       '20',
       '15',
       '11',
+      '0',
     ])
   })
 

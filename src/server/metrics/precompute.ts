@@ -32,6 +32,7 @@ import {
   calculateDataSufficiency,
   DATA_SUFFICIENCY_METRIC,
 } from './sufficiency'
+import { calculateUrgency, rollupUrgency } from './urgency'
 
 export const PRECOMPUTED_METRICS = [
   'sellThrough',
@@ -41,6 +42,7 @@ export const PRECOMPUTED_METRICS = [
   'variance',
   DATA_SUFFICIENCY_METRIC,
   'impact',
+  'urgency',
 ] as const
 
 export type PrecomputedMetric = (typeof PRECOMPUTED_METRICS)[number]
@@ -51,6 +53,7 @@ export type PrecomputeItem = {
   id: string
   unit: string
   costPerUnit: string | null
+  shelfLifeDays?: number | null
 }
 
 export type PrecomputeSale = {
@@ -66,6 +69,7 @@ export type PrecomputeOrder = {
   qty: string
   totalCost: string
   orderedAt: Date
+  receivedAt?: Date | null
 }
 
 export type PrecomputeSnapshot = {
@@ -259,6 +263,12 @@ function metricSet(
       ? sumDecimals(itemSales.map((sale) => sale.totalCost as string))
       : undefined
   const common = { unit: item.unit, currency: 'USD' }
+  const freshnessAnchorAt = [
+    ...itemSnapshots.map((snapshot) => snapshot.countedAt),
+    ...itemOrders.map((order) => order.orderedAt),
+  ]
+    .sort((left, right) => left.getTime() - right.getTime())
+    .at(-1)
   const sufficiency = calculateDataSufficiency({
     transactions: itemSales,
     purchaseOrders: itemOrders.map(({ orderedAt }) => ({ orderedAt })),
@@ -347,6 +357,24 @@ function metricSet(
         currency: 'USD',
       }),
     ),
+    calculated(
+      'urgency',
+      calculateUrgency({
+        ...(item.shelfLifeDays === undefined
+          ? {}
+          : { shelfLifeDays: item.shelfLifeDays }),
+        ...(freshnessAnchorAt ? { freshnessAnchorAt } : {}),
+        sales: itemSales.map(({ qty, transactedAt }) => ({
+          qty,
+          transactedAt,
+        })),
+        orders: itemOrders.map(({ orderedAt, receivedAt }) => ({
+          orderedAt,
+          ...(receivedAt === undefined ? {} : { receivedAt }),
+        })),
+        now,
+      }),
+    ),
   ]
 }
 
@@ -384,6 +412,16 @@ function rollupMetric(
           'categories' in result && 'weights' in result,
       )
     return calculated(metricKey, rollupImpact(impactResults))
+  }
+
+  if (metricKey === 'urgency') {
+    const urgencyResults = values
+      .map((metric) => metric.result)
+      .filter(
+        (result): result is ReturnType<typeof calculateUrgency> =>
+          'components' in result && 'thresholds' in result,
+      )
+    return calculated(metricKey, rollupUrgency(urgencyResults))
   }
 
   if (calculatedValues.length !== values.length || values.length === 0) {
@@ -556,6 +594,7 @@ async function loadPrecomputeInput(
         id: inventoryItems.id,
         unit: inventoryItems.unit,
         costPerUnit: inventoryItems.costPerUnit,
+        shelfLifeDays: inventoryItems.shelfLifeDays,
       })
       .from(inventoryItems)
       .where(eq(inventoryItems.locationId, locationId))
@@ -576,6 +615,7 @@ async function loadPrecomputeInput(
         qty: purchaseOrderItems.qty,
         totalCost: purchaseOrderItems.totalCost,
         orderedAt: purchaseOrders.orderedAt,
+        receivedAt: purchaseOrders.receivedAt,
       })
       .from(purchaseOrderItems)
       .innerJoin(

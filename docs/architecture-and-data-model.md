@@ -378,6 +378,20 @@ Three dimensions feed the ranking formula defined in
   renormalized.
 - **Urgency (0–100):** calculated from shelf life remaining, trend
   acceleration, supplier lead time. Higher = action needed sooner.
+
+  The initial deterministic implementation uses fixed configuration-shaped
+  weights of shelf life 0.50, trend acceleration 0.30, and supplier lead
+  time 0.20. Shelf-life urgency is 100 at or past the low threshold, 75
+  through the high threshold, 50 through the medium threshold, and 0
+  beyond it. Trend acceleration compares two successive seven-day windows
+  and is suppressed until the minimum two-week history exists; a zero
+  prior-week baseline is capped at 50. Supplier lead time is the rounded
+  average of completed purchase orders (`receivedAt − orderedAt`) and uses
+  the same day thresholds in the opposite direction: longer lead time is
+  more urgent. Missing components contribute a conservative zero and retain
+  an explicit reason in their evidence. A freshness date comes from the
+  latest inventory count, or the latest purchase order when no count exists.
+  These are implementation defaults until `MET-08` centralizes tuning.
 - **Data Sufficiency (0–100)** *(called "Confidence" in earlier drafts of
   this architecture — see the naming note in `mvp-scope-and-decisions.md`)*:
   calculated from weeks of transaction data, purchase data completeness,
