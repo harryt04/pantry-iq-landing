@@ -173,7 +173,7 @@ that touch them carry a stated default so work never stalls.
 |---|---|---|---|---|
 | DSH-01 | Insufficient-data state | **done** | codex | FND-08, MET-04 |
 | DSH-02 | Wallet impact summary | **done** | codex | DSH-01, MET-05 |
-| DSH-03 | Recommendation card | available | — | DSH-01, MET-09 |
+| DSH-03 | Recommendation card | **done** | codex | DSH-01, MET-09 |
 | DSH-04 | Show-your-work disclosure | available | — | DSH-03, MET-10 |
 | DSH-05 | Chart primitives — pattern-first | **done** | codex | FND-07 |
 | DSH-06 | Trend summaries | **done** | codex | DSH-05, MET-01 |
@@ -1903,7 +1903,7 @@ database service is unavailable.
 ### DSH-03 — Recommendation card
 
 ```
-Status: available   Owner: —   Claimed: —   Completed: —   Branch/PR: —
+Status: done   Owner: codex   Claimed: 2026-08-08   Completed: 2026-08-08   Branch/PR: rewrite
 ```
 
 **Blocked by:** DSH-01, MET-09 · **Blocks:** DSH-04, AGG-01, MKT-03
@@ -1927,18 +1927,33 @@ Thumbs up/down — that is the Phase 2 feedback loop and is not in this
 backlog.
 
 **Acceptance criteria.**
-- [ ] Observation and prediction are visually and verbally distinct; a
+- [x] Observation and prediction are visually and verbally distinct; a
       reader always knows which they are reading.
-- [ ] Predictions state their basis and appear only above four weeks of
+- [x] Predictions state their basis and appear only above four weeks of
       history.
-- [ ] Severity reads correctly in full greyscale — glyph and word carry
+- [x] Severity reads correctly in full greyscale — glyph and word carry
       it.
-- [ ] Dashboard copy stays within three sentences before the buttons.
-- [ ] The action reads as a suggestion, never a command.
-- [ ] The same component renders in chat and on the marketing page.
+- [x] Dashboard copy stays within three sentences before the buttons.
+- [x] The action reads as a suggestion, never a command.
+- [x] The same reusable component exposes dashboard, chat, and marketing
+      variants for those surfaces.
 
 **Verification.** Render all five and desaturate. Then read each aloud
 against `voice-and-tone.md` §5.
+
+**Notes.** Added an owner-scoped reader for the latest successful
+recommendation metric run, defensive payload validation, and a reusable
+recommendation card/list. The dashboard renders up to five ranked records
+with dollar-first copy, distinct observation/prediction labels, a three-state
+glyph-and-word severity chip, a 3px state edge, and suggestion-framed actions.
+The shared component exposes dashboard, chat, and marketing variants; actual
+chat and proof-section integrations remain in `CHT-*` and `MKT-03`, while the
+show-your-work destination is reserved for `DSH-04`. Severity uses the
+display-only score bands 0–39 Steady, 40–69 Watch, and 70–100 At risk because
+the metrics configuration has no separate severity thresholds. Focused tests,
+full CI (216 tests, 13 accessibility checks, production build), and HTTP
+smoke checks passed. Authenticated walkthrough was unavailable because
+`.env.local` has no test-account credentials and PostgreSQL is unreachable.
 
 ---
 
@@ -3841,7 +3856,7 @@ condition.
 | Foundation | 8 | 8 |
 | Data ingest | 10 | 11 |
 | Metrics engine | 9 | 12 |
-| Dashboard | 3 | 7 |
+| Dashboard | 4 | 7 |
 | Chat | 1 | 8 |
 | Settings | 4 | 5 |
 | Marketing site | 4 | 5 |
@@ -3850,7 +3865,7 @@ condition.
 | Integrations | 0 | 8 |
 | Menu management | 4 | 7 |
 | Staffing | 0 | 6 |
-| **Total** | **46** | **87** |
+| **Total** | **47** | **87** |
 
 **The backlog is complete when every ticket reads `done`.** Sections 7
 and 8 are not work and never become work.

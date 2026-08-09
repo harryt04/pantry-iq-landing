@@ -4,10 +4,12 @@ import { cookies, headers } from 'next/headers'
 import { DashboardDataState } from '@/components/dashboard/dashboard-data-state'
 import { TrendSummaries } from '@/components/dashboard/trend-summaries'
 import { WalletImpactSummary } from '@/components/dashboard/wallet-impact-summary'
+import { RecommendationCardList } from '@/components/dashboard/recommendation-card'
 import { getAppShellData } from '@/components/app/app-shell-server'
 import { getDashboardDataState } from '@/src/server/metrics/dashboard-state'
 import { getDashboardTrends } from '@/src/server/metrics/trends'
 import { getDashboardWalletImpact } from '@/src/server/metrics/wallet'
+import { getDashboardRecommendations } from '@/src/server/metrics/dashboard-recommendations'
 
 export default async function DashboardPage({
   searchParams,
@@ -34,6 +36,10 @@ export default async function DashboardPage({
           marginSummary,
         )
       : null
+  const recommendations =
+    state.status === 'ready'
+      ? await getDashboardRecommendations(requestHeaders, locationId)
+      : []
 
   return (
     <main className="app-page" aria-labelledby="dashboard-title">
@@ -56,6 +62,12 @@ export default async function DashboardPage({
       ) : (
         <DashboardDataState locationId={locationId} state={state} />
       )}
+      {state.status === 'ready' ? (
+        <RecommendationCardList
+          locationId={locationId}
+          recommendations={recommendations}
+        />
+      ) : null}
       <TrendSummaries summaries={summaries} />
     </main>
   )
