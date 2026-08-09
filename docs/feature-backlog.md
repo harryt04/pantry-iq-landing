@@ -177,7 +177,7 @@ that touch them carry a stated default so work never stalls.
 | DSH-04 | Show-your-work disclosure | **done** | codex | DSH-03, MET-10 |
 | DSH-05 | Chart primitives — pattern-first | **done** | codex | FND-07 |
 | DSH-06 | Trend summaries | **done** | codex | DSH-05, MET-01 |
-| DSH-07 | Item deep dives | available | — | DSH-05, MET-02 |
+| DSH-07 | Item deep dives | **done** | codex | DSH-05, MET-02 |
 
 ### Chat
 
@@ -2090,7 +2090,7 @@ production build.
 ### DSH-07 — Item deep dives
 
 ```
-Status: available   Owner: —   Claimed: —   Completed: —   Branch/PR: —
+Status: done   Owner: codex   Claimed: 2026-08-08   Completed: 2026-08-08   Branch/PR: rewrite
 ```
 
 **Blocked by:** DSH-05, MET-02 · **Blocks:** —
@@ -2108,14 +2108,26 @@ cost, shelf life, recent orders and sales, and every recommendation
 touching that item. A link into chat pre-loaded with that item's context.
 
 **Acceptance criteria.**
-- [ ] Items are named by `displayName`, never canonical name.
-- [ ] The detail view states which assumptions it used and links to edit
+- [x] Items are named by `displayName`, never canonical name.
+- [x] The detail view states which assumptions it used and links to edit
       them.
-- [ ] Items with insufficient data appear with what is known, not hidden.
-- [ ] Sheet on mobile, dialog on desktop.
+- [x] Items with insufficient data appear with what is known, not hidden.
+- [x] Sheet on mobile, dialog on desktop.
 
 **Verification.** Open a detail view for an item with no unit cost and
 confirm it degrades honestly.
+
+**Notes.** Added an owner-scoped item detail data seam that aggregates exact
+decimal sales, orders, snapshots, and the latest persisted metric run. The
+dashboard now groups display-named items by top revenue, spoilage risk, and
+low margin, while retaining a visible needs-more-data group. Details show
+sell-through, on-hand, unit cost and source, shelf-life resolution, recent
+sales/orders, assumptions with item-settings links, and recommendations with
+location-scoped chat links. The client surface uses a Radix Sheet below the
+mobile breakpoint and Dialog on desktop. Focused tests, formatting, full CI,
+accessibility, production build, health smoke, and unauthenticated redirect
+checks pass. No test-account credentials are present in `.env.local`, so an
+authenticated walkthrough was unavailable.
 
 ---
 
