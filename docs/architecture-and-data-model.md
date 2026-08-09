@@ -329,9 +329,27 @@ waste, theft or loss, or a recipe that may be wrong — and none is asserted as
 the cause. Sales for menu items without an active recipe are excluded and the
 exclusion is stated; their ingredients are never assigned by assumption.
 
-How to handle missing prices/inventory when computing these, and which
-formula is authoritative for waste vs. variance, are open — see
-`open-questions.md`.
+#### Ingredient-level waste attribution (MNU-07)
+
+The usage view keeps the physical total for an ingredient and the
+recipe-derived usage for each dish that consumed it. The residual is explicit:
+
+```
+attributed usage + unattributed usage = total physical usage
+excess usage = max(unattributed usage, 0)
+```
+
+When an ingredient is shared across dishes, positive excess usage is allocated
+in proportion to each dish's recipe-derived usage for that ingredient in the
+selected period. The final dish receives the exact remainder after six-place
+display rounding, so the allocations reconcile to the excess total. A dish's
+allocation is an observation about where the variance sits, not a claim that
+the dish caused waste. Sales without a recipe, missing conversion paths, and
+physical usage with no modeled dish remain in the unattributed row.
+
+Missing prices do not affect this quantity-only view. Inventory snapshots are
+authoritative for actual usage, and attribution is shown only for periods
+where that usage is calculable under D11 in the backlog.
 
 #### Spoilage resolution (MET-03)
 

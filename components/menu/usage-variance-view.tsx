@@ -144,6 +144,88 @@ export function UsageVarianceView({ result }: { result: UsageVarianceResult }) {
           </CardContent>
         </Card>
       )}
+
+      {result.wasteAttribution.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Where the excess usage sits</CardTitle>
+            <CardDescription>
+              Positive excess is physical usage above recipe-derived usage. It
+              is allocated across dishes by their share of the recorded recipe
+              usage; it does not establish which dish caused the loss.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="usage-attribution-table-wrap">
+              <Table>
+                <TableCaption>
+                  Unattributed usage stays visible when a recipe, count, or
+                  conversion cannot connect it to a dish.
+                </TableCaption>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Ingredient</TableHead>
+                    <TableHead>Dish</TableHead>
+                    <TableHead className="figure">Recipe usage</TableHead>
+                    <TableHead className="figure">Excess assigned</TableHead>
+                    <TableHead className="figure">Total usage</TableHead>
+                    <TableHead className="figure">Unattributed usage</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {result.wasteAttribution.flatMap((row) => [
+                    ...row.menuItems.map((menuItem) => (
+                      <TableRow
+                        key={`${row.ingredientItemId}-${menuItem.menuItemId}`}
+                      >
+                        <TableCell>
+                          <strong>{row.ingredientName}</strong>
+                          <span className="usage-variance-unit">
+                            {row.unit}
+                          </span>
+                        </TableCell>
+                        <TableCell>{menuItem.menuItemId}</TableCell>
+                        <TableCell className="figure">
+                          {quantity(menuItem.theoreticalUsage, row.unit)}
+                        </TableCell>
+                        <TableCell className="figure">
+                          {quantity(menuItem.attributedWaste, row.unit)}
+                        </TableCell>
+                        <TableCell className="figure">
+                          {quantity(row.totalUsage, row.unit)}
+                        </TableCell>
+                        <TableCell className="figure">
+                          {signed(row.unattributedUsage, row.unit)}
+                        </TableCell>
+                      </TableRow>
+                    )),
+                    <TableRow
+                      className="usage-attribution-unattributed"
+                      key={`${row.ingredientItemId}-unattributed`}
+                    >
+                      <TableCell>
+                        <strong>{row.ingredientName}</strong>
+                        <span className="usage-variance-unit">{row.unit}</span>
+                      </TableCell>
+                      <TableCell>Unattributed</TableCell>
+                      <TableCell className="figure">—</TableCell>
+                      <TableCell className="figure">
+                        {quantity(row.unattributedExcess, row.unit)}
+                      </TableCell>
+                      <TableCell className="figure">
+                        {quantity(row.totalUsage, row.unit)}
+                      </TableCell>
+                      <TableCell className="figure">
+                        {signed(row.unattributedUsage, row.unit)}
+                      </TableCell>
+                    </TableRow>,
+                  ])}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </main>
   )
 }

@@ -177,4 +177,113 @@ describe('theoretical versus actual ingredient usage', () => {
 
     expect(result.rows[0]?.theoreticalUsage).toBe('4')
   })
+
+  it("attributes shared-ingredient excess by each dish's recipe share", () => {
+    const shared = { id: 'ingredient-shared', displayName: 'Oil', unit: 'oz' }
+    const firstRecipe = {
+      id: 'recipe-first',
+      menuItemId: 'menu-first',
+      outputQuantity: '1',
+      outputUnit: 'each',
+      yieldFactor: '1',
+      wasteFactor: '0',
+      ingredients: [{ ingredientItemId: shared.id, quantity: '1', unit: 'oz' }],
+    }
+    const secondRecipe = {
+      ...firstRecipe,
+      id: 'recipe-second',
+      menuItemId: 'menu-second',
+    }
+
+    const result = buildUsageVariance({
+      inventoryItems: [shared],
+      recipes: [firstRecipe, secondRecipe],
+      sales: [
+        {
+          menuItemId: firstRecipe.menuItemId,
+          qty: '6',
+          transactedAt: new Date('2026-01-10T18:00:00.000Z'),
+        },
+        {
+          menuItemId: secondRecipe.menuItemId,
+          qty: '4',
+          transactedAt: new Date('2026-01-11T18:00:00.000Z'),
+        },
+      ],
+      purchases: [],
+      snapshots: [
+        {
+          inventoryItemId: shared.id,
+          qty: '20',
+          countedAt: new Date('2026-01-01T00:00:00.000Z'),
+        },
+        {
+          inventoryItemId: shared.id,
+          qty: '5',
+          countedAt: periodEnd,
+        },
+      ],
+      periodStart,
+      periodEnd,
+    })
+
+    expect(result.wasteAttribution).toEqual([
+      expect.objectContaining({
+        ingredientItemId: shared.id,
+        totalUsage: '15',
+        attributedUsage: '10',
+        unattributedUsage: '5',
+        excessUsage: '5',
+      }),
+    ])
+    expect(result.wasteAttribution[0]?.menuItems).toEqual([
+      { menuItemId: 'menu-first', theoreticalUsage: '6', attributedWaste: '3' },
+      {
+        menuItemId: 'menu-second',
+        theoreticalUsage: '4',
+        attributedWaste: '2',
+      },
+    ])
+  })
+
+  it('keeps physical excess explicit when no recipe can claim it', () => {
+    const unclaimed = {
+      id: 'ingredient-unclaimed',
+      displayName: 'Unknown stock',
+      unit: 'each',
+    }
+
+    const result = buildUsageVariance({
+      inventoryItems: [unclaimed],
+      recipes: [],
+      sales: [],
+      purchases: [],
+      snapshots: [
+        {
+          inventoryItemId: unclaimed.id,
+          qty: '10',
+          countedAt: periodStart,
+        },
+        {
+          inventoryItemId: unclaimed.id,
+          qty: '2',
+          countedAt: periodEnd,
+        },
+      ],
+      periodStart,
+      periodEnd,
+    })
+
+    expect(result.wasteAttribution).toEqual([
+      expect.objectContaining({
+        ingredientItemId: unclaimed.id,
+        totalUsage: '8',
+        attributedUsage: '0',
+        unattributedUsage: '8',
+        excessUsage: '8',
+        unattributedExcess: '8',
+        menuItems: [],
+      }),
+    ])
+  })
 })

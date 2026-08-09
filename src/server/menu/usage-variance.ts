@@ -141,6 +141,19 @@ function isNegative(value: string) {
   return parseDecimal(value).coefficient < 0n
 }
 
+function compareDecimal(left: string, right: string) {
+  const a = parseDecimal(left)
+  const b = parseDecimal(right)
+  const scale = Math.max(a.scale, b.scale)
+  const leftCoefficient = a.coefficient * 10n ** BigInt(scale - a.scale)
+  const rightCoefficient = b.coefficient * 10n ** BigInt(scale - b.scale)
+  return leftCoefficient < rightCoefficient
+    ? -1
+    : leftCoefficient > rightCoefficient
+      ? 1
+      : 0
+}
+
 function absolute(value: string) {
   const parsed = parseDecimal(value)
   return decimalString({
@@ -228,9 +241,30 @@ export type UsageVarianceExclusion = {
   reason: string
 }
 
+export type WasteAttributionMenuRow = {
+  menuItemId: string
+  theoreticalUsage: string
+  attributedWaste: string | null
+}
+
+export type WasteAttributionRow = {
+  ingredientItemId: string
+  ingredientName: string
+  unit: string
+  totalUsage: string | null
+  attributedUsage: string
+  unattributedUsage: string | null
+  excessUsage: string | null
+  unattributedExcess: string | null
+  status: 'calculated' | 'cannot-calculate'
+  reason: string | null
+  menuItems: readonly WasteAttributionMenuRow[]
+}
+
 export type UsageVarianceResult = {
   rows: readonly UsageVarianceRow[]
   excluded: readonly UsageVarianceExclusion[]
+  wasteAttribution: readonly WasteAttributionRow[]
   periodStart: string | null
   periodEnd: string | null
 }
@@ -390,6 +424,76 @@ function variancePercent(variance: string, theoretical: string) {
   return divideRounded(multiply(variance, '100'), theoretical)
 }
 
+function maxZero(value: string) {
+  return isNegative(value) ? '0' : value
+}
+
+function actualUsageForItem(
+  input: UsageVarianceInput,
+  item: UsageInventoryItem,
+  window: ReturnType<typeof latestSnapshotWindow>,
+  conversions: Map<string, UsageConversion>,
+) {
+  if (!window) return null
+  return add(
+    add(
+      window.beginning.qty,
+      input.purchases
+        .filter(
+          (purchase) =>
+            purchase.inventoryItemId === item.id &&
+            purchase.orderedAt > window.beginning.countedAt &&
+            purchase.orderedAt <= window.ending.countedAt,
+        )
+        .reduce((total, purchase) => {
+          try {
+            return add(
+              total,
+              convertUsageQuantity(
+                purchase.qty,
+                purchase.unit,
+                item.unit,
+                item.id,
+                conversions,
+              ),
+            )
+          } catch {
+            return total
+          }
+        }, '0'),
+    ),
+    `-${window.ending.qty}`,
+  )
+}
+
+/**
+ * Allocates an excess usage quantity by each dish's recipe-derived share.
+ * The final row receives the exact remainder so rounded display values still
+ * reconcile to the ingredient total.
+ */
+function allocateExcess(
+  excess: string,
+  menuUsage: readonly [string, string][],
+): Map<string, string> {
+  const allocations = new Map<string, string>()
+  const totalTheoretical = menuUsage.reduce(
+    (total, [, usage]) => add(total, usage),
+    '0',
+  )
+  if (totalTheoretical === '0') return allocations
+
+  let allocated = '0'
+  menuUsage.forEach(([menuItemId, usage], index) => {
+    const isLast = index === menuUsage.length - 1
+    const value = isLast
+      ? subtract(excess, allocated)
+      : divideRounded(multiply(excess, usage), totalTheoretical)
+    allocations.set(menuItemId, value)
+    allocated = add(allocated, value)
+  })
+  return allocations
+}
+
 /**
  * Compares recipe-derived ingredient use with physical-count usage. A pair
  * of counts is required for actual usage; purchases only bridge those counts.
@@ -421,6 +525,7 @@ export function buildUsageVariance(
   const memo = new Map<string, RequirementMap>()
   const exclusions: UsageVarianceExclusion[] = []
   const theoreticalByItem = new Map<string, string>()
+  const theoreticalByItemAndMenu = new Map<string, Map<string, string>>()
 
   const sortedSales = [...input.sales].sort(
     (left, right) => left.transactedAt.getTime() - right.transactedAt.getTime(),
@@ -491,6 +596,13 @@ export function buildUsageVariance(
             itemId,
             add(theoreticalByItem.get(itemId) ?? '0', canonicalQuantity),
           )
+          const menuUsage =
+            theoreticalByItemAndMenu.get(itemId) ?? new Map<string, string>()
+          menuUsage.set(
+            menuItemId,
+            add(menuUsage.get(menuItemId) ?? '0', canonicalQuantity),
+          )
+          theoreticalByItemAndMenu.set(itemId, menuUsage)
         }
       }
     }
@@ -511,35 +623,7 @@ export function buildUsageVariance(
       if (!window) {
         reason = 'Need two inventory counts in the selected period.'
       } else {
-        actualUsage = add(
-          add(
-            window.beginning.qty,
-            input.purchases
-              .filter(
-                (purchase) =>
-                  purchase.inventoryItemId === itemId &&
-                  purchase.orderedAt > window.beginning.countedAt &&
-                  purchase.orderedAt <= window.ending.countedAt,
-              )
-              .reduce((total, purchase) => {
-                try {
-                  return add(
-                    total,
-                    convertUsageQuantity(
-                      purchase.qty,
-                      purchase.unit,
-                      item.unit,
-                      item.id,
-                      conversions,
-                    ),
-                  )
-                } catch {
-                  return total
-                }
-              }, '0'),
-          ),
-          `-${window.ending.qty}`,
-        )
+        actualUsage = actualUsageForItem(input, item, window, conversions)
       }
 
       const theoreticalUsage = theoreticalByItem.get(itemId) ?? '0'
@@ -571,11 +655,89 @@ export function buildUsageVariance(
       }
     })
 
+  const attributionItemIds = new Set(theoreticalByItem.keys())
+  for (const snapshot of input.snapshots)
+    attributionItemIds.add(snapshot.inventoryItemId)
+  const wasteAttribution = [...attributionItemIds]
+    .map((itemId): WasteAttributionRow | null => {
+      const item = itemsById.get(itemId)
+      if (!item) return null
+      const window = latestSnapshotWindow(
+        input.snapshots,
+        itemId,
+        input.periodStart,
+        input.periodEnd,
+      )
+      const actualUsage = actualUsageForItem(input, item, window, conversions)
+      const menuUsage = [
+        ...(theoreticalByItemAndMenu.get(itemId) ?? new Map()),
+      ].sort(([left], [right]) => left.localeCompare(right))
+      const attributedUsage = menuUsage.reduce(
+        (total, [, usage]) => add(total, usage),
+        '0',
+      )
+      const unattributedUsage =
+        actualUsage === null ? null : subtract(actualUsage, attributedUsage)
+      const excessUsage =
+        unattributedUsage === null ? null : maxZero(unattributedUsage)
+      const allocations =
+        excessUsage === null
+          ? new Map<string, string>()
+          : allocateExcess(excessUsage, menuUsage)
+      const attributedExcess = [...allocations.values()].reduce(
+        (total, value) => add(total, value),
+        '0',
+      )
+      return {
+        ingredientItemId: item.id,
+        ingredientName: item.displayName,
+        unit: item.unit,
+        totalUsage: actualUsage,
+        attributedUsage,
+        unattributedUsage,
+        excessUsage,
+        unattributedExcess:
+          excessUsage === null ? null : subtract(excessUsage, attributedExcess),
+        status: actualUsage === null ? 'cannot-calculate' : 'calculated',
+        reason:
+          actualUsage === null
+            ? 'Need two inventory counts in the selected period.'
+            : null,
+        menuItems: menuUsage
+          .map(([menuItemId, theoreticalUsage]) => ({
+            menuItemId,
+            theoreticalUsage,
+            attributedWaste:
+              excessUsage === null
+                ? null
+                : (allocations.get(menuItemId) ?? '0'),
+          }))
+          .sort((left, right) => {
+            if (left.attributedWaste === null || right.attributedWaste === null)
+              return left.menuItemId.localeCompare(right.menuItemId)
+            const leftNegative = isNegative(left.attributedWaste)
+            const rightNegative = isNegative(right.attributedWaste)
+            if (leftNegative !== rightNegative) return leftNegative ? 1 : -1
+            const wasteOrder = compareDecimal(
+              right.attributedWaste,
+              left.attributedWaste,
+            )
+            if (wasteOrder !== 0) return wasteOrder
+            return left.menuItemId.localeCompare(right.menuItemId)
+          }),
+      }
+    })
+    .filter((row): row is WasteAttributionRow => row !== null)
+    .sort((left, right) =>
+      left.ingredientItemId.localeCompare(right.ingredientItemId),
+    )
+
   return {
     rows,
     excluded: exclusions.sort((left, right) =>
       left.menuItemId.localeCompare(right.menuItemId),
     ),
+    wasteAttribution,
     periodStart: dateKey(input.periodStart ?? null),
     periodEnd: dateKey(input.periodEnd ?? null),
   }

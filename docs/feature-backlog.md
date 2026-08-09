@@ -255,7 +255,7 @@ that touch them carry a stated default so work never stalls.
 | MNU-04 | Theoretical vs. actual usage | **done** | codex | MNU-03, MET-03 |
 | MNU-05 | Menu engineering matrix | **done** | codex | MNU-03, DSH-05 |
 | MNU-06 | Menu recommendations in the engine | **done** | codex | MNU-04, MET-09 |
-| MNU-07 | Ingredient-level waste attribution | available | — | MNU-04 |
+| MNU-07 | Ingredient-level waste attribution | **done** | codex | MNU-04 |
 
 ### Staffing
 
@@ -3778,7 +3778,7 @@ because no container runtime is available).
 ### MNU-07 — Ingredient-level waste attribution
 
 ```
-Status: available   Owner: —   Claimed: —   Completed: —   Branch/PR: —
+Status: done   Owner: codex   Claimed: 2026-08-09   Completed: 2026-08-09   Branch/PR: rewrite
 ```
 
 **Blocked by:** MNU-04 · **Blocks:** —
@@ -3792,12 +3792,23 @@ driving the waste of a given ingredient.
 menu items that consumed it. Rank dishes by the waste they generate.
 
 **Acceptance criteria.**
-- [ ] Attribution reconciles: attributed usage plus unattributed equals
+- [x] Attribution reconciles: attributed usage plus unattributed equals
       total.
-- [ ] Unattributed usage is shown explicitly, never distributed by
+- [x] Unattributed usage is shown explicitly, never distributed by
       assumption.
-- [ ] Ingredients shared across dishes are apportioned by a documented,
+- [x] Ingredients shared across dishes are apportioned by a documented,
       tested rule.
+
+**Notes.** The usage engine now retains recipe-derived usage per dish while
+calculating physical ingredient usage, reports the explicit residual, and
+allocates positive excess across shared ingredients by recipe-usage share. The
+last dish receives the exact remainder after six-place rounding, preserving
+reconciliation. The authenticated Usage screen shows ranked dish rows and an
+unattributed row without assigning a cause. Focused tests pass; `pnpm run
+prettify` and `pnpm run ci` pass (276 tests passed, 2 PostgreSQL integration
+tests skipped because no container runtime is available). `/api/health`
+returned 200 from the running app. The configured test-account sign-in
+returned HTTP 403, so authenticated walkthrough verification remains pending.
 
 ---
 
