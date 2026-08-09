@@ -218,7 +218,7 @@ that touch them carry a stated default so work never stalls.
 |---|---|---|---|---|
 | QAG-01 | Accessibility gate automation | **done** | codex | FND-03, FND-07 |
 | QAG-02 | Greyscale chart check | **done** | codex | QAG-01, DSH-05 |
-| QAG-03 | Test strategy and harness | **in-review** | codex | FND-03 |
+| QAG-03 | Test strategy and harness | **done** | codex | FND-03 |
 | QAG-04 | CSV upload security hardening | **done** | codex | FND-02 |
 | QAG-05 | Observability and error tracking | **done** | codex | FND-03 |
 | QAG-06 | Data isolation and ownership authorization | **done** | codex | FND-05, QAG-03 |
@@ -242,7 +242,7 @@ that touch them carry a stated default so work never stalls.
 | INT-04 | Toast connector | **done** | codex | INT-02 |
 | INT-05 | QuickBooks connector | **done** | codex | INT-02 |
 | INT-06 | Sync scheduling and incremental updates | **done** | codex | INT-03 |
-| INT-07 | Deduplication and cross-source reconciliation | **claimed** | codex | INT-06 |
+| INT-07 | Deduplication and cross-source reconciliation | **done** | codex | INT-06 |
 | INT-08 | Connection health and failure surfacing | **done** | codex | INT-06 |
 
 ### Menu management
@@ -2979,7 +2979,7 @@ gate and uploads `test-results/` alongside the existing report artifacts.
 ### QAG-03 — Test strategy and harness
 
 ```
-Status: in-review   Owner: codex   Claimed: 2026-08-08   Completed: —   Branch/PR: rewrite
+Status: done   Owner: codex   Claimed: 2026-08-08   Completed: 2026-08-09   Branch/PR: rewrite
 ```
 
 **Blocked by:** FND-03 · **Blocks:** QAG-06
@@ -3000,17 +3000,21 @@ code.
 
 **Acceptance criteria.**
 - [x] Engine tests run against a real database, not mocks.
-- [ ] The critical path runs end to end in CI.
+- [x] The critical path runs end to end in CI.
 - [x] Fixtures are reusable by other tickets.
 - [x] Tests are deterministic — no reliance on wall-clock now, no
       ordering assumptions.
 
 **Notes.** The reusable fixture set and a Testcontainers-backed PostgreSQL
 integration harness are in place, and CI runs the harness. The production
-`runPrecomputeForLocation` path now runs against migrated, seeded PostgreSQL
-and asserts persisted exact metric evidence in
-`tests/integration/engine-database.test.ts`. The authenticated import/dashboard
-critical path remains the one outstanding acceptance check.
+`runPrecomputeForLocation` path runs against migrated, seeded PostgreSQL and
+asserts persisted exact metric evidence in
+`tests/integration/engine-database.test.ts`. The Playwright critical-path test
+now exercises signup, location creation, CSV upload, item resolution, import,
+and dashboard navigation against the real app and a migrated PostgreSQL
+database in CI. Integration files run sequentially against the CI PostgreSQL
+service so reset-heavy suites cannot race one another. CSV objects use an
+explicitly opt-in filesystem store for this test; production remains S3-only.
 
 ---
 

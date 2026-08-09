@@ -1,7 +1,7 @@
 import { defineConfig, devices } from '@playwright/test'
 
 const port = process.env.PANTRYIQ_PORT ?? '3000'
-const baseURL = process.env.PANTRYIQ_BASE_URL ?? `http://127.0.0.1:${port}`
+const baseURL = process.env.PANTRYIQ_BASE_URL ?? `http://localhost:${port}`
 
 export default defineConfig({
   testDir: './tests',

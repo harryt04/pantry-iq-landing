@@ -210,8 +210,8 @@ describe('CSV column mapping detection', () => {
     expect(
       parseStoredCsvMapping({ Date: 'orderedAt' }, 'transactions'),
     ).toBeNull()
-    expect(parseStoredCsvMapping({ Date: null }, 'transactions')).toEqual({
-      Date: null,
-    })
+    const mapping = parseStoredCsvMapping({ Date: null }, 'transactions')
+    expect(mapping).toEqual({ Date: null })
+    expect(Object.getPrototypeOf(mapping)).toBe(Object.prototype)
   })
 })

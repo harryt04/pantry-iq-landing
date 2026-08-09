@@ -502,7 +502,7 @@ export function parseStoredCsvMapping(
   if (!value || typeof value !== 'object' || Array.isArray(value)) return null
 
   const allowedFields = fieldsFor(importType)
-  const mapping = Object.create(null) as StoredCsvMapping
+  const mapping = {} as StoredCsvMapping
   for (const [sourceColumn, targetField] of Object.entries(value)) {
     if (
       sourceColumn.trim().length === 0 ||

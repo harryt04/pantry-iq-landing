@@ -1,15 +1,16 @@
 import { describe, expect, it } from 'vitest'
 
 import { fullYearLocationFixture } from '../fixtures/pantry'
-import { withTestDatabase } from '../helpers/test-database'
+import {
+  integrationDatabaseEnabled,
+  withTestDatabase,
+} from '../helpers/test-database'
 
-const testcontainersEnabled = process.env.TESTCONTAINERS_ENABLED === '1'
-
-// Starting a real PostgreSQL testcontainer (image pull + boot) routinely
-// exceeds vitest's 5s default timeout on CI runners.
+// Starting a disposable real PostgreSQL database routinely exceeds Vitest's
+// five-second default timeout on CI runners.
 const CONTAINER_TEST_TIMEOUT_MS = 60_000
 
-describe.skipIf(!testcontainersEnabled)(
+describe.skipIf(!integrationDatabaseEnabled())(
   'PostgreSQL integration harness',
   () => {
     it(

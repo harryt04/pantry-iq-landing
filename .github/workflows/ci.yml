@@ -12,6 +12,24 @@ jobs:
   ci:
     name: Lint, typecheck, test, build
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: pantryiq
+          POSTGRES_PASSWORD: pantryiq
+          POSTGRES_DB: pantryiq
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U pantryiq -d pantryiq"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://pantryiq:pantryiq@localhost:5432/pantryiq
+      BETTER_AUTH_SECRET: ci-placeholder-secret-not-for-real-use
+      BETTER_AUTH_URL: http://localhost:3000
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -49,17 +67,16 @@ jobs:
       - name: PostgreSQL integration tests
         run: pnpm test:integration
         env:
-          TESTCONTAINERS_ENABLED: '1'
+          TEST_DATABASE_URL: postgresql://pantryiq:pantryiq@localhost:5432/pantryiq
+
+      - name: Prepare browser test database
+        run: pnpm db:migrate
+
+      - name: Critical path end-to-end test
+        run: pnpm test:e2e
 
       - name: Build
         run: pnpm build
-        env:
-          # A placeholder is sufficient for a production build — no route
-          # in this build queries the database yet. Real secrets are
-          # never committed; see .env.example.
-          DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
-          BETTER_AUTH_SECRET: ci-placeholder-secret-not-for-real-use
-          BETTER_AUTH_URL: http://localhost:3000
 
       - name: Publish test report
         if: always()
