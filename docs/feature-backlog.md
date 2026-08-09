@@ -239,7 +239,7 @@ that touch them carry a stated default so work never stalls.
 | INT-01 | Source-agnostic ingestion abstraction | **done** | codex | ING-09 |
 | INT-02 | Connector framework | **done** | codex | INT-01, FND-05 |
 | INT-03 | Square connector | **done** | codex | INT-02 |
-| INT-04 | Toast connector | available | — | INT-02 |
+| INT-04 | Toast connector | **done** | codex | INT-02 |
 | INT-05 | QuickBooks connector | available | — | INT-02 |
 | INT-06 | Sync scheduling and incremental updates | available | — | INT-03 |
 | INT-07 | Deduplication and cross-source reconciliation | available | — | INT-06 |
@@ -3460,7 +3460,7 @@ verification, and revoked credentials. Square Sandbox can be selected with
 ### INT-04 — Toast connector
 
 ```
-Status: available   Owner: —   Claimed: —   Completed: —   Branch/PR: —
+Status: done   Owner: codex   Claimed: 2026-08-09   Completed: 2026-08-09   Branch/PR: rewrite
 ```
 
 **Blocked by:** INT-02 · **Blocks:** —
@@ -3473,10 +3473,23 @@ Status: available   Owner: —   Claimed: —   Completed: —   Branch/PR: —
 **Scope — in.** The `INT-03` capabilities, against Toast.
 
 **Acceptance criteria.**
-- [ ] Implemented as an adapter only; no framework changes needed.
-- [ ] Same acceptance criteria as `INT-03`.
-- [ ] If framework changes *were* needed, they are made in `INT-02` and
+- [x] Implemented as an adapter only; no framework changes needed.
+- [x] Same acceptance criteria as `INT-03`.
+- [x] If framework changes *were* needed, they are made in `INT-02` and
       `INT-03` is re-verified.
+
+**Notes.** Added a provider-specific adapter on the existing connector
+contract. Toast's current API uses machine-client credentials rather than
+interactive browser OAuth, so the adapter's provider-neutral authorization
+handoff carries only state and the credential exchange obtains a fresh Toast
+token from `/authentication/v1/authentication/login`. Orders are read from
+`/orders/v2/ordersBulk`, menu names from `/config/v2/menuItems`, and all
+restaurant requests include `Toast-Restaurant-External-ID`. Order pages and
+30-day backfill windows are resumable; selection totals use exact decimal
+arithmetic; unmatched menu names fail closed; and webhook signatures use
+Toast's HMAC-SHA256 body-plus-timestamp format. Focused tests and the full
+CI pipeline pass. No live Toast account was available for external API
+smoke testing.
 
 ---
 
