@@ -174,7 +174,7 @@ that touch them carry a stated default so work never stalls.
 | DSH-01 | Insufficient-data state | **done** | codex | FND-08, MET-04 |
 | DSH-02 | Wallet impact summary | **done** | codex | DSH-01, MET-05 |
 | DSH-03 | Recommendation card | **done** | codex | DSH-01, MET-09 |
-| DSH-04 | Show-your-work disclosure | available | — | DSH-03, MET-10 |
+| DSH-04 | Show-your-work disclosure | **done** | codex | DSH-03, MET-10 |
 | DSH-05 | Chart primitives — pattern-first | **done** | codex | FND-07 |
 | DSH-06 | Trend summaries | **done** | codex | DSH-05, MET-01 |
 | DSH-07 | Item deep dives | available | — | DSH-05, MET-02 |
@@ -1960,7 +1960,7 @@ smoke checks passed. Authenticated walkthrough was unavailable because
 ### DSH-04 — Show-your-work disclosure
 
 ```
-Status: available   Owner: —   Claimed: —   Completed: —   Branch/PR: —
+Status: done   Owner: codex   Claimed: 2026-08-08   Completed: 2026-08-08   Branch/PR: rewrite
 ```
 
 **Blocked by:** DSH-03, MET-10 · **Blocks:** —
@@ -1978,16 +1978,20 @@ assumptions, each labelled as the user's value or our default, each
 linking to where it can be changed.
 
 **Acceptance criteria.**
-- [ ] Shows arithmetic, not a narrative about arithmetic.
-- [ ] Every assumption states its origin and links to `SET-03`.
-- [ ] Figures inside it are Plex Mono and tabular.
-- [ ] Collapsed by default; keyboard operable; state announced to
+- [x] Shows arithmetic, not a narrative about arithmetic.
+- [x] Every assumption states its origin and links to `SET-03`.
+- [x] Figures inside it are Plex Mono and tabular.
+- [x] Collapsed by default; keyboard operable; state announced to
       assistive technology.
-- [ ] If a trace is missing, the card says the output is unverified
+- [x] If a trace is missing, the card says the output is unverified
       rather than hiding the gap.
 
 **Verification.** Recompute one recommendation by hand from what the
 panel shows.
+
+**Notes.** Complete item assumptions link to `SET-03`'s item master anchor;
+deployment-level assumptions retain their explicit deployment edit path.
+Incomplete traces render an unverified state instead of a disclosure.
 
 ---
 

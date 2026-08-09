@@ -9,6 +9,10 @@ const component = readFileSync(
   new URL('../components/dashboard/recommendation-card.tsx', import.meta.url),
   'utf8',
 )
+const workComponent = readFileSync(
+  new URL('../components/dashboard/recommendation-work.tsx', import.meta.url),
+  'utf8',
+)
 
 describe('dashboard recommendation card contract', () => {
   it('loads owner-scoped ranked recommendations only for the ready dashboard', () => {
@@ -29,5 +33,14 @@ describe('dashboard recommendation card contract', () => {
     expect(component).toContain("'chat'")
     expect(component).toContain("'marketing'")
     expect(component).toContain('data-variant={variant}')
+  })
+
+  it('renders a complete trace on demand and refuses incomplete evidence', () => {
+    expect(workComponent).toContain(
+      '<Collapsible className="recommendation-work" defaultOpen={defaultOpen}>',
+    )
+    expect(workComponent).toContain('Output unverified')
+    expect(workComponent).toContain('Edit in item settings')
+    expect(workComponent).toContain('calculation.operator')
   })
 })

@@ -1134,6 +1134,76 @@ body {
   padding-top: var(--space-4);
 }
 
+.recommendation-work {
+  display: contents;
+}
+
+.recommendation-work__trigger {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.recommendation-work__content {
+  background: var(--muted);
+  border-top: 1px solid var(--border);
+  flex-basis: 100%;
+  margin-top: var(--space-1);
+  padding: var(--space-5);
+}
+
+.recommendation-work__section + .recommendation-work__section {
+  border-top: 1px solid var(--border);
+  margin-top: var(--space-5);
+  padding-top: var(--space-5);
+}
+
+.recommendation-work__section h3 {
+  font-size: var(--text-sm);
+  margin: 0 0 var(--space-3);
+}
+
+.recommendation-work__sources,
+.recommendation-work__calculations,
+.recommendation-work__assumptions {
+  display: grid;
+  gap: var(--space-3);
+  margin: 0;
+  padding-left: var(--space-5);
+}
+
+.recommendation-work__calculations li,
+.recommendation-work__assumptions li {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.recommendation-work__calculations code,
+.recommendation-work__calculations .figure,
+.recommendation-work__assumptions .figure {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.recommendation-work__calculations code {
+  color: var(--muted-foreground);
+  font-size: var(--text-xs);
+}
+
+.recommendation-work__assumptions a {
+  color: var(--primary);
+  text-underline-offset: 3px;
+}
+
+.recommendation-work__note,
+.recommendation-work__unverified {
+  color: var(--muted-foreground);
+  font-size: var(--text-sm);
+}
+
+.recommendation-work__unverified {
+  margin: 0;
+}
+
 @media (max-width: 800px) {
   .recommendation-list__heading {
     align-items: start;

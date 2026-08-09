@@ -81,7 +81,7 @@ export type RecommendationRecord = {
     inputWindowStart: string
     inputWindowEnd: string
   }
-  evidenceTrace: EvidenceTrace
+  evidenceTrace?: EvidenceTrace
 }
 
 type ObjectRecord = Record<string, unknown>

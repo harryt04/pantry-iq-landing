@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { RecommendationWork } from './recommendation-work'
 import type { RecommendationRecord } from '@/src/server/metrics/recommendations'
 
 type RecommendationSeverity = 'steady' | 'watch' | 'risk'
@@ -123,13 +124,10 @@ export function RecommendationCard({
           </p>
         </div>
         <div className="recommendation-card__actions">
-          <Button asChild size="sm" variant="outline">
-            <Link
-              href={`#recommendation-work-${encodeURIComponent(recommendation.itemId)}`}
-            >
-              Show your work
-            </Link>
-          </Button>
+          <RecommendationWork
+            locationId={locationId}
+            trace={recommendation.evidenceTrace}
+          />
           <Button asChild size="sm" variant="secondary">
             <Link
               href={`/chat?locationId=${encodeURIComponent(locationId)}&itemId=${encodeURIComponent(recommendation.itemId)}`}

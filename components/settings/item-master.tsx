@@ -163,7 +163,7 @@ export function ItemMaster({
   }
 
   return (
-    <Card className="item-master-card">
+    <Card className="item-master-card" id="item-master">
       <CardHeader>
         <CardTitle>Menu items and ingredients</CardTitle>
         <CardDescription>

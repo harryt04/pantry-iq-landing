@@ -6,6 +6,7 @@ import {
   RecommendationCard,
   recommendationSeverity,
 } from './recommendation-card'
+import { RecommendationWork } from './recommendation-work'
 import type { RecommendationRecord } from '@/src/server/metrics/recommendations'
 
 const baseRecommendation: RecommendationRecord = {
@@ -51,9 +52,31 @@ const baseRecommendation: RecommendationRecord = {
   },
   evidenceTrace: {
     version: 1,
-    sources: [],
-    calculations: [],
-    assumptions: [],
+    sources: [
+      {
+        filename: 'sales.csv',
+        source: 'transactions',
+        rowCount: 4,
+        uploadedAt: '2026-08-08T10:00:00.000Z',
+      },
+    ],
+    calculations: [
+      {
+        id: 'metric:sellThrough',
+        operator: 'qtySold / qtyOrdered × 100',
+        inputs: { qtySold: '0', qtyOrdered: '3' },
+        units: { result: '%' },
+        result: '0',
+      },
+    ],
+    assumptions: [
+      {
+        name: 'item.shelfLifeDays',
+        value: '3',
+        origin: 'system-default',
+        editPath: 'Settings → Item master → shelf life',
+      },
+    ],
   },
 }
 
@@ -77,6 +100,15 @@ describe('recommendation card', () => {
     expect(markup).toContain('Consider reducing')
     expect(markup).toContain('Show your work')
     expect(markup).toContain('Ask about this')
+    const openWorkMarkup = renderToStaticMarkup(
+      <RecommendationWork
+        defaultOpen
+        locationId="location-1"
+        trace={baseRecommendation.evidenceTrace}
+      />,
+    )
+    expect(openWorkMarkup).toContain('qtySold / qtyOrdered × 100')
+    expect(openWorkMarkup).toContain('Edit in item settings')
   })
 
   it('keeps short-history recommendations explicitly observational', () => {
@@ -91,5 +123,39 @@ describe('recommendation card', () => {
 
     expect(markup).toContain('Observation only:')
     expect(markup).not.toContain('Prediction:')
+  })
+
+  it('marks a recommendation unverified when its trace is incomplete', () => {
+    const markup = renderToStaticMarkup(
+      <RecommendationCard
+        locationId="location-1"
+        recommendation={{
+          ...baseRecommendation,
+          evidenceTrace: {
+            version: 1,
+            sources: [],
+            calculations: [],
+            assumptions: [],
+          },
+        }}
+      />,
+    )
+
+    expect(markup).toContain('Output unverified')
+    expect(markup).not.toContain('Show your work')
+  })
+
+  it('marks a recommendation unverified when its trace is missing', () => {
+    const { evidenceTrace: _trace, ...recommendationWithoutTrace } =
+      baseRecommendation
+    const markup = renderToStaticMarkup(
+      <RecommendationCard
+        locationId="location-1"
+        recommendation={recommendationWithoutTrace}
+      />,
+    )
+
+    expect(markup).toContain('Output unverified')
+    expect(markup).not.toContain('Show your work')
   })
 })
