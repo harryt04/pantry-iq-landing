@@ -2874,6 +2874,7 @@ body {
 
 .recommendation-card--marketing .recommendation-card__rank,
 .recommendation-card--marketing .recommendation-card__prediction,
+.recommendation-card--marketing .recommendation-card__observation-only,
 .recommendation-card--marketing .recommendation-card__action {
   font-size: var(--text-md);
 }

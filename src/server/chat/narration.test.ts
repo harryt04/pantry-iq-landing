@@ -108,6 +108,8 @@ const config: NarrationConfig = {
   outputMicrosPerMillionTokens: 1_250_000n,
 }
 
+const silentLogger = { llmQueryCompleted: vi.fn() } as never
+
 function input(overrides: Record<string, unknown> = {}) {
   return {
     accountId: 'account-1',
@@ -212,7 +214,12 @@ describe('narration service', () => {
     // Item names, categories and notes are user-supplied and reach the model
     // verbatim. The guard has to be in the prompt, not merely in the source.
     const model = successfulModel()
-    const service = createNarrationService({ config, model, now: () => 100 })
+    const service = createNarrationService({
+      config,
+      model,
+      now: () => 100,
+      logger: silentLogger,
+    })
 
     await readStream(service.stream(input()).textStream)
 
@@ -226,7 +233,12 @@ describe('narration service', () => {
 
   it('carries an injected instruction through as data, not as a command', async () => {
     const model = successfulModel()
-    const service = createNarrationService({ config, model, now: () => 100 })
+    const service = createNarrationService({
+      config,
+      model,
+      now: () => 100,
+      logger: silentLogger,
+    })
 
     await readStream(
       service.stream(
@@ -261,17 +273,26 @@ describe('narration service', () => {
       modelId: 'test-haiku',
       doStream,
     })
-    const service = createNarrationService({ config, model })
+    const service = createNarrationService({
+      config,
+      model,
+      logger: silentLogger,
+    })
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
 
-    const result = service.stream(input())
-    const text = await readStream(result.textStream)
-    const usage = await result.usage
+    try {
+      const result = service.stream(input())
+      const text = await readStream(result.textStream)
+      const usage = await result.usage
 
-    expect(doStream).toHaveBeenCalledTimes(2)
-    expect(text).toContain('Narration is unavailable.')
-    expect(text).toContain('Salmon')
-    expect(usage).toMatchObject({ degraded: true, costMicros: 0 })
-    expect(result.fallbackRecommendations).toEqual([recommendation])
+      expect(doStream).toHaveBeenCalledTimes(2)
+      expect(text).toContain('Narration is unavailable.')
+      expect(text).toContain('Salmon')
+      expect(usage).toMatchObject({ degraded: true, costMicros: 0 })
+      expect(result.fallbackRecommendations).toEqual([recommendation])
+    } finally {
+      consoleError.mockRestore()
+    }
   })
 
   it('blocks an unmatched figure, logs the block, and falls back to structured data', async () => {
