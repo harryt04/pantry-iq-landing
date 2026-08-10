@@ -16,7 +16,7 @@ describe('marketing evidence curation', () => {
 
     expect(work).not.toBeNull()
     expect(work?.operator).toBe('qtyOnHand × unitCost')
-    expect(work?.result).toBe('$840.00')
+    expect(work?.result).toBe('$240.00')
     expect(work?.resultLabel).toBe('At risk right now')
     expect(work?.terms.map(({ label }) => label)).toEqual([
       'On hand at the last count',

@@ -197,7 +197,7 @@ export function ItemMaster({
             <datalist id="pantryiq-item-categories">
               {SHELF_LIFE_DEFAULTS.map((entry) => (
                 <option key={entry.category} value={entry.category}>
-                  {entry.label} — {entry.days} days suggested
+                  {entry.label}: {entry.days} days suggested
                 </option>
               ))}
             </datalist>

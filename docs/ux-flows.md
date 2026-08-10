@@ -13,9 +13,9 @@ inventory items, etc.) is defined in
 ## Dashboard: first-load experience
 
 - If insufficient data (fewer than 7 days of transactions): show a data
-  sufficiency prompt — "We need at least 7 days of transaction data to
-  provide accurate insights," a link to Import, and a progress indicator
-  ("you have X days of data, Y more days needed").
+  sufficiency prompt: "We need at least 7 days of transaction data before
+  this view can show a useful pattern," a link labeled `Import a CSV`, and
+  a progress indicator ("You have X days of data. Y more days needed.").
 - If sufficient data: proceed to the main dashboard.
 
 > The 7-day threshold is a v2-era placeholder, not confirmed. See
@@ -28,7 +28,7 @@ pending beta feedback):
   margin trend (improving/declining vs. last week).
 - **Top recommendations** — ranked per the scoring formula in
   `mvp-scope-and-decisions.md`; each includes action, financial impact,
-  evidence, confidence/data-sufficiency level, and time horizon. Clicking
+  evidence, data coverage, and time horizon. Clicking
   one can expand details or open a chat conversation pre-loaded with that
   context.
 - **Item deep dives** (structure TBD) — top-selling items by revenue,
@@ -41,15 +41,15 @@ wallet and actionable opportunities.
 
 The chat page is the main AI interaction surface. The user asks questions
 about their imported data and gets grounded, reasoned answers, primarily
-about inventory analysis, spoilage analysis, and purchasing guidance, but
-able to answer any question groundable in imported data.
+about inventory analysis, spoilage analysis, and purchasing guidance. It
+answers questions that can be grounded in imported data.
 
 **Example turn:**
 > User: "Why is my lobster sell-through so low?"
 
 AI processing (internal to the response, not shown step-by-step to the
 user): queries transaction history, inventory data, and purchase orders
-(internal database only — no external APIs in MVP), analyzes trends and
+(internal database only, with no external APIs in MVP), analyzes trends and
 patterns, formulates an answer.
 
 AI response includes: a natural conversational answer with clear
@@ -57,9 +57,9 @@ explanation; evidence (e.g. "you sold 2 lbs this week vs. 8 lbs last
 week"); potential causes (price change, event, seasonal, competitor
 action); a recommendation for action, if applicable.
 
-**Confidence and reasoning:** every answer states a confidence level
-(high/medium/low). "Show reasoning" / "explain your work" expands to show
-what data was queried, what assumptions were made (shelf life, par
+**Evidence and reasoning:** every answer states what data supports it and
+what remains unknown. `Show your work` expands to show what data was
+queried, what assumptions were made (shelf life, par
 levels, etc.), and the step-by-step logic to the conclusion.
 
 **If the AI cannot answer:** it admits insufficient data or capability,
@@ -105,15 +105,15 @@ Inventory) and uploads a CSV file.
 ### Step 3 — Column mapping
 The system maps the file's columns to canonical database fields.
 
-**Happy path (confidence ≥ 85%):**
+**Happy path (match quality ≥ 85%):**
 1. System attempts auto-detection based on historical mappings for this
    user/location, and cross-customer patterns (e.g. "other Toast users
    map column X to field Y").
-2. If all columns match with high confidence, show: "All columns matched.
+2. If all columns match with high match quality, show: "All columns matched.
    Ready to import?"
 3. User clicks Import; process continues to item matching (Step 4).
 
-**Uncertain mapping path (confidence 50–85%):**
+**Uncertain mapping path (match quality 50–85%):**
 1. For each uncertain column, show one at a time: the column name, 3–5
    example values from that column, a dropdown of possible canonical
    fields to map it to, and a "skip this column" option.
@@ -224,7 +224,7 @@ a lot of them.
    match. *The matching radius rule is undecided.*
 5. **Publish.** *Whether this broadcasts to all matching recipients at
    once, or offers in some priority order, is undecided.*
-6. **On claim,** the operator sees which organisation claimed it and the
+6. **On claim,** the operator sees which organization claimed it and the
    collection time.
 7. **Confirm collection.** Operator marks it collected; the donation is
    logged with weight and value. *Whether a dollar value may be shown at
@@ -238,7 +238,7 @@ likely way this feature disappoints its first users.
 
 ### Recipient side — claiming an offer
 
-1. **Register.** Organisation name, type, address, whether prepared and/or
+1. **Register.** Organization name, type, address, whether prepared and/or
    raw food can be accepted, and any capacity limits. *Verification
    mechanism undecided.*
 2. **See open offers nearby** — food type, quantity, prepared or raw,
@@ -266,7 +266,7 @@ authentication), company name (optional), all editable.
 
 **Location management** — list of all locations, each showing name,
 address, created date, and actions (Edit, View Dashboard, View Chat).
-"+ Add New Location" creates a location ready for data import. Dashboard
+`Add a location` creates a location ready for data import. Dashboard
 and Chat operate on one location at a time (see the scope rule in
 `mvp-scope-and-decisions.md`); the location picker at the top of
 Dashboard/Chat switches which location is being viewed.
@@ -294,17 +294,17 @@ A restaurant owner should be able to:
    CSVs; resolve column mappings one at a time without feeling
    overwhelmed; resolve item names exactly (no fuzzy-matched data ever
    enters the system); see clear confirmation of what was imported.
-2. **See financial insights** — view spoilage estimates or actual counts,
+2. **See financial impact** — view spoilage estimates or actual counts,
    see margin trends, identify items at risk.
-3. **Get actionable recommendations** — see ranked recommendations on the
+3. **See ranked recommendations** — review ranked recommendations on the
    dashboard, understand why each exists (evidence + reasoning), see
-   confidence/data-sufficiency levels to decide whether to trust it.
+   data coverage so the operator can decide whether to trust it.
 4. **Challenge and override** — ask follow-up questions in chat, challenge
    recommendations and see the AI retrace its work, override assumptions
    mid-conversation, ask flexible questions grounded in imported data.
 5. **Manage their data** — rename canonical items, adjust shelf life,
    category, and cost per item, see which items are actively used vs.
    dormant, view import history for the audit trail.
-6. **Operate single-location focus** — switch between locations easily;
+6. **Work in one location at a time** — switch between locations easily;
    dashboard and chat stay location-scoped; multiple locations can exist
    without being aggregated.

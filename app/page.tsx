@@ -11,10 +11,11 @@ export default function Home() {
       <main className="landing-page">
         <section className="landing-hero" aria-labelledby="landing-title">
           <div className="landing-container landing-hero__content">
-            <h1 id="landing-title">Find it before the P&amp;L does.</h1>
+            <h1 id="landing-title">See what your kitchen data can tell you.</h1>
             <p className="landing-hero__subhead">
-              One spreadsheet in. A ranked list of what is costing you money,
-              with the arithmetic attached to every figure.
+              PantryIQ is for restaurant operators who want a clearer view of
+              sales, purchasing, and waste. It keeps you in control and shows
+              the numbers behind each decision.
             </p>
             <div className="landing-hero__actions" aria-label="Get started">
               <a
@@ -27,7 +28,7 @@ export default function Home() {
                 className="landing-button landing-button--secondary"
                 href="#how-it-works"
               >
-                See a worked example
+                See how it works
               </a>
             </div>
             <p className="landing-hero__reassurance">
@@ -45,15 +46,15 @@ export default function Home() {
               </p>
             </div>
             <div className="landing-proof__item">
-              <p className="landing-proof__value">Show the work</p>
+              <p className="landing-proof__value">Show your work</p>
               <p className="landing-proof__label">
                 Facts stay separate from predictions
               </p>
             </div>
             <div className="landing-proof__item">
-              <p className="landing-proof__value">Your call</p>
+              <p className="landing-proof__value">You decide</p>
               <p className="landing-proof__label">
-                Recommendations stay recommendations
+                Recommendations stay suggestions
               </p>
             </div>
           </div>
@@ -69,12 +70,12 @@ export default function Home() {
             <div className="landing-problem__copy">
               <p>
                 You bought three cases of salmon because you always do. You sold
-                it twice. The rest went grey in the walk-in on a Tuesday and you
+                it twice. The rest went gray in the walk-in on a Tuesday and you
                 found out when you emptied the bin.
               </p>
               <p>
                 You know it&apos;s happening. You don&apos;t know what it costs.
-                And by the time the P&amp;L tells you, it&apos;s three months
+                By the time it shows up in the P&amp;L, the loss is three months
                 old.
               </p>
             </div>
@@ -93,7 +94,7 @@ export default function Home() {
                 Three screens, and the numbers on all of them.
               </h2>
               <p className="landing-section-heading__note">
-                Every figure below comes out of one worked example —{' '}
+                Every figure below comes out of one worked example.{' '}
                 <span className="figure">{marketingExampleRowCount}</span> rows
                 of one restaurant&apos;s sales, purchase, and count data, run
                 through the same engine the product runs.
@@ -120,7 +121,7 @@ export default function Home() {
                   <h3>You get a ranked list, not a dashboard to interpret.</h3>
                   <p>
                     Biggest dollar first. The figure sits on the row, so nothing
-                    needs decoding and nothing depends on telling two colours
+                    needs decoding and nothing depends on telling two colors
                     apart.
                   </p>
                 </div>

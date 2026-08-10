@@ -1,6 +1,6 @@
 # PantryIQ — Brand Foundations
 
-**Status:** Authoritative for brand identity, colour, typography, and design
+**Status:** Authoritative for brand identity, color, typography, and design
 language. Where this document and a visual implementation disagree, this
 document wins.
 
@@ -33,7 +33,7 @@ different register. See [`voice-and-tone.md`](voice-and-tone.md) §1.
 >
 > It is **in scope but not specified.** Four questions block
 > implementation — food safety liability, how recipients get notified,
-> how recipient organisations are verified, and the account model, since
+> how recipient organizations are verified, and the account model, since
 > recipients are a second user type. See
 > [`../open-questions.md`](../open-questions.md) §3. Brand and voice for
 > this surface are settled; the feature underneath them is not.
@@ -100,19 +100,19 @@ our output into an email to his owner without it looking like a toy.
   logo is ever needed as a square avatar, it is the letter **P** in Ink on
   Stone, set in the wordmark's typeface and tracking.
 
-## 5. Colour
+## 5. Color
 
 ### 5.1 The governing rule
 
-> **Colour is never load-bearing.**
+> **Color is never load-bearing.**
 
 This is the single most important rule in this document. The product owner
-has red-green colour vision deficiency (deuteran/protan), and roughly 1 in
+has red-green color vision deficiency (deuteran/protan), and roughly 1 in
 12 male restaurant operators do too. Beyond that, operators print
 dashboards, forward screenshots, and read screens in bad kitchen light.
 
 Meaning must be carried by **text, icon, position, and pattern first**.
-Colour is a redundant reinforcement, added last. If removing all colour
+Color is a redundant reinforcement, added last. If removing all color
 from a screen destroys its meaning, that screen is broken.
 
 Two corollaries, both learned the hard way:
@@ -124,9 +124,9 @@ Two corollaries, both learned the hard way:
 
 ### 5.2 The palette — "Ledger"
 
-Ink is the brand colour. Everything else appears only where it carries
+Ink is the brand color. Everything else appears only where it carries
 meaning. This scarcity is the point: on a screen where almost nothing is
-coloured, the one coloured thing is impossible to miss.
+colored, the one colored thing is impossible to miss.
 
 #### Neutrals
 
@@ -141,7 +141,7 @@ coloured, the one coloured thing is impossible to miss.
 
 The neutrals are warm, not cool. This is where the kitchen lives in the
 brand — warm stone rather than cold slate — and it is the only place it
-lives. Do not "correct" these toward grey.
+lives. Do not "correct" these toward gray.
 
 #### Signal colours
 
@@ -162,14 +162,14 @@ Soft backgrounds for chips and banners:
 **Why Watch is a neutral.** An earlier draft used an ochre `#8A6300`. It
 was rejected: ochre and oxide are two warm hues at near-identical
 lightness and are indistinguishable to a deuteran eye. The fix is not a
-different warm — it is refusing to spend colour on a non-urgent state.
+different warm — it is refusing to spend color on a non-urgent state.
 "Watch" earns a pattern and a glyph, not a hue. **Ochre is deleted from
 the palette. Do not reintroduce a yellow, amber, gold, or brown.**
 
 #### Chart categoricals
 
 Maximum five series. Beyond five, split the chart. Every series carries a
-pattern; the colour is redundant.
+pattern; the color is redundant.
 
 | # | Light | Dark | Pattern |
 |---|---|---|---|
@@ -188,7 +188,7 @@ for the primary user. Success and healthy states use Azure.
 - Body text: **WCAG AA, 4.5:1 minimum**, against its actual background.
 - Large text (≥24px, or ≥19px bold): 3:1 minimum.
 - Interactive borders, focus rings, chart marks, and icons that carry
-  meaning: **3:1 minimum** against adjacent colour.
+  meaning: **3:1 minimum** against adjacent color.
 - Focus ring is **Azure, 2px, with a 2px offset**, and is never removed.
 
 ## 6. Typography
@@ -238,7 +238,7 @@ brand, and they must survive any redesign.
    - `--radius-surface: 3px` — cards, panels, tables, inputs, textareas,
      dialogs, popovers, code blocks. Near-square.
 
-   Soft controls sitting on hard paper is the single most recognisable
+   Soft controls sitting on hard paper is the single most recognizable
    thing about the interface. Never round a surface. Never square a
    control.
 
@@ -247,14 +247,14 @@ brand, and they must survive any redesign.
    the body sans at heading size is the clearest tell of an unmodified
    component library.
 
-3. **Warm paper, not cool grey.** Stone `#F7F6F3` and Ink `#171614` are
+3. **Warm paper, not cool gray.** Stone `#F7F6F3` and Ink `#171614` are
    warm; shadcn's stock neutrals are cool and faintly blue. A small shift
    that changes the temperature of every screen, and the only place the
    kitchen lives in this brand.
 
-4. **The state edge.** A 3px left border in the signal colour on any card
+4. **The state edge.** A 3px left border in the signal color on any card
    that carries state, and nothing at all on cards that don't. Functional,
-   not decorative: it reinforces the status chip without colour doing the
+   not decorative: it reinforces the status chip without color doing the
    work alone.
 
 **Card headers keep shadcn's hierarchy** — a sans title at 15px/600 with a
@@ -286,10 +286,10 @@ not from applied ornament.
 ### 7.2 The primary button
 
 The primary button is an **Azure pill**. This is the loudest departure
-from stock shadcn, and it deliberately spends the healthy-signal colour on
+from stock shadcn, and it deliberately spends the healthy-signal color on
 a control.
 
-That overlap is acceptable *because* of §5.1: colour is never
+That overlap is acceptable *because* of §5.1: color is never
 load-bearing, so "healthy" is never communicated by Azure alone — it is
 communicated by the ● glyph, the word, and the solid pattern. Azure on a
 button is therefore not competing with Azure on a chart mark.
@@ -301,23 +301,23 @@ or something is at risk.
 
 ## 8. Brand do's and don'ts
 
-### Colour
+### Color
 
 | Do | Don't |
 |---|---|
-| Encode state with text + icon + pattern, then add colour | Encode state with colour alone |
+| Encode state with text + icon + pattern, then add color | Encode state with color alone |
 | Use Azure for healthy and positive | Use green for anything, ever |
-| Use Oxide sparingly, so it still means "act now" | Colour multiple things Oxide on one screen |
-| Keep neutrals warm | Shift neutrals toward cool grey or pure black |
-| Let most of the interface be uncoloured | Add colour for visual interest |
-| Delete a colour that doesn't separate | Add a fourth signal colour to fix a separation problem |
+| Use Oxide sparingly, so it still means "act now" | Color multiple things Oxide on one screen |
+| Keep neutrals warm | Shift neutrals toward cool gray or pure black |
+| Let most of the interface be uncolored | Add color for visual interest |
+| Delete a color that doesn't separate | Add a fourth signal color to fix a separation problem |
 
 ### Typography
 
 | Do | Don't |
 |---|---|
 | Set every figure in Plex Mono with tabular numerals | Set dollar amounts in the body sans |
-| Use weight for emphasis | Use italics or colour for emphasis in UI |
+| Use weight for emphasis | Use italics or color for emphasis in UI |
 | Keep to the ten-step scale | Invent a size to make something fit |
 
 ### Imagery and iconography
@@ -336,8 +336,8 @@ or something is at risk.
 | Split radius: pills for controls, 3px for surfaces | Use one radius token everywhere |
 | Keep shadcn's card title + description hierarchy | Replace card titles with uppercase mono labels |
 | Differentiate with things that do a job | Add decorative rules, bars, or frames to look distinctive |
-| Ship shadcn's Radix behaviour untouched | Ship shadcn's *appearance* untouched |
-| Show the number before the chart | Lead with a visualisation |
+| Ship shadcn's Radix behavior untouched | Ship shadcn's *appearance* untouched |
+| Show the number before the chart | Lead with a visualization |
 | Put the dollar figure in the largest type on the card | Lead with a percentage |
 | Make every assumption editable and say where to edit it | Present a default as a fact |
 | Say what you can't calculate and why | Silently omit what's missing |
@@ -352,7 +352,7 @@ or something is at risk.
   statement about data coverage.
 - Purple-to-blue gradients, glassmorphism, floating 3D shapes, or any
   generic AI-product visual language.
-- Any screen where turning off colour changes what it means.
+- Any screen where turning off color changes what it means.
 - Anything that could be mistaken for the shadcn or Vercel homepage. If a
   screenshot would look at home in a component-library demo, the signature
   moves in §7.1 haven't been applied.
@@ -362,8 +362,8 @@ or something is at risk.
 These are commitments, not aspirations. They gate merge — see
 [`ui-implementation.md`](ui-implementation.md) for the checklist.
 
-1. Colour is never the sole carrier of meaning. Anywhere.
-2. Every chart is legible in full greyscale.
+1. Color is never the sole carrier of meaning. Anywhere.
+2. Every chart is legible in full grayscale.
 3. All text meets WCAG AA contrast.
 4. Every interactive element is keyboard reachable with a visible Azure
    focus ring.
@@ -373,5 +373,5 @@ These are commitments, not aspirations. They gate merge — see
 8. Forms use real `<label>` elements; errors are described in text, not
    just outlined in Oxide.
 
-**The greyscale test is the acceptance gate for any data visualisation:**
+**The grayscale test is the acceptance gate for any data visualization:**
 screenshot it, desaturate it, and read it. If you can't, it doesn't ship.

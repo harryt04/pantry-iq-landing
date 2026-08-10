@@ -251,7 +251,7 @@ export function RecipeBuilder({ locationId }: { locationId: string }) {
   if (loading)
     return (
       <main className="recipe-page">
-        <p>Loading your recipes…</p>
+        <p>Loading your recipes</p>
       </main>
     )
 
@@ -468,7 +468,7 @@ export function RecipeBuilder({ locationId }: { locationId: string }) {
                   type="submit"
                   disabled={saving || menuItems.length === 0}
                 >
-                  {saving ? 'Saving…' : 'Save recipe'}
+                  {saving ? 'Saving' : 'Save recipe'}
                 </Button>
                 {editingRecipeId && (
                   <Button

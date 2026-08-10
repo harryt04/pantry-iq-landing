@@ -173,7 +173,7 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
           ) : null}
 
           <button type="submit" disabled={busy}>
-            {busy ? 'Working…' : currentCopy.submit}
+            {busy ? 'Working' : currentCopy.submit}
           </button>
         </form>
 

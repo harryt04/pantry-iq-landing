@@ -41,6 +41,8 @@ const BANNED_LANGUAGE = [
   'corrupt',
   'incorrect',
   'failed to',
+  '—',
+  '…',
 ] as const
 
 export type AnswerFormatCheck = {
@@ -54,6 +56,7 @@ export type AnswerFormatCheck = {
 }
 
 function containsBannedLanguage(text: string) {
+  if (/[—…]/u.test(text)) return true
   const normalized = text.toLocaleLowerCase()
   return BANNED_LANGUAGE.some((term) => {
     const expression = new RegExp(

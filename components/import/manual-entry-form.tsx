@@ -516,7 +516,7 @@ export function ManualEntryForm({ locationId }: { locationId: string }) {
                 id="labor-employee-reference"
                 value={employeeReference}
                 onChange={(event) => setEmployeeReference(event.target.value)}
-                placeholder="Internal code only — no names or contact details"
+                placeholder="Internal code only. No names or contact details"
               />
             </div>
             <div className="app-page__form-row">
@@ -665,7 +665,7 @@ export function ManualEntryForm({ locationId }: { locationId: string }) {
           </p>
         ) : null}
         <Button type="submit" disabled={busy}>
-          {busy ? 'Saving…' : 'Save manual entry'}
+          {busy ? 'Saving' : 'Save manual entry'}
         </Button>
       </form>
     </section>

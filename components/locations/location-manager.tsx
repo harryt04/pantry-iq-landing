@@ -280,7 +280,7 @@ export function LocationManager() {
             <div className="location-form-actions">
               <Button type="submit" disabled={saving}>
                 {saving
-                  ? 'Saving…'
+                  ? 'Saving'
                   : editingId
                     ? 'Save location'
                     : 'Add location'}
@@ -418,7 +418,7 @@ export function LocationManager() {
             </AlertDialogTitle>
             <AlertDialogDescription>
               {loadingDeletionSummary || !deletionSummary ? (
-                'Loading the data that will be removed…'
+                'Loading the data that will be removed'
               ) : (
                 <>
                   This deletes {deletionSummary.importCount} import
@@ -442,7 +442,7 @@ export function LocationManager() {
               }}
               disabled={saving || loadingDeletionSummary || !deletionSummary}
             >
-              {saving ? 'Removing…' : 'Remove location'}
+              {saving ? 'Removing' : 'Remove location'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

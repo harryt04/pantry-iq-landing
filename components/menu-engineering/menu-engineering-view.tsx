@@ -149,7 +149,7 @@ export function MenuEngineeringView({
               <CardTitle>Matrix view</CardTitle>
               <CardDescription>
                 Position follows popularity and plate margin. Each cell and item
-                repeats the quadrant in words, so colour and position are never
+                repeats the quadrant in words, so color and position are never
                 the only signal.
               </CardDescription>
             </CardHeader>

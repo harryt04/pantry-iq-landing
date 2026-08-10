@@ -19,28 +19,28 @@ specifically was wrong with them.
 
 **Subhead:**
 
-> PantryIQ is being built for restaurant operators who want a clearer view
-> of sales, purchasing, and waste. The product keeps the operator in control
-> and makes room for the numbers behind each decision.
+> PantryIQ is for restaurant operators who want a clearer view of sales,
+> purchasing, and waste. It keeps you in control and shows the numbers
+> behind each decision.
 
-**Primary CTA:** `See the product direction`
-**Secondary CTA:** `Read the problem it is built to solve`
-**Reassurance line under the CTAs:** Built for one location at a time. No
-POS connection required.
+**Primary CTA:** `See how it works`
+**Secondary CTA:** `See the problem it solves`
+**Reassurance line under the CTAs:** One location at a time. No POS
+connection required.
 
 **Why this headline works:** it names the operator's starting point — the
 data already in the business — without promising an insight, calculation,
 or action the current build cannot yet provide.
 
 **Never use as a headline:** anything containing "AI-powered,"
-"intelligent," "revolutionise," "unlock," or "restaurant analytics."
+"intelligent," "revolutionize," "unlock," or "restaurant analytics."
 
 ## 2. Positioning statements
 
 **Elevator (one sentence):**
-> PantryIQ reads the sales and purchasing data a restaurant already has,
-> and tells the operator in plain English where their money is going —
-> showing the arithmetic behind every number.
+> PantryIQ reads the sales and purchasing data a restaurant already has and
+> tells the operator in plain English where their money is going. It shows
+> the arithmetic behind every number.
 
 **Against competitors (MarketMan, MarginEdge, BevSpot, Craftable):**
 > Every comparable tool needs a POS integration, a recipe library, and
@@ -75,21 +75,21 @@ Three short claims directly under the hero, in mono figures:
 | | |
 |---|---|
 | **One location** | Scoped to one operating unit |
-| **Show the work** | Facts stay separate from predictions |
-| **Your call** | Recommendations stay recommendations |
+| **Show your work** | Facts stay separate from predictions |
+| **You decide** | Recommendations stay suggestions |
 
 These state the product contract without claiming that an import,
 recommendation, or chat session is available on the landing page today.
 
 ### 3.4 The problem, in their words
-Not statistics. A specific, recognisable scene.
+Not statistics. A specific, recognizable scene.
 
 > You bought three cases of salmon because you always do. You sold it
-> twice. The rest went grey in the walk-in on a Tuesday and you found out
+> twice. The rest went gray in the walk-in on a Tuesday and you found out
 > when you emptied the bin.
 >
-> You know it's happening. You don't know what it costs. And by the time
-> the P&L tells you, it's three months old.
+> You know it's happening. You don't know what it costs. By the time it
+> shows up in the P&L, the loss is three months old.
 
 **Do not** open with "$162 billion of food is wasted annually." An
 industry statistic is about the industry; an operator cares about their
@@ -98,12 +98,12 @@ removed.
 
 ### 3.5 How it works — three steps
 1. **Start with the data you already have.** The MVP is designed around
-   sales exports, purchase orders, and inventory counts, with CSV as the
-   trust fallback.
+   sales exports, purchase orders, and inventory counts. CSV is the trust
+   fallback.
 2. **Separate facts from predictions.** The product contract keeps observed
    numbers distinct from predictions and says what the data cannot support.
-3. **Keep the decision with the operator.** PantryIQ is designed to
-   recommend and explain. The operator decides what happens next.
+3. **You make the call.** PantryIQ recommends and explains. You decide what
+   happens next.
 
 ### 3.6 The proof section — show, don't claim
 When `DSH-03` ships, add one real recommendation card rendered by the
@@ -142,10 +142,10 @@ is the copy layer over them.
 | **Percy** — GM | "Walk into every ownership conversation with data, not gut instinct." Makes him look sharp. | Anything framed as catching him out, or positioning the owner as the beneficiary. |
 | **Snape** — chef | "The data to back up what you already know." Craft-first. Gives him authority. | Any suggestion the software knows his kitchen better than he does. Fixed shelf-life defaults presented as fact. |
 | **McGonagall** — hands-off owner | "An independent view of your restaurant's health." Executive brief register. | Implying daily use or that she'll do her own imports. |
-| **Harry** — gastropub owner | "One view of the whole operation — food, bar, and everything between." Acknowledges complexity. | Oversimplified dashboards. Generic "restaurant analytics." Anything built for fast-casual. |
+| **Harry** — gastropub owner | "One view of the whole operation: food, bar, and everything between." Acknowledges complexity. | Oversimplified dashboards. Generic "restaurant analytics." Anything built for fast-casual. |
 | **Kingsley** — bar manager | "Know your pour cost without living in a spreadsheet." | Demos showing only food. *(Note: pour-cost workflows are explicitly out of MVP scope — do not promise them.)* |
 | **George** — food truck | "Know before you order." Event forecasting. Mobile-friendly. | Enterprise look. Long onboarding. Anything assuming an office. |
-| **Hermione** — ghost kitchen | Methodological rigour. "The intelligence layer on the data you already have." | "Magic" framing. Anything implying the tool decides for her. |
+| **Hermione** — ghost kitchen | Methodological rigor. "The intelligence layer on the data you already have." | "Magic" framing. Anything implying the tool decides for her. |
 | **Dumbledore** — small chain | "Run every location like your best location." | Single-location-only framing. Punitive per-location pricing. |
 | **Tonks** — mobile bar/catering | "Know your true cost before you quote your next event." | Restaurant language assuming a walk-in and a fixed menu. *(Event workflows are out of MVP scope — do not promise them.)* |
 
@@ -172,7 +172,7 @@ followed by a feature list.
 shelf life, order, supplier, cost, this week, show your work, evidence.
 
 **Avoid entirely:** solution, platform, ecosystem, holistic, synergy,
-transform, empower, revolutionise, disrupt, cutting-edge, best-in-class,
+transform, empower, revolutionize, disrupt, cutting-edge, best-in-class,
 robust, seamless, effortless, unlock, leverage, supercharge, AI-powered,
 intelligent, smart, insights (as a noun on its own).
 
@@ -215,7 +215,7 @@ Recorded so the mistakes don't return. Reference:
    banned in [`brand-foundations.md`](brand-foundations.md) §8.
 5. **Teal primary against a purple accent** — two hues in the blue region
    at similar chroma, which converge for a deuteran viewer. The brand
-   colour and the accent colour were, for a large share of users, the same
-   colour.
+   color and the accent color were, for a large share of users, the same
+   color.
 6. **Emphasis split across profit, waste, and charity at once**, so no
    single promise landed.

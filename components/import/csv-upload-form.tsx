@@ -90,7 +90,7 @@ export function CsvUploadForm({ locationId }: { locationId: string }) {
     setPreview(null)
     setSummary(null)
     setResolutions({})
-    setStatus('Checking the file…')
+    setStatus('Checking the file')
     setIsUploading(true)
 
     try {
@@ -115,7 +115,7 @@ export function CsvUploadForm({ locationId }: { locationId: string }) {
 
       if (!result.upload?.id) throw new Error('The file could not be read.')
       setUploadId(result.upload.id)
-      setStatus('Reading the file…')
+      setStatus('Reading the file')
       const previewResponse = await fetch(
         `/api/uploads/${encodeURIComponent(result.upload.id)}/preview`,
       )
@@ -157,7 +157,7 @@ export function CsvUploadForm({ locationId }: { locationId: string }) {
           const result = (await response.json()) as { error?: string }
           if (!response.ok)
             throw new Error(result.error ?? 'The mapping could not be saved.')
-          setStatus('Mapping saved. Checking item names…')
+          setStatus('Mapping saved. Checking item names')
           await refreshSummary({})
         } catch (mappingError) {
           setError(
@@ -292,7 +292,7 @@ export function CsvUploadForm({ locationId }: { locationId: string }) {
           </p>
         </div>
         <Button type="submit" disabled={isUploading || !file}>
-          {isUploading ? 'Uploading…' : 'Upload CSV'}
+          {isUploading ? 'Uploading' : 'Upload CSV'}
         </Button>
       </form>
       <p aria-live="polite" className="app-page__status">
@@ -334,7 +334,7 @@ export function CsvUploadForm({ locationId }: { locationId: string }) {
             disabled={isCommitting || summary.alreadyImported}
           >
             {isCommitting
-              ? 'Importing…'
+              ? 'Importing'
               : summary.alreadyImported
                 ? 'Already imported'
                 : 'Import now'}
@@ -374,7 +374,7 @@ function CsvPreviewTable({ preview }: { preview: CsvPreview }) {
       {preview.problems.map((problem) => (
         <p className="app-page__error" key={problem.message}>
           {problem.count} {problem.count === 1 ? 'row' : 'rows'}{' '}
-          {problem.message}. Here's the first one —{' '}
+          {problem.message}. Here's the first one.{' '}
           <code>{problem.example}</code>
         </p>
       ))}

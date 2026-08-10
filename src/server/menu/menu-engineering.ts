@@ -209,21 +209,21 @@ function quadrantFor(
   if (popularity === 'high' && profitability === 'high')
     return {
       quadrant: 'star' as const,
-      quadrantLabel: 'Star — popular and profitable',
+      quadrantLabel: 'Star: popular and profitable',
     }
   if (popularity === 'high')
     return {
       quadrant: 'plowhorse' as const,
-      quadrantLabel: 'Plowhorse — popular, lower margin',
+      quadrantLabel: 'Plowhorse: popular, lower margin',
     }
   if (profitability === 'high')
     return {
       quadrant: 'puzzle' as const,
-      quadrantLabel: 'Puzzle — profitable, less popular',
+      quadrantLabel: 'Puzzle: profitable, less popular',
     }
   return {
     quadrant: 'dog' as const,
-    quadrantLabel: 'Dog — less popular and lower margin',
+    quadrantLabel: 'Dog: less popular and lower margin',
   }
 }
 

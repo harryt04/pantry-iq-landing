@@ -28,7 +28,7 @@ const proofWork = (() => {
  *
  * The card renders with its own "Show your work" collapsed. The full engine
  * trace belongs in the product; what a stranger needs is the three lines of
- * arithmetic that produce $840. See `marketing-evidence.ts`.
+ * arithmetic that produce $240. See `marketing-evidence.ts`.
  */
 export function RecommendationProof() {
   return (
@@ -70,7 +70,7 @@ export function RecommendationProof() {
           {proofWork.assumptions.map((assumption) => (
             <li key={assumption.name}>
               <span>
-                Shelf life — <span className="figure">{assumption.value}</span>{' '}
+                Shelf life: <span className="figure">{assumption.value}</span>{' '}
                 days
               </span>
               <span className="work-receipt__origin">
@@ -81,7 +81,7 @@ export function RecommendationProof() {
           ))}
         </ul>
         <p className="work-receipt__foot">
-          Every assumption is labelled with where it came from, and every one is
+          Every assumption is labeled with where it came from, and every one is
           yours to change. Change the shelf life and the figure changes with it.
         </p>
       </div>

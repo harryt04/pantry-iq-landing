@@ -362,7 +362,7 @@ export function ChatSurface({
                     recommendations={recommendations}
                   />
                 ) : (
-                  message.content || 'Preparing a response…'
+                  message.content || 'Preparing a response.'
                 )}
               </Bubble>
             </Message>
@@ -384,8 +384,8 @@ export function ChatSurface({
             onKeyDown={handleKeyDown}
             placeholder={
               scope === 'portfolio'
-                ? 'Ask about all locations…'
-                : 'Ask about this location…'
+                ? 'Ask about all locations'
+                : 'Ask about this location'
             }
             value={draft}
           />
@@ -461,7 +461,7 @@ export function ChatSurface({
                   value={overrideValue}
                 />
                 <button disabled={isComparing} type="submit">
-                  {isComparing ? 'Recalculating…' : 'Recalculate'}
+                  {isComparing ? 'Recalculating' : 'Recalculate'}
                 </button>
               </form>
             )}
@@ -508,7 +508,7 @@ export function ChatSurface({
                     onClick={saveToSettings}
                     type="button"
                   >
-                    {isSavingOverride ? 'Saving…' : 'Save to item settings'}
+                    {isSavingOverride ? 'Saving' : 'Save to item settings'}
                   </button>
                 </div>
               </div>

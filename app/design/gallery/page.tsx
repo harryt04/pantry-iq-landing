@@ -112,7 +112,7 @@ export default function GalleryPage() {
           <p className="gallery-eyebrow">PantryIQ / component baseline</p>
           <h1>Round controls. Square paper.</h1>
           <p>
-            Radix handles the behaviour. This gallery keeps the visual rules
+            Radix handles the behavior. This gallery keeps the visual rules
             visible while features are built.
           </p>
         </div>
@@ -129,7 +129,7 @@ export default function GalleryPage() {
         </div>
       </Section>
 
-      <Section title="State is more than colour">
+      <Section title="State is more than color">
         <div className="gallery-row">
           <Badge className="gallery-badge--steady">● Steady</Badge>
           <Badge className="gallery-badge--watch">◆ Watch</Badge>

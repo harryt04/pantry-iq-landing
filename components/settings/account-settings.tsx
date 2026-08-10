@@ -175,7 +175,7 @@ export function AccountSettings({
               </p>
             ) : null}
             <Button disabled={profileBusy} type="submit">
-              {profileBusy ? 'Saving…' : 'Save account details'}
+              {profileBusy ? 'Saving' : 'Save account details'}
             </Button>
           </form>
         </CardContent>
@@ -236,7 +236,7 @@ export function AccountSettings({
               </p>
             ) : null}
             <Button disabled={passwordBusy} type="submit">
-              {passwordBusy ? 'Changing…' : 'Change password'}
+              {passwordBusy ? 'Changing' : 'Change password'}
             </Button>
           </form>
         </CardContent>

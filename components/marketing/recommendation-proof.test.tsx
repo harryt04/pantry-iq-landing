@@ -10,7 +10,7 @@ describe('marketing recommendation proof', () => {
 
     expect(markup).toContain('data-variant="marketing"')
     expect(markup).toContain('Salmon fillet')
-    expect(markup).toContain('About $840 at risk from current spoilage')
+    expect(markup).toContain('About $240 at risk from current spoilage')
 
     // The arithmetic, in plain-English terms rather than variable names.
     expect(markup).toContain('On hand at the last count')
@@ -54,7 +54,7 @@ describe('marketing recommendation proof', () => {
   it('states percentages at a readable precision', () => {
     const markup = renderToStaticMarkup(<RecommendationProof />)
 
-    expect(markup).toContain('8.3% sell-through')
-    expect(markup).not.toContain('8.333333%')
+    expect(markup).toContain('8.9% sell-through')
+    expect(markup).not.toContain('8.928571%')
   })
 })

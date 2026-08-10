@@ -124,7 +124,7 @@ export function ChatAnswer({
   recommendations: readonly ChatRecommendation[]
 }) {
   const parts = isStreaming ? null : parseChatAnswer(content)
-  if (!parts) return <>{content || 'Preparing a response…'}</>
+  if (!parts) return <>{content || 'Preparing a response.'}</>
 
   const matched = matchingRecommendations(content, recommendations)
 
@@ -147,7 +147,7 @@ export function ChatAnswer({
           ))
         ) : (
           <p className="recommendation-work__unverified" role="status">
-            Output unverified — this answer has no matching evidence trace.
+            Output unverified. This answer has no matching evidence trace.
           </p>
         )}
       </div>

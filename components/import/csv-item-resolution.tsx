@@ -186,7 +186,7 @@ export function CsvItemResolution({
             setCategory(event.target.value)
             setShelfLifeDays('')
           }}
-          placeholder="Seafood, produce, dry goods…"
+          placeholder="Seafood, produce, or dry goods"
         />
         <Label htmlFor="new-item-unit">Unit</Label>
         <Input

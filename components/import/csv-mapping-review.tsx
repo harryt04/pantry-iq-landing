@@ -180,8 +180,8 @@ export function CsvMappingReview({
         <p className="app-page__eyebrow">Column mapping</p>
         <h2 id="csv-mapping-title">All columns matched. Ready to import?</h2>
         <p className="app-page__help">
-          Every column has a high-confidence match. Columns not in this list
-          will stay out of the import.
+          Every column has a strong match. Columns not in this list will stay
+          out of the import.
         </p>
       </section>
     )

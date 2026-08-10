@@ -42,7 +42,7 @@ function assertPatternFirstMarkup(markup: string) {
   }
 }
 
-describe('greyscale chart gate', () => {
+describe('grayscale chart gate', () => {
   it('keeps the fixed five-pattern sequence and rejects a sixth series', () => {
     expect(chartPatterns).toEqual([
       'solid',

@@ -59,7 +59,7 @@ export function RankedProof() {
       />
       <p className="surface-proof__note">
         Each row prints its own figure, and each bar carries a pattern as well
-        as a colour, so the chart still reads in greyscale or in bad kitchen
+        as a color, so the chart still reads in grayscale or in bad kitchen
         light.
       </p>
     </div>

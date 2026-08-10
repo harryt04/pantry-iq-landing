@@ -37,7 +37,7 @@ export default function DesignTokensPage() {
           <h1>Tokens, rendered</h1>
           <p>
             Light and dark are equal citizens. Signals carry a glyph and a
-            pattern, never colour alone.
+            pattern, never color alone.
           </p>
         </div>
         <ThemeToggle />

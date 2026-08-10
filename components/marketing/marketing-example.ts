@@ -19,7 +19,9 @@ import {
  */
 
 const ANCHOR = new Date('2026-08-08T12:00:00.000Z')
-const WINDOW_DAYS = 42
+// Four weeks gives the example enough history for a prediction without
+// turning one ordinary month's shrinkage into a dramatic annualized claim.
+const WINDOW_DAYS = 28
 
 function dayOffset(days: number) {
   return new Date(ANCHOR.getTime() - days * 24 * 60 * 60 * 1000)
@@ -54,7 +56,7 @@ const items: readonly ExampleItem[] = [
     saleQty: 0.5,
     saleEveryDays: 6,
     pricePerUnit: 34,
-    onHand: 42,
+    onHand: 12,
   },
   {
     id: 'heirloom-tomato',
@@ -66,7 +68,7 @@ const items: readonly ExampleItem[] = [
     saleQty: 2,
     saleEveryDays: 1,
     pricePerUnit: 11,
-    onHand: 38,
+    onHand: 12,
   },
   {
     id: 'ribeye-12oz',
@@ -78,7 +80,7 @@ const items: readonly ExampleItem[] = [
     saleQty: 3,
     saleEveryDays: 1,
     pricePerUnit: 38,
-    onHand: 24,
+    onHand: 8,
   },
   {
     id: 'burrata',
@@ -90,7 +92,7 @@ const items: readonly ExampleItem[] = [
     saleQty: 2,
     saleEveryDays: 1,
     pricePerUnit: 14,
-    onHand: 22,
+    onHand: 10,
   },
   {
     id: 'sourdough-loaf',
@@ -121,7 +123,7 @@ for (const item of items) {
     })
   }
 
-  for (let week = 5; week >= 0; week -= 1) {
+  for (let week = 3; week >= 0; week -= 1) {
     orders.push({
       itemId: item.id,
       qty: item.weeklyOrder.toFixed(2),

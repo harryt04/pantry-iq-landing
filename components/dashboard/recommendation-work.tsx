@@ -56,7 +56,7 @@ export function RecommendationWork({
   if (!hasCompleteTrace(trace)) {
     return (
       <p className="recommendation-work__unverified" role="status">
-        Output unverified — the evidence trace is incomplete.
+        Output unverified. The evidence trace is incomplete.
       </p>
     )
   }

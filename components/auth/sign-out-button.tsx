@@ -20,7 +20,7 @@ export function SignOutButton() {
       onClick={signOut}
       disabled={busy}
     >
-      {busy ? 'Signing out…' : 'Sign out'}
+      {busy ? 'Signing out' : 'Sign out'}
     </button>
   )
 }

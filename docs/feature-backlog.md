@@ -2760,7 +2760,7 @@ rather than reinterpreting it.
 through §3.9 and §5, §6 · §8 — the recorded failures of the old site,
 which must not return.
 
-**Scope — in.** Hero: "Waste less. Feed more. Keep the difference.", the
+**Scope — in.** Hero: "See what your kitchen data can tell you.", the
 subhead, both CTAs, and the reassurance line. The proof strip in mono
 figures. The problem section written as the salmon scene, not as
 statistics. Three how-it-works steps. The final CTA.

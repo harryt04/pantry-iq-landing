@@ -98,6 +98,28 @@ describe('chat answer format', () => {
     })
   })
 
+  it('rejects em dashes and ellipses in generated answers', () => {
+    const response = [
+      'Observation: Salmon has $40 at risk. Consider reviewing Salmon.',
+      'Financial impact: About $40 at risk.',
+      'Prediction: Based on 5 weeks of transaction history, the pattern may continue — probably.',
+      'Recommendation: Consider reviewing Salmon this week.',
+      'Show your work: Ask to review the sources.',
+    ].join('\n')
+
+    expect(checkAnswerFormat(response)).toEqual({
+      accepted: false,
+      reason: 'banned-language',
+    })
+
+    expect(
+      checkAnswerFormat(response.replace('— probably.', 'probably…')),
+    ).toEqual({
+      accepted: false,
+      reason: 'banned-language',
+    })
+  })
+
   it('formats a decline with a concrete alternative and no figure', () => {
     const answer = formatDeclineAnswer(
       'Which item should I review for current spoilage risk?',

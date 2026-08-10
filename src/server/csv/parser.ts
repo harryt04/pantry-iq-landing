@@ -253,7 +253,7 @@ function problemMessage(code: string | undefined): string {
 function exampleText(raw: string | undefined): string {
   const value = (raw ?? '').trim().replaceAll(/\s+/g, ' ')
   return value.length > 160
-    ? `${value.slice(0, 157)}…`
+    ? `${value.slice(0, 157)} (truncated)`
     : value || 'the row was empty'
 }
 

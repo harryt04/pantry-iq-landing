@@ -86,7 +86,7 @@ one, which listed donation as a long-term vision item only. See
 ### What was confirmed
 
 - Restaurants register as **donors**.
-- Shelters, soup kitchens, and comparable organisations register as
+- Shelters, soup kitchens, and comparable organizations register as
   **recipients**.
 - The two are **connected by locality** — recipients near the donating
   restaurant.
@@ -147,7 +147,7 @@ that were made independently, and it is tracked in
 Trust is the central adoption gate. A generic, vague, or confidently
 wrong answer loses the user for good.
 
-- PantryIQ must state whether an answer is high, medium, or low confidence, and why.
+- PantryIQ must state what data supports an answer and what remains unknown.
 - PantryIQ must admit when there isn't enough data for a good recommendation, and explain what's missing.
 - PantryIQ must never pretend certainty it doesn't have.
 - "Show your work" must be able to surface what data it looked at, what assumptions it used, and what logic led to the answer. If it can't, the output should be treated as unreliable.
@@ -236,11 +236,11 @@ location.
 
 Every recommendation (dashboard or chat) follows this structure:
 
-1. **Observation** — facts with supporting metrics
-2. **Financial Impact** — quantified cost at risk
-3. **Prediction** (if applicable) — forward-looking statement with basis
-4. **Recommendation** — concrete action suggestion
-5. **Show Your Work** (on demand) — data sources, calculations, assumptions
+1. **Observation:** facts with supporting metrics
+2. **Financial Impact:** quantified cost at risk
+3. **Prediction** (if applicable): forward-looking statement with basis
+4. **Recommendation:** concrete action suggestion
+5. **Show Your Work** (on demand): data sources, calculations, assumptions
 
 Example:
 ```
@@ -248,13 +248,13 @@ Salmon: Ordered 3 times, sold 0 times (0% sell-through).
 Current on-hand: 2 lbs. Estimated spoilage risk: $40 over 3 days.
 
 Prediction: Based on 0 sales across 3 orders this month,
-we predict salmon will not sell if reordered.
+salmon probably won't sell if reordered.
 (4 weeks of transaction data)
 
 Recommendation: Consider reducing next order by 50%, or
 removing from menu this week.
 
-[Show your work] [Ask follow-up] [Thumbs up/down]
+[Show your work] [Ask about this]
 ```
 
 ### Feedback loop (phased)
@@ -270,9 +270,9 @@ removing from menu this week.
 
 - **Dashboard** — automated daily snapshot + in-app alerts (passive
   monitoring: what the system thinks matters).
-- **Chat** — manual query interface, can ask about anything, even things
-  the dashboard isn't surfacing (active investigation: what the user
-  thinks matters).
+- **Chat** — manual query interface for questions grounded in imported
+  data, including things the dashboard isn't surfacing (active
+  investigation: what the user thinks matters).
 
 Both are equally important first-win paths for different personas: e.g.
 Ron/Percy lean on the dashboard to catch things passively, Snape/Kingsley
@@ -289,7 +289,7 @@ recommended action for the selected location.
 - Top 3–5 alerts ranked by Impact + Urgency + Data Sufficiency
 - Trend summaries (margin, spoilage, other signals)
 - Item-level problem areas when useful
-- Call-to-action per alert (link to chat, "investigate")
+- Call-to-action per alert (link to chat, `Ask about this`)
 - Location selector, if multi-location
 - Constraints: in-app only (no email/push/webhook), scoped to one
   selected location, updated daily
@@ -299,7 +299,8 @@ recommended action for the selected location.
 location or truck.
 - Natural-language question interface, streaming responses
 - Answers using imported data only
-- Explains evidence and reasoning on request; shows confidence/assumptions
+- Explains evidence and reasoning on request; shows data coverage and
+  assumptions
 - Admits when data is insufficient
 - Supports user challenge and assumption overrides
 - Session-only memory (not persisted across sessions in MVP)
@@ -362,14 +363,14 @@ nearby.
 
 > Both pages are specified here only at the level the founder confirmed.
 > Matching logic, notification mechanics, verification of recipient
-> organisations, no-show handling, and food-safety/liability terms are all
+> organizations, no-show handling, and food-safety/liability terms are all
 > **undecided** — see [`open-questions.md`](open-questions.md) §3. Do not
 > infer them from this section.
 
 ## Recommendation expectations (examples)
 
 A recommendation includes the action, expected financial impact if known,
-supporting evidence, confidence level, and time horizon. Good MVP
+supporting evidence, data coverage, and time horizon. Good MVP
 examples: "reduce next order of salmon this week," "push this item before
 spoilage risk rises further," "review why this item's margin fell
 compared to last week."
@@ -382,7 +383,7 @@ compared to last week."
 3. User uploads CSV (transactions, POs, inventory)
 4. User reviews import preview and maps columns
 5. System imports and shows dashboard with top alerts
-6. User sees a "try asking a question in chat" CTA
+6. User sees an `Ask a question in chat` CTA
 
 Success: user lands on dashboard with 3–5 alerts visible, under 5 minutes
 elapsed.
@@ -407,7 +408,7 @@ Success: grounded, believable answer within 3–5 seconds.
 6. Operator marks it collected; system logs weight and estimated value
 
 **Donation — recipient side:**
-1. Recipient organisation registers and states what it can accept
+1. Recipient organization registers and states what it can accept
 2. Recipient sees open offers nearby with quantity, type, allergens, and
    collection window
 3. Recipient claims an offer
@@ -496,9 +497,9 @@ Things to validate with real operators before or during Phase 2 planning:
 The MVP succeeds if a user can:
 1. Import data for one selected location or truck without getting stuck
 2. Get meaningful value even with only partial data uploaded
-3. See useful dashboard insights for the selected operation
+3. See useful dashboard findings for the selected operation
 4. Ask a question in chat and get a grounded, believable answer
-5. Understand confidence, evidence, and assumptions
+5. Understand data coverage, evidence, and assumptions
 6. Challenge PantryIQ and see it explain or revise its reasoning honestly
 7. Adjust important assumptions like shelf life and item metadata
 8. Offer surplus to a nearby recipient and have it actually get collected

@@ -304,12 +304,12 @@ function ShiftRecommendationsView({
                     <TableCell>
                       <p>
                         <strong>Under:</strong>{' '}
-                        {riskLabel(recommendation.risks.understaffing.status)} —{' '}
+                        {riskLabel(recommendation.risks.understaffing.status)}:{' '}
                         {recommendation.risks.understaffing.detail}
                       </p>
                       <p>
                         <strong>Over:</strong>{' '}
-                        {riskLabel(recommendation.risks.overstaffing.status)} —{' '}
+                        {riskLabel(recommendation.risks.overstaffing.status)}:{' '}
                         {recommendation.risks.overstaffing.detail}
                       </p>
                     </TableCell>

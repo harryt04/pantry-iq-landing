@@ -45,7 +45,7 @@ describe('menu engineering matrix', () => {
     expect(result.rows[0]).toMatchObject({
       unitsSold: '40',
       contributionMargin: '330',
-      quadrantLabel: 'Star — popular and profitable',
+      quadrantLabel: 'Star: popular and profitable',
     })
   })
 

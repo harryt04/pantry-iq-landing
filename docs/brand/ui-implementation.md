@@ -15,10 +15,10 @@ The MVP has no application code yet — this branch is docs-only (see
 [`../../AGENTS.md`](../../AGENTS.md)). These are the standing decisions for
 when it does.
 
-- **shadcn/ui on Radix primitives.** Chosen for accessible behaviour we
+- **shadcn/ui on Radix primitives.** Chosen for accessible behavior we
   don't have to build: focus management, keyboard interaction, ARIA
   wiring, portalling, dismissal.
-- **We take shadcn's behaviour and replace its appearance.** Shipping
+- **We take shadcn's behavior and replace its appearance.** Shipping
   stock shadcn styling is off-brand — see §3.
 - **Tailwind CSS v4** with tokens as CSS custom properties.
 - Do not fork a Radix primitive to change how it looks. Restyle it.
@@ -208,7 +208,7 @@ exists there, use it — do not hand-roll.
 | Job | Component | Notes |
 |---|---|---|
 | Recommendation card | `Card` + `Badge` + `Collapsible` | Collapsible holds "Show your work" |
-| Severity chip | `Badge` | Glyph + word + soft background. Never colour alone |
+| Severity chip | `Badge` | Glyph + word + soft background. Never color alone |
 | Chat transcript | `Message` + `MessageScroller` + `Bubble` | Purpose-built; don't hand-roll |
 | Chat composer | `InputGroup` + `Textarea` | Enter sends, Shift+Enter newlines |
 | CSV column mapping | `Field` + `NativeSelect` + `Table` | One column at a time — see [`../ux-flows.md`](../ux-flows.md) |
@@ -222,7 +222,7 @@ exists there, use it — do not hand-roll.
 | Loading | `Skeleton` | Matching the real layout; never a full-page spinner |
 
 ### Use with care
-- **`Chart`** — see §5. shadcn's defaults are colour-only and must not
+- **`Chart`** — see §5. shadcn's defaults are color-only and must not
   ship as-is.
 - **`Carousel`** — no current use. Don't introduce one for a dashboard.
 - **`Toast`** — confirmations only. Never for errors that need a decision;
@@ -236,19 +236,19 @@ exists there, use it — do not hand-roll.
 
 ## 5. Charts — the pattern-first contract
 
-**This section is not negotiable.** It exists because a colour-only chart
+**This section is not negotiable.** It exists because a color-only chart
 was built, shown to the product owner, and correctly rejected: he could
-not tell whether the bars were one colour or three.
+not tell whether the bars were one color or three.
 
 ### The rules
 
-1. **Colour is the third channel.** Position, printed value, and pattern
+1. **Color is the third channel.** Position, printed value, and pattern
    come first.
 2. **Every categorical series carries a pattern**, in this order:
    `solid → diagonal hatch → cross-hatch → dots → vertical rule`. Five
    series maximum; beyond that, split the chart.
 3. **Label the mark, not the legend.** Series name and value sit on or
-   beside the mark. A standalone colour legend is a redundant convenience
+   beside the mark. A standalone color legend is a redundant convenience
    only.
 4. **Print the value.** Every bar, point, and segment shows its number.
 5. **Lines get dash patterns** (`solid → dashed → dotted → dot-dash`) plus
@@ -258,7 +258,7 @@ not tell whether the bars were one colour or three.
    this before a grouped or stacked chart.
 7. **No green. Anywhere.** Not for success, not for positive trend, not as
    a categorical.
-8. **No pie or donut charts.** They rely on colour matching and angle
+8. **No pie or donut charts.** They rely on color matching and angle
    comparison, both of which fail here.
 
 ### Pattern implementation
@@ -279,7 +279,7 @@ not tell whether the bars were one colour or three.
 
 For SVG-based charts (Recharts, which shadcn's `Chart` wraps), define
 `<pattern>` elements in `<defs>` and reference them as `fill="url(#pat-hatch)"`
-over a base `fill` of the series colour. The CSS above is the visual
+over a base `fill` of the series color. The CSS above is the visual
 target.
 
 Give every mark a `1px` border at ~18% opacity so adjacent marks separate
@@ -287,7 +287,7 @@ even when patterns are similar at small sizes.
 
 ### Severity encoding
 
-| State | Colour token | Pattern | Glyph | Word |
+| State | Color token | Pattern | Glyph | Word |
 |---|---|---|---|---|
 | Steady / healthy | `--signal-good` | solid | ● | Steady |
 | Watch | `--signal-watch` | diagonal hatch | ◆ | Watch |
@@ -306,7 +306,7 @@ These block merge. They are not review suggestions.
 
 - [ ] **Greyscale test.** Screenshot every chart, desaturate it, read it.
       If meaning is lost, it does not ship.
-- [ ] No information conveyed by colour alone, anywhere — charts, status,
+- [ ] No information conveyed by color alone, anywhere — charts, status,
       validation, diffs.
 - [ ] Text meets WCAG AA (4.5:1 body, 3:1 large).
 - [ ] Meaningful non-text elements — chart marks, focus rings, icons that

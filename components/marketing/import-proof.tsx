@@ -14,7 +14,7 @@ export function ImportProof() {
       <div className="surface-proof__panel-head">
         <span className="surface-proof__filename figure">sales-export.csv</span>
         <span className="surface-proof__chip surface-proof__chip--good">
-          <span aria-hidden="true">●</span> Read, no set-up
+          <span aria-hidden="true">●</span> Read, no setup
         </span>
       </div>
       <ul className="mapping-proof">
