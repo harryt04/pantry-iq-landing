@@ -1,6 +1,6 @@
 import * as React from 'react'
 
-import { marketingExample } from './marketing-example'
+import { marketingExample, marketingMonthlyScale } from './marketing-example'
 import { assumptionOriginLabel, marketingWork } from './marketing-evidence'
 import { RecommendationCard } from '@/components/dashboard/recommendation-card'
 
@@ -28,11 +28,53 @@ const proofWork = (() => {
  *
  * The card renders with its own "Show your work" collapsed. The full engine
  * trace belongs in the product; what a stranger needs is the three lines of
- * arithmetic that produce $240. See `marketing-evidence.ts`.
+ * arithmetic that produce the card's headline figure. See
+ * `marketing-evidence.ts`.
  */
 export function RecommendationProof() {
   return (
     <div className="surface-proof__panel surface-proof__panel--plain">
+      <div className="work-receipt monthly-scale">
+        <h3 className="work-receipt__title">Real-world example</h3>
+        <p className="monthly-scale__intro">
+          This real-world example generalizes reported restaurant purchasing and
+          waste ranges across five common categories. It shows the kind of
+          bad-month loss an operation can surface from its own counts.
+        </p>
+        <dl className="work-receipt__lines">
+          <div className="work-receipt__line">
+            <dt>Monthly food purchases</dt>
+            <dd className="figure">
+              {marketingMonthlyScale.monthlyFoodPurchases}
+            </dd>
+          </div>
+          <div className="work-receipt__line">
+            <dt>Observed food-cost variance</dt>
+            <dd className="figure">{marketingMonthlyScale.observedVariance}</dd>
+          </div>
+          <div className="work-receipt__line work-receipt__line--total">
+            <dt>Unaccounted this month</dt>
+            <dd className="figure">{marketingMonthlyScale.modeledShrinkage}</dd>
+          </div>
+          <div className="work-receipt__line">
+            <dt>Recoverable gap in the case</dt>
+            <dd className="figure">{marketingMonthlyScale.recoverableGap}</dd>
+          </div>
+        </dl>
+        <p className="work-receipt__foot">
+          Reference case: {marketingMonthlyScale.observedVariance} variance fell
+          to {marketingMonthlyScale.controlledVariance} after controls.{' '}
+          <a
+            href={marketingMonthlyScale.sourceUrl}
+            target="_blank"
+            rel="noreferrer"
+          >
+            Read the source
+          </a>
+          .
+        </p>
+      </div>
+
       <RecommendationCard
         locationId="marketing-proof"
         recommendation={proofRecommendation}

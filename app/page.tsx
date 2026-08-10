@@ -94,7 +94,8 @@ export default function Home() {
                 Three screens, and the numbers on all of them.
               </h2>
               <p className="landing-section-heading__note">
-                Every figure below comes out of one worked example.{' '}
+                Every figure below comes from a real-world bad-month example,
+                grounded in reported restaurant purchasing and waste ranges.{' '}
                 <span className="figure">{marketingExampleRowCount}</span> rows
                 of one restaurant&apos;s sales, purchase, and count data, run
                 through the same engine the product runs.
@@ -157,9 +158,9 @@ export default function Home() {
             <div className="landing-pricing__card">
               <div
                 className="landing-pricing__price"
-                aria-label="$20 per location per month"
+                aria-label="$50 per location per month"
               >
-                <span className="landing-pricing__amount figure">$20</span>
+                <span className="landing-pricing__amount figure">$50</span>
                 <span className="landing-pricing__period">
                   per location
                   <br />
@@ -167,8 +168,8 @@ export default function Home() {
                 </span>
               </div>
               <p>
-                Start with the sales and purchasing data you already have.
-                PantryIQ gives you a clear place to begin.
+                One location, one baseline tier. Start with the sales and
+                purchasing data you already have.
               </p>
               <a
                 className="landing-button landing-button--primary"

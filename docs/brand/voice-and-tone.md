@@ -21,7 +21,7 @@ is the most likely way to sound tone-deaf.
 | Who | Owner, GM, chef, bar manager | Shelter or soup-kitchen coordinator |
 | Motivated by | Money, control, not looking stupid | Reliability, dignity, logistics |
 | Register | Dollar-first, plain, direct | Concrete, respectful, logistics-first |
-| Leads with | "$240 at risk" | "12 lbs of prepared soup, ready 9pm tonight" |
+| Leads with | "$640 at risk" | "12 lbs of prepared soup, ready 9pm tonight" |
 | Never say | "It's the right thing to do" | Anything about margin, cost, or tax |
 
 **One brand, two registers.** Same wordmark, same palette, same
@@ -194,7 +194,7 @@ incorrect, failed to. Describe what happened instead.
 in an error), emoji in product copy, em dashes in user-facing copy,
 second-person imperatives that read as commands, rhetorical questions.
 
-**Numbers:** always concrete. "$240" not "significant savings." "3 days"
+**Numbers:** always concrete. "$640" not "significant savings." "3 days"
 not "shortly." "1,204 rows" not "your data."
 
 ---
@@ -283,8 +283,8 @@ marketing tone, no gratitude performance, no talk of money.
 |---|---|
 | Our AI-powered engine analyzes your data to unlock actionable insights. | Upload a spreadsheet. I'll tell you what's costing you money and show you the arithmetic. |
 | Great news! Your margins are trending up! 🎉 | Margin is up 1.8 points on last week, mostly from produce. |
-| Warning: High spoilage risk detected. | $240 of salmon is likely to turn before it sells. |
-| We're confident this recommendation will improve your bottom line. | This is worth about $240 if it plays out the way the last four weeks suggest. It might not. |
+| Warning: High spoilage risk detected. | $640 of salmon is likely to turn before it sells. |
+| We're confident this recommendation will improve your bottom line. | This is worth about $640 if it plays out the way the last four weeks suggest. It might not. |
 | Invalid file format. | I can read CSV files. That one's an .xlsx. Export it as CSV and I'll take it. |
 | Optimize your inventory with intelligent forecasting. | Know what to order less of, before you order it. |
 | Your data has been successfully processed. | 1,204 rows imported. 6 new items created. Here's what stands out. |

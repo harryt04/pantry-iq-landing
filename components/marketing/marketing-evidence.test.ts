@@ -6,7 +6,8 @@ import type { RecommendationRecord } from '@/src/server/metrics/recommendations'
 
 function topRecommendation() {
   const recommendation = marketingExample.recommendations[0]
-  if (!recommendation) throw new Error('The worked example produced no rows.')
+  if (!recommendation)
+    throw new Error('The real-world example produced no rows.')
   return recommendation
 }
 
@@ -16,7 +17,7 @@ describe('marketing evidence curation', () => {
 
     expect(work).not.toBeNull()
     expect(work?.operator).toBe('qtyOnHand × unitCost')
-    expect(work?.result).toBe('$240.00')
+    expect(work?.result).toBe('$1040.00')
     expect(work?.resultLabel).toBe('At risk right now')
     expect(work?.terms.map(({ label }) => label)).toEqual([
       'On hand at the last count',

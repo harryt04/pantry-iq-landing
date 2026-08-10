@@ -68,6 +68,50 @@ export type RankedBarDatum = {
   seriesId?: string
 }
 
+export function ChartLegend({
+  series,
+  ariaLabel = 'Chart legend',
+}: {
+  series: readonly ChartSeries[]
+  ariaLabel?: string
+}) {
+  if (series.length === 0 || series.length > chartPatterns.length) {
+    throw new RangeError('PantryIQ charts require one to five series.')
+  }
+
+  return (
+    <ul className="chart-legend" aria-label={ariaLabel}>
+      {series.map((entry, index) => {
+        const encoding = encodingForSeries(entry, index)
+        const prefix = `legend-${entry.id}-${index}`
+        const patternId = `${prefix}-${encoding.pattern}-0`
+
+        return (
+          <li className="chart-legend__item" key={entry.id}>
+            <svg
+              className="chart-legend__swatch"
+              aria-hidden="true"
+              viewBox="0 0 24 16"
+              width="24"
+              height="16"
+            >
+              <PatternDefs prefix={prefix} encodings={[encoding]} />
+              <rect
+                width="24"
+                height="16"
+                fill={`url(#${patternId})`}
+                stroke="var(--foreground)"
+                strokeOpacity=".28"
+              />
+            </svg>
+            <span>{entry.label}</span>
+          </li>
+        )
+      })}
+    </ul>
+  )
+}
+
 type ChartFrameProps = {
   children: React.ReactNode
   ariaLabel: string
@@ -214,12 +258,14 @@ export function RankedBarChart({
           const visibleBarWidth = Math.max(Math.abs(barWidth), 1)
           const valueLabel = datum.valueLabel ?? String(datum.value)
           const seriesLabel = series[seriesIndex]?.label
+          const accessibleSeriesLabel =
+            seriesLabel && seriesLabel !== datum.label ? `, ${seriesLabel}` : ''
           const barX = datum.value < 0 ? zeroX + barWidth : zeroX
 
           return (
             <g
               key={`${datum.label}-${rowIndex}`}
-              aria-label={`${datum.label}: ${valueLabel}${seriesLabel ? `, ${seriesLabel}` : ''}`}
+              aria-label={`${datum.label}: ${valueLabel}${accessibleSeriesLabel}`}
             >
               <text
                 className="chart-label"

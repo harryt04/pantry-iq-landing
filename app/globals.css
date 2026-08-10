@@ -2990,6 +2990,83 @@ body {
   padding: 0;
 }
 
+.surface-proof__purchase-scale {
+  border-bottom: 1px solid var(--border);
+  margin-bottom: var(--space-5);
+  padding-bottom: var(--space-4);
+}
+
+.surface-proof__purchase-scale .surface-proof__panel-head {
+  border-bottom: 0;
+  margin: calc(var(--space-5) * -1) calc(var(--space-5) * -1) var(--space-4);
+}
+
+.surface-proof__purchase-list {
+  display: grid;
+  gap: 0;
+  margin: 0;
+}
+
+.surface-proof__purchase-list > div {
+  align-items: baseline;
+  display: grid;
+  gap: var(--space-3);
+  grid-template-columns:
+    minmax(0, max-content) minmax(var(--space-4), 1fr)
+    max-content;
+  padding: var(--space-2) var(--space-3);
+}
+
+.surface-proof__purchase-list > div:nth-child(even) {
+  background: var(--muted);
+}
+
+.surface-proof__purchase-list dt {
+  min-width: 0;
+}
+
+.surface-proof__purchase-leader {
+  border-bottom: 1px dotted var(--muted-foreground);
+  height: 0;
+  opacity: 0.55;
+}
+
+.surface-proof__purchase-list dd {
+  color: var(--foreground);
+  font-weight: 600;
+  margin: 0;
+  white-space: nowrap;
+}
+
+.surface-proof__scale-note {
+  color: var(--muted-foreground);
+  font-size: var(--text-md);
+  line-height: 1.6;
+  margin: var(--space-4) 0 0;
+}
+
+.chart-legend {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3) var(--space-5);
+  list-style: none;
+  margin: 0 0 var(--space-4);
+  padding: 0;
+}
+
+.chart-legend__item {
+  align-items: center;
+  display: inline-flex;
+  font-size: var(--text-sm);
+  gap: var(--space-2);
+}
+
+.chart-legend__swatch {
+  display: block;
+  flex: 0 0 auto;
+}
+
 .surface-proof__panel-head {
   align-items: center;
   border-bottom: 1px solid var(--border);
@@ -3096,6 +3173,18 @@ body {
   margin-top: var(--space-4);
   min-width: 0;
   padding: var(--space-5);
+}
+
+.monthly-scale {
+  margin-bottom: var(--space-4);
+  margin-top: 0;
+}
+
+.monthly-scale__intro {
+  color: var(--muted-foreground);
+  font-size: var(--text-md);
+  line-height: 1.6;
+  margin: 0 0 var(--space-4);
 }
 
 .work-receipt__title {

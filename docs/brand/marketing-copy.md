@@ -106,10 +106,18 @@ removed.
    happens next.
 
 ### 3.6 The proof section — show, don't claim
-When `DSH-03` ships, add one real recommendation card rendered by the
-actual component, with **Show your work** expanded. Until then, the landing
-page must not show a recommendation mockup or imply that the dashboard is
-available.
+The landing page shows the actual recommendation component, plus a visible
+real-world example. The reference is a reported restaurant case —
+`$55,000` in monthly food purchases, `4.1%` food-cost variance, `$2,255`
+unaccounted for, and a `$1,540` recoverable gap. The example also shows five
+common restaurant categories at roughly `$6,800`–`$14,000` each over four
+weeks, totalling about `$55,200`; the ranked bars below those figures remain
+the separate current dollars-at-risk view. That view is deliberately framed
+as a bad-month illustration, with roughly 9–11% of each category's monthly
+buying volume at risk. The category mix and dollar values are generalized from
+reported restaurant cases and linked to the source without claiming they are
+one published restaurant's exact five rows or promising that these losses are
+typical.
 
 ### 3.7 Donation
 Omitted from the current landing page. Donation remains outside the
@@ -119,12 +127,9 @@ recipient or log a donation today.
 ### 3.8 Pricing
 State the price plainly. No "contact sales," no fake three-tier anchoring.
 
-> **Note for whoever writes this section:** pricing is genuinely
-> unresolved — live pricing is $20/location and $10/truck, and market
-> research points at $249–350. See
-> [`../open-questions.md`](../open-questions.md) §2. Write the number
-> that's true on the day, and don't imply a tier structure that doesn't
-> exist.
+> **Baseline MVP tier:** `$50` per location per month. This is the opening
+> price for one location as the MVP becomes available. Do not imply a
+> multi-location tier structure or a separate truck tier on the landing page.
 
 ### 3.9 Final CTA
 Repeat the primary CTA. One line above it, no new argument:

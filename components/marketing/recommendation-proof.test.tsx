@@ -9,8 +9,16 @@ describe('marketing recommendation proof', () => {
     const markup = renderToStaticMarkup(<RecommendationProof />)
 
     expect(markup).toContain('data-variant="marketing"')
-    expect(markup).toContain('Salmon fillet')
-    expect(markup).toContain('About $240 at risk from current spoilage')
+    expect(markup).toContain('Heirloom tomato')
+    expect(markup).toContain('About $1040 at risk from current spoilage')
+
+    expect(markup).toContain('Real-world example')
+    expect(markup).toContain('$55,000')
+    expect(markup).toContain('$2,255')
+    expect(markup).toContain('$1,540')
+    expect(markup).toContain(
+      'https://costorestaurante.com/EN/restaurant-food-waste-management-before-vs-after-masterestaurant-2026-data-and.html',
+    )
 
     // The arithmetic, in plain-English terms rather than variable names.
     expect(markup).toContain('On hand at the last count')
@@ -54,7 +62,7 @@ describe('marketing recommendation proof', () => {
   it('states percentages at a readable precision', () => {
     const markup = renderToStaticMarkup(<RecommendationProof />)
 
-    expect(markup).toContain('8.9% sell-through')
-    expect(markup).not.toContain('8.928571%')
+    expect(markup).toContain('96.3% sell-through')
+    expect(markup).not.toContain('96.296296%')
   })
 })

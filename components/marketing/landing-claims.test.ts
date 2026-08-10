@@ -67,7 +67,13 @@ describe('landing page claims discipline', () => {
     }
   })
 
-  it('labels the worked example rather than passing it off as the reader’s data', () => {
-    expect(landingPage).toContain('worked example')
+  it('labels the real-world example without passing it off as customer data', () => {
+    expect(landingPage).toContain('real-world bad-month example')
+  })
+
+  it('states the current baseline price', () => {
+    expect(landingPage).toContain('$50 per location per month')
+    expect(landingPage).toContain('>$50</span>')
+    expect(landingPage).not.toContain('$20 per location per month')
   })
 })

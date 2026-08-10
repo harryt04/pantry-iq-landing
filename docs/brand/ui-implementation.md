@@ -261,6 +261,11 @@ not tell whether the bars were one color or three.
 8. **No pie or donut charts.** They rely on color matching and angle
    comparison, both of which fail here.
 
+When a chart uses item-level categorical encodings, add a visible legend
+that pairs each label with the same color-and-pattern swatch used by its
+mark. The legend reinforces the mapping; it never replaces the printed
+value or the pattern on the mark.
+
 ### Pattern implementation
 
 ```css
