@@ -1,62 +1,8 @@
 import type { NextConfig } from 'next'
 
 const nextConfig: NextConfig = {
-  devIndicators: false,
-  logging: {
-    fetches: {
-      fullUrl: true,
-    },
-  },
-  async rewrites() {
-    return [
-      {
-        source: '/favicon.ico',
-        destination: '/favicon/favicon.ico',
-      },
-      {
-        source: '/apple-touch-icon.png',
-        destination: '/favicon/apple-touch-icon.png',
-      },
-      {
-        source: '/favicon-32x32.png',
-        destination: '/favicon/favicon-32x32.png',
-      },
-      {
-        source: '/favicon-16x16.png',
-        destination: '/favicon/favicon-16x16.png',
-      },
-      {
-        source: '/android-chrome-192x192.png',
-        destination: '/favicon/android-chrome-192x192.png',
-      },
-      {
-        source: '/android-chrome-512x512.png',
-        destination: '/favicon/android-chrome-512x512.png',
-      },
-      {
-        source: '/site.webmanifest',
-        destination: '/favicon/site.webmanifest',
-      },
-      {
-        source: '/ph/static/:path*',
-        destination: 'https://us-assets.i.posthog.com/static/:path*',
-      },
-      {
-        source: '/ph/:path*',
-        destination: 'https://us.i.posthog.com/:path*',
-      },
-      {
-        source: '/ingest/static/:path*',
-        destination: 'https://us-assets.i.posthog.com/static/:path*',
-      },
-      {
-        source: '/ingest/:path*',
-        destination: 'https://us.i.posthog.com/:path*',
-      },
-    ]
-  },
-  // This is required to support PostHog trailing slash API requests
-  skipTrailingSlashRedirect: true,
+  reactStrictMode: true,
+  distDir: process.env.PANTRYIQ_E2E === '1' ? '.next-e2e' : '.next',
 }
 
 export default nextConfig

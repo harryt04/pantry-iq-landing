@@ -1,33 +1,20 @@
-import { MetadataRoute } from 'next'
+import type { MetadataRoute } from 'next'
+
+const BASE_URL = 'https://pantry-iq.com'
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = 'https://pantry-iq.com'
-  const lastModified = new Date()
-
   return [
     {
-      url: baseUrl,
-      lastModified,
+      url: BASE_URL,
+      lastModified: new Date(),
       changeFrequency: 'weekly',
-      priority: 1.0,
+      priority: 1,
     },
     {
-      url: `${baseUrl}/pricing`,
-      lastModified,
+      url: `${BASE_URL}/sign-up`,
+      lastModified: new Date(),
       changeFrequency: 'monthly',
-      priority: 0.9,
-    },
-    {
-      url: `${baseUrl}/signup`,
-      lastModified,
-      changeFrequency: 'yearly',
       priority: 0.8,
-    },
-    {
-      url: `${baseUrl}/login`,
-      lastModified,
-      changeFrequency: 'yearly',
-      priority: 0.7,
     },
   ]
 }

@@ -1,9 +1,13 @@
 'use client'
 
 import { createAuthClient } from 'better-auth/react'
+import { inferAdditionalFields } from 'better-auth/client/plugins'
+
+import type { auth } from '@/src/server/auth/auth'
 
 export const authClient = createAuthClient({
-  baseURL: process.env.NEXT_PUBLIC_BETTER_AUTH_URL || 'http://localhost:3000',
+  plugins: [inferAdditionalFields<typeof auth>()],
+  ...(process.env.NEXT_PUBLIC_APP_URL
+    ? { baseURL: process.env.NEXT_PUBLIC_APP_URL }
+    : {}),
 })
-
-export const { useSession, signIn, signUp, signOut } = authClient

@@ -1,263 +1,139 @@
 # PantryIQ
 
-PantryIQ uses AI to help restaurants reduce food waste by analyzing transaction data and answering questions about staffing, inventory, menu optimization, and donation opportunities.
+Decision support for restaurant operators managing sales, purchasing, and
+waste. See [`AGENTS.md`](AGENTS.md) and [`docs/`](docs/) for the product
+and technical corpus — [`docs/tech-stack.md`](docs/tech-stack.md) is
+authoritative for every technology choice.
 
-## 🎯 Overview
+## Prerequisites
 
-PantryIQ is a bootstrapped SaaS platform that tackles restaurant food waste through an AI-powered conversational interface. Import your POS transaction data via Square OAuth or CSV upload, then ask natural-language questions to optimize staffing, purchasing decisions, menu performance, and discover food donation opportunities with local charities.
+- **Node.js** current LTS (v22+)
+- **pnpm** via Corepack — run `corepack enable` once, then `corepack use
+  pnpm@9.15.4` (or let the `packageManager` field in `package.json` pin it
+  automatically)
+- **Docker** (for local Postgres)
 
-**Pricing:** $20/month per restaurant location, $10/month per food truck (7-day free trial)
-
-## 🚀 Architecture
-
-- **Deployment:** Self-hosted monolith on Coolify (home/business server)
-- **Frontend:** React with Next.js (App Router, SSR)
-- **Backend:** Next.js API routes (no separate services)
-- **Database:** PostgreSQL
-- **Cache:** Redis
-- **Reverse Proxy:** Traefik with Let's Encrypt SSL
-- **Runtime:** Node.js 20+, Docker containers
-
-## 💻 Tech Stack
-
-- **Framework:** Next.js 16 (App Router, Server-Side Rendering)
-- **Language:** TypeScript 5
-- **Styling:** Tailwind CSS v4
-- **UI Components:** shadcn/ui (New York style)
-- **Icons:** Lucide React
-- **Analytics:** PostHog
-- **Database:** PostgreSQL (Docker)
-- **Cache:** Redis (Docker)
-
-## ✨ Core Features
-
-### Data Import
-
-- **Square POS Integration** - OAuth flow for direct transaction import with incremental syncing
-- **CSV Upload** - AI-powered field mapping detection with user confirmation for any restaurant data format
-
-### AI Chatbot
-
-- **Natural Language Queries** - Ask questions about staffing optimization, inventory purchasing, menu performance, and food donations
-- **Conversation History** - Persistent chat with ability to revisit prior conversations
-- **Model Selection** - Choose from budget-tier (default) and mid-tier models with cost transparency
-- **Supported Models** - Budget: Gemini 2.0 Flash Lite, Claude Haiku 3, GPT-5.4 nano | Mid-tier: GPT-5.4 mini, Claude Haiku 4.5, Gemini 2.5 Flash
-
-### Operational Intelligence
-
-- **Weather Integration** - Historical and forecast weather data correlated with transaction patterns to inform staffing and purchasing decisions
-- **Donation Discovery** - Local food bank and soup kitchen finder powered by Google Places API with caching
-- **Data Validation** - AI determines answerable questions; refuses to hallucinate on insufficient data
-
-### Dashboard & Settings
-
-- **Import Status** - Visual overview of connected POS accounts and uploaded datasets
-- **Location Management** - Multiple locations per account with per-location model preferences
-- **User Settings** - Account, password, and subscription management
-
-### Error Handling & Loading States
-
-- **Global Error Boundary** - Catches unhandled errors with user-friendly messages and retry options
-- **Loading Skeletons** - Visual placeholder UI with animations during data fetches
-- **Consistent API Errors** - All API errors return `{ error: "message", code: "ERROR_CODE" }` format
-- **Security** - Stack traces logged server-side only; clients never receive internal details
-- **Error Codes** - 20+ descriptive error codes for debugging (authentication, validation, server errors)
-
-## 📡 API Integrations
-
-| Service               | Purpose                                                                |
-| --------------------- | ---------------------------------------------------------------------- |
-| **Square API**        | POS transaction data import via OAuth                                  |
-| **OpenWeatherMap**    | Historical and forecast weather data (free tier, cached)               |
-| **Google Places API** | Local food bank and charity discovery (free tier, cached 30 days)      |
-| **LLM Providers**     | OpenAI, Anthropic, Google Vertex AI (user selectable per conversation) |
-| **PostHog**           | Product analytics tracking user journey                                |
-
-## 🛠️ Development
-
-### Prerequisites
-
-- Node.js 20+
-- Docker & Docker Compose
-- PostgreSQL (included in docker-compose)
-- Redis (included in docker-compose)
-
-### Local Setup
+## Install
 
 ```bash
-docker-compose up
+pnpm install
+cp .env.example .env.local
 ```
 
-Starts:
-
-- Next.js app at `http://localhost:3000`
-- PostgreSQL at `localhost:5432`
-- Redis at `localhost:6379`
-
-### Project Structure
-
-- `/app` - Next.js pages and API routes
-- `/components` - React components (marketing + app UI)
-- `/lib` - Utilities and helpers
-- `/public` - Static assets
-
-## 🚨 Error Handling
-
-### Architecture
-
-PantryIQ includes enterprise-grade error handling with:
-
-- **Global Error Boundary** - `app/(app)/error.tsx` catches unhandled errors in authenticated routes
-- **Loading States** - `app/(app)/loading.tsx` with skeleton loaders during data fetches
-- **API Error Utility** - `lib/api-error.ts` provides consistent error responses
-- **Safe Logging** - Stack traces logged server-side; clients receive generic messages with codes
-- **20+ Error Codes** - Specific codes for authentication, validation, and server errors
-
-### Error Response Format
-
-All API errors follow the standard format:
-
-```json
-{
-  "error": "User-friendly message",
-  "code": "ERROR_CODE"
-}
-```
-
-### HTTP Status Codes
-
-- **400** - Bad Request (validation errors, missing fields, invalid JSON)
-- **401** - Unauthorized (not authenticated)
-- **403** - Forbidden (authenticated but not authorized)
-- **404** - Not Found (resource doesn't exist)
-- **500** - Internal Server Error (unexpected errors)
-
-### Testing Error Handling
-
-Comprehensive E2E tests validate all error scenarios:
+Fill in `.env.local` with real local values. `DATABASE_URL` should point
+at the Postgres container started below; generate `BETTER_AUTH_SECRET`
+with:
 
 ```bash
-# Run error handling tests
-npm run test:e2e -- error-handling.spec.ts
-
-# Run all tests
-npm run test
+openssl rand -base64 32
 ```
 
-### Using Error Handling in API Routes
+## Run
 
-```typescript
-import { ApiError, logErrorSafely } from '@/lib/api-error'
-
-export async function POST(req) {
-  try {
-    const session = await getServerSession()
-
-    if (!session?.user) {
-      return ApiError.unauthorized('Auth required', 'NOT_AUTHENTICATED')
-    }
-
-    // ... implement logic
-    return NextResponse.json({ success: true })
-  } catch (error) {
-    const message = logErrorSafely(error, 'POST /api/endpoint')
-    return ApiError.internalServerError(message, 'ENDPOINT_ERROR')
-  }
-}
+```bash
+docker compose up -d   # starts local Postgres on localhost:5433
+pnpm dev                # starts the app on http://localhost:3000
 ```
 
----
+Run the precompute worker in a second process for daily scheduling:
 
-## 📊 Database Schema
+```bash
+pnpm jobs:precompute
+```
 
-**Core tables:**
+The worker schedules a daily UTC run and receives import and item-setting
+invalidations in the same PostgreSQL transaction as their source change. Web
+requests also initialize the queue when they enqueue an invalidation, so a
+separate worker can be rolled out independently.
 
-- `users` - Authentication and account management
-- `locations` - Restaurant/food truck locations
-- `pos_connections` - OAuth tokens and sync state
-- `csv_uploads` - Import history and status
-- `transactions` - Normalized POS data
-- `weather_data` - Cached weather by location and date
-- `places_cache` - Cached food bank/charity data
-- `conversations` - Chat sessions per location
-- `messages` - Individual chat messages with model and token metadata
+Confirm the app booted:
 
-## 🚀 Deployment
+```bash
+curl http://localhost:3000/api/health
+# {"status":"ok"}
+```
 
-**Infrastructure Requirements:**
+To create a deterministic local dataset with five weeks of sales history,
+run `pnpm db:migrate` followed by `pnpm db:seed`. The seed is idempotent and
+uses a clearly marked local-only owner UUID until authentication is added.
 
-- 2-4 CPU cores
-- 4-8 GB RAM
-- 50-100 GB storage
-- > 99% uptime ISP connection
-- Ports 80/443 open (check ISP terms)
+For a clean local migration cycle, use the guarded rollback command:
 
-**Deployment Flow:**
+```bash
+ALLOW_DB_ROLLBACK=1 pnpm db:rollback
+pnpm db:migrate
+```
 
-1. Push to GitHub
-2. Coolify webhook triggers auto-deploy
-3. `docker build` → `docker compose restart`
-4. Zero-downtime deployment with graceful restarts
+Rollback only accepts a database hosted on localhost and drops the PantryIQ
+tables plus Drizzle's applied-migrations record. It is destructive and is
+not a production migration strategy; production recovery uses a database
+backup and a forward migration.
 
-**Backup Strategy:**
+## Test
 
-- Daily automated PostgreSQL dumps (gzip compressed)
-- 7-day local retention, 30-day off-site storage (S3/Backblaze/NAS)
-- Monthly recovery testing
+```bash
+pnpm test        # unit tests (Vitest)
+pnpm test:integration  # real PostgreSQL harness (Docker or local test DB)
+pnpm test:a11y   # browser accessibility gate (Playwright + axe)
+pnpm test:charts # greyscale chart gate with attached screenshot
+pnpm lint         # Prettier check
+pnpm format:check # Prettier format check
+pnpm typecheck    # tsc --noEmit
+pnpm build        # production build
+```
 
-**Monitoring:**
+The shared fixtures in `tests/fixtures/pantry.ts` cover a messy CSV, a
+partial-data location, and a deterministic full year of history. Integration
+tests use Testcontainers to start PostgreSQL 16 and always remove the
+container after the test. To run the migration round-trip against a
+disposable local PostgreSQL database instead, set `TEST_DATABASE_URL`; it
+must use a localhost host because the test resets that database. Engine code
+is expected to maintain at least 90%
+line coverage once `MET-01` lands; arithmetic edge cases should be tested
+with the full-year and partial-data fixtures rather than wall-clock dates.
 
-- Uptime Robot alerts on >10 minute downtime
-- Home server checklist: static IP/DDNS, firewall rules, SSH key auth, automated backups
+## Environment variables
 
-## 💰 Pricing & Unit Economics
+All variables the app reads are listed in [`.env.example`](.env.example).
+Summary:
 
-- **AI Cost (power user, 600 queries/month):** $0.83–$3.33 depending on model
-- **Gross Margin at $20/location:** 80–95% (AI + ops + infrastructure << revenue)
-- **Cost Guardrail:** AI spend capped at 40% of monthly revenue per location
+| Variable | Required | Purpose |
+|---|---|---|
+| `DATABASE_URL` | yes | Postgres connection string |
+| `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` | yes (local) | Used by `docker-compose.yml` to provision the local Postgres container |
+| `BETTER_AUTH_SECRET` | yes | Session signing secret for Better Auth |
+| `BETTER_AUTH_URL` | yes | Base URL Better Auth issues callbacks against |
+| `CONNECTOR_CREDENTIAL_KEY` | yes in production | Encryption key for connector OAuth credentials; generate a separate secret from the auth key |
+| `SQUARE_CLIENT_ID` / `SQUARE_CLIENT_SECRET` | when Square is enabled (`INT-03`) | Square OAuth application credentials; never expose the secret to the browser |
+| `SQUARE_WEBHOOK_SIGNATURE_KEY` / `SQUARE_WEBHOOK_URL` | when Square webhooks are enabled (`INT-03`) | Square signs the webhook URL plus raw body; keep both values aligned with the Developer Dashboard |
+| `SQUARE_API_BASE_URL` | optional (`INT-03`) | Override with `https://connect.squareupsandbox.com` for Square Sandbox testing |
+| `TOAST_CLIENT_ID` / `TOAST_CLIENT_SECRET` / `TOAST_RESTAURANT_EXTERNAL_ID` | when Toast is enabled (`INT-04`) | Toast machine-client credentials and the restaurant external ID; never expose credentials to the browser |
+| `TOAST_WEBHOOK_SECRET` / `TOAST_WEBHOOK_URL` | when Toast webhooks are enabled (`INT-04`) | Toast signs the raw body plus its timestamp; keep the secret aligned with the Toast configuration |
+| `TOAST_API_BASE_URL` | optional (`INT-04`) | Override with the Toast sandbox host for connector tests |
+| `QUICKBOOKS_CLIENT_ID` / `QUICKBOOKS_CLIENT_SECRET` | when QuickBooks is enabled (`INT-05`) | Intuit OAuth application credentials; never expose the secret to the browser |
+| `QUICKBOOKS_VERIFIER_TOKEN` | when QuickBooks webhooks are enabled (`INT-05`) | Intuit HMAC-SHA256 webhook verifier token |
+| `QUICKBOOKS_CURRENCY_CODE` / `QUICKBOOKS_TAX_MODE` | when QuickBooks is enabled (`INT-05`) | Location currency and explicit `include` or `exclude` tax policy; mismatches are rejected |
+| `QUICKBOOKS_API_BASE_URL` / `QUICKBOOKS_OAUTH_BASE_URL` | optional (`INT-05`) | Override the API and OAuth hosts for sandbox testing |
+| `S3_ENDPOINT` / `S3_ACCESS_KEY_ID` / `S3_SECRET_ACCESS_KEY` / `S3_BUCKET` | later (`ING-02`) | S3-compatible object storage for raw CSV uploads |
+| `S3_REGION` / `S3_FORCE_PATH_STYLE` | optional (`ING-02`) | S3-compatible client settings; defaults to `auto` and virtual-hosted style |
+| `RESEND_API_KEY` | later | Transactional email — auth flows only, never notifications |
+| `ANTHROPIC_API_KEY` | later (`CHT-02`) | LLM narration via the Vercel AI SDK |
 
-## 🎓 Out of Scope (MVP)
+No secrets are committed. `.env.local` is gitignored.
 
-- Additional POS integrations (Oracle Micros, Ziosk, Sysco)
-- Premium AI models (GPT-5.4, Claude Sonnet/Opus)
-- Credit-based or tiered pricing
-- Multi-user roles/permissions per location
-- Donation pickup/logistics coordination
-- Mobile apps
-- Analytics dashboards with charts
+## Stack
 
-## 🚦 Success Metrics
+TypeScript (strict) · Next.js App Router · React · Tailwind v4 · shadcn/ui
+on Radix · PostgreSQL · Drizzle ORM · pg-boss · Better Auth · Vercel AI SDK
+· Prettier · Vitest + Testcontainers + Playwright · Docker on Coolify.
 
-| Metric                      | Target                                                          |
-| --------------------------- | --------------------------------------------------------------- |
-| Square import time-to-value | <10 minutes to see transactions                                 |
-| CSV import + mapping        | <5 minutes to parse and confirm                                 |
-| First useful question       | <15 minutes from signup                                         |
-| Chatbot accuracy            | AI declines unanswerable questions (no hallucinations)          |
-| Donation discovery          | Surface ≥1 local food bank per location                         |
-| Model selection UX          | Per-conversation switching with cost indicators                 |
-| Unit economics              | AI cost < $8/month per power-user location (40% of $20 revenue) |
+Full reasoning in [`docs/tech-stack.md`](docs/tech-stack.md).
 
-## 🔒 Security
+## Repository conventions
 
-- HTTPS everywhere (Let's Encrypt, auto-renewing)
-- Environment-based secrets (no hardcoded credentials)
-- SSH key-based authentication only
-- OAuth tokens encrypted at rest
-- No PII in logs
-- Firewall rules: allow 80/443, block SSH brute-force
-- **Error Security:** Stack traces logged server-side only; clients receive generic messages with error codes
+Package manager is **pnpm**. Do not add a `package-lock.json` or
+`yarn.lock`. One deployable, one database — see
+[`docs/tech-stack.md`](docs/tech-stack.md) §1.
 
-## 📚 Documentation
-
-- **Product Requirements:** `.agents/spec/PRD-v4.md` (final MVP spec)
-- **Architecture Decisions:** `.agents/spec/compaction.md` (design rationale)
-- **Pricing Analysis:** `.agents/spec/cost-analysis.md` (model pricing and margins)
-
-## 🤝 Contributing
-
-This is a bootstrapped startup. For questions about architecture or technical decisions, see CTO documentation in `.agents/spec/`.
-
-## 📄 License
-
-All rights reserved © 2026 PantryIQ
+Work is tracked in [`docs/feature-backlog.md`](docs/feature-backlog.md).
+Read its claim protocol before picking up a ticket.

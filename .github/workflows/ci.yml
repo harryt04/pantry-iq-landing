@@ -3,151 +3,88 @@ name: CI
 on:
   pull_request:
     branches: [master]
-    types: [opened, synchronize, reopened, ready_for_review]
-  push:
-    branches: [master]
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   ci:
     name: CI
     runs-on: ubuntu-latest
-    env:
-      NODE_VERSION: '22'
-      DATABASE_URL: ${{ secrets.DATABASE_URL }}
-      ZERO_UPSTREAM_DB: ${{ secrets.ZERO_UPSTREAM_DB }}
-      DATABASE_SCHEMA: ci_test
-      ZERO_PORT: '8001'
-      NEXT_PUBLIC_ZERO_URL: http://localhost:8001
-      BETTER_AUTH_SECRET: ci-secret-for-testing-only-32-chars-xx
-      BETTER_AUTH_URL: http://localhost:3000
-      NEXT_PUBLIC_BETTER_AUTH_URL: http://localhost:3000
-      NEXT_PUBLIC_POSTHOG_KEY: ''
-      NEXT_PUBLIC_POSTHOG_HOST: https://us.i.posthog.com
-      OPENAI_API_KEY: stub
-      ANTHROPIC_API_KEY: stub
-      GOOGLE_GENERATIVE_AI_API_KEY: stub
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: npm
-
-      - name: Install dependencies
-        run: npm ci
-
-      # ── Lint ─────────────────────────────────
-      - name: Prettier check
-        run: npx prettier --check .
-
-      - name: ESLint
-        run: npm run lint
-
-      - name: TypeScript type-check
-        run: npx tsc --noEmit
-
-      # ── Build ────────────────────────────────
-      - name: Build
-        run: npm run build
-
-      # ── Unit tests ───────────────────────────
-      - name: Unit tests
-        run: npm run test:unit
-
-  e2e:
-    name: E2E (${{ matrix.shard }}/${{ strategy.job-total }})
-    runs-on: ubuntu-latest
-    needs: ci
-    strategy:
-      fail-fast: false
-      matrix:
-        shard: [1, 2]
-    env:
-      NODE_VERSION: '22'
-      DATABASE_URL: ${{ secrets.DATABASE_URL }}
-      ZERO_UPSTREAM_DB: ${{ secrets.ZERO_UPSTREAM_DB }}
-      DATABASE_SCHEMA: ci_test
-      ZERO_PORT: '8001'
-      NEXT_PUBLIC_ZERO_URL: http://localhost:8001
-      BETTER_AUTH_SECRET: ci-secret-for-testing-only-32-chars-xx
-      BETTER_AUTH_URL: http://localhost:3000
-      NEXT_PUBLIC_BETTER_AUTH_URL: http://localhost:3000
-      NEXT_PUBLIC_POSTHOG_KEY: ''
-      NEXT_PUBLIC_POSTHOG_HOST: https://us.i.posthog.com
-      OPENAI_API_KEY: stub
-      ANTHROPIC_API_KEY: stub
-      GOOGLE_GENERATIVE_AI_API_KEY: stub
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: npm
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Install Playwright browsers
-        run: npx playwright install --with-deps chromium
-
-      - name: Build
-        run: npm run build
-
-      - name: E2E tests (shard ${{ matrix.shard }}/${{ strategy.job-total }})
-        run: npx playwright test --shard=${{ matrix.shard }}/${{ strategy.job-total }}
+    services:
+      postgres:
+        image: postgres:16-alpine
         env:
-          CI: true
+          POSTGRES_USER: pantryiq
+          POSTGRES_PASSWORD: pantryiq
+          POSTGRES_DB: pantryiq
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U pantryiq -d pantryiq"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://pantryiq:pantryiq@localhost:5432/pantryiq
+      BETTER_AUTH_SECRET: ci-placeholder-secret-not-for-real-use
+      BETTER_AUTH_URL: http://localhost:3000
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - name: Upload Playwright blob report
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # Every stage below runs one of the ci:* scripts from package.json, so
+      # `pnpm ci` locally covers the same ground as this workflow. The split
+      # into separate steps is only for readable logs and per-step env.
+      # tests/ci-parity.test.ts fails the build if the two ever drift.
+
+      - name: Static checks (format, typecheck)
+        run: pnpm ci:static
+
+      - name: Install Playwright browser
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Unit and integration tests
+        run: pnpm ci:unit
+        env:
+          TEST_DATABASE_URL: postgresql://pantryiq:pantryiq@localhost:5432/pantryiq
+          REQUIRE_INTEGRATION_DB: '1'
+
+      - name: Prepare browser test database
+        run: pnpm db:migrate
+
+      - name: Browser gates (accessibility, charts, end-to-end)
+        run: pnpm ci:browser
+
+      - name: Build
+        run: pnpm build
+
+      - name: Coverage report
+        if: always()
+        run: pnpm ci:coverage
+        env:
+          TEST_DATABASE_URL: postgresql://pantryiq:pantryiq@localhost:5432/pantryiq
+
+      - name: Publish test report
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-blob-${{ matrix.shard }}
-          path: blob-report/
-          retention-days: 1
-
-  e2e-report:
-    name: Merge E2E Reports
-    runs-on: ubuntu-latest
-    needs: e2e
-    if: always()
-    env:
-      NODE_VERSION: '22'
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: npm
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Download all blob reports
-        if: needs.e2e.result == 'success'
-        uses: actions/download-artifact@v4
-        with:
-          pattern: playwright-blob-*
-          path: all-blob-reports/
-          merge-multiple: true
-
-      - name: Merge into HTML report
-        if: needs.e2e.result == 'success'
-        run: npx playwright merge-reports --reporter html ./all-blob-reports
-
-      - name: Upload merged HTML report
-        if: needs.e2e.result == 'success'
-        uses: actions/upload-artifact@v4
-        with:
-          name: playwright-html-report
-          path: playwright-report/
-          retention-days: 14
+          name: test-report
+          path: |
+            coverage/
+            playwright-report/
+            test-results/
+          if-no-files-found: ignore

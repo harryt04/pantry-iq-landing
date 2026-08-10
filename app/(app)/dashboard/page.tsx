@@ -1,195 +1,99 @@
-'use client'
+import Link from 'next/link'
+import { cookies, headers } from 'next/headers'
 
-import { useEffect, useState } from 'react'
-import { Building2, ShoppingCart, Upload as UploadIcon } from 'lucide-react'
-import { useSession } from '@/lib/auth-client'
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
-import { ImportStatusCard } from '@/components/dashboard/import-status-card'
-import { LocationOverviewCard } from '@/components/dashboard/location-overview-card'
-import { QuickActionsCard } from '@/components/dashboard/quick-actions-card'
+import { DashboardDataState } from '@/components/dashboard/dashboard-data-state'
+import { TrendSummaries } from '@/components/dashboard/trend-summaries'
+import { WalletImpactSummary } from '@/components/dashboard/wallet-impact-summary'
+import { RecommendationCardList } from '@/components/dashboard/recommendation-card'
+import { ItemDeepDives } from '@/components/dashboard/item-deep-dives'
+import { ConnectionHealthNotice } from '@/components/dashboard/connection-health-notice'
+import { getAppShellData } from '@/components/app/app-shell-server'
+import { getDashboardDataState } from '@/src/server/metrics/dashboard-state'
+import { getDashboardTrends } from '@/src/server/metrics/trends'
+import { getDashboardWalletImpact } from '@/src/server/metrics/wallet'
+import { getDashboardRecommendations } from '@/src/server/metrics/dashboard-recommendations'
+import { listConnectorConnectionStatuses } from '@/src/server/connectors/framework'
+import {
+  buildItemDeepDiveGroups,
+  getDashboardItemDeepDives,
+} from '@/src/server/metrics/item-deep-dives'
 
-interface DashboardData {
-  locations: Array<{
-    id: string
-    name: string
-    type: string
-    transactionCount: number
-    csvUploadCount: number
-    posConnectionStatus: string | null
-    conversationId: string | null
-  }>
-  recentCsvUploads: Array<{
-    id: string
-    filename: string
-    status: string
-    uploadedAt: Date
-    locationName: string
-    locationId: string
-    errorDetails: string | null
-  }>
-  totalLocations: number
-  totalTransactions: number
-}
-
-interface PosConnection {
-  locationId: string
-  locationName: string
-  syncState: string
-  lastSync: Date | null
-}
-
-export default function DashboardPage() {
-  const { data: session, isPending: isSessionPending } = useSession()
-  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null)
-  const [error, setError] = useState<string | null>(null)
-
-  useEffect(() => {
-    if (!session?.user) {
-      return
-    }
-
-    const fetchDashboardData = async () => {
-      try {
-        const response = await fetch('/api/dashboard')
-        if (!response.ok) {
-          throw new Error('Failed to fetch dashboard data')
-        }
-        const data = await response.json()
-        setDashboardData(data)
-        setError(null)
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'An error occurred')
-        console.error('Error fetching dashboard data:', err)
-      }
-    }
-
-    fetchDashboardData()
-  }, [session?.user])
-
-  if (isSessionPending) {
-    return (
-      <div className="space-y-6">
-        <div className="animate-pulse">
-          <div className="bg-muted h-10 w-32 rounded" />
-        </div>
-      </div>
-    )
-  }
-
-  if (!session?.user) {
-    return (
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-          <p className="text-muted-foreground mt-2">
-            Please log in to view your dashboard.
-          </p>
-        </div>
-      </div>
-    )
-  }
-
-  if (error && !dashboardData) {
-    return (
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-        </div>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="bg-destructive/10 border-destructive/20 rounded-lg border p-4">
-              <p className="text-destructive text-sm font-medium">{error}</p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    )
-  }
-
-  if (!dashboardData) {
-    return (
-      <div className="space-y-6">
-        <div className="animate-pulse">
-          <div className="bg-muted mb-4 h-10 w-32 rounded" />
-          <div className="bg-muted h-6 w-64 rounded" />
-        </div>
-      </div>
-    )
-  }
-
-  const stats = [
-    {
-      label: 'Total Locations',
-      value: dashboardData.totalLocations,
-      icon: Building2,
-    },
-    {
-      label: 'Total Transactions',
-      value: dashboardData.totalTransactions,
-      icon: ShoppingCart,
-    },
-    {
-      label: 'Recent Uploads',
-      value: dashboardData.recentCsvUploads.length,
-      icon: UploadIcon,
-    },
-  ]
-
-  // Build POS connections from locations
-  const posConnections: PosConnection[] = dashboardData.locations
-    .filter((loc) => loc.posConnectionStatus)
-    .map((loc) => ({
-      locationId: loc.id,
-      locationName: loc.name,
-      syncState: loc.posConnectionStatus || 'pending',
-      lastSync: null,
-    }))
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ locationId?: string }>
+}) {
+  const params = await searchParams
+  const { initialLocationId } = await getAppShellData()
+  const locationId =
+    params.locationId ??
+    (await cookies()).get('pantryiq-location-id')?.value ??
+    initialLocationId
+  const requestHeaders = await headers()
+  const [state, summaries, connections] = await Promise.all([
+    getDashboardDataState(requestHeaders, locationId),
+    getDashboardTrends(requestHeaders, locationId),
+    listConnectorConnectionStatuses({
+      headers: requestHeaders,
+      locationId,
+    }),
+  ])
+  const marginSummary = summaries.find((summary) => summary.id === 'margin')
+  const wallet =
+    state.status === 'ready'
+      ? await getDashboardWalletImpact(
+          requestHeaders,
+          locationId,
+          marginSummary,
+        )
+      : null
+  const recommendations =
+    state.status === 'ready'
+      ? await getDashboardRecommendations(requestHeaders, locationId)
+      : []
+  const itemDeepDives =
+    state.status === 'ready'
+      ? await getDashboardItemDeepDives(requestHeaders, locationId)
+      : []
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-        <p className="text-muted-foreground mt-2">
-          Overview of your inventory and import activity.
-        </p>
-      </div>
-
-      {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-3">
-        {stats.map((stat) => {
-          const Icon = stat.icon
-          return (
-            <Card key={stat.label}>
-              <CardHeader className="pb-2">
-                <div className="flex items-center gap-2">
-                  <Icon className="text-primary h-5 w-5" />
-                  <CardTitle className="text-sm font-medium">
-                    {stat.label}
-                  </CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stat.value}</div>
-              </CardContent>
-            </Card>
-          )
-        })}
-      </div>
-
-      {/* Main Content */}
-      <div className="grid gap-6 lg:grid-cols-3">
-        <div className="space-y-6 lg:col-span-2">
-          <LocationOverviewCard locations={dashboardData.locations} />
-          <ImportStatusCard
-            csvUploads={dashboardData.recentCsvUploads}
-            posConnections={posConnections}
-          />
-        </div>
-
-        <div>
-          <QuickActionsCard hasLocations={dashboardData.totalLocations > 0} />
-        </div>
-      </div>
-    </div>
+    <main className="app-page" aria-labelledby="dashboard-title">
+      <p className="app-page__eyebrow">Dashboard</p>
+      <h1 id="dashboard-title">Start with the data you already have.</h1>
+      <p className="app-page__lede">
+        Import a sales, purchasing, or inventory CSV for this location. The
+        dashboard will show what the data can support once it has been checked.
+      </p>
+      <ConnectionHealthNotice
+        connections={connections}
+        locationId={locationId}
+      />
+      {state.status === 'ready' && wallet ? (
+        <>
+          <WalletImpactSummary summary={wallet} />
+          <Link
+            className="app-page__secondary-action"
+            href={`/import?locationId=${encodeURIComponent(locationId)}`}
+          >
+            Import more data
+          </Link>
+        </>
+      ) : (
+        <DashboardDataState locationId={locationId} state={state} />
+      )}
+      {state.status === 'ready' ? (
+        <RecommendationCardList
+          locationId={locationId}
+          recommendations={recommendations}
+        />
+      ) : null}
+      <TrendSummaries summaries={summaries} />
+      {state.status === 'ready' && itemDeepDives.length > 0 ? (
+        <ItemDeepDives
+          locationId={locationId}
+          groups={buildItemDeepDiveGroups(itemDeepDives)}
+        />
+      ) : null}
+    </main>
   )
 }

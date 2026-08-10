@@ -1,156 +1,62 @@
-'use client'
+import { headers } from 'next/headers'
+import { redirect } from 'next/navigation'
 
-import { useState } from 'react'
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
-import {
-  LocationForm,
-  LocationFormData,
-} from '@/components/settings/location-form'
-import { LocationList } from '@/components/settings/location-list'
-import { useSession } from '@/lib/auth-client'
+import { AccountSettings } from '@/components/settings/account-settings'
+import { ItemMaster } from '@/components/settings/item-master'
+import { LocationManager } from '@/components/locations/location-manager'
+import { auth } from '@/src/server/auth/auth'
+import { listInventoryItems } from '@/src/server/inventory/items'
+import { listLocations } from '@/src/server/locations/locations'
+import { resolveShelfLife } from '@/src/server/inventory/shelf-life-defaults'
 
-interface Location {
-  id: string
-  name: string
-  zipCode: string
-  address?: string
-  timezone?: string
-  type?: string
-  createdAt: string
-}
+export default async function SettingsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ locationId?: string }>
+}) {
+  const requestHeaders = await headers()
+  const session = await auth.api.getSession({ headers: await headers() })
+  if (!session) redirect('/sign-in')
 
-export default function SettingsPage() {
-  const { data: session } = useSession()
-  const [editingLocation, setEditingLocation] = useState<Location | null>(null)
-  const [showForm, setShowForm] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
-  const [refreshKey, setRefreshKey] = useState(0)
-
-  const handleAddNew = () => {
-    setEditingLocation(null)
-    setShowForm(true)
-  }
-
-  const handleEdit = (location: Location) => {
-    setEditingLocation(location)
-    setShowForm(true)
-  }
-
-  const handleFormSubmit = async (data: LocationFormData) => {
-    setIsLoading(true)
-    try {
-      if (editingLocation) {
-        // Update existing location
-        const response = await fetch(`/api/locations/${editingLocation.id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(data),
-        })
-
-        if (!response.ok) {
-          const error = await response.json()
-          throw new Error(error.error || 'Failed to update location')
-        }
-      } else {
-        // Create new location
-        const response = await fetch('/api/locations', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(data),
-        })
-
-        if (!response.ok) {
-          const error = await response.json()
-          throw new Error(error.error || 'Failed to create location')
-        }
-      }
-
-      setShowForm(false)
-      setEditingLocation(null)
-      // Trigger refresh of LocationList
-      setRefreshKey((prev) => prev + 1)
-    } finally {
-      setIsLoading(false)
+  const locations = (await listLocations(requestHeaders)).filter(
+    (location) => location.isActive,
+  )
+  const requestedLocationId = (await searchParams).locationId
+  const selectedLocation =
+    locations.find((location) => location.id === requestedLocationId) ??
+    locations[0]
+  const rawItems = selectedLocation
+    ? await listInventoryItems(requestHeaders, selectedLocation.id, {
+        includeInactive: true,
+      })
+    : []
+  const items = rawItems.map((item) => {
+    const shelfLife = resolveShelfLife(item)
+    return {
+      ...item,
+      effectiveShelfLifeDays: shelfLife.days,
+      shelfLifeSource: shelfLife.source,
+      shelfLifeSuggestionCategory: shelfLife.suggestionCategory,
     }
-  }
-
-  const handleDelete = async (locationId: string) => {
-    const response = await fetch(`/api/locations/${locationId}`, {
-      method: 'DELETE',
-    })
-
-    if (!response.ok) {
-      const error = await response.json()
-      throw new Error(error.error || 'Failed to delete location')
-    }
-
-    // Trigger refresh of LocationList
-    setRefreshKey((prev) => prev + 1)
-  }
-
-  const handleCancel = () => {
-    setShowForm(false)
-    setEditingLocation(null)
-  }
+  })
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
-        <p className="text-muted-foreground mt-2">
-          Manage your account and application settings.
-        </p>
-      </div>
-
-      <div className="grid gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Account Settings</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <label className="text-sm font-medium">Email</label>
-              <p className="text-muted-foreground mt-1">
-                {session?.user.email}
-              </p>
-            </div>
-            <div>
-              <label className="text-sm font-medium">Name</label>
-              <p className="text-muted-foreground mt-1">
-                {session?.user.name || 'Not set'}
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-
-        {showForm && (
-          <LocationForm
-            initialData={
-              editingLocation
-                ? {
-                    id: editingLocation.id,
-                    name: editingLocation.name,
-                    zipCode: editingLocation.zipCode,
-                    address: editingLocation.address,
-                    timezone: editingLocation.timezone,
-                    type: editingLocation.type,
-                  }
-                : undefined
-            }
-            onSubmit={handleFormSubmit}
-            onCancel={handleCancel}
-            isLoading={isLoading}
-          />
-        )}
-
-        <LocationList
-          onEdit={handleEdit}
-          onDelete={handleDelete}
-          onAddNew={handleAddNew}
-          isLoading={isLoading}
-          refreshKey={refreshKey}
-        />
-      </div>
-    </div>
+    <main className="app-page" aria-labelledby="settings-title">
+      <p className="app-page__eyebrow">Settings</p>
+      <h1 id="settings-title">Account settings.</h1>
+      <p className="app-page__lede">
+        Keep your account details and location assumptions current. Changes stay
+        scoped to the selected operation.
+      </p>
+      <AccountSettings
+        initialCompanyName={session.user.companyName ?? ''}
+        initialEmail={session.user.email}
+        initialName={session.user.name}
+      />
+      <LocationManager />
+      {selectedLocation ? (
+        <ItemMaster initialItems={items} locationId={selectedLocation.id} />
+      ) : null}
+    </main>
   )
 }

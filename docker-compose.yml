@@ -1,26 +1,20 @@
 services:
   postgres:
-    image: postgres:17-alpine
-    container_name: pantryiq-postgres
-    ports:
-      - '5432:5432'
+    image: postgres:16-alpine
+    restart: unless-stopped
     environment:
-      POSTGRES_DB: pantryiq
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_USER: postgres
+      POSTGRES_USER: ${POSTGRES_USER:-pantryiq}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-pantryiq}
+      POSTGRES_DB: ${POSTGRES_DB:-pantryiq}
+    ports:
+      - '5433:5432'
     volumes:
-      - postgres_data:/var/lib/postgresql/data
-    networks:
-      - pantryiq
+      - pantryiq-postgres-data:/var/lib/postgresql/data
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U postgres']
-      interval: 10s
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-pantryiq}']
+      interval: 5s
       timeout: 5s
-      retries: 5
+      retries: 10
 
 volumes:
-  postgres_data:
-
-networks:
-  pantryiq:
-    driver: bridge
+  pantryiq-postgres-data:

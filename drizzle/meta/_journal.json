@@ -1,0 +1,111 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1786209857416,
+      "tag": "0000_wealthy_jetstream",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1786218760322,
+      "tag": "0001_fancy_the_leader",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1786219640736,
+      "tag": "0002_ambitious_paibok",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1786220000000,
+      "tag": "0003_recipe_model",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1786221339306,
+      "tag": "0004_jazzy_karen_page",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1786222767565,
+      "tag": "0005_bouncy_vector",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1786223768718,
+      "tag": "0006_secure_csv_upload_storage",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1786224000000,
+      "tag": "0007_account_profile",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1786225000000,
+      "tag": "0008_metric_store",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1786239800678,
+      "tag": "0009_loose_epoch",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1786290375000,
+      "tag": "0010_connector_framework",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1786293951002,
+      "tag": "0011_boring_bulldozer",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1786294785358,
+      "tag": "0012_easy_lifeguard",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1786297699011,
+      "tag": "0013_aberrant_richard_fisk",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1786299784203,
+      "tag": "0014_young_ikaris",
+      "breakpoints": true
+    }
+  ]
+}

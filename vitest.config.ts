@@ -1,31 +1,71 @@
+import path from 'node:path'
+
 import { defineConfig } from 'vitest/config'
-import react from '@vitejs/plugin-react'
-import path from 'path'
+
+/**
+ * Integration suites skip when no database is reachable, which drops coverage
+ * by roughly ten points. Enforcing a threshold on that run would fail a laptop
+ * without Docker for no good reason, so the gate only applies where the whole
+ * suite can actually run. CI sets TEST_DATABASE_URL, so CI is always gated.
+ */
+const databaseAvailable =
+  process.env.TEST_DATABASE_URL !== undefined ||
+  process.env.TESTCONTAINERS_ENABLED === '1'
+
+/**
+ * Measured at 72.06% statements on 2026-08-10, held a few points below so
+ * ordinary work does not trip it. Raise these as coverage rises; never lower
+ * them to make a build pass.
+ */
+const thresholds = {
+  statements: 70,
+  lines: 70,
+  branches: 74,
+  functions: 79,
+}
 
 export default defineConfig({
-  plugins: [react()],
+  resolve: {
+    alias: { '@': path.resolve(__dirname, '.') },
+  },
+  // Next compiles JSX with the automatic runtime, so components do not import
+  // React. Vitest defaults to the classic transform, which would fail on them.
+  esbuild: { jsx: 'automatic' },
   test: {
-    environment: 'jsdom',
-    globals: true,
-    setupFiles: ['./tests/setup.ts'],
-    include: ['tests/unit/**/*.test.ts', 'tests/unit/**/*.test.tsx'],
-    exclude: ['tests/e2e/**/*', 'node_modules'],
+    include: ['**/*.test.ts', '**/*.test.tsx'],
+    // TEST_DATABASE_URL points multiple integration files at one disposable
+    // database, and migration tests intentionally reset it.
+    fileParallelism: process.env.TEST_DATABASE_URL === undefined,
+    // Only the interaction tests pay for a DOM. Everything else stays on node,
+    // where the pure-logic suites run in milliseconds.
+    environmentMatchGlobs: [['**/*.dom.test.tsx', 'jsdom']],
+    setupFiles: ['tests/setup/dom.ts'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html', 'lcov'],
-      include: ['lib/**/*.ts', 'app/api/**/*.ts', 'components/**/*.tsx'],
-      exclude: ['**/*.test.ts', '**/*.spec.ts', 'tests/**', 'node_modules/**'],
-      thresholds: {
-        lines: 50,
-        functions: 50,
-        branches: 40,
-        statements: 50,
-      },
-    },
-  },
-  resolve: {
-    alias: {
-      '@': path.resolve(__dirname, '.'),
+      reportsDirectory: 'coverage',
+      // Report on every source file, not only the ones a test already imports,
+      // so an untested module shows as a zero rather than disappearing.
+      all: true,
+      include: [
+        'app/**/*.{ts,tsx}',
+        'components/**/*.{ts,tsx}',
+        'hooks/**/*.{ts,tsx}',
+        'lib/**/*.{ts,tsx}',
+        'src/**/*.{ts,tsx}',
+      ],
+      exclude: [
+        // Vendored shadcn/ui primitives are upstream code we do not test.
+        'components/ui/**',
+        '**/*.test.{ts,tsx}',
+        '**/*.spec.ts',
+        '**/*.config.{ts,mts,js}',
+        'app/**/layout.tsx',
+        'app/**/loading.tsx',
+        'app/**/not-found.tsx',
+        'src/server/db/schema.ts',
+      ],
+      ...(databaseAvailable ? { thresholds } : {}),
     },
   },
 })

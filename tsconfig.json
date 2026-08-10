@@ -1,28 +1,23 @@
 {
   "compilerOptions": {
-    "target": "ES2017",
+    "target": "ES2022",
     "lib": ["dom", "dom.iterable", "esnext"],
-    "allowJs": true,
+    "allowJs": false,
     "skipLibCheck": true,
     "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
     "noEmit": true,
     "esModuleInterop": true,
     "module": "esnext",
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "jsx": "react-jsx",
+    "jsx": "preserve",
     "incremental": true,
-    "types": ["vitest/globals", "@testing-library/jest-dom", "node"],
-    "plugins": [
-      {
-        "name": "next"
-      }
-    ],
+    "plugins": [{ "name": "next" }],
     "paths": {
-      "@/*": ["./*"],
-      "@/db": ["./db"],
-      "@/db/*": ["./db/*"]
+      "@/*": ["./*"]
     }
   },
   "include": [
@@ -30,12 +25,7 @@
     "**/*.ts",
     "**/*.tsx",
     ".next/types/**/*.ts",
-    ".next/dev/types/**/*.ts",
-    "**/*.mts"
+    ".next-e2e/types/**/*.ts"
   ],
-  "exclude": ["node_modules", "scripts/**/*.ts"],
-  "ts-node": {
-    "esm": true,
-    "experimentalEsm": true
-  }
+  "exclude": ["node_modules"]
 }

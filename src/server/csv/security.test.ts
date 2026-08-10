@@ -1,0 +1,125 @@
+import { describe, expect, it } from 'vitest'
+
+import {
+  assertCsvContent,
+  assertLocationOwnership,
+  createCsvStorageKey,
+  CsvSecurityError,
+  guardedCsvStream,
+  neutralizeSpreadsheetFormula,
+  serializeCsvRow,
+  SlidingWindowUploadRateLimiter,
+} from './security'
+
+async function consume(
+  input: AsyncIterable<Uint8Array | string>,
+  options?: { maxBytes?: number },
+): Promise<Uint8Array[]> {
+  const chunks: Uint8Array[] = []
+  for await (const chunk of guardedCsvStream(input, options)) {
+    chunks.push(chunk)
+  }
+  return chunks
+}
+
+describe('CSV upload security', () => {
+  it('accepts delimited text and rejects renamed binary files', () => {
+    expect(() => assertCsvContent('item,qty\nSalmon,2\n')).not.toThrow()
+    expect(() =>
+      assertCsvContent(new Uint8Array([0x50, 0x4b, 0x03, 0x04])),
+    ).toThrowError(CsvSecurityError)
+    expect(() => assertCsvContent('this is not a csv')).toThrowError(
+      CsvSecurityError,
+    )
+  })
+
+  it('enforces the size ceiling before yielding an oversized chunk', async () => {
+    const input = (async function* () {
+      yield 'item,qty\n'
+      yield 'Salmon,2\n'
+    })()
+
+    await expect(consume(input, { maxBytes: 10 })).rejects.toMatchObject({
+      code: 'UPLOAD_TOO_LARGE',
+    })
+  })
+
+  it('passes chunks through without collecting the complete file', async () => {
+    const input = (async function* () {
+      yield 'item,qty\n'
+      yield 'Salmon,2\n'
+    })()
+
+    const chunks = await consume(input)
+
+    expect(chunks).toHaveLength(2)
+    expect(new TextDecoder().decode(chunks[1])).toBe('Salmon,2\n')
+  })
+
+  it('neutralizes spreadsheet formulas and escapes CSV syntax', () => {
+    expect(neutralizeSpreadsheetFormula('=IMPORTDATA("url")')).toBe(
+      '\'=IMPORTDATA("url")',
+    )
+    expect(neutralizeSpreadsheetFormula('+1')).toBe("'+1")
+    expect(neutralizeSpreadsheetFormula('Salmon')).toBe('Salmon')
+    expect(serializeCsvRow(['item', '=SUM(A1:A2)', 'a,b'])).toBe(
+      'item,\'=SUM(A1:A2),"a,b"\r\n',
+    )
+  })
+
+  it('uses generated UUID keys and never incorporates a filename', () => {
+    const key = createCsvStorageKey({
+      locationId: '00000000-0000-4000-8000-000000000001',
+      uploadId: '00000000-0000-4000-8000-000000000002',
+    })
+
+    expect(key).toBe(
+      'csv/00000000-0000-4000-8000-000000000001/00000000-0000-4000-8000-000000000002.csv',
+    )
+    expect(key).not.toContain('..')
+    expect(() =>
+      createCsvStorageKey({
+        locationId: '../../outside',
+      }),
+    ).toThrowError(CsvSecurityError)
+  })
+
+  it('checks location ownership through one injected authorization boundary', async () => {
+    const ownsLocation = async ({ userId }: { userId: string }) =>
+      userId === 'owner'
+
+    await expect(
+      assertLocationOwnership({
+        userId: 'owner',
+        locationId: 'location',
+        ownsLocation,
+      }),
+    ).resolves.toBeUndefined()
+
+    await expect(
+      assertLocationOwnership({
+        userId: 'stranger',
+        locationId: 'location',
+        ownsLocation,
+      }),
+    ).rejects.toMatchObject({ code: 'LOCATION_NOT_OWNED' })
+  })
+
+  it('limits repeated uploads within a sliding window', () => {
+    let now = 1_000
+    const limiter = new SlidingWindowUploadRateLimiter({
+      limit: 2,
+      windowMs: 100,
+      now: () => now,
+    })
+
+    limiter.consume('owner:location')
+    limiter.consume('owner:location')
+    expect(() => limiter.consume('owner:location')).toThrowError(
+      CsvSecurityError,
+    )
+
+    now += 101
+    expect(() => limiter.consume('owner:location')).not.toThrow()
+  })
+})

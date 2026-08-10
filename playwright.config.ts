@@ -1,57 +1,34 @@
 import { defineConfig, devices } from '@playwright/test'
 
-/**
- * Read environment variables from file.
- * https://github.com/motdotla/dotenv
- */
-// require('dotenv').config();
+const port =
+  process.env.PANTRYIQ_PORT ??
+  (process.env.PANTRYIQ_E2E === '1' ? '3001' : '3000')
+const baseURL = process.env.PANTRYIQ_BASE_URL ?? `http://localhost:${port}`
 
-/**
- * See https://playwright.dev/docs/test-configuration.
- */
 export default defineConfig({
-  testDir: './tests/e2e',
-  /* Run tests in files in parallel */
+  testDir: './tests',
+  testMatch: '**/*.spec.ts',
   fullyParallel: true,
-  /* Fail the build on CI if you accidentally left test.only in the source code. */
   forbidOnly: !!process.env.CI,
-  /* Retry on CI only */
+  reporter: process.env.CI ? 'github' : 'list',
   retries: process.env.CI ? 2 : 0,
-  /* Each CI shard runs on its own runner, so allow full parallelism within the shard. */
-  workers: process.env.CI ? '50%' : 4,
-  /* Use blob reporter in CI so shards can be merged; HTML locally. */
-  reporter: process.env.CI ? 'blob' : 'html',
-  /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
-    /* Base URL to use in actions like `await page.goto('/')`. */
-    baseURL: 'http://localhost:3000',
-    /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
+    baseURL,
     trace: 'on-first-retry',
   },
-  /* Configure projects for major browsers */
+  expect: {
+    timeout: 15_000,
+  },
+  webServer: {
+    command: `env -u FORCE_COLOR -u NO_COLOR BETTER_AUTH_URL=http://localhost:${port} pnpm dev --hostname 127.0.0.1 --port ${port}`,
+    reuseExistingServer: !process.env.CI,
+    timeout: 120_000,
+    url: `${baseURL}/api/health`,
+  },
   projects: [
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
     },
-    // {
-    //   name: 'firefox',
-    //   use: { ...devices['Desktop Firefox'] },
-    // },
-    // {
-    //   name: 'webkit',
-    //   use: { ...devices['Desktop Safari'] },
-    // },
   ],
-  /* Run your local dev server before starting the tests */
-  webServer: {
-    command: 'npm run dev',
-    url: 'http://localhost:3000',
-    reuseExistingServer: !process.env.CI,
-    timeout: 120000,
-  },
-  timeout: 30000,
-  expect: {
-    timeout: 30000,
-  },
 })
