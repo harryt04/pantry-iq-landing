@@ -26,7 +26,9 @@ describe('connector credential protection', () => {
   it('rejects tampering and an incorrect key', () => {
     const encrypted = encryptConnectorTokens(tokens, secret)
     const [version, iv, tag, ciphertext] = encrypted.split('.')
-    const tampered = `${version}.${iv}.${tag}.x${ciphertext?.slice(1)}`
+    if (!ciphertext) throw new Error('Encrypted credentials had no ciphertext.')
+    const replacement = ciphertext[0] === 'a' ? 'b' : 'a'
+    const tampered = `${version}.${iv}.${tag}.${replacement}${ciphertext.slice(1)}`
     expect(() => decryptConnectorTokens(tampered, secret)).toThrow(
       'Unable to decrypt connector credentials.',
     )

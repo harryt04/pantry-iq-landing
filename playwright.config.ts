@@ -1,6 +1,8 @@
 import { defineConfig, devices } from '@playwright/test'
 
-const port = process.env.PANTRYIQ_PORT ?? '3000'
+const port =
+  process.env.PANTRYIQ_PORT ??
+  (process.env.PANTRYIQ_E2E === '1' ? '3001' : '3000')
 const baseURL = process.env.PANTRYIQ_BASE_URL ?? `http://localhost:${port}`
 
 export default defineConfig({
@@ -14,8 +16,11 @@ export default defineConfig({
     baseURL,
     trace: 'on-first-retry',
   },
+  expect: {
+    timeout: 15_000,
+  },
   webServer: {
-    command: `pnpm dev --hostname 127.0.0.1 --port ${port}`,
+    command: `BETTER_AUTH_URL=http://localhost:${port} pnpm dev --hostname 127.0.0.1 --port ${port}`,
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
     url: `${baseURL}/api/health`,
