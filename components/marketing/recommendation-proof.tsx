@@ -1,65 +1,11 @@
 import * as React from 'react'
 
+import { marketingExample } from './marketing-example'
+import { assumptionOriginLabel, marketingWork } from './marketing-evidence'
 import { RecommendationCard } from '@/components/dashboard/recommendation-card'
-import { buildPrecomputeResults } from '@/src/server/metrics/precompute'
-
-const proofResult = buildPrecomputeResults(
-  {
-    items: [
-      {
-        id: 'salmon',
-        displayName: 'Salmon',
-        unit: 'lb',
-        costPerUnit: '20',
-      },
-    ],
-    sales: ['2026-07-01', '2026-07-15', '2026-08-01', '2026-08-08'].map(
-      (date) => ({
-        itemId: 'salmon',
-        qty: '0',
-        revenue: '0',
-        transactedAt: new Date(`${date}T12:00:00.000Z`),
-      }),
-    ),
-    orders: ['2026-07-01', '2026-07-15', '2026-08-01'].map((date) => ({
-      itemId: 'salmon',
-      qty: '1',
-      totalCost: '20',
-      orderedAt: new Date(`${date}T12:00:00.000Z`),
-    })),
-    snapshots: [
-      {
-        itemId: 'salmon',
-        qty: '2',
-        countedAt: new Date('2026-08-08T12:00:00.000Z'),
-      },
-    ],
-    sources: [
-      {
-        filename: 'sales-export.csv',
-        source: 'transactions',
-        rowCount: 4,
-        uploadedAt: new Date('2026-08-08T10:00:00.000Z'),
-      },
-      {
-        filename: 'purchase-orders.csv',
-        source: 'purchase_orders',
-        rowCount: 3,
-        uploadedAt: new Date('2026-08-08T11:00:00.000Z'),
-      },
-      {
-        filename: 'inventory-counts.csv',
-        source: 'inventory_snapshots',
-        rowCount: 1,
-        uploadedAt: new Date('2026-08-08T12:00:00.000Z'),
-      },
-    ],
-  },
-  new Date('2026-08-08T12:00:00.000Z'),
-)
 
 const proofRecommendation = (() => {
-  const recommendation = proofResult.recommendations[0]
+  const recommendation = marketingExample.recommendations[0]
   if (!recommendation) {
     throw new Error(
       'The marketing proof recommendation could not be assembled.',
@@ -68,32 +14,77 @@ const proofRecommendation = (() => {
   return recommendation
 })()
 
+const proofWork = (() => {
+  const work = marketingWork(proofRecommendation)
+  if (!work) {
+    throw new Error('The marketing proof arithmetic could not be assembled.')
+  }
+  return work
+})()
+
+/**
+ * Step three: the shipped recommendation card, followed by a receipt for the
+ * one figure the card leads with.
+ *
+ * The card renders with its own "Show your work" collapsed. The full engine
+ * trace belongs in the product; what a stranger needs is the three lines of
+ * arithmetic that produce $840. See `marketing-evidence.ts`.
+ */
 export function RecommendationProof() {
   return (
-    <section
-      aria-labelledby="landing-proof-recommendation-title"
-      className="landing-recommendation-proof"
-    >
-      <div className="landing-container landing-recommendation-proof__layout">
-        <div className="landing-recommendation-proof__intro">
-          <p className="landing-eyebrow">Show, don&apos;t claim</p>
-          <h2 id="landing-proof-recommendation-title">
-            A recommendation you can check.
-          </h2>
-          <p>
-            This worked example uses the same recommendation card as the
-            product. The figures come from imported sales, order, and inventory
-            rows, and the arithmetic stays visible underneath.
-          </p>
-        </div>
-        <div className="landing-recommendation-proof__card">
-          <RecommendationCard
-            locationId="marketing-proof"
-            recommendation={proofRecommendation}
-            variant="marketing"
-          />
-        </div>
+    <div className="surface-proof__panel surface-proof__panel--plain">
+      <RecommendationCard
+        locationId="marketing-proof"
+        recommendation={proofRecommendation}
+        variant="marketing"
+      />
+
+      <div className="work-receipt">
+        <h3 className="work-receipt__title">Where the figure comes from</h3>
+        <dl className="work-receipt__lines">
+          {proofWork.terms.map((term) => (
+            <div className="work-receipt__line" key={term.label}>
+              <dt>{term.label}</dt>
+              <dd className="figure">{term.value}</dd>
+            </div>
+          ))}
+          <div className="work-receipt__line work-receipt__line--total">
+            <dt>{proofWork.resultLabel}</dt>
+            <dd className="figure">{proofWork.result}</dd>
+          </div>
+        </dl>
+        <h3 className="work-receipt__title">Read from</h3>
+        <ul className="work-receipt__sources">
+          {proofWork.sources.map((source) => (
+            <li key={source.filename}>
+              <span className="figure">{source.filename}</span>
+              <span className="work-receipt__rows figure">
+                {source.rowCount} rows
+              </span>
+            </li>
+          ))}
+        </ul>
+
+        <h3 className="work-receipt__title">What we assumed</h3>
+        <ul className="work-receipt__assumptions">
+          {proofWork.assumptions.map((assumption) => (
+            <li key={assumption.name}>
+              <span>
+                Shelf life — <span className="figure">{assumption.value}</span>{' '}
+                days
+              </span>
+              <span className="work-receipt__origin">
+                {assumptionOriginLabel(assumption.origin)} · change it at{' '}
+                {assumption.editPath}
+              </span>
+            </li>
+          ))}
+        </ul>
+        <p className="work-receipt__foot">
+          Every assumption is labelled with where it came from, and every one is
+          yours to change. Change the shelf life and the figure changes with it.
+        </p>
       </div>
-    </section>
+    </div>
   )
 }

@@ -30,9 +30,27 @@ function getExternalTestDatabaseUrl() {
   return databaseUrl
 }
 
-export const integrationDatabaseEnabled = () =>
-  Boolean(getExternalTestDatabaseUrl()) ||
-  process.env.TESTCONTAINERS_ENABLED === '1'
+/**
+ * Integration suites skip themselves when no database is reachable, which is
+ * right on a laptop without Docker and wrong in CI: the run goes green having
+ * tested nothing. Set REQUIRE_INTEGRATION_DB=1 wherever a skip should be a
+ * failure instead.
+ */
+export const integrationDatabaseEnabled = () => {
+  const enabled =
+    Boolean(getExternalTestDatabaseUrl()) ||
+    process.env.TESTCONTAINERS_ENABLED === '1'
+
+  if (!enabled && process.env.REQUIRE_INTEGRATION_DB === '1') {
+    throw new Error(
+      'REQUIRE_INTEGRATION_DB=1 but no test database is available. ' +
+        'Set TEST_DATABASE_URL to a localhost PostgreSQL URL, or set ' +
+        'TESTCONTAINERS_ENABLED=1 with Docker running.',
+    )
+  }
+
+  return enabled
+}
 
 /**
  * Uses an explicitly supplied disposable local database when available.
@@ -53,23 +71,86 @@ export async function withTestDatabase<T>(
 export async function withTestDatabaseUrl<T>(
   callback: (database: TestDatabase) => Promise<T>,
 ): Promise<T> {
+  const { database, close } = await openTestDatabase()
+  try {
+    return await callback(database)
+  } finally {
+    await close()
+  }
+}
+
+export type OpenTestDatabase = {
+  database: TestDatabase
+  close: () => Promise<void>
+}
+
+/**
+ * Closes every application connection pool opened during a test.
+ *
+ * A test that points DATABASE_URL at a disposable database and then imports a
+ * service leaves two pools open: the drizzle client in `src/server/db/client`,
+ * and pg-boss inside `src/server/metrics/scheduler`. Stopping the container
+ * underneath them raises "terminating connection due to administrator command"
+ * after the suite has already passed. Call this before closing the database.
+ */
+export async function closeAppDatabaseClient() {
+  if (process.env.DATABASE_URL === undefined) return
+
+  try {
+    const { stopPrecomputeScheduler } =
+      await import('@/src/server/metrics/scheduler')
+    await stopPrecomputeScheduler()
+  } catch {
+    // The scheduler was never started, so there is nothing to stop.
+  }
+
+  // Application modules import the client through the '@' alias. Vitest keys
+  // its module registry by resolved specifier, so importing the same file by a
+  // relative path can hand back a second instance whose pool is not the one
+  // holding connections. Close both.
+  for (const specifier of [
+    '@/src/server/db/client',
+    '../../src/server/db/client',
+  ]) {
+    try {
+      const { db } = (await import(/* @vite-ignore */ specifier)) as {
+        db: { $client?: { end?: (o?: { timeout?: number }) => Promise<void> } }
+      }
+      await db.$client?.end?.({ timeout: 5 })
+    } catch {
+      // Not loaded under this specifier, so there is nothing to close.
+    }
+  }
+}
+
+/**
+ * Opens a disposable database for the lifetime of a whole test file.
+ *
+ * `withTestDatabase` starts and stops a container per call, which costs about
+ * ten seconds each time. A file that needs many separate `it` blocks against
+ * one schema should open once in `beforeAll` and close in `afterAll`. The
+ * caller owns the returned `close` and must always call it.
+ */
+export async function openTestDatabase(): Promise<OpenTestDatabase> {
   const externalDatabaseUrl = getExternalTestDatabaseUrl()
   if (externalDatabaseUrl !== undefined) {
     const sql = postgres(externalDatabaseUrl, { max: 1 })
-    try {
-      return await callback({ sql, url: externalDatabaseUrl })
-    } finally {
-      await sql.end()
+    return {
+      database: { sql, url: externalDatabaseUrl },
+      close: async () => {
+        await sql.end()
+      },
     }
   }
 
   const container = await new PostgreSqlContainer('postgres:16-alpine').start()
   const sql = postgres(container.getConnectionUri(), { max: 1 })
 
-  try {
-    return await callback({ sql, url: container.getConnectionUri() })
-  } finally {
-    await sql.end()
-    await container.stop()
+  return {
+    database: { sql, url: container.getConnectionUri() },
+    close: async () => {
+      await sql.end()
+      await container.stop()
+    },
   }
 }

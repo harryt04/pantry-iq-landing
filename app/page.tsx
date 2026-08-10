@@ -1,5 +1,8 @@
 import { SiteHeader } from './site-header'
+import { ImportProof } from '@/components/marketing/import-proof'
+import { RankedProof } from '@/components/marketing/ranked-proof'
 import { RecommendationProof } from '@/components/marketing/recommendation-proof'
+import { marketingExampleRowCount } from '@/components/marketing/marketing-example'
 
 export default function Home() {
   return (
@@ -8,29 +11,27 @@ export default function Home() {
       <main className="landing-page">
         <section className="landing-hero" aria-labelledby="landing-title">
           <div className="landing-container landing-hero__content">
-            <h1 id="landing-title">See what your kitchen data can tell you.</h1>
+            <h1 id="landing-title">Find it before the P&amp;L does.</h1>
             <p className="landing-hero__subhead">
-              PantryIQ is being built for restaurant operators who want a
-              clearer view of sales, purchasing, and waste. The product keeps
-              the operator in control and makes room for the numbers behind each
-              decision.
+              One spreadsheet in. A ranked list of what is costing you money,
+              with the arithmetic attached to every figure.
             </p>
             <div className="landing-hero__actions" aria-label="Get started">
               <a
                 className="landing-button landing-button--primary"
                 href="/sign-up"
               >
-                See the product direction
+                Start free
               </a>
               <a
                 className="landing-button landing-button--secondary"
                 href="#how-it-works"
               >
-                Read the problem it is built to solve
+                See a worked example
               </a>
             </div>
             <p className="landing-hero__reassurance">
-              Built for one location at a time. No POS connection required.
+              One location at a time. No POS connection required.
             </p>
           </div>
         </section>
@@ -58,8 +59,6 @@ export default function Home() {
           </div>
         </section>
 
-        <RecommendationProof />
-
         <section
           className="landing-problem"
           aria-labelledby="landing-problem-title"
@@ -83,7 +82,7 @@ export default function Home() {
         </section>
 
         <section
-          className="landing-how-it-works"
+          className="landing-surfaces"
           id="how-it-works"
           aria-labelledby="landing-how-title"
         >
@@ -91,46 +90,54 @@ export default function Home() {
             <div className="landing-section-heading">
               <p className="landing-eyebrow">How it works</p>
               <h2 id="landing-how-title">
-                A clearer way to reason from the data you already have.
+                Three screens, and the numbers on all of them.
               </h2>
+              <p className="landing-section-heading__note">
+                Every figure below comes out of one worked example —{' '}
+                <span className="figure">{marketingExampleRowCount}</span> rows
+                of one restaurant&apos;s sales, purchase, and count data, run
+                through the same engine the product runs.
+              </p>
             </div>
-            <ol className="landing-steps">
-              <li className="landing-step">
-                <span className="landing-step__number" aria-hidden="true">
-                  01
-                </span>
-                <div>
-                  <h3>Start with the data you already have.</h3>
+
+            <ol className="surface-proof__list">
+              <li className="surface-proof">
+                <div className="surface-proof__intro">
+                  <p className="landing-eyebrow">Step 01</p>
+                  <h3>You map your columns once.</h3>
                   <p>
-                    The MVP is designed around sales exports, purchase orders,
-                    and inventory counts, with CSV as the trust fallback.
+                    PantryIQ reads the header names your system already exports
+                    and tells you why it matched each one. No recipe library, no
+                    integration call.
                   </p>
                 </div>
+                <ImportProof />
               </li>
-              <li className="landing-step">
-                <span className="landing-step__number" aria-hidden="true">
-                  02
-                </span>
-                <div>
-                  <h3>Separate facts from predictions.</h3>
+
+              <li className="surface-proof surface-proof--wide">
+                <div className="surface-proof__intro">
+                  <p className="landing-eyebrow">Step 02</p>
+                  <h3>You get a ranked list, not a dashboard to interpret.</h3>
                   <p>
-                    PantryIQ&apos;s product contract keeps observed numbers
-                    distinct from predictions and says what the data cannot
-                    support.
+                    Biggest dollar first. The figure sits on the row, so nothing
+                    needs decoding and nothing depends on telling two colours
+                    apart.
                   </p>
                 </div>
+                <RankedProof />
               </li>
-              <li className="landing-step">
-                <span className="landing-step__number" aria-hidden="true">
-                  03
-                </span>
-                <div>
-                  <h3>Keep the decision with the operator.</h3>
+
+              <li className="surface-proof">
+                <div className="surface-proof__intro">
+                  <p className="landing-eyebrow">Step 03</p>
+                  <h3>Each one comes with its receipt.</h3>
                   <p>
-                    The system is designed to recommend and explain. You decide
-                    what happens next; PantryIQ does not act for you.
+                    The arithmetic, the files it was read from, and the one
+                    thing PantryIQ had to assume. You decide what happens next;
+                    it never orders anything.
                   </p>
                 </div>
+                <RecommendationProof />
               </li>
             </ol>
           </div>
@@ -184,7 +191,7 @@ export default function Home() {
               className="landing-button landing-button--primary"
               href="/sign-up"
             >
-              See the product direction
+              Start free
             </a>
           </div>
         </section>

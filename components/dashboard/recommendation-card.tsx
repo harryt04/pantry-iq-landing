@@ -32,6 +32,17 @@ function impactLabel(basis: RecommendationRecord['financialImpact']['basis']) {
   return 'the available data'
 }
 
+/**
+ * The engine keeps ratios at six decimal places so the evidence trace stays
+ * exact. A sentence is not the trace — "8.333333% sell-through" reads as a
+ * glitch, so the prose rounds and the trace keeps the full value.
+ */
+function displayPercent(rate: string) {
+  const numeric = Number(rate)
+  if (!Number.isFinite(numeric)) return rate
+  return `${Number(numeric.toFixed(1))}`
+}
+
 function observationSentence(recommendation: RecommendationRecord) {
   if (recommendation.menuFinding) {
     return `${recommendation.menuFinding.label}: ${recommendation.menuFinding.detail}`
@@ -42,7 +53,7 @@ function observationSentence(recommendation: RecommendationRecord) {
     observation.quantitySold !== null &&
     observation.sellThroughRate !== null
   ) {
-    return `Ordered ${observation.purchaseOrderCount} time${observation.purchaseOrderCount === 1 ? '' : 's'}, sold ${observation.quantitySold} ${observation.unit} (${observation.sellThroughRate}% sell-through).`
+    return `Ordered ${observation.purchaseOrderCount} time${observation.purchaseOrderCount === 1 ? '' : 's'}, sold ${observation.quantitySold} ${observation.unit} (${displayPercent(observation.sellThroughRate)}% sell-through).`
   }
   return 'The imported data supports this item as a priority, but some quantities are unavailable.'
 }
@@ -134,12 +145,18 @@ export function RecommendationCard({
           </p>
         </div>
         <div className="recommendation-card__actions">
-          <RecommendationWork
-            locationId={locationId}
-            trace={recommendation.evidenceTrace}
-            defaultOpen={workDefaultOpen ?? variant === 'marketing'}
-            showEditLinks={variant !== 'marketing'}
-          />
+          {/* The full engine trace is an in-product audit tool. On the
+              marketing page it renders as thousands of pixels of tuning
+              constants, so that surface shows a curated receipt instead — see
+              components/marketing/marketing-evidence.ts. */}
+          {variant !== 'marketing' ? (
+            <RecommendationWork
+              locationId={locationId}
+              trace={recommendation.evidenceTrace}
+              defaultOpen={workDefaultOpen ?? false}
+              showEditLinks
+            />
+          ) : null}
           {variant !== 'marketing' ? (
             <Button asChild size="sm" variant="secondary">
               <Link

@@ -111,7 +111,7 @@ describe('recommendation card', () => {
     expect(openWorkMarkup).toContain('Edit in item settings')
   })
 
-  it('opens the evidence and removes app-only actions in the marketing variant', () => {
+  it('withholds the engine trace and app-only actions in the marketing variant', () => {
     const markup = renderToStaticMarkup(
       <RecommendationCard
         locationId="marketing-proof"
@@ -121,9 +121,10 @@ describe('recommendation card', () => {
     )
 
     expect(markup).toContain('data-variant="marketing"')
-    expect(markup).toContain('data-state="open"')
-    expect(markup).toContain('qtySold / qtyOrdered × 100')
-    expect(markup).toContain('Change in item settings')
+    // The marketing surface renders a curated receipt of its own instead — see
+    // components/marketing/marketing-evidence.ts.
+    expect(markup).not.toContain('Show your work')
+    expect(markup).not.toContain('qtySold / qtyOrdered × 100')
     expect(markup).not.toContain('Ask about this')
     expect(markup).not.toContain('/settings?locationId=marketing-proof')
   })

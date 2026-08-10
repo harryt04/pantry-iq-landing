@@ -42,6 +42,23 @@ export function getChartEncoding(index: number) {
 export type ChartSeries = {
   id: string
   label: string
+  /**
+   * Colour and pattern normally follow the series position. A series may pin
+   * them instead when the meaning is fixed rather than ordinal — severity, for
+   * example, where `docs/brand/ui-implementation.md` §5 fixes at-risk to Oxide
+   * with a cross-hatch regardless of where it falls in the series list.
+   */
+  color?: string
+  pattern?: ChartPattern
+}
+
+function encodingForSeries(series: ChartSeries, index: number) {
+  const positional = getChartEncoding(index)
+  return {
+    ...positional,
+    ...(series.color ? { color: series.color } : {}),
+    ...(series.pattern ? { pattern: series.pattern } : {}),
+  }
 }
 
 export type RankedBarDatum = {
@@ -173,10 +190,7 @@ export function RankedBarChart({
         height={height}
       >
         <title>{ariaLabel}</title>
-        <PatternDefs
-          prefix="bar"
-          encodings={series.map((_, index) => getChartEncoding(index))}
-        />
+        <PatternDefs prefix="bar" encodings={series.map(encodingForSeries)} />
         {sortedData.length === 0 && (
           <text className="chart-empty" x={left} y={top + 24}>
             No data to show
@@ -190,7 +204,11 @@ export function RankedBarChart({
             throw new Error(`Unknown chart series: ${datum.seriesId}`)
           }
 
-          const encoding = getChartEncoding(seriesIndex)
+          const seriesEntry = series[seriesIndex]
+          if (!seriesEntry) {
+            throw new Error(`Unknown chart series: ${datum.seriesId}`)
+          }
+          const encoding = encodingForSeries(seriesEntry, seriesIndex)
           const barY = top + rowIndex * rowHeight + 10
           const barWidth = (datum.value / valueRange) * plotWidth
           const visibleBarWidth = Math.max(Math.abs(barWidth), 1)

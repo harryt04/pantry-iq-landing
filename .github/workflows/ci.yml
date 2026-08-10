@@ -46,37 +46,37 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Format check (Prettier)
-        run: pnpm lint
+      # Every stage below runs one of the ci:* scripts from package.json, so
+      # `pnpm ci` locally covers the same ground as this workflow. The split
+      # into separate steps is only for readable logs and per-step env.
+      # tests/ci-parity.test.ts fails the build if the two ever drift.
+
+      - name: Static checks (format, typecheck)
+        run: pnpm ci:static
 
       - name: Install Playwright browser
         run: pnpm exec playwright install --with-deps chromium
 
-      - name: Accessibility gate
-        run: pnpm test:a11y
-
-      - name: Greyscale chart gate
-        run: pnpm test:charts
-
-      - name: Typecheck
-        run: pnpm typecheck
-
-      - name: Unit tests
-        run: pnpm test
-
-      - name: PostgreSQL integration tests
-        run: pnpm test:integration
+      - name: Unit and integration tests
+        run: pnpm ci:unit
         env:
           TEST_DATABASE_URL: postgresql://pantryiq:pantryiq@localhost:5432/pantryiq
+          REQUIRE_INTEGRATION_DB: '1'
 
       - name: Prepare browser test database
         run: pnpm db:migrate
 
-      - name: Critical path end-to-end test
-        run: pnpm test:e2e
+      - name: Browser gates (accessibility, charts, end-to-end)
+        run: pnpm ci:browser
 
       - name: Build
         run: pnpm build
+
+      - name: Coverage report
+        if: always()
+        run: pnpm test:coverage
+        env:
+          TEST_DATABASE_URL: postgresql://pantryiq:pantryiq@localhost:5432/pantryiq
 
       - name: Publish test report
         if: always()

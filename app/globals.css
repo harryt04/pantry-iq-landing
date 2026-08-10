@@ -2868,61 +2868,14 @@ body {
   margin-top: var(--space-2);
 }
 
-.landing-recommendation-proof {
-  background: var(--muted);
-  border-bottom: 1px solid var(--border);
-  border-top: 1px solid var(--border);
-  padding: clamp(72px, 10vw, 128px) 0;
-}
-
-.landing-recommendation-proof__layout {
-  align-items: start;
-  display: grid;
-  gap: clamp(var(--space-7), 8vw, var(--space-10));
-  grid-template-columns: minmax(0, 0.8fr) minmax(320px, 1.2fr);
-}
-
-.landing-recommendation-proof__intro {
-  max-width: 35ch;
-  padding-top: var(--space-4);
-}
-
-.landing-recommendation-proof__intro h2 {
-  font-size: clamp(1.75rem, 4vw, 2.75rem);
-  letter-spacing: -0.035em;
-  line-height: 1.1;
-  margin: 0;
-}
-
-.landing-recommendation-proof__intro p:last-child {
-  font-size: var(--text-md);
-  line-height: 1.6;
-  margin: var(--space-6) 0 0;
-}
-
-.landing-recommendation-proof__card {
-  min-width: 0;
-}
-
 .recommendation-card--marketing .recommendation-card__actions {
-  display: block;
+  display: none;
 }
 
 .recommendation-card--marketing .recommendation-card__rank,
 .recommendation-card--marketing .recommendation-card__prediction,
 .recommendation-card--marketing .recommendation-card__action {
   font-size: var(--text-md);
-}
-
-@media (max-width: 800px) {
-  .landing-recommendation-proof__layout {
-    grid-template-columns: 1fr;
-  }
-
-  .landing-recommendation-proof__intro {
-    max-width: 55ch;
-    padding-top: 0;
-  }
 }
 
 .landing-problem {
@@ -2967,8 +2920,12 @@ body {
   margin-top: var(--space-4);
 }
 
-.landing-how-it-works {
+/* ---- how it works, shown as real product surfaces ---- */
+
+.landing-surfaces {
   background: var(--muted);
+  border-bottom: 1px solid var(--border);
+  border-top: 1px solid var(--border);
   padding: clamp(72px, 10vw, 128px) 0;
 }
 
@@ -2976,41 +2933,299 @@ body {
   max-width: 700px;
 }
 
-.landing-steps {
+.landing-section-heading__note {
+  color: var(--muted-foreground);
+  font-size: var(--text-md);
+  line-height: 1.6;
+  margin: var(--space-5) 0 0;
+  max-width: 62ch;
+}
+
+.surface-proof__list {
   display: grid;
-  gap: var(--space-7);
+  gap: clamp(var(--space-9), 8vw, var(--space-10));
   list-style: none;
   margin: var(--space-9) 0 0;
   padding: 0;
 }
 
-.landing-step {
+.surface-proof {
   align-items: start;
   display: grid;
-  gap: var(--space-5);
-  grid-template-columns: 56px minmax(0, 1fr);
-  max-width: 720px;
+  gap: var(--space-6);
+  grid-template-columns: minmax(0, 1fr);
 }
 
-.landing-step__number {
-  color: var(--muted-foreground);
-  font-family: var(--font-mono);
-  font-size: var(--text-lg);
-  font-weight: 600;
-  line-height: 1.4;
+.surface-proof__intro {
+  max-width: 40ch;
+  min-width: 0;
 }
 
-.landing-step h3 {
-  font-size: var(--text-lg);
+.surface-proof__intro h3 {
+  font-size: var(--text-xl);
   letter-spacing: -0.025em;
+  line-height: 1.2;
   margin: 0;
 }
 
-.landing-step p {
+.surface-proof__intro p {
+  color: var(--muted-foreground);
   font-size: var(--text-md);
   line-height: 1.6;
-  margin: var(--space-2) 0 0;
-  max-width: 62ch;
+  margin: var(--space-4) 0 0;
+}
+
+.surface-proof__panel {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-surface);
+  min-width: 0;
+  padding: var(--space-5);
+}
+
+.surface-proof__panel--plain {
+  background: none;
+  border: 0;
+  padding: 0;
+}
+
+.surface-proof__panel-head {
+  align-items: center;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  justify-content: space-between;
+  margin: calc(var(--space-5) * -1) calc(var(--space-5) * -1) var(--space-5);
+  padding: var(--space-4) var(--space-5);
+}
+
+.surface-proof__filename {
+  font-size: var(--text-base);
+  font-weight: 600;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.surface-proof__chip {
+  align-items: center;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  display: inline-flex;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-3);
+  white-space: nowrap;
+}
+
+.surface-proof__chip--good {
+  background: var(--signal-good-soft);
+  border-color: var(--signal-good);
+  color: var(--signal-good);
+}
+
+.surface-proof__chip--risk {
+  background: var(--signal-risk-soft);
+  border-color: var(--signal-risk);
+  color: var(--signal-risk);
+}
+
+.surface-proof__note {
+  border-top: 1px solid var(--border);
+  color: var(--muted-foreground);
+  font-size: var(--text-md);
+  line-height: 1.6;
+  margin: var(--space-5) 0 0;
+  padding-top: var(--space-4);
+}
+
+/* ---- step 01: column mapping ---- */
+
+.mapping-proof {
+  display: grid;
+  gap: var(--space-4);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.mapping-proof__row {
+  align-items: baseline;
+  display: grid;
+  gap: var(--space-3);
+  grid-template-columns: minmax(0, 1fr);
+  min-width: 0;
+}
+
+.mapping-proof__arrow {
+  color: var(--muted-foreground);
+  font-family: var(--font-mono);
+}
+
+.mapping-proof__source {
+  font-size: var(--text-base);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.mapping-proof__target {
+  display: grid;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.mapping-proof__field {
+  font-size: var(--text-base);
+  font-weight: 600;
+}
+
+.mapping-proof__evidence {
+  color: var(--muted-foreground);
+  font-size: var(--text-base-sm);
+  line-height: 1.5;
+}
+
+/* ---- step 03: the curated receipt ---- */
+
+.work-receipt {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-surface);
+  margin-top: var(--space-4);
+  min-width: 0;
+  padding: var(--space-5);
+}
+
+.work-receipt__title {
+  font-size: var(--text-base);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin: 0 0 var(--space-3);
+}
+
+.work-receipt__title + * + .work-receipt__title,
+.work-receipt__lines + .work-receipt__title,
+.work-receipt__sources + .work-receipt__title {
+  margin-top: var(--space-6);
+}
+
+.work-receipt__lines {
+  border-top: 1px solid var(--border);
+  margin: 0;
+}
+
+.work-receipt__line {
+  align-items: baseline;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  gap: var(--space-4);
+  justify-content: space-between;
+  min-width: 0;
+  padding: var(--space-3) 0;
+}
+
+.work-receipt__line dt {
+  color: var(--muted-foreground);
+  font-size: var(--text-base);
+  min-width: 0;
+}
+
+.work-receipt__line dd {
+  font-size: var(--text-base);
+  font-weight: 600;
+  margin: 0;
+  white-space: nowrap;
+}
+
+.work-receipt__line--total {
+  border-bottom-width: 2px;
+  border-bottom-color: var(--foreground);
+}
+
+.work-receipt__line--total dt {
+  color: var(--foreground);
+  font-weight: 600;
+}
+
+.work-receipt__line--total dd {
+  font-size: var(--text-lg);
+}
+
+.work-receipt__sources,
+.work-receipt__assumptions {
+  display: grid;
+  gap: var(--space-2);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.work-receipt__sources li {
+  align-items: baseline;
+  display: flex;
+  gap: var(--space-4);
+  justify-content: space-between;
+  min-width: 0;
+}
+
+.work-receipt__sources li span:first-child {
+  font-size: var(--text-base);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.work-receipt__rows {
+  color: var(--muted-foreground);
+  font-size: var(--text-base);
+  white-space: nowrap;
+}
+
+.work-receipt__assumptions li {
+  display: grid;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.work-receipt__assumptions li > span:first-child {
+  font-size: var(--text-base);
+  font-weight: 600;
+}
+
+.work-receipt__origin {
+  color: var(--muted-foreground);
+  font-size: var(--text-base-sm);
+  line-height: 1.5;
+}
+
+.work-receipt__foot {
+  border-top: 1px solid var(--border);
+  color: var(--muted-foreground);
+  font-size: var(--text-md);
+  line-height: 1.6;
+  margin: var(--space-5) 0 0;
+  padding-top: var(--space-4);
+}
+
+@media (min-width: 768px) {
+  .surface-proof {
+    gap: clamp(var(--space-7), 6vw, var(--space-9));
+    grid-template-columns: minmax(0, 0.75fr) minmax(0, 1.25fr);
+  }
+
+  /* The chart is the widest artefact on the page and its value labels sit
+     outside the bars, so it takes the whole container rather than a column. */
+  .surface-proof--wide {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .surface-proof--wide > .surface-proof__intro {
+    max-width: 62ch;
+  }
+
+  .mapping-proof__row {
+    grid-template-columns: minmax(0, 9rem) auto minmax(0, 1fr);
+  }
 }
 
 .landing-final-cta {
@@ -3836,6 +4051,13 @@ body {
   overscroll-behavior-inline: contain;
   padding: var(--space-2) 0;
   scrollbar-gutter: stable;
+}
+
+/* The region is tab-reachable so a keyboard user can scroll a wide chart, so
+   it gets the same ring as every other focusable thing. */
+.chart-scroll:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
 }
 
 .chart-canvas {

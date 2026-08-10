@@ -6,8 +6,10 @@ const require = createRequire(import.meta.url)
 const axePath = require.resolve('axe-core/axe.min.js')
 const routes = ['/', '/design/gallery', '/design/tokens']
 const themes = ['light', 'dark'] as const
+// Scrollable regions are tab-reachable so a keyboard user can pan a wide
+// chart, so the focus-ring and touch-target gates have to cover them too.
 const nonDevInteractiveSelector =
-  'a:not([aria-label="Open Next.js Dev Tools"]), button:not([aria-label="Open Next.js Dev Tools"]), input, textarea, select, [role="button"]:not([aria-label="Open Next.js Dev Tools"]), [role="checkbox"], [role="radio"], [role="switch"]'
+  'a:not([aria-label="Open Next.js Dev Tools"]), button:not([aria-label="Open Next.js Dev Tools"]), input, textarea, select, [role="button"]:not([aria-label="Open Next.js Dev Tools"]), [role="checkbox"], [role="radio"], [role="switch"], [role="region"][tabindex="0"]'
 
 type AccessibilityResult = {
   violations: Array<{
