@@ -10,7 +10,7 @@ concurrency:
 
 jobs:
   ci:
-    name: Lint, typecheck, test, build
+    name: CI
     runs-on: ubuntu-latest
     services:
       postgres:
