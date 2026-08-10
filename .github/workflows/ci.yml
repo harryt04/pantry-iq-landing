@@ -74,7 +74,7 @@ jobs:
 
       - name: Coverage report
         if: always()
-        run: pnpm test:coverage
+        run: pnpm ci:coverage
         env:
           TEST_DATABASE_URL: postgresql://pantryiq:pantryiq@localhost:5432/pantryiq
 

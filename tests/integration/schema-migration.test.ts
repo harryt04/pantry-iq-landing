@@ -472,6 +472,10 @@ describe.skipIf(!integrationDatabaseEnabled())(
       'migrates, seeds, rolls back, and migrates again',
       async () => {
         await withTestDatabase(async (sql) => {
+          // The CI coverage stage reuses the database from the earlier test
+          // stages. Reset it so this round-trip tests the seed contract rather
+          // than counting unrelated rows left by another suite.
+          await rollbackDatabase(sql)
           await migrateDatabase(sql)
           await expectCanonicalSchema(sql)
 

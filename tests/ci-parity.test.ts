@@ -7,8 +7,8 @@ import { describe, expect, it } from 'vitest'
  * string is the right tool: the guarantee under test is that two configuration
  * documents agree with each other.
  *
- * Finding 5 of the 2026-08-10 testing audit: `pnpm ci` omitted three suites
- * the workflow actually ran, so a green local run could still break the build.
+ * Keep the local command and workflow honest: a green local run should cover
+ * every test stage that the workflow runs, including coverage.
  */
 
 const packageJson = JSON.parse(
@@ -52,7 +52,7 @@ describe('CI parity', () => {
 
     const missing = testStages
       .flatMap((script) => expandScript(script))
-      .filter((script) => script !== 'test:coverage' && !local.has(script))
+      .filter((script) => !local.has(script))
 
     expect(
       missing,
@@ -67,6 +67,7 @@ describe('CI parity', () => {
     expect(local).toContain('test:a11y')
     expect(local).toContain('test:charts')
     expect(local).toContain('test:e2e')
+    expect(local).toContain('test:coverage')
     expect(local).toContain('build')
   })
 
