@@ -409,6 +409,37 @@ const malformedBatchFixtures = [
   },
 ] as const
 
+const securityBatchFixtures = [
+  {
+    filename: 'renamed-xlsx.csv',
+    outcome: 'rejected',
+    error: 'This file could not be processed.',
+  },
+  {
+    filename: 'renamed-pdf.csv',
+    outcome: 'rejected',
+    error: 'This file could not be processed.',
+  },
+  {
+    filename: 'contains-null-bytes.csv',
+    outcome: 'rejected',
+    error: 'This file could not be processed.',
+  },
+  {
+    filename: 'formula-injection.csv',
+    outcome: 'success',
+    rows: 5,
+    columns: ['Date', 'Item Name', 'Qty', 'Total Revenue'],
+    unresolvedItems: 4,
+    importedRows: 5,
+  },
+  {
+    filename: 'empty-file.csv',
+    outcome: 'rejected',
+    error: 'This file could not be processed.',
+  },
+] as const
+
 async function signInOrSignUp(page: Page) {
   const email = process.env.TEST_USER_EMAIL
   const configuredPassword = process.env.TEST_USER_PASSWORD
@@ -1142,6 +1173,80 @@ test('imports the malformed CSV corpus batch through /import', async ({
             .locator('.csv-import-confirmation')
             .getByRole('heading', { name: /Ready to import/ }),
         ).toBeVisible()
+        await page.getByRole('button', { name: 'Import now' }).click()
+        await expect(page.locator('.app-page__status')).toContainText(
+          `${fixture.importedRows} rows imported.`,
+        )
+      })
+    } finally {
+      const response = await page.request.delete(`/api/locations/${locationId}`)
+      expect(response.status()).toBe(204)
+    }
+  }
+})
+
+test('checks the security CSV corpus batch through /import', async ({
+  page,
+}) => {
+  test.setTimeout(180_000)
+  await signInOrSignUp(page)
+
+  for (const fixture of securityBatchFixtures) {
+    const locationId = await createTestLocation(page)
+    try {
+      await test.step(`checks ${fixture.filename}`, async () => {
+        if (fixture.filename === 'formula-injection.csv')
+          await seedInventoryItems(page, locationId)
+
+        await page.goto(`/import?locationId=${locationId}`)
+        await page.locator('#import-type').selectOption('transactions')
+        await page
+          .locator('#csv-file')
+          .setInputFiles(
+            path.resolve('tests/fixtures/csv/security', fixture.filename),
+          )
+        const uploadResponse = page.waitForResponse(
+          (response) =>
+            response.url().includes('/api/uploads?') &&
+            response.request().method() === 'POST',
+        )
+        await page.getByRole('button', { name: 'Upload CSV' }).click()
+        const response = await uploadResponse
+        expect(response.status()).toBe(
+          fixture.outcome === 'rejected' ? 400 : 201,
+        )
+
+        if (fixture.outcome === 'rejected') {
+          await expect(page.locator('p[role="alert"]')).toContainText(
+            fixture.error,
+          )
+          await expect(page.locator('#csv-preview-title')).toHaveCount(0)
+          return
+        }
+
+        await expect(page.locator('#csv-preview-title')).toBeVisible()
+        await expect(
+          page.locator('.csv-preview .app-page__help').first(),
+        ).toContainText(
+          `${fixture.rows} rows · ${fixture.columns.length} columns · , delimited · utf-8`,
+        )
+        expect(
+          await page.locator('.csv-preview thead th').allTextContents(),
+        ).toEqual(fixture.columns)
+
+        await reviewMapping(page)
+        await expect(page.locator('.csv-mapping')).toContainText(
+          /Mapping reviewed|All columns matched|reused your last mapping/,
+        )
+        await expect(page.locator('.csv-item-resolution')).toContainText(
+          `${fixture.unresolvedItems} unresolved items remaining`,
+        )
+        await resolveNewItems(page)
+        await expect(
+          page
+            .locator('.csv-import-confirmation')
+            .getByRole('heading', { name: /Ready to import/ }),
+        ).toContainText(`${fixture.importedRows} rows`)
         await page.getByRole('button', { name: 'Import now' }).click()
         await expect(page.locator('.app-page__status')).toContainText(
           `${fixture.importedRows} rows imported.`,

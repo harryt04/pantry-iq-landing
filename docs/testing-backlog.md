@@ -142,7 +142,8 @@ wall-clock budget.
       Covered all six labor fixtures through the authenticated `/import` route, including vendor-specific mappings, scheduled-only and actual-only shifts, open shifts, successful commits, and the expected missing-hours error.
 - [x] Batch 8 — `malformed/` fixtures 1–8 (Codex, iteration 14)
       Covered all eight malformed fixtures through the authenticated `/import` route, including parser warnings, safe upload/commit errors, item resolution, and successful commits.
-- [ ] Batch 9 — `security/` fixtures 1–5
+- [x] Batch 9 — `security/` fixtures 1–5 (Codex, iteration 15)
+      Covered binary masquerades, embedded null bytes, formula-looking item names, and empty files through the authenticated `/import` route, including HTTP rejection status and successful formula-row import.
 
 ---
 
