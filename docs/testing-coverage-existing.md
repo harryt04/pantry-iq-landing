@@ -19,7 +19,7 @@ figure is higher.
 | Vitest files | 111 |
 | Vitest cases | 584 statically, more after `.each` expansion |
 | Playwright specs | 4 files, 11 cases |
-| Line coverage | 72.65% with a database, 65.98% without |
+| Line coverage | 74.38% with a database, 65.98% without |
 
 ---
 
@@ -81,7 +81,7 @@ fixture-driven, no mocking of the thing under test. Do not disturb these.
 | [`src/server/chat/`](../src/server/chat/) | 6 | Grounding, decline, answer format, narration, misses, assumption override |
 | [`src/server/staffing/`](../src/server/staffing/) | 4 | Demand forecast, labor efficiency, shift recommendations, external signals |
 | [`src/server/observability/`](../src/server/observability/) | 2 | Logger and metrics |
-| [`src/server/ingestion/`](../src/server/ingestion/) | 2 | Records and reconciliation, including exact cross-source overlap intersection |
+| [`src/server/ingestion/`](../src/server/ingestion/) | 2 | Records and reconciliation, including exact cross-source overlap intersection and unresolved-overlap inclusion guard |
 | [`src/server/inventory/`](../src/server/inventory/), [`locations/`](../src/server/locations/), [`storage/`](../src/server/storage/) | 5 | Input validation, shelf-life defaults, object storage |
 | [`src/chat/session-memory.test.ts`](../src/chat/session-memory.test.ts) | 1 | Outside `src/server/` — chat history truncation |
 

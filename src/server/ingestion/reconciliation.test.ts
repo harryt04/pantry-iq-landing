@@ -116,6 +116,29 @@ describe('cross-source reconciliation', () => {
     ).toBe(false)
   })
 
+  it('does not include a record while an overlap decision is unresolved', () => {
+    const record = {
+      kind: 'inventory' as const,
+      source: 'csv',
+      externalId: null,
+      occurredAt: at('2026-08-01'),
+    }
+    const conflict = {
+      recordKind: 'inventory' as const,
+      conflictType: 'period-overlap' as const,
+      identityKey: 'inventory|period-overlap|overlap-1',
+      externalId: null,
+      periodStart: at('2026-08-01'),
+      periodEnd: at('2026-08-01'),
+      sources: ['csv', 'square'],
+      status: 'unresolved' as const,
+      authoritySource: 'csv',
+      details: { message: 'Choose a source.' },
+    }
+
+    expect(shouldIncludeRecord(record, [conflict])).toBe(false)
+  })
+
   it('records the intersecting period when two source files overlap', () => {
     const conflicts = detectReconciliationConflicts([
       {
