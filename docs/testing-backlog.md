@@ -383,10 +383,13 @@ browser coverage needs two layers, not one.
       both declare `dependencies: ['setup']`. Keep `expect.timeout` at 15s and
       `retries: 2` in CI. (Codex, iteration 48) The existing journeys now
       live under `tests/e2e/`; the four projects share the existing web server.
-- [ ] Add `tests/e2e/setup/auth.setup.ts`. Both current specs sign up from
+- [x] Add `tests/e2e/setup/auth.setup.ts`. Both current specs sign up from
       scratch, which is slow and is why there are only two of them. Sign up
       once, save `storageState` to `tests/.auth/owner.json`, and load it from
       `use.storageState`. Keep one spec that still exercises signup itself.
+      (Codex, iteration 49) Added the setup project auth state, loaded it for
+      e2e and UI projects, and kept the returning-user signup/sign-in journey
+      isolated from the shared session.
 - [ ] Add `tests/e2e/setup/seed.setup.ts`. Reuse `seedDatabase()` in
       [`src/server/db/seed-database.ts`](../src/server/db/seed-database.ts),
       `fullYearLocationFixture` and `partialDataLocationFixture` in

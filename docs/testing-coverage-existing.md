@@ -169,17 +169,20 @@ The two `*-schema-contract` files read `.sql` as text on purpose. Migrations are
 text artifacts. That is the documented exception to the behaviour rule, not a
 pattern to copy.
 
-## Layer 5 — Browser tests (4 spec files, 10 cases)
+## Layer 5 — Browser tests (5 files, 12 cases including setup)
 
 | File | Covers |
 | --- | --- |
+| [`e2e/setup/auth.setup.ts`](../tests/e2e/setup/auth.setup.ts) | Creates or signs into the shared owner account and saves `tests/.auth/owner.json` for dependent browser projects |
 | [`e2e/critical-path.spec.ts`](../tests/e2e/critical-path.spec.ts) | Sign up → create location → import a CSV → resolve an item → commit → dashboard; transaction corpus batches 1–3, purchase-order batches 1–2, inventory batch 1, labor batch 1, and malformed batch 1 through the authenticated `/import` route |
 | [`e2e/returning-user.spec.ts`](../tests/e2e/returning-user.spec.ts) | Sign in → switch location → open chat → export CSV over HTTP |
 | [`accessibility/landing.spec.ts`](../tests/accessibility/landing.spec.ts) | Axe on `/`, `/design/gallery`, `/design/tokens` in both themes; keyboard focus; 44px touch targets; 16px mobile type; reduced motion |
 | [`charts/greyscale.spec.ts`](../tests/charts/greyscale.spec.ts) | `/design/gallery` desaturated at 375×900; bars keep pattern fills, lines keep dash patterns |
 
-Both functional specs sign up a fresh user inline. There is no shared session
-and no seeded data, so each spec pays full setup cost.
+The e2e and UI projects load the shared owner storage state produced by the
+setup project. The returning-user spec explicitly clears that state so it can
+continue to exercise signup and sign-in; the critical-path signup case also
+remains an explicit account-creation journey.
 
 ## Layer 6 — Suite-wide guards (`tests/`)
 

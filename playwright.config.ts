@@ -1,4 +1,5 @@
 import { defineConfig, devices } from '@playwright/test'
+import path from 'node:path'
 
 try {
   process.loadEnvFile('.env.local')
@@ -10,6 +11,7 @@ const port =
   process.env.PANTRYIQ_PORT ??
   (process.env.PANTRYIQ_E2E === '1' ? '3001' : '3000')
 const baseURL = process.env.PANTRYIQ_BASE_URL ?? `http://localhost:${port}`
+const authFile = path.resolve('tests/.auth/owner.json')
 
 export default defineConfig({
   testDir: './tests',
@@ -35,20 +37,21 @@ export default defineConfig({
     {
       name: 'setup',
       testDir: './tests/e2e/setup',
-      use: { ...devices['Desktop Chrome'] },
+      testMatch: '**/*.setup.ts',
+      use: { ...devices['Desktop Chrome'], storageState: undefined },
     },
     {
       name: 'e2e',
       testDir: './tests/e2e',
       fullyParallel: false,
       dependencies: ['setup'],
-      use: { ...devices['Desktop Chrome'] },
+      use: { ...devices['Desktop Chrome'], storageState: authFile },
     },
     {
       name: 'ui',
       testDir: './tests/ui',
       dependencies: ['setup'],
-      use: { ...devices['Desktop Chrome'] },
+      use: { ...devices['Desktop Chrome'], storageState: authFile },
     },
     {
       name: 'design',

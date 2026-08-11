@@ -440,25 +440,8 @@ const securityBatchFixtures = [
   },
 ] as const
 
-async function signInOrSignUp(page: Page) {
-  const email = process.env.TEST_USER_EMAIL
-  const configuredPassword = process.env.TEST_USER_PASSWORD
-
-  if (email && configuredPassword) {
-    await page.goto('/sign-in')
-    await page.getByLabel('Email').fill(email)
-    await page.getByLabel('Password').fill(configuredPassword)
-    await page.getByRole('button', { name: /Sign in/ }).click()
-    await expect(page).toHaveURL(/\/(dashboard|account)(\?|$)/)
-    return
-  }
-
-  const fallbackEmail = `transaction-batch-${Date.now()}@example.test`
-  await page.goto('/sign-up')
-  await page.getByLabel('Name').fill('Transaction Batch Operator')
-  await page.getByLabel('Email').fill(fallbackEmail)
-  await page.getByLabel('Password').fill(password)
-  await page.getByRole('button', { name: 'Create account' }).click()
+async function assertAuthenticated(page: Page) {
+  await page.goto('/account')
   await expect(page).toHaveURL(/\/account$/)
 }
 
@@ -683,7 +666,7 @@ test('imports the first transaction corpus batch through /import', async ({
   page,
 }) => {
   test.setTimeout(120_000)
-  await signInOrSignUp(page)
+  await assertAuthenticated(page)
   const locationId = await createTestLocation(page)
 
   try {
@@ -728,7 +711,7 @@ test('imports the second transaction corpus batch through /import', async ({
   page,
 }) => {
   test.setTimeout(120_000)
-  await signInOrSignUp(page)
+  await assertAuthenticated(page)
   const locationId = await createTestLocation(page)
 
   try {
@@ -785,7 +768,7 @@ test('imports the third transaction corpus batch through /import', async ({
   page,
 }) => {
   test.setTimeout(180_000)
-  await signInOrSignUp(page)
+  await assertAuthenticated(page)
 
   for (const fixture of transactionBatchThreeFixtures) {
     const locationId = await createTestLocation(page)
@@ -858,7 +841,7 @@ test('imports the first purchase-order corpus batch through /import', async ({
   page,
 }) => {
   test.setTimeout(180_000)
-  await signInOrSignUp(page)
+  await assertAuthenticated(page)
   const locationId = await createTestLocation(page)
 
   try {
@@ -913,7 +896,7 @@ test('imports the second purchase-order corpus batch through /import', async ({
   page,
 }) => {
   test.setTimeout(120_000)
-  await signInOrSignUp(page)
+  await assertAuthenticated(page)
   const locationId = await createTestLocation(page)
 
   try {
@@ -974,7 +957,7 @@ test('imports the second purchase-order corpus batch through /import', async ({
 
 test('imports the inventory corpus batch through /import', async ({ page }) => {
   test.setTimeout(180_000)
-  await signInOrSignUp(page)
+  await assertAuthenticated(page)
   for (const fixture of inventoryBatchFixtures) {
     const locationId = await createTestLocation(page)
     try {
@@ -1036,7 +1019,7 @@ test('imports the inventory corpus batch through /import', async ({ page }) => {
 
 test('imports the labor corpus batch through /import', async ({ page }) => {
   test.setTimeout(180_000)
-  await signInOrSignUp(page)
+  await assertAuthenticated(page)
 
   for (const fixture of laborBatchFixtures) {
     const locationId = await createTestLocation(page)
@@ -1094,7 +1077,7 @@ test('imports the malformed CSV corpus batch through /import', async ({
   page,
 }) => {
   test.setTimeout(180_000)
-  await signInOrSignUp(page)
+  await assertAuthenticated(page)
 
   for (const fixture of malformedBatchFixtures) {
     const locationId = await createTestLocation(page)
@@ -1189,7 +1172,7 @@ test('checks the security CSV corpus batch through /import', async ({
   page,
 }) => {
   test.setTimeout(180_000)
-  await signInOrSignUp(page)
+  await assertAuthenticated(page)
 
   for (const fixture of securityBatchFixtures) {
     const locationId = await createTestLocation(page)
