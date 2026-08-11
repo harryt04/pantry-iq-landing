@@ -120,7 +120,10 @@ wall-clock budget.
       Covered the first five transaction fixtures through the authenticated
       `/import` route, including preview metadata, mapping review, item
       resolution, and successful commit assertions.
-- [ ] Batch 2 — `transactions/` fixtures 6–10
+- [x] Batch 2 — `transactions/` fixtures 6–10 (Codex, iteration 8)
+      Covered Latin-1, UTF-8 BOM, preamble, headerless, and duplicate-header
+      fixtures through the authenticated `/import` route; headerless data
+      asserts the expected item-name validation error.
 - [ ] Batch 3 — `transactions/` fixtures 11–15
 - [ ] Batch 4 — `purchase-orders/` fixtures 1–5
 - [ ] Batch 5 — `purchase-orders/` fixtures 6–9

@@ -36,6 +36,50 @@ const transactionFixtures = [
   },
 ] as const
 
+const transactionBatchTwoFixtures = [
+  {
+    filename: 'square-latin1-accents.csv',
+    rows: 4,
+    columns: ['Date', 'Item Name', 'Qty', 'Total Revenue'],
+    delimiter: ',',
+    encoding: 'latin-1',
+    outcome: 'success',
+  },
+  {
+    filename: 'square-utf8-bom.csv',
+    rows: 3,
+    columns: ['Date', 'Item Name', 'Qty', 'Total Revenue'],
+    delimiter: ',',
+    encoding: 'utf-8',
+    outcome: 'success',
+  },
+  {
+    filename: 'toast-with-preamble-rows.csv',
+    rows: 5,
+    columns: ['Date', 'Item Name', 'Qty', 'Total Revenue'],
+    delimiter: ',',
+    encoding: 'utf-8',
+    outcome: 'success',
+  },
+  {
+    filename: 'pos-headerless-sales.csv',
+    rows: 5,
+    columns: ['Column 1', 'Column 2', 'Column 3', 'Column 4'],
+    delimiter: ',',
+    encoding: 'utf-8',
+    outcome: 'error',
+    error: 'item name is required',
+  },
+  {
+    filename: 'sales-duplicate-headers.csv',
+    rows: 4,
+    columns: ['Date', 'Item', 'Qty', 'Total', 'Total (2)'],
+    delimiter: ',',
+    encoding: 'utf-8',
+    outcome: 'success',
+  },
+] as const
+
 async function signInOrSignUp(page: Page) {
   const email = process.env.TEST_USER_EMAIL
   const configuredPassword = process.env.TEST_USER_PASSWORD
@@ -204,6 +248,63 @@ test('imports the first transaction corpus batch through /import', async ({
         )
 
         await reviewMapping(page)
+        await resolveNewItems(page)
+        await expect(
+          page
+            .locator('.csv-import-confirmation')
+            .getByRole('heading', { name: /Ready to import/ }),
+        ).toBeVisible()
+        await page.getByRole('button', { name: 'Import now' }).click()
+        await expect(page.locator('.app-page__status')).toContainText(
+          `${fixture.rows} rows imported.`,
+        )
+      })
+    }
+  } finally {
+    const response = await page.request.delete(`/api/locations/${locationId}`)
+    expect(response.status()).toBe(204)
+  }
+})
+
+test('imports the second transaction corpus batch through /import', async ({
+  page,
+}) => {
+  test.setTimeout(120_000)
+  await signInOrSignUp(page)
+  const locationId = await createTestLocation(page)
+
+  try {
+    for (const fixture of transactionBatchTwoFixtures) {
+      await test.step(`imports ${fixture.filename}`, async () => {
+        await page.goto(`/import?locationId=${locationId}`)
+        await page.locator('#import-type').selectOption('transactions')
+        await page
+          .locator('#csv-file')
+          .setInputFiles(
+            path.resolve('tests/fixtures/csv/transactions', fixture.filename),
+          )
+        await page.getByRole('button', { name: 'Upload CSV' }).click()
+
+        await expect(page.locator('#csv-preview-title')).toBeVisible()
+        await expect(
+          page.locator('.csv-preview .app-page__help'),
+        ).toContainText(
+          `${fixture.rows} rows · ${fixture.columns.length} columns · ${fixture.delimiter} delimited · ${fixture.encoding}`,
+        )
+        expect(
+          await page.locator('.csv-preview thead th').allTextContents(),
+        ).toEqual(fixture.columns)
+
+        await reviewMapping(page)
+        await expect(page.locator('.csv-mapping')).toContainText(
+          /Mapping reviewed|All columns matched|reused your last mapping/,
+        )
+        if (fixture.outcome === 'error') {
+          await expect(page.locator('p[role="alert"]')).toContainText(
+            fixture.error,
+          )
+          return
+        }
         await resolveNewItems(page)
         await expect(
           page
