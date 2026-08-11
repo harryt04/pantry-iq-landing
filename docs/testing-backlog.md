@@ -46,7 +46,7 @@ it. `components/ui/**` is vendored and out of scope.
 Exit gate for every item: `pnpm prettify`, then `pnpm ci` until green.
 
 Then ratchet the coverage gate. [`vitest.config.ts`](../vitest.config.ts) holds
-  thresholds at 72.44/72.44/75.35/80.33 against 74.44% statements, 77.35% branches, 82.33% functions, and 74.44% lines measured 2026-08-11. Re-measure with
+  thresholds at 73.05/73.05/75.35/80.48 against 75.05% statements, 77.34% branches, 82.48% functions, and 75.05% lines measured 2026-08-11. Re-measure with
 `pnpm ci:tests` and raise each threshold to the new number minus two. Never
 lower one to make a build pass. Browser tests do not feed the v8 report, so
 Loops I, J, and L will not move the number. That is expected, not a failure.
@@ -283,8 +283,12 @@ above 94% — expect few survivors and move on quickly.
       Added a scheduler-clock fallback regression for successful runs whose
       precompute result has no completion timestamp; mutation testing caught
       removing the fallback.
-- [ ] `metrics/dashboard-recommendations.ts` (50% of 72) and
-      `metrics/dashboard-state.ts` (47.5% of 61).
+- [x] `metrics/dashboard-recommendations.ts` (50% of 72) and
+      `metrics/dashboard-state.ts` (47.5% of 61). (Codex, iteration 38)
+      Added a behavioral regression that drops an otherwise valid recommendation
+      when its evidence trace has no key; the surviving always-true validation
+      mutant fails. Existing dashboard-state tests continue to cover the
+      business-day status boundaries and invalid timestamps.
 - [ ] The well-covered set, one pass each: `import-plan.ts`, `mapping.ts`,
       `parser.ts`, `security.ts`, `impact.ts`, `urgency.ts`, `ranking.ts`,
       `sufficiency.ts`, `spoilage.ts`, `evidence.ts`.

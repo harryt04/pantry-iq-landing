@@ -74,7 +74,7 @@ fixture-driven, no mocking of the thing under test. Do not disturb these.
 
 | Area | Files | Notes |
 | --- | --- | --- |
-| [`src/server/metrics/`](../src/server/metrics/) | 22 | The recommendation engine. `impact` 99.1%, `ranking` 98.5%, `sufficiency` 100%, `urgency` 96.7%, `evidence` 98.1%. `trends.test.ts` covers exact-decimal direction equality and missing-data gaps. `portfolio.test.ts` covers exact-decimal rollups, partial totals, and the no-calculable-location state. `item-deep-dives.test.ts` covers exact-decimal item rollups, item-scoped recommendations, and needs-data visibility. `scheduler.test.ts` covers completed and failed jobs, including the scheduler-clock fallback when a run has no completion timestamp. `precompute.test.ts` covers malformed numeric input and other precompute branches but still has substantial uncovered code |
+| [`src/server/metrics/`](../src/server/metrics/) | 22 | The recommendation engine. `impact` 99.1%, `ranking` 98.5%, `sufficiency` 100%, `urgency` 96.7%, `evidence` 98.1%. `trends.test.ts` covers exact-decimal direction equality and missing-data gaps. `portfolio.test.ts` covers exact-decimal rollups, partial totals, and the no-calculable-location state. `item-deep-dives.test.ts` covers exact-decimal item rollups, item-scoped recommendations, and needs-data visibility. `scheduler.test.ts` covers completed and failed jobs, including the scheduler-clock fallback when a run has no completion timestamp. `dashboard-recommendations.test.ts` covers defensive recommendation payload validation, sorting, and the five-item cap. `dashboard-state.test.ts` covers empty, insufficient, and ready business-day gates plus invalid timestamps. `precompute.test.ts` covers malformed numeric input and other precompute branches but still has substantial uncovered code |
 | [`src/server/csv/`](../src/server/csv/) | 8 | `mapping` 98.4%, `security` 98.5%, `parser` 95.8%, `import-plan` 94.7% |
 | [`src/server/menu/`](../src/server/menu/) | 7 | Menu engineering, recipe graph, unit conversion, usage variance |
 | [`src/server/connectors/`](../src/server/connectors/) | 8 | Square, Toast, QuickBooks, retry, health, webhooks, credentials |
@@ -243,8 +243,8 @@ assertion to make a test pass — that rule outranks everything else in
 
 Run a single file with `pnpm test path/to/file.test.ts`.
 
-Coverage thresholds in [`vitest.config.ts`](../vitest.config.ts) are 72.44
-statements, 72.44 lines, 75.35 branches, and 80.33 functions, and apply
+Coverage thresholds in [`vitest.config.ts`](../vitest.config.ts) are 73.05
+statements, 73.05 lines, 75.35 branches, and 80.48 functions, and apply
 **only** when a database is reachable. Integration suites carry roughly ten
 points, so gating a laptop without Docker would fail for no reason. CI always
 sets `TEST_DATABASE_URL`, so CI is always gated.
