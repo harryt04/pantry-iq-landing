@@ -80,6 +80,53 @@ const transactionBatchTwoFixtures = [
   },
 ] as const
 
+const transactionBatchThreeFixtures = [
+  {
+    filename: 'sales-ambiguous-headers.csv',
+    rows: 5,
+    columns: ['Date', 'Type', 'Description', 'Amount'],
+    delimiter: ',',
+    encoding: 'utf-8',
+    outcome: 'error',
+    error: 'quantity is required',
+    itemResolution: false,
+  },
+  {
+    filename: 'sales-modifiers-and-customizations.csv',
+    rows: 5,
+    columns: ['Date', 'Item Name', 'Qty', 'Total Revenue'],
+    delimiter: ',',
+    encoding: 'utf-8',
+    outcome: 'success',
+  },
+  {
+    filename: 'sales-with-refunds-negative.csv',
+    rows: 5,
+    columns: ['Date', 'Item Name', 'Qty', 'Total Revenue'],
+    delimiter: ',',
+    encoding: 'utf-8',
+    outcome: 'success',
+  },
+  {
+    filename: 'sales-messy-dates-mixed.csv',
+    rows: 5,
+    columns: ['Date', 'Item Name', 'Qty', 'Total Revenue'],
+    delimiter: ',',
+    encoding: 'utf-8',
+    outcome: 'error',
+    error: 'transaction date is required',
+    itemResolution: false,
+  },
+  {
+    filename: 'sales-one-year-daily.csv',
+    rows: 1_825,
+    columns: ['Date', 'Item Name', 'Qty', 'Unit Price', 'Total Revenue'],
+    delimiter: ',',
+    encoding: 'utf-8',
+    outcome: 'success',
+  },
+] as const
+
 async function signInOrSignUp(page: Page) {
   const email = process.env.TEST_USER_EMAIL
   const configuredPassword = process.env.TEST_USER_PASSWORD
@@ -113,6 +160,36 @@ async function createTestLocation(page: Page) {
   const body = (await response.json()) as { location?: { id: string } }
   expect(body.location?.id).toBeTruthy()
   return body.location!.id
+}
+
+async function seedInventoryItems(page: Page, locationId: string) {
+  for (const displayName of [
+    'Salmon Fillet',
+    'House Salad',
+    'Tomato Soup',
+    'Bubble Tea',
+    'Burger',
+  ]) {
+    const response = await page.request.post(
+      `/api/manual-entry?locationId=${locationId}`,
+      {
+        data: {
+          entryType: 'inventory',
+          countedAt: '2025-01-01T00:00:00.000Z',
+          item: {
+            newItem: {
+              canonicalName: displayName,
+              displayName,
+              category: null,
+              unit: 'each',
+            },
+          },
+          quantity: '0',
+        },
+      },
+    )
+    expect(response.status()).toBe(201)
+  }
 }
 
 async function reviewMapping(page: Page) {
@@ -289,7 +366,7 @@ test('imports the second transaction corpus batch through /import', async ({
         await expect(
           page.locator('.csv-preview .app-page__help'),
         ).toContainText(
-          `${fixture.rows} rows · ${fixture.columns.length} columns · ${fixture.delimiter} delimited · ${fixture.encoding}`,
+          `${fixture.rows.toLocaleString()} rows · ${fixture.columns.length} columns · ${fixture.delimiter} delimited · ${fixture.encoding}`,
         )
         expect(
           await page.locator('.csv-preview thead th').allTextContents(),
@@ -320,5 +397,78 @@ test('imports the second transaction corpus batch through /import', async ({
   } finally {
     const response = await page.request.delete(`/api/locations/${locationId}`)
     expect(response.status()).toBe(204)
+  }
+})
+
+test('imports the third transaction corpus batch through /import', async ({
+  page,
+}) => {
+  test.setTimeout(180_000)
+  await signInOrSignUp(page)
+
+  for (const fixture of transactionBatchThreeFixtures) {
+    const locationId = await createTestLocation(page)
+    try {
+      await test.step(`imports ${fixture.filename}`, async () => {
+        if (
+          fixture.filename === 'sales-ambiguous-headers.csv' ||
+          fixture.filename === 'sales-messy-dates-mixed.csv' ||
+          fixture.filename === 'sales-one-year-daily.csv'
+        )
+          await seedInventoryItems(page, locationId)
+        await page.goto(`/import?locationId=${locationId}`)
+        await page.locator('#import-type').selectOption('transactions')
+        await page
+          .locator('#csv-file')
+          .setInputFiles(
+            path.resolve('tests/fixtures/csv/transactions', fixture.filename),
+          )
+        await page.getByRole('button', { name: 'Upload CSV' }).click()
+
+        await expect(page.locator('#csv-preview-title')).toBeVisible()
+        await expect(
+          page.locator('.csv-preview .app-page__help'),
+        ).toContainText(
+          `${fixture.rows.toLocaleString()} rows · ${fixture.columns.length} columns · ${fixture.delimiter} delimited · ${fixture.encoding}`,
+        )
+        expect(
+          await page.locator('.csv-preview thead th').allTextContents(),
+        ).toEqual(fixture.columns)
+
+        await reviewMapping(page)
+        await expect(page.locator('.csv-mapping')).toContainText(
+          /Mapping reviewed|All columns matched|reused your last mapping/,
+        )
+
+        if (fixture.outcome === 'error') {
+          const itemResolution = page.locator('.csv-item-resolution')
+          if (fixture.itemResolution) {
+            await expect(itemResolution).toBeVisible()
+            await expect(itemResolution).toContainText(
+              /unresolved items remaining/,
+            )
+            return
+          }
+          await expect(page.locator('p[role="alert"]')).toContainText(
+            fixture.error,
+          )
+          return
+        }
+
+        await resolveNewItems(page)
+        await expect(
+          page
+            .locator('.csv-import-confirmation')
+            .getByRole('heading', { name: /Ready to import/ }),
+        ).toBeVisible()
+        await page.getByRole('button', { name: 'Import now' }).click()
+        await expect(page.locator('.app-page__status')).toContainText(
+          `${fixture.rows.toLocaleString()} rows imported.`,
+        )
+      })
+    } finally {
+      const response = await page.request.delete(`/api/locations/${locationId}`)
+      expect(response.status()).toBe(204)
+    }
   }
 })

@@ -124,7 +124,11 @@ wall-clock budget.
       Covered Latin-1, UTF-8 BOM, preamble, headerless, and duplicate-header
       fixtures through the authenticated `/import` route; headerless data
       asserts the expected item-name validation error.
-- [ ] Batch 3 — `transactions/` fixtures 11–15
+- [x] Batch 3 — `transactions/` fixtures 11–15 (Codex, iteration 9)
+      Covered ambiguous headers, modifier normalization, refunds, mixed dates,
+      and the full-year transaction file through the authenticated `/import`
+      route, including preview metadata, mapping completion, validation errors,
+      and successful commits.
 - [ ] Batch 4 — `purchase-orders/` fixtures 1–5
 - [ ] Batch 5 — `purchase-orders/` fixtures 6–9
 - [ ] Batch 6 — `inventory/` fixtures 1–7

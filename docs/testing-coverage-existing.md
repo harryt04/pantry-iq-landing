@@ -173,7 +173,7 @@ pattern to copy.
 
 | File | Covers |
 | --- | --- |
-| [`critical-path.spec.ts`](../tests/critical-path.spec.ts) | Sign up → create location → import a CSV → resolve an item → commit → dashboard; transaction corpus batches 1–2 through the authenticated `/import` route |
+| [`critical-path.spec.ts`](../tests/critical-path.spec.ts) | Sign up → create location → import a CSV → resolve an item → commit → dashboard; transaction corpus batches 1–3 through the authenticated `/import` route |
 | [`returning-user.spec.ts`](../tests/returning-user.spec.ts) | Sign in → switch location → open chat → export CSV over HTTP |
 | [`accessibility/landing.spec.ts`](../tests/accessibility/landing.spec.ts) | Axe on `/`, `/design/gallery`, `/design/tokens` in both themes; keyboard focus; 44px touch targets; 16px mobile type; reduced motion |
 | [`charts/greyscale.spec.ts`](../tests/charts/greyscale.spec.ts) | `/design/gallery` desaturated at 375×900; bars keep pattern fills, lines keep dash patterns |
