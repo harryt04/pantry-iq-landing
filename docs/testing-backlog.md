@@ -269,7 +269,9 @@ above 94% — expect few survivors and move on quickly.
       iterations; take branches in `coverage/index.html` order.
 - [x] `menu/recipe-builder.ts` — 35.7% of 482. (Codex, iteration 31 — zero output-quantity validation)
       Added a regression test for zero output quantities; mutation testing confirmed the positive-boundary guard is required.
-- [ ] `metrics/trends.ts` — 33.8% of 358.
+- [x] `metrics/trends.ts` — 33.8% of 358. (Codex, iteration 32)
+      Added a behavioral regression for exact-decimal equality across scales;
+      mutation testing caught equality being treated as a downward trend.
 - [ ] `metrics/portfolio.ts` — 33.2% of 340.
 - [ ] `ingestion/reconciliation.ts` — 53.7% of 367.
 - [ ] `metrics/item-deep-dives.ts` — 66.7% of 345.
