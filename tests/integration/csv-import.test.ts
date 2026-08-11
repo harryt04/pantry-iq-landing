@@ -80,6 +80,13 @@ const REFUNDS_MAPPING = {
   'Total Revenue': 'totalRevenue',
 }
 
+const BUSINESS_DAY_MAPPING = {
+  Date: 'transactedAt',
+  'Item Name': 'rawItemName',
+  Qty: 'qty',
+  'Total Revenue': 'totalRevenue',
+}
+
 const PARTIAL_MAPPING = {
   Date: 'transactedAt',
   Item: 'rawItemName',
@@ -176,6 +183,16 @@ const REFUNDS_RESOLUTIONS: Record<string, ImportItemResolution> = {
     canonicalName: 'tomato soup',
     displayName: 'Tomato Soup',
     category: 'prepared food',
+    unit: 'each',
+    shelfLifeDays: null,
+  },
+}
+
+const BUSINESS_DAY_RESOLUTIONS: Record<string, ImportItemResolution> = {
+  [normalizeExactItemName('Salmon Fillet')]: {
+    canonicalName: 'salmon fillet',
+    displayName: 'Salmon Fillet',
+    category: 'seafood',
     unit: 'each',
     shelfLifeDays: null,
   },
@@ -636,6 +653,56 @@ describe.skipIf(!integrationDatabaseEnabled())('CSV import', () => {
           []),
       ])
       expect(spoilageValues.every((value) => !value.startsWith('-'))).toBe(true)
+    }, 120_000)
+
+    it('assigns a 01:30 sale to the prior business day after import and precompute', async () => {
+      const csv = await readFile(
+        path.resolve(
+          'tests/fixtures/csv/transactions/sales-business-day-boundary.csv',
+        ),
+        'utf8',
+      )
+      const uploadId = await seedUpload(LOCATION_ID, {
+        filename: 'sales-business-day-boundary.csv',
+        mapping: BUSINESS_DAY_MAPPING,
+      })
+
+      const summary = await imports.commitCsvImport(
+        new Headers(),
+        uploadId,
+        BUSINESS_DAY_RESOLUTIONS,
+        memoryStorage(csv),
+      )
+
+      expect(summary.rowsImported).toBe(2)
+
+      const { runPrecomputeForLocation } =
+        await import('../../src/server/metrics/precompute')
+      const run = await runPrecomputeForLocation(LOCATION_ID, {
+        now: new Date('2026-01-03T12:00:00.000Z'),
+      })
+      expect(run?.status).toBe('succeeded')
+
+      const { sql } = opened!.database
+      const [forecast] = await sql<
+        {
+          result: { forecast: { historyDays: number } }
+        }[]
+      >`
+        select result
+        from metric_rollups
+        where run_id = ${run!.id} and metric_key = 'demandForecast'
+      `
+      expect(forecast?.result.forecast.historyDays).toBe(2)
+
+      const { getDashboardDataState } =
+        await import('../../src/server/metrics/dashboard-state')
+      await expect(
+        getDashboardDataState(new Headers(), LOCATION_ID),
+      ).resolves.toMatchObject({
+        transactionDays: 2,
+        status: 'insufficient',
+      })
     }, 120_000)
 
     it('marks the upload imported so the history is honest', async () => {

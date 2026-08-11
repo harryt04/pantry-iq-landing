@@ -187,6 +187,15 @@ export const csvFixtures: CsvFixtureExpectation[] = [
     parse: { minReadableRows: 1800 },
     plan: { outcome: 'ok' },
   },
+  {
+    path: 'transactions/sales-business-day-boundary.csv',
+    importType: 'transactions',
+    description:
+      'Two sales on the same calendar date, including a 01:30 sale that belongs to the prior business day.',
+    security: 'passes',
+    parse: { hasHeader: true, minReadableRows: 2 },
+    plan: { outcome: 'ok', rowCount: 2, unmatchedItemCount: 0 },
+  },
 
   // --- purchase orders --------------------------------------------------
   {

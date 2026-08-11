@@ -166,8 +166,11 @@ recommendations.
       revenue and never surface as negative-quantity waste. (Codex, iteration 18)
       Covered the fixture through real CSV commit and precompute, asserting
       net item quantities/revenue and non-negative spoilage output.
-- [ ] Business-day boundary: build a fixture with a 01:30 sale and assert it
+- [x] Business-day boundary: build a fixture with a 01:30 sale and assert it
       buckets to the prior business day (tech-stack §3.10).
+      Covered same-calendar-day pre- and post-boundary sales through real CSV
+      commit and precompute; both demand forecast and dashboard count two
+      business days.
 - [ ] Money never touches a float (§3.9) — assert an imported amount stays
       exact from row through metric to rendered figure.
 - [ ] `labor/*` through STF-02 labor efficiency metrics.
