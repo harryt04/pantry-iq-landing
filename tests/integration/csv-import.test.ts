@@ -482,6 +482,14 @@ describe.skipIf(!integrationDatabaseEnabled())('CSV import', () => {
       ).rejects.toMatchObject({ code: 'NOT_CSV_CONTENT' })
 
       expect(received).toHaveLength(0)
+
+      const { sql } = opened!.database
+      const [history] = await sql<{ count: string }[]>`
+        select count(*)::text as count
+        from csv_upload_history
+        where location_id = ${LOCATION_ID}
+      `
+      expect(Number(history?.count ?? 0)).toBe(0)
     })
   })
 

@@ -46,7 +46,7 @@ it. `components/ui/**` is vendored and out of scope.
 Exit gate for every item: `pnpm prettify`, then `pnpm ci` until green.
 
 Then ratchet the coverage gate. [`vitest.config.ts`](../vitest.config.ts) holds
-  thresholds at 73.57/73.57/75.44/80.48 against 75.57% statements, 77.39% branches, 82.48% functions, and 75.57% lines measured 2026-08-11. Re-measure with
+  thresholds at 73.61/73.61/75.44/80.49 against 75.61% statements, 77.44% branches, 82.49% functions, and 75.61% lines measured 2026-08-11. Re-measure with
 `pnpm ci:tests` and raise each threshold to the new number minus two. Never
 lower one to make a build pass. Browser tests do not feed the v8 report, so
 Loops I, J, and L will not move the number. That is expected, not a failure.
@@ -337,8 +337,10 @@ them.
       `security/renamed-pdf.csv` before any bytes reach storage.
       Added real upload-path coverage with split signature chunks and asserted
       the storage consumer receives no bytes before rejection.
-- [ ] Assert a rejected upload persists nothing — no row, no file, no history
-      entry.
+- [x] Assert a rejected upload persists nothing — no row, no file, no history
+      entry. (Codex, iteration 46)
+      Extended the real upload-path security coverage to assert both renamed
+      binary fixtures leave no stored bytes and no `csv_upload_history` row.
 
 ---
 
