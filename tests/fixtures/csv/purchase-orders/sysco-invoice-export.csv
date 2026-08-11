@@ -1,0 +1,5 @@
+Order Date,Supplier,PO Number,Item,Qty,Unit Cost,Total Cost
+2025-03-01,Sysco,SYS-88213,Salmon Fillet,20,12.00,240.00
+2025-03-01,Sysco,SYS-88213,Romaine Lettuce,10,3.50,35.00
+2025-03-05,Sysco,SYS-88350,Salmon Fillet,15,12.25,183.75
+2025-03-05,Sysco,SYS-88350,Tomato,25,1.80,45.00

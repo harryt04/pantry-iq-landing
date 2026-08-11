@@ -4,6 +4,17 @@
 
 @custom-variant dark (&:is(.dark *));
 
+@layer base {
+  button:not(:disabled),
+  [role='button']:not([aria-disabled='true']) {
+    cursor: pointer;
+  }
+  button:disabled,
+  [role='button'][aria-disabled='true'] {
+    cursor: not-allowed;
+  }
+}
+
 :root {
   /* ---- radius: split in two, unlike stock shadcn ---- */
   --radius-surface: 3px; /* cards, panels, tables, inputs, dialogs */
@@ -3295,6 +3306,15 @@ body {
   line-height: 1.6;
   margin: var(--space-5) 0 0;
   padding-top: var(--space-4);
+}
+
+/* Expands the tap target to 44px without shifting surrounding text: the
+   padding grows the hit area and the matching negative margin cancels its
+   effect on layout. */
+.work-receipt__foot a {
+  display: inline-block;
+  margin: -13px -4px;
+  padding: 13px 4px;
 }
 
 @media (min-width: 768px) {

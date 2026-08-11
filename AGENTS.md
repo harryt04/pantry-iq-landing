@@ -1,42 +1,54 @@
 ## Repo state
 
-This branch (`rewrite`) is **docs-only**. There is no application code yet —
-`master` was reset to a clean planning corpus (see commit `e15ed36`, "restart
-with docs only") ahead of a rewrite. The `node_modules/` directory present
-locally is leftover from before the reset; there is no `package.json` at the
-repo root.
+The application is built. Next.js 15 / React 19 / TypeScript 5 (strict) /
+PostgreSQL + Drizzle ORM monolith, on `master`. All 87 tickets in
+[`docs/feature-backlog.md`](docs/feature-backlog.md) are marked **done**; that
+file is now a record of what was built, not a queue of claimable work.
 
-The prior implementation (before the reset) was a Next.js 16 / React 19 /
-TypeScript 5 (strict) / PostgreSQL 18 + Drizzle ORM monolith. A consolidated
-technical audit of that codebase is kept at
-[`docs/archive/existing-repo-audit-consolidated.md`](docs/archive/existing-repo-audit-consolidated.md)
-for reference — read it before making decisions about CSV upload security,
-file storage, or schema design, since those were flagged risk areas in the
-prior build. It is not binding on the rewrite.
+Layout: `app/` Next.js routes, `src/server/` server modules (`csv`, `metrics`,
+`ingestion`, `menu`, `staffing`, `connectors`, `chat`, `auth`, `db`, …),
+`components/` UI, `tests/` the test suite, `drizzle/` migrations, `docs/` the
+planning corpus.
+
+See [`README.md`](README.md) for setup. Day-to-day commands:
+
+| Command | Purpose |
+| --- | --- |
+| `pnpm dev` | Run the app locally |
+| `pnpm prettify` | Format — run before every commit |
+| `pnpm ci` | Full gate: lint, typecheck, unit, integration, a11y, charts, e2e, build, coverage |
+| `pnpm test` | Unit tests only (vitest) |
+| `pnpm db:migrate` / `pnpm db:seed` | Database |
+
+A consolidated technical audit of the **pre-rewrite** codebase is kept at
+[`docs/archive/existing-repo-audit-consolidated.md`](docs/archive/existing-repo-audit-consolidated.md).
+It describes code that no longer exists and binds nothing, but its flagged risk
+areas — CSV upload security, file storage, schema design — are still worth
+reading before you change those.
 
 ## Working in this repo right now
 
-**If you are here to build, go to
-[`docs/feature-backlog.md`](docs/feature-backlog.md).** It holds 87
-tickets, ordered only by dependency, each one claimable. Read its
-Decision Record first — it closes several questions the planning corpus
-leaves open.
+Read **[`docs/tech-stack.md`](docs/tech-stack.md)** before writing a line of
+code. It is authoritative for every technology choice, approved 2026-08-07.
+Three of its rules get broken by default if you don't know them: **money never
+touches a float** (§3.9), **a restaurant's business day is not a calendar day**
+(§3.10), and **email is authentication plumbing, never a notification channel**
+(§3.14).
 
-Then read **[`docs/tech-stack.md`](docs/tech-stack.md)** before writing a
-line of code. It is authoritative for every technology choice, approved
-2026-08-07. Three of its rules get broken by default if you don't know
-them: **money never touches a float** (§3.9), **a restaurant's business
-day is not a calendar day** (§3.10), and **email is authentication
-plumbing, never a notification channel** (§3.14). The pre-reset stack
-described below is reference, not a source of authority — the choices
-overlap, the reasoning is independent.
+When adding tests, assert on **behavior**, not on source text. Do not add
+`readFileSync`-on-source assertions. Break the code a new test protects and
+confirm the test fails before you accept it. `components/ui/**` is vendored
+shadcn/ui and is out of scope for tests and coverage.
+[`tests/fixtures/csv/`](tests/fixtures/csv/README.md) holds 50 real-shaped CSV
+files; its `manifest.ts` is the source of truth for what each file proves, and
+a `knownIssue` field there records behaviour we know is wrong — never edit a
+fixture or loosen an assertion to make a test pass.
 
-The rest of the active work is planning. The docs form a single corpus with
-each file owning one category — **do not create new planning files**; put
-new content in the doc that already owns that category (see the ownership
-table in [`docs/INDEX.md`](docs/INDEX.md)). This corpus was itself
-consolidated from 18 overlapping docs from earlier sessions specifically to
-stop that sprawl.
+The docs form a single corpus with each file owning one category — **do not
+create new planning files**; put new content in the doc that already owns that
+category (see the ownership table in [`docs/INDEX.md`](docs/INDEX.md)). This
+corpus was itself consolidated from 18 overlapping docs from earlier sessions
+specifically to stop that sprawl.
 
 Read [`docs/INDEX.md`](docs/INDEX.md) first — it gives the reading order and
 an ownership table. In short:
