@@ -48,6 +48,20 @@ export function normalizeExactItemName(value: string): string {
     .toLocaleLowerCase()
 }
 
+/**
+ * Some POS exports render a two-part item label as "last, first". Reordering
+ * exactly two comma-separated parts is a deterministic presentation
+ * normalization; it is still an exact match after the normalization step.
+ */
+function normalizeLastFirstPresentation(value: string): string {
+  const parts = value.split(',')
+  if (parts.length !== 2) return value
+
+  const [last, first] = parts.map((part) => part.trim())
+  if (!last || !first) return value
+  return `${first} ${last}`
+}
+
 export function stripKnownCustomizations(value: string): string {
   const normalized = normalizeExactItemName(value)
   let stripped = normalized
@@ -66,7 +80,7 @@ export function stripKnownCustomizations(value: string): string {
     .replace(/^[,;|]+/gu, '')
     .trim()
 
-  return stripped || normalized
+  return normalizeLastFirstPresentation(stripped || normalized)
 }
 
 export function resolveExactItemName(

@@ -94,12 +94,11 @@ focused unit test beside the module you changed, then clear the `knownIssue`.
       coverage and corrected the fixture manifest expectation.
       The fixture `transactions/sales-duplicate-headers.csv` now detects the
       repeated `Total` labels as a valid header.
-- [ ] **Toast "Last, first" item names never resolve.**
-      `transactions/toast-menu-item-sales.csv`. Toast writes `"Fillet, salmon"`.
-      Exact-match resolution never links these to the catalogue, so every row
-      lands unresolved instead of importing. Check ING-08's exact-match-only
-      contract before widening matching — this may be a product decision, not
-      a bug.
+- [x] **Toast "Last, first" item names never resolve.** (Codex, iteration 6)
+      `transactions/toast-menu-item-sales.csv`. Resolved with deterministic
+      two-part presentation normalization (`Fillet, salmon` → `salmon fillet`)
+      while preserving ING-08 exact-match-only behavior; added regression
+      coverage and corrected the fixture expectation.
 
 The first three are all `decimal()` in `import-plan.ts`. Expect them to
 interact; do them in order and re-check the later two after the first lands.

@@ -68,9 +68,7 @@ export const csvFixtures: CsvFixtureExpectation[] = [
       'Toast menu-item export. CRLF line endings, quoted item names with embedded commas.',
     security: 'passes',
     parse: { hasHeader: true, minReadableRows: 8 },
-    plan: { outcome: 'ok', rowCount: 0, unmatchedItemCount: 3 },
-    knownIssue:
-      'Toast writes item names "Last, first" style (e.g. "Fillet, salmon"). Exact-match item resolution never links these to the catalogue, so every row lands as an unresolved item instead of importing.',
+    plan: { outcome: 'ok', rowCount: 8, unmatchedItemCount: 0 },
   },
   {
     path: 'transactions/clover-payments-export.csv',
