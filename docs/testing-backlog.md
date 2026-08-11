@@ -442,8 +442,10 @@ Percentages below are line coverage measured 2026-08-10.
       complete labor shifts for the full-year location.
       `components/staffing/labor-efficiency-view.tsx` is 464 lines at 0%, and
       `staffing/labor-efficiency-query.ts` is 0%.
-- [ ] `/usage` — usage variance. View 231 lines at 0%,
-      `menu/usage-variance-query.ts` 0%.
+- [x] `/usage` — usage variance. View 231 lines at 0%,
+      `menu/usage-variance-query.ts` 0%. (Codex, iteration 57) Added seeded
+      full-year and short-history browser coverage for calculated variance,
+      waste attribution, exclusions, and the explicit missing-count state.
 - [ ] `/menu-engineering` — the popularity and margin matrix. View 225 lines at
       0%, `menu/menu-engineering-query.ts` 0%. It sits outside the `(app)`
       route group; assert the shell still renders consistently.

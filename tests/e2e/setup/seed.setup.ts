@@ -72,6 +72,158 @@ async function seedLaborShifts(
   }
 }
 
+async function seedUsageData(
+  client: ReturnType<typeof postgres>,
+  fixture: LocationFixture,
+  usageEnd: Date,
+) {
+  const menuItems = await client.unsafe<{ id: string }[]>(
+    `
+      select id
+      from inventory_items
+      where location_id = $1
+        and canonical_name = 'tomato soup'
+      limit 1
+    `,
+    [fixture.locationId],
+  )
+  const menuItemId = menuItems[0]?.id
+  if (!menuItemId)
+    throw new Error('The usage fixture menu item was not seeded.')
+
+  const ingredientItemId = randomUUID()
+  const recipeId = randomUUID()
+  await client`
+    insert into inventory_items (
+      id,
+      location_id,
+      canonical_name,
+      display_name,
+      category,
+      unit,
+      item_type,
+      cost_per_unit
+    ) values (
+      ${ingredientItemId},
+      ${fixture.locationId},
+      'tomato',
+      'Tomato',
+      'fixture',
+      'each',
+      'ingredient',
+      '1.00'
+    )
+  `
+  await client`
+    insert into recipes (
+      id,
+      location_id,
+      menu_item_id,
+      name,
+      output_quantity,
+      output_unit,
+      yield_factor,
+      waste_factor
+    ) values (
+      ${recipeId},
+      ${fixture.locationId},
+      ${menuItemId},
+      'Tomato soup recipe',
+      '1',
+      'each',
+      '1',
+      '0'
+    )
+  `
+  await client`
+    insert into recipe_ingredients (
+      id,
+      recipe_id,
+      ingredient_item_id,
+      quantity,
+      unit
+    ) values (
+      ${randomUUID()},
+      ${recipeId},
+      ${ingredientItemId},
+      '1',
+      'each'
+    )
+  `
+
+  if (fixture.sales.length >= 365) {
+    const beginning = new Date(usageEnd)
+    beginning.setUTCDate(beginning.getUTCDate() - 14)
+    const purchaseOrderId = randomUUID()
+    await client`
+      insert into purchase_orders (
+        id,
+        location_id,
+        ordered_at,
+        received_at,
+        external_id,
+        source,
+        supplier_name
+      ) values (
+        ${purchaseOrderId},
+        ${fixture.locationId},
+        ${new Date(usageEnd.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString()},
+        ${new Date(usageEnd.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString()},
+        ${`usage-fixture-po-${fixture.locationId}`},
+        'e2e-fixture',
+        'Usage fixture supplier'
+      )
+    `
+    await client`
+      insert into purchase_order_items (
+        id,
+        purchase_order_id,
+        location_id,
+        inventory_item_id,
+        raw_item_name,
+        qty,
+        unit_cost,
+        total_cost
+      ) values (
+        ${randomUUID()},
+        ${purchaseOrderId},
+        ${fixture.locationId},
+        ${ingredientItemId},
+        'Tomato',
+        '20',
+        '1.00',
+        '20.00'
+      )
+    `
+    await client`
+      insert into inventory_snapshots (
+        id,
+        location_id,
+        inventory_item_id,
+        counted_at,
+        qty,
+        source
+      ) values
+        (
+          ${randomUUID()},
+          ${fixture.locationId},
+          ${ingredientItemId},
+          ${beginning.toISOString()},
+          '40',
+          'e2e-fixture'
+        ),
+        (
+          ${randomUUID()},
+          ${fixture.locationId},
+          ${ingredientItemId},
+          ${usageEnd.toISOString()},
+          '15',
+          'e2e-fixture'
+        )
+    `
+  }
+}
+
 setup.use({ storageState: authFile })
 
 setup('seed the shared owner locations', async ({ page }) => {
@@ -110,6 +262,8 @@ setup('seed the shared owner locations', async ({ page }) => {
       ownerId,
       fixtureLocations: [recentFullYearFixture, recentPartialDataFixture],
     })
+    await seedUsageData(client, recentFullYearFixture, new Date())
+    await seedUsageData(client, recentPartialDataFixture, new Date())
     await seedLaborShifts(client, recentFullYearFixture)
 
     const rows = await client.unsafe<
@@ -148,7 +302,7 @@ setup('seed the shared owner locations', async ({ page }) => {
       {
         locationId: fullYearLocationFixture.locationId,
         transactionCount: '365',
-        snapshotCount: '52',
+        snapshotCount: '54',
       },
     ])
 

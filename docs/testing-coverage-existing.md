@@ -18,7 +18,7 @@ figure is higher.
 | --- | --- |
 | Vitest files | 111 |
 | Vitest cases | 584 statically, more after `.each` expansion |
-| Playwright specs | 4 files, 11 cases |
+| Playwright specs | 5 files, 13 cases |
 | Line coverage | 75.61% with a database, 65.98% without |
 
 ---
@@ -178,6 +178,7 @@ pattern to copy.
 | [`e2e/critical-path.spec.ts`](../tests/e2e/critical-path.spec.ts) | Sign up → create location → import a CSV → resolve an item → commit → dashboard; transaction corpus batches 1–3, purchase-order batches 1–2, inventory batch 1, labor batch 1, and malformed batch 1 through the authenticated `/import` route |
 | [`e2e/returning-user.spec.ts`](../tests/e2e/returning-user.spec.ts) | Sign in → switch location → open chat → export CSV over HTTP |
 | [`e2e/staffing.spec.ts`](../tests/e2e/staffing.spec.ts) | Full-year labor comparisons and demand forecast; 14-day insufficient-history state |
+| [`e2e/usage.spec.ts`](../tests/e2e/usage.spec.ts) | Full-year usage variance, waste attribution, and exclusions; 14-day missing-inventory-count state |
 | [`ui/fixtures/mock-api.ts`](../tests/ui/fixtures/mock-api.ts) | Reusable scenario-keyed `page.route()` responses for mocked UI flows across chat, locations, recipes, items, and reconciliation |
 | [`accessibility/landing.spec.ts`](../tests/accessibility/landing.spec.ts) | Axe on `/`, `/design/gallery`, `/design/tokens` in both themes; keyboard focus; 44px touch targets; 16px mobile type; reduced motion |
 | [`accessibility/real-data.spec.ts`](../tests/accessibility/real-data.spec.ts) | Authenticated axe and grayscale screenshot sweeps across ten full-year-data screens in both themes at a mobile viewport; the dependent seed setup supplies real PostgreSQL rows and location visibility |
