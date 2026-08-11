@@ -134,7 +134,7 @@ export async function POST(request: Request) {
       requestHeaders,
       body.locationId,
       input,
-      recipeId,
+      recipeId ?? undefined,
     )
     return Response.json({ recipe }, { status: recipeId ? 200 : 201 })
   } catch (error) {

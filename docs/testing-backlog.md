@@ -452,8 +452,10 @@ Percentages below are line coverage measured 2026-08-10.
       iteration 58) Added seeded full-year calculated-matrix coverage, including
       printed quadrant and contribution figures plus the missing-margin
       exclusion, and a short-history insufficient-data state.
-- [ ] `/recipes` — also outside `(app)`. Create a recipe, add ingredients,
-      save, reload, assert it persisted.
+- [x] `/recipes` — also outside `(app)`. Create a recipe, add ingredients,
+      save, reload, assert it persisted. (Codex, iteration 59) Added a seeded
+      real-data journey that saves a recipe with Tomato, reloads the page, and
+      reopens it to verify the persisted ingredient quantity and unit.
 - [ ] `/portfolio` — the rollup across both seeded locations.
       `portfolio-rollup.tsx` 0%, `metrics/portfolio.ts` 33.2%.
 - [ ] `/settings` — item master and shelf-life defaults. Edit an item, save,
