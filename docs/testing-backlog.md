@@ -272,7 +272,9 @@ above 94% — expect few survivors and move on quickly.
 - [x] `metrics/trends.ts` — 33.8% of 358. (Codex, iteration 32)
       Added a behavioral regression for exact-decimal equality across scales;
       mutation testing caught equality being treated as a downward trend.
-- [ ] `metrics/portfolio.ts` — 33.2% of 340.
+- [x] `metrics/portfolio.ts` — 33.2% of 340. (Codex, iteration 33)
+      Added an all-locations-uncalculable money-at-risk regression; mutating
+      the empty-value guard caused the portfolio suite to fail.
 - [ ] `ingestion/reconciliation.ts` — 53.7% of 367.
 - [ ] `metrics/item-deep-dives.ts` — 66.7% of 345.
 - [ ] `metrics/scheduler.ts` — 57.9% of 209.
