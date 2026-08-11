@@ -244,6 +244,53 @@ const purchaseOrderBatchTwoFixtures = [
   },
 ] as const
 
+const inventoryBatchFixtures = [
+  {
+    filename: 'manual-count-sheet.csv',
+    rows: 4,
+    columns: ['Count Date', 'Item', 'Qty', 'Unit', 'Category'],
+    outcome: 'success',
+  },
+  {
+    filename: 'inventory-with-units-and-shelf-life.csv',
+    rows: 4,
+    columns: ['Count Date', 'Item', 'Qty', 'Unit', 'Shelf Life Days'],
+    outcome: 'success',
+  },
+  {
+    filename: 'inventory-fractional-quantities.csv',
+    rows: 4,
+    columns: ['Count Date', 'Item', 'Qty', 'Unit'],
+    outcome: 'success',
+  },
+  {
+    filename: 'inventory-zero-and-blank-qty.csv',
+    rows: 3,
+    columns: ['Count Date', 'Item', 'Qty', 'Unit'],
+    outcome: 'error',
+    error: 'quantity is required',
+  },
+  {
+    filename: 'inventory-new-items-only.csv',
+    rows: 3,
+    columns: ['Count Date', 'Item', 'Qty', 'Unit'],
+    outcome: 'success',
+    unmatchedItems: 3,
+  },
+  {
+    filename: 'inventory-mixed-case-whitespace-names.csv',
+    rows: 3,
+    columns: ['Count Date', 'Item', 'Qty', 'Unit'],
+    outcome: 'success',
+  },
+  {
+    filename: 'inventory-two-counts-same-day.csv',
+    rows: 3,
+    columns: ['Count Date', 'Item', 'Qty', 'Unit'],
+    outcome: 'success',
+  },
+] as const
+
 async function signInOrSignUp(page: Page) {
   const email = process.env.TEST_USER_EMAIL
   const configuredPassword = process.env.TEST_USER_PASSWORD
@@ -318,6 +365,37 @@ async function seedPurchaseOrderItems(page: Page, locationId: string) {
     'Butter',
     'Onion',
     'Garlic',
+  ]) {
+    const response = await page.request.post(
+      `/api/manual-entry?locationId=${locationId}`,
+      {
+        data: {
+          entryType: 'inventory',
+          countedAt: '2025-01-01T00:00:00.000Z',
+          item: {
+            newItem: {
+              canonicalName: displayName,
+              displayName,
+              category: null,
+              unit: 'each',
+            },
+          },
+          quantity: '0',
+        },
+      },
+    )
+    expect(response.status()).toBe(201)
+  }
+}
+
+async function seedInventoryImportItems(page: Page, locationId: string) {
+  for (const displayName of [
+    'Salmon Fillet',
+    'Romaine Lettuce',
+    'Butter',
+    'Tomato',
+    'Heavy Cream',
+    'Tomato Soup',
   ]) {
     const response = await page.request.post(
       `/api/manual-entry?locationId=${locationId}`,
@@ -738,5 +816,67 @@ test('imports the second purchase-order corpus batch through /import', async ({
   } finally {
     const response = await page.request.delete(`/api/locations/${locationId}`)
     expect(response.status()).toBe(204)
+  }
+})
+
+test('imports the inventory corpus batch through /import', async ({ page }) => {
+  test.setTimeout(180_000)
+  await signInOrSignUp(page)
+  for (const fixture of inventoryBatchFixtures) {
+    const locationId = await createTestLocation(page)
+    try {
+      await test.step(`imports ${fixture.filename}`, async () => {
+        await seedInventoryImportItems(page, locationId)
+        await page.goto(`/import?locationId=${locationId}`)
+        await page.locator('#import-type').selectOption('inventory')
+        await page
+          .locator('#csv-file')
+          .setInputFiles(
+            path.resolve('tests/fixtures/csv/inventory', fixture.filename),
+          )
+        await page.getByRole('button', { name: 'Upload CSV' }).click()
+
+        await expect(page.locator('#csv-preview-title')).toBeVisible()
+        await expect(
+          page.locator('.csv-preview .app-page__help'),
+        ).toContainText(
+          `${fixture.rows} rows · ${fixture.columns.length} columns · , delimited · utf-8`,
+        )
+        expect(
+          await page.locator('.csv-preview thead th').allTextContents(),
+        ).toEqual(fixture.columns)
+
+        await reviewMapping(page)
+        await expect(page.locator('.csv-mapping')).toContainText(
+          /Mapping reviewed|All columns matched|reused your last mapping/,
+        )
+
+        if (fixture.outcome === 'error') {
+          await expect(page.locator('p[role="alert"]')).toContainText(
+            fixture.error,
+          )
+          return
+        }
+
+        if ('unmatchedItems' in fixture && fixture.unmatchedItems) {
+          await expect(page.locator('.csv-item-resolution')).toContainText(
+            `${fixture.unmatchedItems} unresolved items remaining`,
+          )
+        }
+        await resolveNewItems(page)
+        await expect(
+          page
+            .locator('.csv-import-confirmation')
+            .getByRole('heading', { name: /Ready to import/ }),
+        ).toBeVisible()
+        await page.getByRole('button', { name: 'Import now' }).click()
+        await expect(page.locator('.app-page__status')).toContainText(
+          `${fixture.rows} rows imported.`,
+        )
+      })
+    } finally {
+      const response = await page.request.delete(`/api/locations/${locationId}`)
+      expect(response.status()).toBe(204)
+    }
   }
 })

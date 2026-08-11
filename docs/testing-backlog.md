@@ -136,7 +136,8 @@ wall-clock budget.
       the browser path exposed a date-mapping defect in the US Foods fixture.
 - [x] Batch 5 — `purchase-orders/` fixtures 6–9 (Codex, iteration 11)
       Covered received-before-ordered, unit-cost/total mismatch, mixed currency/percentage rejection, and blank received dates through the authenticated `/import` route.
-- [ ] Batch 6 — `inventory/` fixtures 1–7
+- [x] Batch 6 — `inventory/` fixtures 1–7 (Codex, iteration 12)
+      Covered all seven inventory fixtures through the authenticated `/import` route, including shelf-life and fractional quantities, normalized item names, new-item resolution, snapshot deduplication isolation, and the expected blank-quantity error.
 - [ ] Batch 7 — `labor/` fixtures 1–6
 - [ ] Batch 8 — `malformed/` fixtures 1–8
 - [ ] Batch 9 — `security/` fixtures 1–5
