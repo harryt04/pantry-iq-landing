@@ -152,9 +152,12 @@ wall-clock budget.
 Nothing proves imported rows produce correct metrics, scores, or
 recommendations.
 
-- [ ] Import `transactions/sales-one-year-daily.csv`, run the precompute
+- [x] Import `transactions/sales-one-year-daily.csv`, run the precompute
       pipeline, assert Data Sufficiency crosses the four-week gate and the
       dashboard leaves the insufficient-data state.
+      Covered in the real-Postgres CSV import integration suite: the fixture
+      imports 1,825 rows, precompute marks prediction eligibility true, and
+      the owner-scoped dashboard state is ready.
 - [ ] Import under four weeks of history; assert it does **not** cross the gate
       and the insufficient-data state states what is missing.
 - [ ] `transactions/sales-with-refunds-negative.csv` — assert refunds reduce

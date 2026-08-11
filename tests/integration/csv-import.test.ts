@@ -7,6 +7,8 @@ import {
   it,
   vi,
 } from 'vitest'
+import { readFile } from 'node:fs/promises'
+import path from 'node:path'
 
 import {
   migrateDatabase,
@@ -61,6 +63,14 @@ const MAPPING = {
   Total: 'totalRevenue',
 }
 
+const FULL_YEAR_MAPPING = {
+  Date: 'transactedAt',
+  'Item Name': 'rawItemName',
+  Qty: 'qty',
+  'Unit Price': 'unitPrice',
+  'Total Revenue': 'totalRevenue',
+}
+
 /**
  * A CSV names items in the operator's own words. Anything the importer cannot
  * match to an existing item has to be resolved by the user before commit, so
@@ -79,6 +89,44 @@ const RESOLUTIONS: Record<string, ImportItemResolution> = {
     displayName: 'Potato',
     category: 'Produce',
     unit: 'lb',
+    shelfLifeDays: null,
+  },
+}
+
+const FULL_YEAR_RESOLUTIONS: Record<string, ImportItemResolution> = {
+  [normalizeExactItemName('Salmon Fillet')]: {
+    canonicalName: 'salmon fillet',
+    displayName: 'Salmon Fillet',
+    category: 'seafood',
+    unit: 'each',
+    shelfLifeDays: null,
+  },
+  [normalizeExactItemName('House Salad')]: {
+    canonicalName: 'house salad',
+    displayName: 'House Salad',
+    category: 'produce',
+    unit: 'each',
+    shelfLifeDays: null,
+  },
+  [normalizeExactItemName('Tomato Soup')]: {
+    canonicalName: 'tomato soup',
+    displayName: 'Tomato Soup',
+    category: 'prepared food',
+    unit: 'each',
+    shelfLifeDays: null,
+  },
+  [normalizeExactItemName('Bubble Tea')]: {
+    canonicalName: 'bubble tea',
+    displayName: 'Bubble Tea',
+    category: 'beverage',
+    unit: 'each',
+    shelfLifeDays: null,
+  },
+  [normalizeExactItemName('Burger')]: {
+    canonicalName: 'burger',
+    displayName: 'Burger',
+    category: 'prepared food',
+    unit: 'each',
     shelfLifeDays: null,
   },
 }
@@ -122,7 +170,13 @@ async function countItems(locationId = LOCATION_ID) {
  * upload gets its own.
  */
 let seededUploads = 0
-async function seedUpload(locationId = LOCATION_ID) {
+async function seedUpload(
+  locationId = LOCATION_ID,
+  options: {
+    filename?: string
+    mapping?: Record<string, string>
+  } = {},
+) {
   const { sql } = opened!.database
   seededUploads += 1
   const storageKey = `${STORAGE_KEY}-${seededUploads}`
@@ -131,8 +185,8 @@ async function seedUpload(locationId = LOCATION_ID) {
       (location_id, filename, source, status, rows_imported, mapping_used,
        storage_key, uploaded_at)
     values
-      (${locationId}, 'sales.csv', 'transactions', 'uploaded', 0,
-       ${JSON.stringify(MAPPING)}::jsonb, ${storageKey}, now())
+      (${locationId}, ${options.filename ?? 'sales.csv'}, 'transactions', 'uploaded', 0,
+       ${JSON.stringify(options.mapping ?? MAPPING)}::jsonb, ${storageKey}, now())
     returning id
   `
   return row!.id
@@ -267,6 +321,71 @@ describe.skipIf(!integrationDatabaseEnabled())('CSV import', () => {
       expect(await countTransactions()).toBe(2)
       expect(await countItems()).toBe(2)
     })
+
+    it('imports a full year, crosses the prediction gate, and readies the dashboard', async () => {
+      const csv = await readFile(
+        path.resolve(
+          'tests/fixtures/csv/transactions/sales-one-year-daily.csv',
+        ),
+        'utf8',
+      )
+      const uploadId = await seedUpload(LOCATION_ID, {
+        filename: 'sales-one-year-daily.csv',
+        mapping: FULL_YEAR_MAPPING,
+      })
+
+      const summary = await imports.commitCsvImport(
+        new Headers(),
+        uploadId,
+        FULL_YEAR_RESOLUTIONS,
+        memoryStorage(csv),
+      )
+
+      expect(summary.rowsImported).toBe(1_825)
+      expect(await countTransactions()).toBe(1_825)
+
+      const { runPrecomputeForLocation } =
+        await import('../../src/server/metrics/precompute')
+      const run = await runPrecomputeForLocation(LOCATION_ID, {
+        now: new Date('2026-01-01T12:00:00.000Z'),
+      })
+      expect(run?.status).toBe('succeeded')
+
+      const { sql } = opened!.database
+      const [sufficiency] = await sql<
+        {
+          status: string
+          value: string | null
+          result: {
+            components?: { history?: string }
+            predictionEligible?: boolean
+          }
+        }[]
+      >`
+        select status, value, result
+        from metric_rollups
+        where run_id = ${run!.id} and metric_key = 'dataSufficiency'
+      `
+      expect(sufficiency).toMatchObject({
+        status: 'calculated',
+        value: expect.any(String),
+        result: {
+          components: { history: '100' },
+          predictionEligible: true,
+        },
+      })
+
+      const { getDashboardDataState } =
+        await import('../../src/server/metrics/dashboard-state')
+      await expect(
+        getDashboardDataState(new Headers(), LOCATION_ID),
+      ).resolves.toEqual({
+        status: 'ready',
+        transactionDays: 365,
+        requiredDays: 7,
+        remainingDays: 0,
+      })
+    }, 120_000)
 
     it('marks the upload imported so the history is honest', async () => {
       const uploadId = await seedUpload()
