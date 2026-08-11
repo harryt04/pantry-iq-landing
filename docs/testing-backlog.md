@@ -435,7 +435,11 @@ missing rather than showing zeros.
 
 Percentages below are line coverage measured 2026-08-10.
 
-- [ ] `/staffing` — labor efficiency.
+- [x] `/staffing` — labor efficiency. (Codex, iteration 56)
+      Added authenticated seeded coverage for full-year labor comparisons and
+      forecast output, plus the 14-day insufficient-history state. The browser
+      seed now keeps both fixtures inside the staffing lookback and supplies
+      complete labor shifts for the full-year location.
       `components/staffing/labor-efficiency-view.tsx` is 464 lines at 0%, and
       `staffing/labor-efficiency-query.ts` is 0%.
 - [ ] `/usage` — usage variance. View 231 lines at 0%,
