@@ -375,13 +375,14 @@ components that fetch: `chat-surface`, `location-manager`, `recipe-builder`,
 `manual-entry-form`, `reconciliation-review`, and the export control. So
 browser coverage needs two layers, not one.
 
-- [ ] Split [`playwright.config.ts`](../playwright.config.ts) into four
+- [x] Split [`playwright.config.ts`](../playwright.config.ts) into four
       projects sharing the current `webServer` block: `setup`
       (`tests/e2e/setup/`), `e2e` (`tests/e2e/`, seeded database, real stack),
       `ui` (`tests/ui/`, mocked, no database), and `design`
       (`tests/accessibility/` and `tests/charts/`, unchanged). `e2e` and `ui`
       both declare `dependencies: ['setup']`. Keep `expect.timeout` at 15s and
-      `retries: 2` in CI.
+      `retries: 2` in CI. (Codex, iteration 48) The existing journeys now
+      live under `tests/e2e/`; the four projects share the existing web server.
 - [ ] Add `tests/e2e/setup/auth.setup.ts`. Both current specs sign up from
       scratch, which is slow and is why there are only two of them. Sign up
       once, save `storageState` to `tests/.auth/owner.json`, and load it from

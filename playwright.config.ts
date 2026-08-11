@@ -33,7 +33,27 @@ export default defineConfig({
   },
   projects: [
     {
-      name: 'chromium',
+      name: 'setup',
+      testDir: './tests/e2e/setup',
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
+      name: 'e2e',
+      testDir: './tests/e2e',
+      fullyParallel: false,
+      dependencies: ['setup'],
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
+      name: 'ui',
+      testDir: './tests/ui',
+      dependencies: ['setup'],
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
+      name: 'design',
+      testDir: './tests',
+      testMatch: ['accessibility/**/*.spec.ts', 'charts/**/*.spec.ts'],
       use: { ...devices['Desktop Chrome'] },
     },
   ],
