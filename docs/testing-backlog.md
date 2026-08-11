@@ -333,8 +333,10 @@ them.
       tests `export-format.ts`, which is a pure formatter at 100%. The query
       module `exports.ts` is now covered by the real service test; extend that
       test here rather than the mocked API test.
-- [ ] Assert the guard rejects `security/renamed-xlsx.csv` and
+- [x] (Codex, iteration 45) Assert the guard rejects `security/renamed-xlsx.csv` and
       `security/renamed-pdf.csv` before any bytes reach storage.
+      Added real upload-path coverage with split signature chunks and asserted
+      the storage consumer receives no bytes before rejection.
 - [ ] Assert a rejected upload persists nothing — no row, no file, no history
       entry.
 

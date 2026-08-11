@@ -41,6 +41,10 @@ function hasPrefix(bytes: Uint8Array, signature: readonly number[]): boolean {
   return signature.every((value, index) => bytes[index] === value)
 }
 
+function hasBinarySignature(bytes: Uint8Array): boolean {
+  return BINARY_SIGNATURES.some((signature) => hasPrefix(bytes, signature))
+}
+
 function containsForbiddenControlByte(bytes: Uint8Array): boolean {
   return Array.from(bytes).some(
     (value) => value < 0x09 || (value > 0x0d && value < 0x20),
@@ -138,15 +142,17 @@ export async function* guardedCsvStream(
     }
 
     for (const value of chunk) {
-      if (prefix.length < 2) prefix.push(value)
+      if (prefix.length < 4) prefix.push(value)
     }
-    if (prefix.length === 2) utf16le = prefix[0] === 0xff && prefix[1] === 0xfe
+    if (prefix.length >= 2) {
+      utf16le = prefix[0] === 0xff && prefix[1] === 0xfe
+    }
 
-    if (
-      !utf16le &&
-      prefix.length === 2 &&
-      containsForbiddenControlByte(chunk)
-    ) {
+    if (hasBinarySignature(new Uint8Array(prefix))) {
+      throw new CsvSecurityError('NOT_CSV_CONTENT')
+    }
+
+    if (!utf16le && prefix.length >= 2 && containsForbiddenControlByte(chunk)) {
       throw new CsvSecurityError('NOT_CSV_CONTENT')
     }
 

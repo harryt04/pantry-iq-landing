@@ -339,6 +339,16 @@ function csvBody(body: string): ReadableStream<Uint8Array> {
   })
 }
 
+function byteBody(body: Uint8Array): ReadableStream<Uint8Array> {
+  return new ReadableStream({
+    start(controller) {
+      controller.enqueue(body.subarray(0, 4))
+      controller.enqueue(body.subarray(4))
+      controller.close()
+    },
+  })
+}
+
 async function countTransactions(locationId = LOCATION_ID) {
   const { sql } = opened!.database
   const [row] = await sql<{ count: string }[]>`
@@ -435,6 +445,44 @@ describe.skipIf(!integrationDatabaseEnabled())('CSV import', () => {
     `
 
     sessionState.current = { user: { id: OWNER_ID } }
+  })
+
+  describe('upload security', () => {
+    it.each([
+      ['renamed-xlsx.csv', 'ZIP/XLSX signature'],
+      ['renamed-pdf.csv', 'PDF signature'],
+    ])('rejects %s before the %s reaches object storage', async (filename) => {
+      const body = await readFile(
+        path.resolve('tests/fixtures/csv/security', filename),
+      )
+      const received: Uint8Array[] = []
+      const storage: ObjectStorage = {
+        putObject: async ({ body: input }) => {
+          for await (const chunk of input) received.push(chunk)
+        },
+        deleteObject: async () => {},
+        getObject: async () => ({
+          async *[Symbol.asyncIterator]() {
+            yield body
+          },
+        }),
+      }
+
+      await expect(
+        uploads.uploadCsv({
+          headers: new Headers({
+            'content-length': String(body.byteLength),
+          }),
+          locationId: LOCATION_ID,
+          filename,
+          importType: 'transactions',
+          body: byteBody(body),
+          storage,
+        }),
+      ).rejects.toMatchObject({ code: 'NOT_CSV_CONTENT' })
+
+      expect(received).toHaveLength(0)
+    })
   })
 
   describe('preview', () => {
