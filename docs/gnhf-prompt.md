@@ -1,10 +1,23 @@
-Go ahead and take in this context as needed (cache this understanding if possible for the next agent): 
+## Persistent project context
 
-/Users/harry/Documents/git/pantry-iq/AGENTS.md
-/Users/harry/Documents/git/pantry-iq/docs/vision.md
-/Users/harry/Documents/git/pantry-iq/docs/tech-stack.md
-/Users/harry/Documents/git/pantry-iq/docs/architecture-and-data-model.md
-/Users/harry/Documents/git/pantry-iq/docs/INDEX.md
+Before starting work, read `AGENTS.md`. It is the durable project context and
+operating contract for this repository. Do not rely on hidden memory from
+previous agents.
+
+Then read `docs/INDEX.md`. Use its ownership table and reading order to identify
+which authoritative document applies to the task. Read only the relevant
+sections of that document unless the task genuinely spans multiple categories;
+do not load the entire documentation corpus by default.
+
+Treat `AGENTS.md` as project-level routing and guardrails. Treat the
+authoritative documents identified by `docs/INDEX.md` as the source of truth for
+product, architecture, brand, and technology decisions. If a prior context
+checkpoint is available and the `/context-restore` skill exists, restore it for
+session history, but verify its decisions against the current repository docs.
+
+For additional context, consult only the authoritative document identified by
+`docs/INDEX.md` as relevant to the task. Read multiple documents only when the
+task crosses ownership boundaries.
 
 
 Then, please see /Users/harry/Documents/git/pantry-iq/docs/testing-backlog.md and identify a test or feature that you would like to implement that hasn't been implemented yet.

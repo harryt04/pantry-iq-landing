@@ -134,7 +134,7 @@ export async function closeAppDatabaseClient() {
 export async function openTestDatabase(): Promise<OpenTestDatabase> {
   const externalDatabaseUrl = getExternalTestDatabaseUrl()
   if (externalDatabaseUrl !== undefined) {
-    const sql = postgres(externalDatabaseUrl, { max: 1 })
+    const sql = postgres(externalDatabaseUrl, { max: 1, onnotice: () => {} })
     return {
       database: { sql, url: externalDatabaseUrl },
       close: async () => {
@@ -144,7 +144,10 @@ export async function openTestDatabase(): Promise<OpenTestDatabase> {
   }
 
   const container = await new PostgreSqlContainer('postgres:16-alpine').start()
-  const sql = postgres(container.getConnectionUri(), { max: 1 })
+  const sql = postgres(container.getConnectionUri(), {
+    max: 1,
+    onnotice: () => {},
+  })
 
   return {
     database: { sql, url: container.getConnectionUri() },

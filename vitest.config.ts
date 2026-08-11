@@ -35,7 +35,9 @@ export default defineConfig({
     include: ['**/*.test.ts', '**/*.test.tsx'],
     // TEST_DATABASE_URL points multiple integration files at one disposable
     // database, and migration tests intentionally reset it.
-    fileParallelism: process.env.TEST_DATABASE_URL === undefined,
+    fileParallelism:
+      process.env.TEST_DATABASE_URL === undefined &&
+      process.env.TESTCONTAINERS_ENABLED !== '1',
     // Only the interaction tests pay for a DOM. Everything else stays on node,
     // where the pure-logic suites run in milliseconds.
     environmentMatchGlobs: [['**/*.dom.test.tsx', 'jsdom']],
