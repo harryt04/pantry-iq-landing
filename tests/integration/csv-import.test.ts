@@ -99,6 +99,31 @@ const MONEY_PRECISION_MAPPING = {
   'Total Cost': 'totalCost',
 }
 
+const LABOR_MAPPING = {
+  'Clock In': 'shiftStart',
+  'Clock Out': 'shiftEnd',
+  'Staff ID': 'employeeReference',
+  'Job Title': 'role',
+  'Hours Worked': 'actualHours',
+  'Wage Cost': 'laborCost',
+}
+
+const STAFFING_SALES_MAPPING = {
+  Date: 'transactedAt',
+  Item: 'rawItemName',
+  Quantity: 'qty',
+  'Unit price': 'unitPrice',
+  'Total cost': 'totalCost',
+  Total: 'totalRevenue',
+}
+
+const STAFFING_SALES_CSV = [
+  'Date,Item,Quantity,Unit price,Total cost,Total',
+  '2026-08-01T10:00:00,House Salad,1,240.00,60.00,240.00',
+  '2026-08-01T17:00:00,House Salad,1,160.00,40.00,160.00',
+  '',
+].join('\n')
+
 const PARTIAL_MAPPING = {
   Date: 'transactedAt',
   Item: 'rawItemName',
@@ -220,6 +245,16 @@ const MONEY_PRECISION_RESOLUTIONS: Record<string, ImportItemResolution> = {
   },
 }
 
+const STAFFING_SALES_RESOLUTIONS: Record<string, ImportItemResolution> = {
+  [normalizeExactItemName('House Salad')]: {
+    canonicalName: 'house salad',
+    displayName: 'House Salad',
+    category: 'produce',
+    unit: 'each',
+    shelfLifeDays: null,
+  },
+}
+
 const PARTIAL_RESOLUTIONS: Record<string, ImportItemResolution> = {
   [normalizeExactItemName('Tomato Soup')]: {
     canonicalName: 'tomato soup',
@@ -281,6 +316,7 @@ async function seedUpload(
   options: {
     filename?: string
     mapping?: Record<string, string>
+    source?: string
   } = {},
 ) {
   const { sql } = opened!.database
@@ -291,7 +327,7 @@ async function seedUpload(
       (location_id, filename, source, status, rows_imported, mapping_used,
        storage_key, uploaded_at)
     values
-      (${locationId}, ${options.filename ?? 'sales.csv'}, 'transactions', 'uploaded', 0,
+      (${locationId}, ${options.filename ?? 'sales.csv'}, ${options.source ?? 'transactions'}, 'uploaded', 0,
        ${JSON.stringify(options.mapping ?? MAPPING)}::jsonb, ${storageKey}, now())
     returning id
   `
@@ -807,6 +843,114 @@ describe.skipIf(!integrationDatabaseEnabled())('CSV import', () => {
         createElement(TrendSummaries, { summaries }),
       )
       expect(markup).toContain('$0.24')
+    }, 120_000)
+
+    it('carries imported labor into exact STF-02 efficiency metrics', async () => {
+      const { sql } = opened!.database
+      await sql`
+        update locations
+        set timezone = 'UTC'
+        where id = ${LOCATION_ID}
+      `
+
+      const laborCsv = (
+        await readFile(
+          path.resolve('tests/fixtures/csv/labor/homebase-timesheet.csv'),
+          'utf8',
+        )
+      ).replaceAll('2025-03-', '2026-08-')
+      const laborUploadId = await seedUpload(LOCATION_ID, {
+        filename: 'homebase-timesheet.csv',
+        mapping: LABOR_MAPPING,
+        source: 'labor',
+      })
+      const laborSummary = await imports.commitCsvImport(
+        new Headers(),
+        laborUploadId,
+        undefined,
+        memoryStorage(laborCsv),
+      )
+      expect(laborSummary.rowsImported).toBe(3)
+
+      const salesUploadId = await seedUpload(LOCATION_ID, {
+        filename: 'staffing-sales.csv',
+        mapping: STAFFING_SALES_MAPPING,
+      })
+      const salesSummary = await imports.commitCsvImport(
+        new Headers(),
+        salesUploadId,
+        STAFFING_SALES_RESOLUTIONS,
+        memoryStorage(STAFFING_SALES_CSV),
+      )
+      expect(salesSummary.rowsImported).toBe(2)
+
+      const { getLaborEfficiency } =
+        await import('../../src/server/staffing/labor-efficiency-query')
+      const result = await getLaborEfficiency(new Headers(), LOCATION_ID)
+      const shifts = result.periods.filter(
+        (period) => period.dimension === 'shift',
+      )
+
+      expect(shifts).toHaveLength(2)
+      expect(shifts).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            label: expect.stringContaining('Dishwasher'),
+            sales: '240',
+            foodCost: '60',
+            actualHours: '8',
+            laborCost: '120',
+            scheduledActualVariance: null,
+            salesPerLaborHour: expect.objectContaining({
+              status: 'calculated',
+              value: '30',
+            }),
+            laborCostPercentage: expect.objectContaining({
+              status: 'calculated',
+              value: '50',
+            }),
+            primeCost: expect.objectContaining({
+              status: 'calculated',
+              value: '180',
+            }),
+            primeCostPercentage: expect.objectContaining({
+              status: 'calculated',
+              value: '75',
+            }),
+          }),
+          expect.objectContaining({
+            label: expect.stringContaining('Bartender'),
+            sales: '160',
+            foodCost: '40',
+            actualHours: '8',
+            laborCost: '160',
+            scheduledActualVariance: null,
+            salesPerLaborHour: expect.objectContaining({
+              status: 'calculated',
+              value: '20',
+            }),
+            laborCostPercentage: expect.objectContaining({
+              status: 'calculated',
+              value: '100',
+            }),
+            primeCost: expect.objectContaining({
+              status: 'calculated',
+              value: '200',
+            }),
+            primeCostPercentage: expect.objectContaining({
+              status: 'calculated',
+              value: '125',
+            }),
+          }),
+        ]),
+      )
+      expect(
+        result.exclusions.some(
+          (exclusion) =>
+            exclusion.dimension === 'shift' &&
+            exclusion.reason === 'No sales data for this period.',
+        ),
+      ).toBe(true)
     }, 120_000)
 
     it('marks the upload imported so the history is honest', async () => {

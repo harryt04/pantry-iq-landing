@@ -176,7 +176,10 @@ recommendations.
       Added a precision fixture and real-Postgres coverage from normalized
       transaction values through precompute margin output to the rendered
       dashboard dollar figure.
-- [ ] `labor/*` through STF-02 labor efficiency metrics.
+- [x] `labor/*` through STF-02 labor efficiency metrics. (Codex, iteration 21)
+      Covered an imported Homebase labor export plus matching sales through the
+      owner-scoped efficiency query, including exact shift ratios and a labor-only
+      shift exclusion.
 - [ ] `purchase-orders/*` through MNU-03 plate costing.
 
 ---
