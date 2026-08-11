@@ -261,7 +261,10 @@ Ranked by uncovered lines, measured 2026-08-10. The first five hold roughly
 1,550 unexercised lines between them, so start there. The last group is already
 above 94% — expect few survivors and move on quickly.
 
-- [ ] `metrics/precompute.ts` — 49.5% of 1,209 lines. The largest uncovered
+- [x] `metrics/precompute.ts` — 49.5% of 1,209 lines. (Codex, iteration 30 — decimal parsing boundary)
+      Added behavioral regression coverage for malformed numeric input; it
+      remains explicitly uncalculable rather than crashing or becoming zero.
+      Mutation check caught an inverted decimal-validity guard. The largest uncovered
       mass in the repo, and the engine Loop C depends on. Split over several
       iterations; take branches in `coverage/index.html` order.
 - [ ] `menu/recipe-builder.ts` — 35.7% of 482.

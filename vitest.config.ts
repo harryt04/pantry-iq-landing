@@ -21,7 +21,7 @@ const databaseAvailable =
 const thresholds = {
   statements: 72.33,
   lines: 72.33,
-  branches: 75.14,
+  branches: 75.27,
   functions: 80.33,
 }
 
