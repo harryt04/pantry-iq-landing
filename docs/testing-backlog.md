@@ -46,7 +46,7 @@ it. `components/ui/**` is vendored and out of scope.
 Exit gate for every item: `pnpm prettify`, then `pnpm ci` until green.
 
 Then ratchet the coverage gate. [`vitest.config.ts`](../vitest.config.ts) holds
-thresholds at 70.47/70.47/74.84/79.69 against 72.47% measured 2026-08-10. Re-measure with
+thresholds at 70.55/70.55/74.85/79.78 against 72.55% measured 2026-08-11. Re-measure with
 `pnpm ci:tests` and raise each threshold to the new number minus two. Never
 lower one to make a build pass. Browser tests do not feed the v8 report, so
 Loops I, J, and L will not move the number. That is expected, not a failure.
@@ -129,7 +129,11 @@ wall-clock budget.
       and the full-year transaction file through the authenticated `/import`
       route, including preview metadata, mapping completion, validation errors,
       and successful commits.
-- [ ] Batch 4 — `purchase-orders/` fixtures 1–5
+- [x] Batch 4 — `purchase-orders/` fixtures 1–5 (Codex, iteration 10)
+      Covered the first five purchase-order fixtures through the authenticated
+      `/import` route, including vendor-specific mappings, item resolution, and
+      successful commits. Added `PO` as an explicit external-ID alias after
+      the browser path exposed a date-mapping defect in the US Foods fixture.
 - [ ] Batch 5 — `purchase-orders/` fixtures 6–9
 - [ ] Batch 6 — `inventory/` fixtures 1–7
 - [ ] Batch 7 — `labor/` fixtures 1–6

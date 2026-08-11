@@ -18,8 +18,8 @@ figure is higher.
 | --- | --- |
 | Vitest files | 111 |
 | Vitest cases | 582 statically, more after `.each` expansion |
-| Playwright specs | 4 files, 9 cases |
-| Line coverage | 72.06% with a database, 65.98% without |
+| Playwright specs | 4 files, 10 cases |
+| Line coverage | 72.54% with a database, 65.98% without |
 
 ---
 
@@ -169,11 +169,11 @@ The two `*-schema-contract` files read `.sql` as text on purpose. Migrations are
 text artifacts. That is the documented exception to the behaviour rule, not a
 pattern to copy.
 
-## Layer 5 — Browser tests (4 spec files, 9 cases)
+## Layer 5 — Browser tests (4 spec files, 10 cases)
 
 | File | Covers |
 | --- | --- |
-| [`critical-path.spec.ts`](../tests/critical-path.spec.ts) | Sign up → create location → import a CSV → resolve an item → commit → dashboard; transaction corpus batches 1–3 through the authenticated `/import` route |
+| [`critical-path.spec.ts`](../tests/critical-path.spec.ts) | Sign up → create location → import a CSV → resolve an item → commit → dashboard; transaction corpus batches 1–3 and purchase-order batch 1 through the authenticated `/import` route |
 | [`returning-user.spec.ts`](../tests/returning-user.spec.ts) | Sign in → switch location → open chat → export CSV over HTTP |
 | [`accessibility/landing.spec.ts`](../tests/accessibility/landing.spec.ts) | Axe on `/`, `/design/gallery`, `/design/tokens` in both themes; keyboard focus; 44px touch targets; 16px mobile type; reduced motion |
 | [`charts/greyscale.spec.ts`](../tests/charts/greyscale.spec.ts) | `/design/gallery` desaturated at 375×900; bars keep pattern fills, lines keep dash patterns |

@@ -116,6 +116,20 @@ describe('CSV column mapping detection', () => {
     },
   )
 
+  it('maps a US Foods PO number column as an identifier', () => {
+    const detection = mappingFor(
+      ['Vendor', 'Order Date', 'PO #', 'Item Description', 'Quantity Ordered'],
+      [
+        ['US Foods', '2025-03-02', 'USF-55021', 'Salmon Fillet', '30'],
+        ['US Foods', '2025-03-09', 'USF-55190', 'Chicken Breast', '40'],
+      ],
+      'purchase_orders',
+    )
+
+    expect(detection.mapping['PO #']).toBe('externalId')
+    expect(detection.columns[2]?.band).toBe('auto')
+  })
+
   it('uses value shape as evidence for an anonymous date column', () => {
     const detection = mappingFor(
       ['col_7', 'col_8'],
