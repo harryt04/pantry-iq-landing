@@ -293,8 +293,12 @@ above 94% — expect few survivors and move on quickly.
       Added a behavioral regression requiring negative labor hours to be
       rejected before they enter the import plan; removing the non-negative
       guard makes the focused suite fail.
-- [ ] The remaining well-covered set, one pass each: `mapping.ts`,
-      `parser.ts`, `security.ts`, `impact.ts`, `urgency.ts`, `ranking.ts`,
+- [x] `mapping.ts` mutation pass (Codex, iteration 40).
+      Added a behavioral regression proving reusable mappings reject duplicate
+      incoming column labels; removing the uniqueness guard makes the test
+      reuse an invalid mapping.
+- [ ] The remaining well-covered set, one pass each: `parser.ts`,
+      `security.ts`, `impact.ts`, `urgency.ts`, `ranking.ts`,
       `sufficiency.ts`, `spoilage.ts`, `evidence.ts`.
 
 Those percentages come from a run with no database, so the integration-only

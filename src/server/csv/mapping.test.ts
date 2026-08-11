@@ -204,6 +204,11 @@ describe('CSV column mapping detection', () => {
         stored,
       ]),
     ).toBeNull()
+    expect(
+      findReusableCsvMapping(['Date', 'Date'], 'transactions', [
+        { Date: 'transactedAt', Item: 'rawItemName' },
+      ]),
+    ).toBeNull()
   })
 
   it('turns a reused mapping into an all-decided detection', () => {
