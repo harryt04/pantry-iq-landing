@@ -33,6 +33,27 @@ describe('structured logger', () => {
     })
   })
 
+  it('keeps the default sink quiet under Vitest', () => {
+    const log = vi.spyOn(console, 'log').mockImplementation(() => {})
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    try {
+      const logger = createLogger({ service: 'test' })
+      logger.info('not printed')
+      logger.warn('not printed')
+      logger.error('not printed', new Error('not printed'))
+
+      expect(log).not.toHaveBeenCalled()
+      expect(warn).not.toHaveBeenCalled()
+      expect(error).not.toHaveBeenCalled()
+    } finally {
+      log.mockRestore()
+      warn.mockRestore()
+      error.mockRestore()
+    }
+  })
+
   it('redacts secrets, imported rows, and secret-bearing text', () => {
     const lines: string[] = []
     const logger = createLogger({

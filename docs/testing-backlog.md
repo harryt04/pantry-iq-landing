@@ -47,7 +47,7 @@ Exit gate for every item: `pnpm prettify`, then `pnpm ci` until green.
 
 Then ratchet the coverage gate. [`vitest.config.ts`](../vitest.config.ts) holds
 thresholds at 70/70/74/79 against 72.06% measured 2026-08-10. Re-measure with
-`pnpm ci:coverage` and raise each threshold to the new number minus two. Never
+`pnpm ci:tests` and raise each threshold to the new number minus two. Never
 lower one to make a build pass. Browser tests do not feed the v8 report, so
 Loops I, J, and L will not move the number. That is expected, not a failure.
 
