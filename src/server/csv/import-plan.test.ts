@@ -116,6 +116,35 @@ describe('CSV import planning', () => {
     expect(plan.rows[0]?.values.qty).toBe('3.5')
   })
 
+  it('parses Excel serial dates using the 1900 date system', () => {
+    const plan = buildCsvImportPlan({
+      importType: 'transactions',
+      mapping: {
+        Date: 'transactedAt',
+        Item: 'rawItemName',
+        Qty: 'qty',
+        Revenue: 'totalRevenue',
+      },
+      items: [salmon],
+      csv: {
+        encoding: 'utf-8',
+        delimiter: ',',
+        hasHeader: true,
+        columns: ['Date', 'Item', 'Qty', 'Revenue'],
+        rows: [
+          {
+            rowNumber: 2,
+            values: ['45717', 'Salmon', '1', '24.00'],
+          },
+        ],
+      },
+    })
+
+    expect(plan.rows[0]?.values.transactedAt).toEqual(
+      new Date('2025-03-01T00:00:00.000Z'),
+    )
+  })
+
   it('explains unsupported currency-code and percentage formats', () => {
     const buildPlan = (unitCost: string) =>
       buildCsvImportPlan({

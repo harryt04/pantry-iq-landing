@@ -14,6 +14,8 @@ type Decimal = { digits: bigint; scale: number }
 type DecimalSeparator = '.' | ','
 
 const DECIMAL_PATTERN = /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)$/
+const EXCEL_SERIAL_PATTERN = /^(\d+)(?:\.(\d+))?$/
+const MILLISECONDS_PER_DAY = 86_400_000n
 
 function exactFractionToDecimal(
   numerator: bigint,
@@ -158,6 +160,28 @@ function valueFor(
   return value || undefined
 }
 
+function excelSerialDate(value: string): Date | null {
+  const match = value.match(EXCEL_SERIAL_PATTERN)
+  if (!match) return null
+
+  const wholeDays = BigInt(match[1] ?? '0')
+  if (wholeDays === 60n) return null
+
+  const fractionText = match[2] ?? ''
+  const fractionUnits = fractionText ? BigInt(fractionText) : 0n
+  const fractionDenominator = 10n ** BigInt(fractionText.length)
+  const milliseconds =
+    fractionUnits === 0n
+      ? 0n
+      : (fractionUnits * MILLISECONDS_PER_DAY + fractionDenominator / 2n) /
+        fractionDenominator
+  const excelLeapYearAdjustment = wholeDays >= 60n ? 1n : 0n
+  const millisecondsSinceEpoch =
+    (wholeDays - excelLeapYearAdjustment) * MILLISECONDS_PER_DAY + milliseconds
+  const date = new Date(Date.UTC(1899, 11, 31) + Number(millisecondsSinceEpoch))
+  return Number.isNaN(date.getTime()) ? null : date
+}
+
 function required(value: string | undefined, field: string, rowNumber: number) {
   if (!value)
     throw new CsvImportValidationError(
@@ -172,7 +196,7 @@ function dateValue(
   rowNumber: number,
 ) {
   const text = required(value, field, rowNumber)
-  const date = new Date(text)
+  const date = excelSerialDate(text) ?? new Date(text)
   if (Number.isNaN(date.getTime()))
     throw new CsvImportValidationError(
       `Row ${rowNumber}: ${field} is not a readable date.`,

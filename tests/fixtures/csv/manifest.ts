@@ -173,10 +173,8 @@ export const csvFixtures: CsvFixtureExpectation[] = [
     security: 'passes',
     plan: {
       outcome: 'error',
-      messageMatch: /not a readable date|is required/,
+      messageMatch: /is required/,
     },
-    knownIssue:
-      'Excel serial dates (e.g. 45717) fail Date.parse and raise "is not a readable date" rather than being recognized as a spreadsheet date.',
   },
   {
     path: 'transactions/sales-one-year-daily.csv',

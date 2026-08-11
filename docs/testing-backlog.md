@@ -75,7 +75,9 @@ focused unit test beside the module you changed, then clear the `knownIssue`.
       `inventory/inventory-fractional-quantities.csv`. `"3 1/2"` is not
       recognized by `decimal()` and raises a row error.
       Resolved with exact mixed-number fraction parsing and corpus coverage.
-- [ ] **Excel serial dates rejected.**
+- [x] **Excel serial dates rejected.**
+      Resolved with 1900-system serial-date conversion and regression coverage;
+      the mixed-date fixture now fails only for its intentionally blank date.
       `transactions/sales-messy-dates-mixed.csv`. A serial like `45717` fails
       `Date.parse` and raises "is not a readable date" rather than being
       recognized as a spreadsheet date.
