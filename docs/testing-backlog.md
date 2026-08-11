@@ -244,12 +244,10 @@ unit tests. They are good. Reuse `tests/fixtures/pantry.ts`.
 - [x] `components/marketing/landing-claims.test.tsx` renders `app/page.tsx`
       and asserts on the output. A banned claim fails whether it is inlined or
       imported from a constant; verified with a deliberately injected claim.
-- [ ] `tests/architecture-rules.test.ts` reads route and service source to
-      prove the narration layer imports no database client and the chat route
-      never writes. The rule is real; the mechanism is wrong. Move it to an
-      ESLint `no-restricted-imports` rule, which fails at lint time and points
-      at the offending line. Delete the test once the rule catches a
-      deliberately added violation.
+- [x] The architecture boundary now lives in ESLint: database imports are
+      restricted in narration and API routes, and direct mutation calls are
+      rejected in the chat route. The former source-reading test was deleted;
+      a deliberate violation was rejected by lint.
 
 ---
 

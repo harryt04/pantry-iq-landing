@@ -186,7 +186,6 @@ and no seeded data, so each spec pays full setup cost.
 | File | Guards |
 | --- | --- |
 | [`api-route-inventory.test.ts`](../tests/api-route-inventory.test.ts) | Every `route.ts` under `app/api/` appears in the owner-scoped or public list. `readdirSync`, structural |
-| [`architecture-rules.test.ts`](../tests/architecture-rules.test.ts) | Narration imports no db client; the chat route never writes; API routes never import the db client directly. Reads source as text |
 | [`ci-parity.test.ts`](../tests/ci-parity.test.ts) | `.github/workflows/ci.yml` runs the same stages as `pnpm ci`, and sets `REQUIRE_INTEGRATION_DB=1`. **Change one, change the other, or this fails** |
 | [`copy-rules.test.tsx`](../tests/copy-rules.test.tsx) | Renders marketing and product surfaces; asserts no unsupported claim, dismissive word, or donation language |
 | [`charts/greyscale-gate.test.ts`](../tests/charts/greyscale-gate.test.ts) | Exactly five patterns; every mark carries a pattern fill; no green anywhere |
