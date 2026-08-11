@@ -1,6 +1,6 @@
 gnhf "/Users/harry/Documents/git/pantry-iq/docs/gnhf-prompt.md" \
     --agent codex \
-    --stop-when "/Users/harry/Documents/git/pantry-iq/docs/feature-backlog.md has no more features to implement" \
+    --stop-when "/Users/harry/Documents/git/pantry-iq/docs/testing-backlog.md has everything checked off as implemented." \
     --current-branch --push
 
 

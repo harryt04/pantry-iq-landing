@@ -39,6 +39,12 @@ it. `components/ui/**` is vendored and out of scope.
 
 Exit gate for every item: `pnpm prettify`, then `pnpm ci` until green.
 
+Then ratchet the coverage gate. [`vitest.config.ts`](../vitest.config.ts) holds
+thresholds at 70/70/74/79 against 72.06% measured 2026-08-10. Re-measure with
+`pnpm ci:coverage` and raise each threshold to the new number minus two. Never
+lower one to make a build pass. Browser tests do not feed the v8 report, so
+Loops I, J, and L will not move the number. That is expected, not a failure.
+
 ---
 
 ## Known issues (Loop A)
@@ -149,21 +155,34 @@ stated reason. No "more of the same" files.
 
 ## Behavioral test conversion (Loop E)
 
-Replace the source-text "contract" tests with behavioral ones. Ranked backlog
-lives at `~/.claude/plans/please-audit-my-codebase-buzzing-glade.md` — copy the
-items in here before running the loop.
+Replace the source-text "contract" tests with behavioral ones. This loop is
+nearly finished. An audit on 2026-08-10 found only five `readFileSync` callers
+left, and three of them are legitimate. Two items remain.
 
 Exceptions that **stay** as text assertions:
 
 - regex over `.sql` migration files in `tests/integration/schema-contract.test.ts`
   and `auth-schema-contract.test.ts` — migrations really are text artifacts;
-- the `readdirSync` route inventory in
-  `tests/ownership-authorization-contract.test.ts` — a genuine guard.
+- `tests/ci-parity.test.ts` — it reads `package.json` and the workflow file.
+  Both are configuration, not application source;
+- `tests/charts/greyscale-gate.test.ts` — it also renders React and inspects
+  the SVG. The source scan is a second net, not the only one;
+- `tests/copy-rules.test.tsx` — it renders components. One assertion reads
+  `docs/brand/marketing-copy.md`, which is a document, not source.
 
 Do not disturb the `src/server/metrics`, `staffing`, `menu`, and `connectors`
 unit tests. They are good. Reuse `tests/fixtures/pantry.ts`.
 
-- [ ] Seed this section from the audit plan.
+- [ ] `components/marketing/landing-claims.test.ts` reads `app/page.tsx` as
+      text and asserts on substrings. Render the page instead and assert on the
+      output. A banned claim must fail whether it is inlined or imported from a
+      constant.
+- [ ] `tests/architecture-rules.test.ts` reads route and service source to
+      prove the narration layer imports no database client and the chat route
+      never writes. The rule is real; the mechanism is wrong. Move it to an
+      ESLint `no-restricted-imports` rule, which fails at lint time and points
+      at the offending line. Delete the test once the rule catches a
+      deliberately added violation.
 
 ---
 
@@ -173,7 +192,30 @@ Each iteration: pick one `src/server/**` module, mutate one branch or boundary
 by hand, run its tests, and if they still pass, write the test that catches it.
 Restore the code. Log every surviving mutant found.
 
-- [ ] Seed this section with one item per `src/server/**` module.
+Ranked by uncovered lines, measured 2026-08-10. The first five hold roughly
+1,550 unexercised lines between them, so start there. The last group is already
+above 94% — expect few survivors and move on quickly.
+
+- [ ] `metrics/precompute.ts` — 49.5% of 1,209 lines. The largest uncovered
+      mass in the repo, and the engine Loop C depends on. Split over several
+      iterations; take branches in `coverage/index.html` order.
+- [ ] `menu/recipe-builder.ts` — 35.7% of 482.
+- [ ] `metrics/trends.ts` — 33.8% of 358.
+- [ ] `metrics/portfolio.ts` — 33.2% of 340.
+- [ ] `ingestion/reconciliation.ts` — 53.7% of 367.
+- [ ] `metrics/item-deep-dives.ts` — 66.7% of 345.
+- [ ] `metrics/scheduler.ts` — 57.9% of 209.
+- [ ] `metrics/dashboard-recommendations.ts` (50% of 72) and
+      `metrics/dashboard-state.ts` (47.5% of 61).
+- [ ] The well-covered set, one pass each: `import-plan.ts`, `mapping.ts`,
+      `parser.ts`, `security.ts`, `impact.ts`, `urgency.ts`, `ranking.ts`,
+      `sufficiency.ts`, `spoilage.ts`, `evidence.ts`.
+
+Those percentages come from a run with no database, so the integration-only
+modules — `csv/imports.ts`, `manual/manual-entry.ts`, `connectors/framework.ts`,
+`ingestion/persistence.ts`, `observability/store.ts` — report 0% there and their
+true figure is unknown. Re-measure with `TEST_DATABASE_URL` set before ranking
+them.
 
 ---
 
@@ -183,6 +225,12 @@ Restore the code. Log every surviving mutant found.
       import, preview, mapping, or export.
 - [ ] Assert `security/formula-injection.csv` stays inert through the CSV
       **export** path (ING-11), not only on import.
+      **Blocked on Loop K's first item.** This entry assumed the export path
+      had a test to extend. It does not.
+      [`src/server/csv/exports.test.ts`](../src/server/csv/exports.test.ts)
+      tests `export-format.ts`, which is a pure formatter at 100%. The query
+      module `exports.ts` is 149 lines at 0%, and the one API test that reaches
+      it mocks it. Build that test first, then extend it here.
 - [ ] Assert the guard rejects `security/renamed-xlsx.csv` and
       `security/renamed-pdf.csv` before any bytes reach storage.
 - [ ] Assert a rejected upload persists nothing — no row, no file, no history
@@ -200,3 +248,176 @@ categories.
       fixture, with that data on screen.
 - [ ] Run the greyscale check on the same screens. Colour is never
       load-bearing; the greyscale test is a merge gate.
+
+---
+
+## Browser test architecture (prerequisite for Loops I and J)
+
+The product has **two** functional browser tests.
+[`critical-path.spec.ts`](../tests/critical-path.spec.ts) and
+[`returning-user.spec.ts`](../tests/returning-user.spec.ts) hold one `test()`
+each. Between them they open 6 of the 17 routes. This section builds the
+scaffolding those two loops need. Do it before claiming anything in them.
+
+One fact decides the design. Sixteen of the seventeen pages are React Server
+Components that call `src/server/**` directly, not over HTTP.
+[`app/(app)/dashboard/page.tsx`](<../app/(app)/dashboard/page.tsx>) awaits
+`getDashboardDataState`, `getDashboardTrends`, and
+`listConnectorConnectionStatuses` during render. A `page.route('**/api/**')`
+handler never sees that traffic. Route mocking reaches only the six client
+components that fetch: `chat-surface`, `location-manager`, `recipe-builder`,
+`manual-entry-form`, `reconciliation-review`, and the export control. So
+browser coverage needs two layers, not one.
+
+- [ ] Split [`playwright.config.ts`](../playwright.config.ts) into four
+      projects sharing the current `webServer` block: `setup`
+      (`tests/e2e/setup/`), `e2e` (`tests/e2e/`, seeded database, real stack),
+      `ui` (`tests/ui/`, mocked, no database), and `design`
+      (`tests/accessibility/` and `tests/charts/`, unchanged). `e2e` and `ui`
+      both declare `dependencies: ['setup']`. Keep `expect.timeout` at 15s and
+      `retries: 2` in CI.
+- [ ] Add `tests/e2e/setup/auth.setup.ts`. Both current specs sign up from
+      scratch, which is slow and is why there are only two of them. Sign up
+      once, save `storageState` to `tests/.auth/owner.json`, and load it from
+      `use.storageState`. Keep one spec that still exercises signup itself.
+- [ ] Add `tests/e2e/setup/seed.setup.ts`. Reuse `seedDatabase()` in
+      [`src/server/db/seed-database.ts`](../src/server/db/seed-database.ts),
+      `fullYearLocationFixture` and `partialDataLocationFixture` in
+      [`tests/fixtures/pantry.ts`](../tests/fixtures/pantry.ts), and the
+      `REQUIRE_INTEGRATION_DB` guard in
+      [`tests/helpers/test-database.ts`](../tests/helpers/test-database.ts).
+      Provision two locations on the `storageState` account: one with a full
+      year of sales and weekly snapshots, one with 14 days and no snapshots.
+      That pair alone unlocks both the populated and the insufficient-data
+      rendering of every screen.
+- [ ] Add `tests/ui/fixtures/mock-api.ts`, a Playwright fixture that installs
+      `page.route()` handlers keyed by scenario. Cover `/api/chat`,
+      `/api/chat/override`, `/api/locations`, `/api/locations/:id`,
+      `/api/recipes`, `/api/items`, and `/api/reconciliation`. Type the bodies
+      against the real route return types, so a route change breaks the mock
+      instead of drifting from it. Each handler needs `ok`, `unauthorized`,
+      `forbidden`, `invalid`, `conflict`, `unavailable`, `server-error`, and
+      `slow`.
+- [ ] Move the two existing specs into `tests/e2e/` and drop their inline
+      signup. Split `test:e2e` into `test:e2e` and `test:ui` in
+      [`package.json`](../package.json), add both to `ci:browser`, and mirror
+      the change in [`.github/workflows/ci.yml`](../.github/workflows/ci.yml).
+      [`tests/ci-parity.test.ts`](../tests/ci-parity.test.ts) enforces parity
+      and fails otherwise.
+
+---
+
+## Screens never opened in a browser (Loop I)
+
+`tests/e2e/`, seeded project. One screen per iteration. For each: load it
+against the full-year location and assert the real figures render; reload
+against the 14-day location and assert the insufficient-data state names what is
+missing rather than showing zeros.
+
+Percentages below are line coverage measured 2026-08-10.
+
+- [ ] `/staffing` — labor efficiency.
+      `components/staffing/labor-efficiency-view.tsx` is 464 lines at 0%, and
+      `staffing/labor-efficiency-query.ts` is 0%.
+- [ ] `/usage` — usage variance. View 231 lines at 0%,
+      `menu/usage-variance-query.ts` 0%.
+- [ ] `/menu-engineering` — the popularity and margin matrix. View 225 lines at
+      0%, `menu/menu-engineering-query.ts` 0%. It sits outside the `(app)`
+      route group; assert the shell still renders consistently.
+- [ ] `/recipes` — also outside `(app)`. Create a recipe, add ingredients,
+      save, reload, assert it persisted.
+- [ ] `/portfolio` — the rollup across both seeded locations.
+      `portfolio-rollup.tsx` 0%, `metrics/portfolio.ts` 33.2%.
+- [ ] `/settings` — item master and shelf-life defaults. Edit an item, save,
+      assert the change survives a reload.
+- [ ] `/account` — create, rename, and delete a location. Deletion cascades
+      seven tables;
+      [`location-deletion.test.ts`](../tests/integration/location-deletion.test.ts)
+      proves the cascade, but nothing proves the confirmation dialogue or the
+      state the user lands in afterwards.
+- [ ] `/forgot-password` and `/reset-password` — never rendered by any test.
+      Assert the form submits and the confirmation copy appears. Email is
+      authentication plumbing only (tech-stack §3.14), so assert no marketing
+      or notification framing.
+
+---
+
+## Interaction and failure paths, backend mocked (Loop J)
+
+`tests/ui/`, mocked project, no database. One flow per iteration. These are the
+paths a healthy seeded stack cannot produce on demand.
+
+`/api/chat` reaches a live LLM through `createNarrationService` in
+[`src/server/chat/narration.ts`](../src/server/chat/narration.ts). Every chat
+item below must intercept it. A browser test may never bill an LLM call.
+
+- [ ] Chat: ask a question, assert the answer renders with its evidence and its
+      stated limits.
+- [ ] Chat: an assumption override round trip through `/api/chat/override`.
+- [ ] Chat: 500 and 503 from `/api/chat`. The surface must degrade with a
+      readable message and must not lose the typed question.
+- [ ] Manual entry (`manual-entry-form.tsx`, 673 lines, 59.1%): every
+      validation branch, plus a 400 from `/api/manual-entry` surfacing field
+      errors.
+- [ ] CSV upload: 503 from `/api/uploads` for storage down, and 409 on commit
+      for unresolved items. `csv-upload-form.tsx` is 60.9%.
+- [ ] CSV mapping review (`csv-mapping-review.tsx`, 34.7%): change a detected
+      mapping, save, assert it persists into the next upload.
+- [ ] CSV item resolution (`csv-item-resolution.tsx`, 1.1%): all three
+      outcomes — match an existing item, create a new one, skip.
+- [ ] Reconciliation review (`reconciliation-review.tsx`, 0%): accept a
+      conflict, then reject one.
+- [ ] Location manager (`location-manager.tsx`, 67.1%): duplicate-name 409,
+      the delete confirmation, and the cancel path.
+- [ ] Auth form (`auth-form.tsx`, 0%): wrong password, unknown email, and an
+      already-registered email. No message may disclose whether an account
+      exists.
+- [ ] Every screen at 375×812 and in dark theme. Colour is never load-bearing
+      and the greyscale check is a merge gate, but only `/design/gallery` is
+      checked today.
+
+---
+
+## The service layer the API tests mock away (Loop K)
+
+Every file in `tests/api/` mocks the module beneath it — 27 `vi.mock` calls,
+including `requireOwnedLocation` in all ten. Those tests prove status mapping,
+which is worth having, and they leave the services at zero. One module per
+iteration, unit or integration as the module needs.
+
+- [ ] `csv/exports.ts` — 149 lines at 0%. Owner scoping, and formula-injection
+      neutralisation through the real query path. Unblocks the Loop G export
+      item.
+- [ ] `menu/usage-variance-query.ts` — 208 lines at 0%.
+- [ ] `staffing/labor-efficiency-query.ts` — 143 lines at 0%.
+- [ ] `menu/menu-engineering-query.ts` — 117 lines at 0%.
+- [ ] `staffing/external-signal-sync.ts` — 136 lines at 0%.
+- [ ] `csv/previews.ts`, `csv/uploads.ts`, and `csv/mapping-persistence.ts` —
+      all 0%, all mocked in their API tests.
+- [ ] `inventory/items.ts` and `locations/locations.ts` — both 0%.
+- [ ] `auth/email.ts` — 0%. Assert it sends authentication mail only and never
+      a notification (tech-stack §3.14).
+
+The pure calculators these queries feed — `menu-engineering.ts`,
+`labor-efficiency.ts`, `usage-variance.ts` — already have good unit tests. The
+gap is the layer that hands them their rows.
+
+---
+
+## Ownership proven at the route, not at the helper (Loop L)
+
+[`ownership-boundary.test.ts`](../tests/integration/ownership-boundary.test.ts)
+proves `requireOwnedLocation` works. All ten files in `tests/api/` mock it.
+[`api-route-inventory.test.ts`](../tests/api-route-inventory.test.ts) only
+checks each route appears in a hand-maintained list. So nothing fails if a
+handler forgets to call it.
+
+- [ ] Replace the inventory check with a behavioral sweep. For every route
+      under `app/api/` except `health` and `auth/[...all]`, call it with
+      account A's session and account B's `locationId` against a real database,
+      and assert 403 or 404. Table-driven, one case per route, nothing mocked.
+- [ ] The browser equivalent: sign in as A, open
+      `/dashboard?locationId=<B's id>`, assert none of B's figures render.
+
+Verify both by deleting a `requireOwnedLocation` call from one handler. The
+sweep must go red. Restore it.
