@@ -73,6 +73,13 @@ const FULL_YEAR_MAPPING = {
   'Total Revenue': 'totalRevenue',
 }
 
+const REFUNDS_MAPPING = {
+  Date: 'transactedAt',
+  'Item Name': 'rawItemName',
+  Qty: 'qty',
+  'Total Revenue': 'totalRevenue',
+}
+
 const PARTIAL_MAPPING = {
   Date: 'transactedAt',
   Item: 'rawItemName',
@@ -144,6 +151,30 @@ const FULL_YEAR_RESOLUTIONS: Record<string, ImportItemResolution> = {
   [normalizeExactItemName('Burger')]: {
     canonicalName: 'burger',
     displayName: 'Burger',
+    category: 'prepared food',
+    unit: 'each',
+    shelfLifeDays: null,
+  },
+}
+
+const REFUNDS_RESOLUTIONS: Record<string, ImportItemResolution> = {
+  [normalizeExactItemName('Salmon Fillet')]: {
+    canonicalName: 'salmon fillet',
+    displayName: 'Salmon Fillet',
+    category: 'seafood',
+    unit: 'each',
+    shelfLifeDays: null,
+  },
+  [normalizeExactItemName('House Salad')]: {
+    canonicalName: 'house salad',
+    displayName: 'House Salad',
+    category: 'produce',
+    unit: 'each',
+    shelfLifeDays: null,
+  },
+  [normalizeExactItemName('Tomato Soup')]: {
+    canonicalName: 'tomato soup',
+    displayName: 'Tomato Soup',
     category: 'prepared food',
     unit: 'each',
     shelfLifeDays: null,
@@ -505,6 +536,106 @@ describe.skipIf(!integrationDatabaseEnabled())('CSV import', () => {
           }),
         ]),
       )
+    }, 120_000)
+
+    it('nets refunds in revenue without turning them into negative waste', async () => {
+      const csv = await readFile(
+        path.resolve(
+          'tests/fixtures/csv/transactions/sales-with-refunds-negative.csv',
+        ),
+        'utf8',
+      )
+      const uploadId = await seedUpload(LOCATION_ID, {
+        filename: 'sales-with-refunds-negative.csv',
+        mapping: REFUNDS_MAPPING,
+      })
+
+      const summary = await imports.commitCsvImport(
+        new Headers(),
+        uploadId,
+        REFUNDS_RESOLUTIONS,
+        memoryStorage(csv),
+      )
+
+      expect(summary.rowsImported).toBe(5)
+
+      const { sql } = opened!.database
+      const totals = await sql<
+        { itemName: string; qty: string; revenue: string }[]
+      >`
+        select
+          raw_item_name as "itemName",
+          sum(qty)::text as qty,
+          sum(total_revenue)::text as revenue
+        from transactions
+        where location_id = ${LOCATION_ID}
+        group by raw_item_name
+        order by raw_item_name
+      `
+      expect(totals).toEqual([
+        { itemName: 'House Salad', qty: '4', revenue: '44' },
+        { itemName: 'Salmon Fillet', qty: '0', revenue: '0' },
+        { itemName: 'Tomato Soup', qty: '4', revenue: '34' },
+      ])
+
+      const { runPrecomputeForLocation } =
+        await import('../../src/server/metrics/precompute')
+      const run = await runPrecomputeForLocation(LOCATION_ID, {
+        now: new Date('2025-03-04T12:00:00.000Z'),
+      })
+      expect(run?.status).toBe('succeeded')
+
+      const metrics = await sql<
+        {
+          itemName: string
+          metricKey: string
+          value: string | null
+          result: {
+            inputs?: { qtySold?: string; revenue?: string }
+            resolution?: { figures?: { value: string }[] }
+          }
+        }[]
+      >`
+        select
+          inventory_items.display_name as "itemName",
+          metric_key as "metricKey",
+          value,
+          result
+        from metric_results
+        inner join inventory_items
+          on inventory_items.id = metric_results.inventory_item_id
+        where run_id = ${run!.id}
+          and metric_key in ('margin', 'spoilageEstimate')
+        order by inventory_items.display_name, metric_key
+      `
+
+      const marginByItem = new Map(
+        metrics
+          .filter((metric) => metric.metricKey === 'margin')
+          .map((metric) => [metric.itemName, metric.result.inputs]),
+      )
+      expect(marginByItem.get('House Salad')).toMatchObject({
+        qtySold: '4',
+        revenue: '44',
+      })
+      expect(marginByItem.get('Salmon Fillet')).toMatchObject({
+        qtySold: '0',
+        revenue: '0',
+      })
+
+      const spoilageMetrics = metrics.filter(
+        (metric) => metric.metricKey === 'spoilageEstimate',
+      )
+      expect(spoilageMetrics).toHaveLength(3)
+      expect(spoilageMetrics.every((metric) => metric.value === null)).toBe(
+        true,
+      )
+      const spoilageValues = spoilageMetrics.flatMap((metric) => [
+        ...(metric.value === null ? [] : [metric.value]),
+        ...(metric.result.resolution?.figures?.map((figure) => figure.value) ??
+          []),
+      ])
+      expect(spoilageValues.every((value) => !value.startsWith('-'))).toBe(true)
     }, 120_000)
 
     it('marks the upload imported so the history is honest', async () => {

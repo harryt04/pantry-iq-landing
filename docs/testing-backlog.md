@@ -162,8 +162,10 @@ recommendations.
       and the insufficient-data state states what is missing. (Codex, iteration 17)
       Covered a 14-day real CSV import through precompute; prediction remains
       ineligible and the persisted finding asks for four weeks of history.
-- [ ] `transactions/sales-with-refunds-negative.csv` — assert refunds reduce
-      revenue and never surface as negative-quantity waste.
+- [x] `transactions/sales-with-refunds-negative.csv` — assert refunds reduce
+      revenue and never surface as negative-quantity waste. (Codex, iteration 18)
+      Covered the fixture through real CSV commit and precompute, asserting
+      net item quantities/revenue and non-negative spoilage output.
 - [ ] Business-day boundary: build a fixture with a 01:30 sale and assert it
       buckets to the prior business day (tech-stack §3.10).
 - [ ] Money never touches a float (§3.9) — assert an imported amount stays
