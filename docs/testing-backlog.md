@@ -46,7 +46,7 @@ it. `components/ui/**` is vendored and out of scope.
 Exit gate for every item: `pnpm prettify`, then `pnpm ci` until green.
 
 Then ratchet the coverage gate. [`vitest.config.ts`](../vitest.config.ts) holds
-  thresholds at 73.06/73.06/75.35/80.48 against 75.06% statements, 77.35% branches, 82.48% functions, and 75.06% lines measured 2026-08-11. Re-measure with
+  thresholds at 73.07/73.07/75.44/80.48 against 75.07% statements, 77.44% branches, 82.48% functions, and 75.07% lines measured 2026-08-11. Re-measure with
 `pnpm ci:tests` and raise each threshold to the new number minus two. Never
 lower one to make a build pass. Browser tests do not feed the v8 report, so
 Loops I, J, and L will not move the number. That is expected, not a failure.
@@ -297,8 +297,12 @@ above 94% — expect few survivors and move on quickly.
       Added a behavioral regression proving reusable mappings reject duplicate
       incoming column labels; removing the uniqueness guard makes the test
       reuse an invalid mapping.
-- [ ] The remaining well-covered set, one pass each: `parser.ts`,
-      `security.ts`, `impact.ts`, `urgency.ts`, `ranking.ts`,
+- [x] `parser.ts` mutation pass (Codex, iteration 41).
+      Added a behavioral regression requiring long problem examples to retain
+      their prefix while being truncated; changing the truncation boundary
+      makes the focused parser test fail.
+- [ ] The remaining well-covered set, one pass each: `security.ts`,
+      `impact.ts`, `urgency.ts`, `ranking.ts`,
       `sufficiency.ts`, `spoilage.ts`, `evidence.ts`.
 
 Those percentages come from a run with no database, so the integration-only

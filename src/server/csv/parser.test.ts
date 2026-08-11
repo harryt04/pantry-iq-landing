@@ -206,6 +206,20 @@ describe('CSV preview parser', () => {
     ])
   })
 
+  it('truncates a long problem example while retaining its prefix', async () => {
+    const row = `${'x'.repeat(180)},Salmon,1`
+    const preview = await parseCsvPreview(
+      chunks(utf8(`Date,Item,Qty\n${row}\n`)),
+    )
+
+    expect(preview.problems).toEqual([
+      expect.objectContaining({
+        message: "had a date I couldn't read",
+        example: `${row.slice(0, 157)} (truncated)`,
+      }),
+    ])
+  })
+
   it('names an unreadable date with a concrete example', async () => {
     const preview = await parseCsvPreview(
       chunks(utf8('Date,Item,Qty\nnot-a-date,Salmon,2\n2026-08-03,Cod,4\n')),

@@ -13,15 +13,15 @@ const databaseAvailable =
   process.env.TESTCONTAINERS_ENABLED === '1'
 
 /**
- * Measured at 75.06% statements, 77.35% branches, 82.48% functions, and
- * 75.06% lines on 2026-08-11, held two points below so ordinary work does not
+ * Measured at 75.07% statements, 77.44% branches, 82.48% functions, and
+ * 75.07% lines on 2026-08-11, held two points below so ordinary work does not
  * trip it. Raise these as coverage rises; never lower them to make a build
  * pass.
  */
 const thresholds = {
-  statements: 73.06,
-  lines: 73.06,
-  branches: 75.35,
+  statements: 73.07,
+  lines: 73.07,
+  branches: 75.44,
   functions: 80.48,
 }
 
