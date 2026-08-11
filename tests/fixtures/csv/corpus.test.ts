@@ -196,6 +196,10 @@ describe('csv fixture corpus', () => {
               expect(plan.unmatchedItems.length).toBe(
                 fixture.plan.unmatchedItemCount,
               )
+            for (const dateExpectation of fixture.plan.dateValues ?? [])
+              expect(
+                plan.rows.map((row) => row.values[dateExpectation.field]),
+              ).toEqual(dateExpectation.values.map((value) => new Date(value)))
           }
         }
       }

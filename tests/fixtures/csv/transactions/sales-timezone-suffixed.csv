@@ -1,0 +1,4 @@
+Transaction Date,Item Name,Qty,Total Revenue
+2026-08-08T12:00:00Z,House Salad,1,11.00
+2026-08-08T12:00:00-06:00,House Salad,1,11.00
+2026-08-08T12:00:00+05:30,House Salad,1,11.00

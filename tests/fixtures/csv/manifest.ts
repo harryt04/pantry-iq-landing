@@ -30,7 +30,12 @@ export type CsvFixtureExpectation = {
   }
   /** Plan stage (import-plan.ts). */
   plan?:
-    | { outcome: 'ok'; rowCount?: number; unmatchedItemCount?: number }
+    | {
+        outcome: 'ok'
+        rowCount?: number
+        unmatchedItemCount?: number
+        dateValues?: Array<{ field: CanonicalField; values: string[] }>
+      }
     | { outcome: 'error'; messageMatch: RegExp }
   /** Known-wrong current behaviour this file documents, not a bug to fix here. */
   knownIssue?: string
@@ -201,6 +206,62 @@ export const csvFixtures: CsvFixtureExpectation[] = [
     importType: 'transactions',
     description:
       'Two decimal money rows whose exact sum must survive import, metrics, and dashboard rendering.',
+    security: 'passes',
+    parse: { hasHeader: true, minReadableRows: 2 },
+    plan: { outcome: 'ok', rowCount: 2, unmatchedItemCount: 0 },
+  },
+  {
+    path: 'transactions/sales-dst-boundary.csv',
+    importType: 'transactions',
+    description:
+      'Timezone-suffixed sales across spring-forward and fall-back DST boundaries, including the repeated local hour.',
+    security: 'passes',
+    parse: { hasHeader: true, minReadableRows: 4 },
+    plan: {
+      outcome: 'ok',
+      rowCount: 4,
+      unmatchedItemCount: 0,
+      dateValues: [
+        {
+          field: 'transactedAt',
+          values: [
+            '2026-03-08T09:59:59.000Z',
+            '2026-03-08T10:00:00.000Z',
+            '2026-11-01T07:30:00.000Z',
+            '2026-11-01T08:30:00.000Z',
+          ],
+        },
+      ],
+    },
+  },
+  {
+    path: 'transactions/sales-timezone-suffixed.csv',
+    importType: 'transactions',
+    description:
+      'The same wall-clock timestamp expressed with UTC, Mountain, and India offsets.',
+    security: 'passes',
+    parse: { hasHeader: true, minReadableRows: 3 },
+    plan: {
+      outcome: 'ok',
+      rowCount: 3,
+      unmatchedItemCount: 0,
+      dateValues: [
+        {
+          field: 'transactedAt',
+          values: [
+            '2026-08-08T12:00:00.000Z',
+            '2026-08-08T18:00:00.000Z',
+            '2026-08-08T06:30:00.000Z',
+          ],
+        },
+      ],
+    },
+  },
+  {
+    path: 'transactions/sales-ambiguous-date-formats.csv',
+    importType: 'transactions',
+    description:
+      'Slash-separated dates where DD/MM and MM/DD interpretations are both plausible.',
     security: 'passes',
     parse: { hasHeader: true, minReadableRows: 2 },
     plan: { outcome: 'ok', rowCount: 2, unmatchedItemCount: 0 },

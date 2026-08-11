@@ -46,7 +46,7 @@ it. `components/ui/**` is vendored and out of scope.
 Exit gate for every item: `pnpm prettify`, then `pnpm ci` until green.
 
 Then ratchet the coverage gate. [`vitest.config.ts`](../vitest.config.ts) holds
-thresholds at 70.9/70.9/75.06/79.96 against 72.9% statements, 77.06% branches, 81.96% functions, and 72.9% lines measured 2026-08-11. Re-measure with
+  thresholds at 72.27/72.27/74.97/80.3 against 74.27% statements, 76.96% branches, 82.3% functions, and 74.27% lines measured 2026-08-11. Re-measure with
 `pnpm ci:tests` and raise each threshold to the new number minus two. Never
 lower one to make a build pass. Browser tests do not feed the v8 report, so
 Loops I, J, and L will not move the number. That is expected, not a failure.
@@ -193,8 +193,9 @@ recommendations.
 One family per iteration. Every new fixture needs a `manifest.ts` entry and a
 stated reason. No "more of the same" files.
 
-- [ ] Time: DST-boundary day, timezone-suffixed timestamps, `DD/MM` vs `MM/DD`
-      ambiguity.
+- [x] Time: DST-boundary day, timezone-suffixed timestamps, `DD/MM` vs `MM/DD`
+      ambiguity. Added three transaction fixtures; the manifest asserts both
+      offset-preserving UTC instants and the slash-date corpus shape.
 - [ ] Scale: a 100k-row file under the cap, a 9.9 MB file, a file at exactly
       10 MB.
 - [ ] Encoding: UTF-16LE with BOM, CP1252 smart quotes, mixed encodings in one
