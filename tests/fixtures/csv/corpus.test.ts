@@ -83,6 +83,13 @@ const items: ItemResolutionCandidate[] = [
     category: 'produce',
     unit: 'lb',
   },
+  {
+    id: 'item-10',
+    canonicalName: 'tomato and onion',
+    displayName: 'Tomato and Onion',
+    category: 'produce',
+    unit: 'lb',
+  },
 ]
 
 async function guard(bytes: Uint8Array) {

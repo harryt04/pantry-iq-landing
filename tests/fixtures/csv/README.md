@@ -1,6 +1,6 @@
 # CSV test corpus
 
-62 real-shaped CSV files for manual testing of `/import` and for the
+63 real-shaped CSV files for manual testing of `/import` and for the
 table-driven suite in [`corpus.test.ts`](corpus.test.ts). Every file is
 described in [`manifest.ts`](manifest.ts), which is the source of truth for
 what each file is supposed to prove.

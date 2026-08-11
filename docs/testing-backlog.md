@@ -208,8 +208,11 @@ stated reason. No "more of the same" files.
       (Codex, iteration 26) Added real-Postgres coverage for the same file
       committed through two upload records, plus reconciliation coverage that
       asserts the exact intersection of overlapping source periods.
-- [ ] Item resolution near-misses: trailing whitespace, plurals, `&` vs `and`,
+- [x] Item resolution near-misses: trailing whitespace, plurals, `&` vs `and`,
       case-only differences.
+      Added a manifest-backed transaction fixture covering whitespace and case
+      normalization plus unresolved plural and ampersand near-misses; the
+      corpus suite confirms only exact normalized matches enter the plan.
 - [ ] Adversarial security: deeply nested quotes, a header row alone exceeding
       the row limit, a highly compressible file near the cap.
 

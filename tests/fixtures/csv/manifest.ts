@@ -78,6 +78,15 @@ export const csvFixtures: CsvFixtureExpectation[] = [
     plan: { outcome: 'ok', rowCount: 8, unmatchedItemCount: 0 },
   },
   {
+    path: 'transactions/item-resolution-near-misses.csv',
+    importType: 'transactions',
+    description:
+      'Transaction export mixing whitespace and case normalization with plural and ampersand near-misses that must remain unresolved.',
+    security: 'passes',
+    parse: { hasHeader: true, minReadableRows: 5 },
+    plan: { outcome: 'ok', rowCount: 3, unmatchedItemCount: 2 },
+  },
+  {
     path: 'transactions/clover-payments-export.csv',
     importType: 'transactions',
     description:
