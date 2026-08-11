@@ -354,8 +354,10 @@ categories.
       fixture, with that data on screen. Added authenticated axe coverage for ten seeded
       screens in light and dark themes, and fixed the surfaced definition-list, control-name,
       duplicate-landmark, scroll-focus, heading-order, and disabled-group contrast defects.
-- [ ] Run the greyscale check on the same screens. Colour is never
-      load-bearing; the greyscale test is a merge gate.
+- [x] (Codex, iteration 53) Run the greyscale check on the same screens. Colour is never
+      load-bearing; the greyscale test is a merge gate. Added a seeded light/dark
+      sweep over the ten real-data screens with desaturated screenshot artifacts,
+      preserved text assertions, and chart pattern/value semantics checks.
 
 ---
 
