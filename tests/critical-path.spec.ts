@@ -291,6 +291,60 @@ const inventoryBatchFixtures = [
   },
 ] as const
 
+const laborBatchFixtures = [
+  {
+    filename: '7shifts-timesheet.csv',
+    rows: 3,
+    columns: [
+      'Shift Start',
+      'Shift End',
+      'Employee Code',
+      'Role',
+      'Scheduled Hours',
+      'Actual Hours',
+    ],
+    outcome: 'success',
+  },
+  {
+    filename: 'homebase-timesheet.csv',
+    rows: 3,
+    columns: [
+      'Clock In',
+      'Clock Out',
+      'Staff ID',
+      'Job Title',
+      'Hours Worked',
+      'Wage Cost',
+    ],
+    outcome: 'success',
+  },
+  {
+    filename: 'labor-scheduled-only.csv',
+    rows: 3,
+    columns: ['Shift Start', 'Shift End', 'Role', 'Scheduled Hours'],
+    outcome: 'success',
+  },
+  {
+    filename: 'labor-actual-only.csv',
+    rows: 2,
+    columns: ['Shift Start', 'Shift End', 'Role', 'Actual Hours'],
+    outcome: 'success',
+  },
+  {
+    filename: 'labor-missing-both-hours.csv',
+    rows: 2,
+    columns: ['Shift Start', 'Shift End', 'Role'],
+    outcome: 'error',
+    error: 'map scheduled hours or actual hours',
+  },
+  {
+    filename: 'labor-open-shift-no-end.csv',
+    rows: 2,
+    columns: ['Shift Start', 'Shift End', 'Role', 'Scheduled Hours'],
+    outcome: 'success',
+  },
+] as const
+
 async function signInOrSignUp(page: Page) {
   const email = process.env.TEST_USER_EMAIL
   const configuredPassword = process.env.TEST_USER_PASSWORD
@@ -864,6 +918,62 @@ test('imports the inventory corpus batch through /import', async ({ page }) => {
           )
         }
         await resolveNewItems(page)
+        await expect(
+          page
+            .locator('.csv-import-confirmation')
+            .getByRole('heading', { name: /Ready to import/ }),
+        ).toBeVisible()
+        await page.getByRole('button', { name: 'Import now' }).click()
+        await expect(page.locator('.app-page__status')).toContainText(
+          `${fixture.rows} rows imported.`,
+        )
+      })
+    } finally {
+      const response = await page.request.delete(`/api/locations/${locationId}`)
+      expect(response.status()).toBe(204)
+    }
+  }
+})
+
+test('imports the labor corpus batch through /import', async ({ page }) => {
+  test.setTimeout(180_000)
+  await signInOrSignUp(page)
+
+  for (const fixture of laborBatchFixtures) {
+    const locationId = await createTestLocation(page)
+    try {
+      await test.step(`imports ${fixture.filename}`, async () => {
+        await page.goto(`/import?locationId=${locationId}`)
+        await page.locator('#import-type').selectOption('labor')
+        await page
+          .locator('#csv-file')
+          .setInputFiles(
+            path.resolve('tests/fixtures/csv/labor', fixture.filename),
+          )
+        await page.getByRole('button', { name: 'Upload CSV' }).click()
+
+        await expect(page.locator('#csv-preview-title')).toBeVisible()
+        await expect(
+          page.locator('.csv-preview .app-page__help'),
+        ).toContainText(
+          `${fixture.rows} rows · ${fixture.columns.length} columns · , delimited · utf-8`,
+        )
+        expect(
+          await page.locator('.csv-preview thead th').allTextContents(),
+        ).toEqual(fixture.columns)
+
+        await reviewMapping(page)
+        await expect(page.locator('.csv-mapping')).toContainText(
+          /Mapping reviewed|All columns matched|reused your last mapping/,
+        )
+
+        if (fixture.outcome === 'error') {
+          await expect(page.locator('p[role="alert"]')).toContainText(
+            fixture.error,
+          )
+          return
+        }
+
         await expect(
           page
             .locator('.csv-import-confirmation')

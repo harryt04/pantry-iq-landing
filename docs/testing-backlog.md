@@ -138,7 +138,8 @@ wall-clock budget.
       Covered received-before-ordered, unit-cost/total mismatch, mixed currency/percentage rejection, and blank received dates through the authenticated `/import` route.
 - [x] Batch 6 — `inventory/` fixtures 1–7 (Codex, iteration 12)
       Covered all seven inventory fixtures through the authenticated `/import` route, including shelf-life and fractional quantities, normalized item names, new-item resolution, snapshot deduplication isolation, and the expected blank-quantity error.
-- [ ] Batch 7 — `labor/` fixtures 1–6
+- [x] Batch 7 — `labor/` fixtures 1–6 (Codex, iteration 13)
+      Covered all six labor fixtures through the authenticated `/import` route, including vendor-specific mappings, scheduled-only and actual-only shifts, open shifts, successful commits, and the expected missing-hours error.
 - [ ] Batch 8 — `malformed/` fixtures 1–8
 - [ ] Batch 9 — `security/` fixtures 1–5
 
