@@ -406,14 +406,15 @@ browser coverage needs two layers, not one.
       rendering of every screen. (Codex, iteration 50) Added an owner-scoped
       fixture seed setup with database row-count assertions and authenticated
       location-list verification.
-- [ ] Add `tests/ui/fixtures/mock-api.ts`, a Playwright fixture that installs
+- [x] Add `tests/ui/fixtures/mock-api.ts`, a Playwright fixture that installs
       `page.route()` handlers keyed by scenario. Cover `/api/chat`,
       `/api/chat/override`, `/api/locations`, `/api/locations/:id`,
       `/api/recipes`, `/api/items`, and `/api/reconciliation`. Type the bodies
       against the real route return types, so a route change breaks the mock
       instead of drifting from it. Each handler needs `ok`, `unauthorized`,
       `forbidden`, `invalid`, `conflict`, `unavailable`, `server-error`, and
-      `slow`.
+      `slow`. (Codex, iteration 54) Added the typed endpoint dispatcher and
+      reusable response scenarios.
 - [ ] Move the two existing specs into `tests/e2e/` and drop their inline
       signup. Split `test:e2e` into `test:e2e` and `test:ui` in
       [`package.json`](../package.json), add both to `ci:browser`, and mirror
