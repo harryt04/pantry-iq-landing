@@ -6,7 +6,11 @@ import { describe, expect, it } from 'vitest'
 import { buildCsvImportPlan } from '@/src/server/csv/import-plan'
 import { detectColumnMappings } from '@/src/server/csv/mapping'
 import { parseCsvPreview, parseCsvRows } from '@/src/server/csv/parser'
-import { assertCsvContent, guardedCsvStream } from '@/src/server/csv/security'
+import {
+  assertCsvContent,
+  guardedCsvStream,
+  MAX_CSV_UPLOAD_BYTES,
+} from '@/src/server/csv/security'
 import type { ItemResolutionCandidate } from '@/src/server/ingestion/item-resolution'
 
 import { CSV_FIXTURES_ROOT, csvFixtures, loadFixture } from './manifest'
@@ -109,6 +113,7 @@ describe('csv fixture corpus', () => {
       'labor',
       'malformed',
       'security',
+      'scale',
     ]) {
       await walk(category)
     }
@@ -120,6 +125,12 @@ describe('csv fixture corpus', () => {
   for (const fixture of csvFixtures) {
     it(`${fixture.path} — ${fixture.description}`, async () => {
       const bytes = await loadFixture(fixture.path)
+
+      if (fixture.byteLength !== undefined)
+        expect(bytes.byteLength).toBe(fixture.byteLength)
+      expect(bytes.byteLength).toBeLessThanOrEqual(MAX_CSV_UPLOAD_BYTES)
+      if (fixture.byteLength !== undefined)
+        await expect(guard(bytes)).resolves.toHaveLength(1)
 
       if (fixture.security !== 'passes') {
         await expect(guard(bytes)).rejects.toMatchObject({

@@ -196,8 +196,10 @@ stated reason. No "more of the same" files.
 - [x] Time: DST-boundary day, timezone-suffixed timestamps, `DD/MM` vs `MM/DD`
       ambiguity. Added three transaction fixtures; the manifest asserts both
       offset-preserving UTC instants and the slash-date corpus shape.
-- [ ] Scale: a 100k-row file under the cap, a 9.9 MB file, a file at exactly
-      10 MB.
+- [x] Scale: a 100k-row file under the cap, a 9.9 MB file, a file at exactly
+      10 MB. Added three manifest-backed fixtures; corpus coverage parses the
+      100,000-row file and exercises both the below-cap and exact-cap guard
+      boundaries.
 - [ ] Encoding: UTF-16LE with BOM, CP1252 smart quotes, mixed encodings in one
       file.
 - [ ] Duplicates: the same file imported twice (INT-07 dedup), and two files

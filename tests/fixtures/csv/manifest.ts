@@ -9,6 +9,8 @@ import type { CsvImportType } from '@/src/server/csv/upload-input'
 export type CsvFixtureExpectation = {
   /** Path relative to tests/fixtures/csv. */
   path: string
+  /** Exact byte length for fixtures that exercise upload-size boundaries. */
+  byteLength?: number
   importType: CsvImportType
   /** What a customer would call this file, for the manual-testing README. */
   description: string
@@ -265,6 +267,33 @@ export const csvFixtures: CsvFixtureExpectation[] = [
     security: 'passes',
     parse: { hasHeader: true, minReadableRows: 2 },
     plan: { outcome: 'ok', rowCount: 2, unmatchedItemCount: 0 },
+  },
+
+  // --- scale -----------------------------------------------------------
+  {
+    path: 'scale/transactions-100k-rows.csv',
+    importType: 'transactions',
+    description:
+      'A 100,000-row transaction export that remains below the 10 MiB upload cap.',
+    security: 'passes',
+    byteLength: 3_300_025,
+    parse: { hasHeader: true, minReadableRows: 100_000 },
+  },
+  {
+    path: 'scale/transactions-9-9-mb.csv',
+    importType: 'transactions',
+    description:
+      'A valid CSV whose 9,900,000 bytes exercise a large upload below the cap.',
+    security: 'passes',
+    byteLength: 9_900_000,
+  },
+  {
+    path: 'scale/transactions-exactly-10-mib.csv',
+    importType: 'transactions',
+    description:
+      'A valid CSV exactly at the 10 MiB upload boundary; the guard must accept it.',
+    security: 'passes',
+    byteLength: 10 * 1024 * 1024,
   },
 
   // --- purchase orders --------------------------------------------------
