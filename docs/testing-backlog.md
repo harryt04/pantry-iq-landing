@@ -301,8 +301,11 @@ above 94% — expect few survivors and move on quickly.
       Added a behavioral regression requiring long problem examples to retain
       their prefix while being truncated; changing the truncation boundary
       makes the focused parser test fail.
-- [ ] The remaining well-covered set, one pass each: `security.ts`,
-      `impact.ts`, `urgency.ts`, `ranking.ts`,
+- [x] `security.ts` mutation pass (Codex, iteration 42).
+      Added a streaming regression proving forbidden control bytes are rejected
+      even after the bounded content sample is full; mutation testing caught
+      checking the sample instead of the current chunk. The remaining
+      well-covered set continues with `impact.ts`, `urgency.ts`, `ranking.ts`,
       `sufficiency.ts`, `spoilage.ts`, `evidence.ts`.
 
 Those percentages come from a run with no database, so the integration-only

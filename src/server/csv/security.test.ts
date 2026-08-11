@@ -22,6 +22,15 @@ async function consume(
   return chunks
 }
 
+async function drain(
+  input: AsyncIterable<Uint8Array | string>,
+  options?: { maxBytes?: number },
+): Promise<void> {
+  for await (const chunk of guardedCsvStream(input, options)) {
+    void chunk
+  }
+}
+
 describe('CSV upload security', () => {
   it('accepts delimited text and rejects renamed binary files', () => {
     expect(() => assertCsvContent('item,qty\nSalmon,2\n')).not.toThrow()
@@ -54,6 +63,18 @@ describe('CSV upload security', () => {
 
     expect(chunks).toHaveLength(2)
     expect(new TextDecoder().decode(chunks[1])).toBe('Salmon,2\n')
+  })
+
+  it('rejects forbidden control bytes after the bounded content sample', async () => {
+    const input = (async function* () {
+      yield 'item,qty\n'
+      yield 'Salmon,2\n'.repeat(8_000)
+      yield new Uint8Array([0x01])
+    })()
+
+    await expect(drain(input)).rejects.toMatchObject({
+      code: 'NOT_CSV_CONTENT',
+    })
   })
 
   it('neutralizes spreadsheet formulas and escapes CSV syntax', () => {
