@@ -9,11 +9,14 @@ import {
 } from 'vitest'
 import { readFile } from 'node:fs/promises'
 import path from 'node:path'
+import { createElement } from 'react'
+import { renderToStaticMarkup } from 'react-dom/server'
 
 import {
   migrateDatabase,
   rollbackDatabase,
 } from '../../src/server/db/migrations'
+import { TrendSummaries } from '../../components/dashboard/trend-summaries'
 import {
   closeAppDatabaseClient,
   integrationDatabaseEnabled,
@@ -85,6 +88,15 @@ const BUSINESS_DAY_MAPPING = {
   'Item Name': 'rawItemName',
   Qty: 'qty',
   'Total Revenue': 'totalRevenue',
+}
+
+const MONEY_PRECISION_MAPPING = {
+  Date: 'transactedAt',
+  Item: 'rawItemName',
+  Qty: 'qty',
+  'Unit Price': 'unitPrice',
+  'Total Revenue': 'totalRevenue',
+  'Total Cost': 'totalCost',
 }
 
 const PARTIAL_MAPPING = {
@@ -193,6 +205,16 @@ const BUSINESS_DAY_RESOLUTIONS: Record<string, ImportItemResolution> = {
     canonicalName: 'salmon fillet',
     displayName: 'Salmon Fillet',
     category: 'seafood',
+    unit: 'each',
+    shelfLifeDays: null,
+  },
+}
+
+const MONEY_PRECISION_RESOLUTIONS: Record<string, ImportItemResolution> = {
+  [normalizeExactItemName('Tomato Soup')]: {
+    canonicalName: 'tomato soup',
+    displayName: 'Tomato Soup',
+    category: 'prepared food',
     unit: 'each',
     shelfLifeDays: null,
   },
@@ -703,6 +725,88 @@ describe.skipIf(!integrationDatabaseEnabled())('CSV import', () => {
         transactionDays: 2,
         status: 'insufficient',
       })
+    }, 120_000)
+
+    it('keeps money exact from imported rows through metrics to the rendered figure', async () => {
+      const csv = await readFile(
+        path.resolve(
+          'tests/fixtures/csv/transactions/sales-money-precision.csv',
+        ),
+        'utf8',
+      )
+      const uploadId = await seedUpload(LOCATION_ID, {
+        filename: 'sales-money-precision.csv',
+        mapping: MONEY_PRECISION_MAPPING,
+      })
+
+      const summary = await imports.commitCsvImport(
+        new Headers(),
+        uploadId,
+        MONEY_PRECISION_RESOLUTIONS,
+        memoryStorage(csv),
+      )
+
+      expect(summary.rowsImported).toBe(2)
+
+      const { sql } = opened!.database
+      const imported = await sql<
+        { unitPrice: string; totalRevenue: string; totalCost: string | null }[]
+      >`
+        select
+          unit_price as "unitPrice",
+          total_revenue as "totalRevenue",
+          total_cost as "totalCost"
+        from transactions
+        where location_id = ${LOCATION_ID}
+        order by transacted_at
+      `
+      expect(imported).toEqual([
+        { unitPrice: '0.1', totalRevenue: '0.1', totalCost: '0.01' },
+        { unitPrice: '0.2', totalRevenue: '0.2', totalCost: '0.02' },
+      ])
+
+      const [item] = await sql<{ id: string }[]>`
+        select id from inventory_items
+        where location_id = ${LOCATION_ID} and canonical_name = 'tomato soup'
+      `
+      await sql`
+        update inventory_items
+        set cost_per_unit = '0.03'
+        where id = ${item!.id}
+      `
+
+      const { runPrecomputeForLocation } =
+        await import('../../src/server/metrics/precompute')
+      const run = await runPrecomputeForLocation(LOCATION_ID, {
+        now: new Date('2026-08-10T12:00:00.000Z'),
+      })
+      expect(run?.status).toBe('succeeded')
+
+      const [margin] = await sql<
+        {
+          value: string | null
+          result: { inputs?: { revenue?: string } }
+        }[]
+      >`
+        select value, result
+        from metric_results
+        where run_id = ${run!.id}
+          and metric_key = 'margin'
+      `
+      expect(margin).toMatchObject({
+        value: '0.24',
+        result: { inputs: { revenue: '0.3' } },
+      })
+
+      const { buildTrendSummaries } =
+        await import('../../src/server/metrics/trends')
+      const summaries = buildTrendSummaries([
+        { label: 'Aug 3–Aug 9', margin: margin!.value!, unit: 'each' },
+      ])
+      const markup = renderToStaticMarkup(
+        createElement(TrendSummaries, { summaries }),
+      )
+      expect(markup).toContain('$0.24')
     }, 120_000)
 
     it('marks the upload imported so the history is honest', async () => {

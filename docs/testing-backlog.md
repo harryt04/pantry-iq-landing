@@ -46,7 +46,7 @@ it. `components/ui/**` is vendored and out of scope.
 Exit gate for every item: `pnpm prettify`, then `pnpm ci` until green.
 
 Then ratchet the coverage gate. [`vitest.config.ts`](../vitest.config.ts) holds
-thresholds at 70.65/70.65/74.92/79.87 against 72.65% statements/lines measured 2026-08-11. Re-measure with
+thresholds at 70.9/70.9/75.06/79.96 against 72.9% statements, 77.06% branches, 81.96% functions, and 72.9% lines measured 2026-08-11. Re-measure with
 `pnpm ci:tests` and raise each threshold to the new number minus two. Never
 lower one to make a build pass. Browser tests do not feed the v8 report, so
 Loops I, J, and L will not move the number. That is expected, not a failure.
@@ -171,8 +171,11 @@ recommendations.
       Covered same-calendar-day pre- and post-boundary sales through real CSV
       commit and precompute; both demand forecast and dashboard count two
       business days.
-- [ ] Money never touches a float (§3.9) — assert an imported amount stays
-      exact from row through metric to rendered figure.
+- [x] Money never touches a float (§3.9) — assert an imported amount stays
+      exact from row through metric to rendered figure. (Codex, iteration 20)
+      Added a precision fixture and real-Postgres coverage from normalized
+      transaction values through precompute margin output to the rendered
+      dashboard dollar figure.
 - [ ] `labor/*` through STF-02 labor efficiency metrics.
 - [ ] `purchase-orders/*` through MNU-03 plate costing.
 

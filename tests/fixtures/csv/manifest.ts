@@ -196,6 +196,15 @@ export const csvFixtures: CsvFixtureExpectation[] = [
     parse: { hasHeader: true, minReadableRows: 2 },
     plan: { outcome: 'ok', rowCount: 2, unmatchedItemCount: 0 },
   },
+  {
+    path: 'transactions/sales-money-precision.csv',
+    importType: 'transactions',
+    description:
+      'Two decimal money rows whose exact sum must survive import, metrics, and dashboard rendering.',
+    security: 'passes',
+    parse: { hasHeader: true, minReadableRows: 2 },
+    plan: { outcome: 'ok', rowCount: 2, unmatchedItemCount: 0 },
+  },
 
   // --- purchase orders --------------------------------------------------
   {
