@@ -9,6 +9,7 @@ import {
   partialDataLocationFixture,
 } from '../../fixtures/pantry'
 import { seedDatabase } from '../../../src/server/db/seed-database'
+import { runPrecomputeForLocation } from '../../../src/server/metrics/precompute'
 import { integrationDatabaseEnabled } from '../../helpers/test-database'
 
 const authFile = path.resolve('tests/.auth/owner.json')
@@ -292,6 +293,9 @@ setup('seed the shared owner locations', async ({ page }) => {
     await seedUsageData(client, recentFullYearFixture, new Date())
     await seedUsageData(client, recentPartialDataFixture, new Date())
     await seedLaborShifts(client, recentFullYearFixture)
+    await runPrecomputeForLocation(fullYearLocationFixture.locationId, {
+      now: targetEnd,
+    })
 
     const rows = await client.unsafe<
       {

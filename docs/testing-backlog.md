@@ -456,7 +456,8 @@ Percentages below are line coverage measured 2026-08-10.
       save, reload, assert it persisted. (Codex, iteration 59) Added a seeded
       real-data journey that saves a recipe with Tomato, reloads the page, and
       reopens it to verify the persisted ingredient quantity and unit.
-- [ ] `/portfolio` — the rollup across both seeded locations.
+- [x] `/portfolio` — the rollup across both seeded locations. (Codex, iteration 60)
+      Added a seeded full-year metric run and authenticated browser coverage for the partial rollup, per-location readiness, money totals, and dashboard links.
       `portfolio-rollup.tsx` 0%, `metrics/portfolio.ts` 33.2%.
 - [ ] `/settings` — item master and shelf-life defaults. Edit an item, save,
       assert the change survives a reload.
