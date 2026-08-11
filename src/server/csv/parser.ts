@@ -6,6 +6,8 @@ const SNIFF_BYTES = 64 * 1024
 const PREVIEW_ROWS = 5
 const HEADER_SEARCH_ROWS = 50
 const DELIMITERS = [',', ';', '\t'] as const
+/** Prevent one quoted field/record from consuming the entire upload buffer. */
+export const MAX_CSV_RECORD_BYTES = 1024 * 1024
 
 export type CsvEncoding = 'utf-8' | 'latin-1' | 'windows-1252' | 'utf-16le'
 export type CsvDelimiter = (typeof DELIMITERS)[number]
@@ -315,6 +317,7 @@ export async function parseCsvPreview(input: ByteStream): Promise<CsvPreview> {
     delimiter: prepared.delimiter,
     encoding: 'utf8',
     info: false,
+    max_record_size: MAX_CSV_RECORD_BYTES,
     relax_column_count: true,
     skip_empty_lines: true,
     skip_records_with_error: true,
@@ -438,6 +441,7 @@ export async function parseCsvRows(input: ByteStream): Promise<CsvRows> {
     bom: true,
     delimiter: prepared.delimiter,
     encoding: 'utf8',
+    max_record_size: MAX_CSV_RECORD_BYTES,
     relax_column_count: true,
     skip_empty_lines: true,
   })

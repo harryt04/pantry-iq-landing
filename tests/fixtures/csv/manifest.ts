@@ -304,6 +304,14 @@ export const csvFixtures: CsvFixtureExpectation[] = [
     security: 'passes',
     byteLength: 10 * 1024 * 1024,
   },
+  {
+    path: 'scale/highly-compressible-near-cap.csv',
+    importType: 'transactions',
+    description:
+      'A highly repetitive CSV just below the upload cap; streaming guards must accept it without expanding compressed-like repetition.',
+    security: 'passes',
+    byteLength: 9_749_980,
+  },
 
   // --- encoding ---------------------------------------------------------
   {
@@ -582,6 +590,15 @@ export const csvFixtures: CsvFixtureExpectation[] = [
     security: 'passes',
     parse: { hasHeader: true, minReadableRows: 4 },
   },
+  {
+    path: 'malformed/deeply-nested-quotes.csv',
+    importType: 'transactions',
+    description:
+      'A valid item field containing deeply escaped nested quote characters.',
+    security: 'passes',
+    parse: { hasHeader: true, minReadableRows: 1 },
+    plan: { outcome: 'ok', rowCount: 0, unmatchedItemCount: 1 },
+  },
 
   // --- security ---------------------------------------------------------
   {
@@ -615,5 +632,13 @@ export const csvFixtures: CsvFixtureExpectation[] = [
     importType: 'transactions',
     description: 'A zero-byte file.',
     security: 'EMPTY_FILE',
+  },
+  {
+    path: 'security/header-row-over-record-limit.csv',
+    importType: 'transactions',
+    description:
+      'A header-shaped row larger than the parser record limit, with no data rows.',
+    security: 'passes',
+    parse: { hasHeader: false, minReadableRows: 0, hasProblems: true },
   },
 ]

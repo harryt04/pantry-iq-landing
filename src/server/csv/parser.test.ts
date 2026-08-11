@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { parseCsvPreview, parseCsvRows } from './parser'
+import { MAX_CSV_RECORD_BYTES, parseCsvPreview, parseCsvRows } from './parser'
 
 async function* chunks(bytes: Uint8Array, size = bytes.length) {
   for (let offset = 0; offset < bytes.length; offset += size)
@@ -232,5 +232,21 @@ describe('CSV preview parser', () => {
     expect(preview.rowCount).toBe(10_000)
     expect(preview.readableRowCount).toBe(10_000)
     expect(preview.previewRows).toHaveLength(5)
+  })
+
+  it('reports a single oversized record without buffering an unbounded row', async () => {
+    const oversizedHeader = `Date,Item,${'Metadata'.repeat(MAX_CSV_RECORD_BYTES)}\n`
+
+    const preview = await parseCsvPreview(chunks(utf8(oversizedHeader), 4096))
+
+    expect(preview.hasHeader).toBe(false)
+    expect(preview.readableRowCount).toBe(0)
+    expect(preview.problems[0]).toEqual(
+      expect.objectContaining({
+        count: expect.any(Number),
+        message: "had a row I couldn't read",
+      }),
+    )
+    expect(preview.problems[0]?.count).toBeGreaterThan(0)
   })
 })

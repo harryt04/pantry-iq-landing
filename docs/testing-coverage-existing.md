@@ -216,7 +216,7 @@ case), `fullYearLocationFixture` (365 days plus 52 weekly snapshots — the
 prediction case). Reach for these before writing new sample data.
 
 **[`tests/fixtures/csv/manifest.ts`](../tests/fixtures/csv/manifest.ts)** —
-63 real-shaped CSV files with a typed expectation each: security outcome, parse
+66 real-shaped CSV files with a typed expectation each: security outcome, parse
 result, mapping bands, import plan, and selected upload-size boundaries.
 [`corpus.test.ts`](../tests/fixtures/csv/corpus.test.ts) loops the manifest and
 drives every file through guard → parse → map → plan, one case per fixture.

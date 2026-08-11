@@ -213,8 +213,11 @@ stated reason. No "more of the same" files.
       Added a manifest-backed transaction fixture covering whitespace and case
       normalization plus unresolved plural and ampersand near-misses; the
       corpus suite confirms only exact normalized matches enter the plan.
-- [ ] Adversarial security: deeply nested quotes, a header row alone exceeding
+- [x] Adversarial security: deeply nested quotes, a header row alone exceeding
       the row limit, a highly compressible file near the cap.
+      Added manifest-backed fixtures for deeply escaped quote fields, a
+      header-only record over the 1 MiB parser record limit, and a repetitive
+      9.75 MB upload; bounded parsing and streaming guard coverage pass.
 
 ---
 
