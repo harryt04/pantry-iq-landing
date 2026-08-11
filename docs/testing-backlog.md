@@ -46,7 +46,7 @@ it. `components/ui/**` is vendored and out of scope.
 Exit gate for every item: `pnpm prettify`, then `pnpm ci` until green.
 
 Then ratchet the coverage gate. [`vitest.config.ts`](../vitest.config.ts) holds
-thresholds at 70.55/70.55/74.85/79.78 against 72.55% measured 2026-08-11. Re-measure with
+thresholds at 70.65/70.65/74.92/79.87 against 72.65% statements/lines measured 2026-08-11. Re-measure with
 `pnpm ci:tests` and raise each threshold to the new number minus two. Never
 lower one to make a build pass. Browser tests do not feed the v8 report, so
 Loops I, J, and L will not move the number. That is expected, not a failure.
@@ -158,8 +158,10 @@ recommendations.
       Covered in the real-Postgres CSV import integration suite: the fixture
       imports 1,825 rows, precompute marks prediction eligibility true, and
       the owner-scoped dashboard state is ready.
-- [ ] Import under four weeks of history; assert it does **not** cross the gate
-      and the insufficient-data state states what is missing.
+- [x] Import under four weeks of history; assert it does **not** cross the gate
+      and the insufficient-data state states what is missing. (Codex, iteration 17)
+      Covered a 14-day real CSV import through precompute; prediction remains
+      ineligible and the persisted finding asks for four weeks of history.
 - [ ] `transactions/sales-with-refunds-negative.csv` — assert refunds reduce
       revenue and never surface as negative-quantity waste.
 - [ ] Business-day boundary: build a fixture with a 01:30 sale and assert it

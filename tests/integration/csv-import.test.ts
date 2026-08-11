@@ -23,6 +23,8 @@ import {
 import type { ObjectStorage } from '../../src/server/storage/object-storage'
 import { normalizeExactItemName } from '../../src/server/csv/item-resolution'
 import type { ImportItemResolution } from '../../src/server/csv/import-plan'
+import { buildPartialDataFindings } from '../../src/server/metrics/partial-data'
+import { partialDataLocationFixture } from '../fixtures/pantry'
 
 /**
  * `src/server/csv/imports.ts` was the largest untested module in the
@@ -70,6 +72,23 @@ const FULL_YEAR_MAPPING = {
   'Unit Price': 'unitPrice',
   'Total Revenue': 'totalRevenue',
 }
+
+const PARTIAL_MAPPING = {
+  Date: 'transactedAt',
+  Item: 'rawItemName',
+  Quantity: 'qty',
+  'Unit price': 'unitPrice',
+  Total: 'totalRevenue',
+}
+
+const PARTIAL_CSV = [
+  'Date,Item,Quantity,Unit price,Total',
+  ...partialDataLocationFixture.sales.map((sale) => {
+    const unitPrice = sale.itemName === 'Tomato Soup' ? '8.50' : '11.00'
+    return `${sale.transactedAt},${sale.itemName},${sale.qty},${unitPrice},${sale.totalRevenue}`
+  }),
+  '',
+].join('\n')
 
 /**
  * A CSV names items in the operator's own words. Anything the importer cannot
@@ -126,6 +145,23 @@ const FULL_YEAR_RESOLUTIONS: Record<string, ImportItemResolution> = {
     canonicalName: 'burger',
     displayName: 'Burger',
     category: 'prepared food',
+    unit: 'each',
+    shelfLifeDays: null,
+  },
+}
+
+const PARTIAL_RESOLUTIONS: Record<string, ImportItemResolution> = {
+  [normalizeExactItemName('Tomato Soup')]: {
+    canonicalName: 'tomato soup',
+    displayName: 'Tomato Soup',
+    category: 'prepared food',
+    unit: 'each',
+    shelfLifeDays: null,
+  },
+  [normalizeExactItemName('House Salad')]: {
+    canonicalName: 'house salad',
+    displayName: 'House Salad',
+    category: 'produce',
     unit: 'each',
     shelfLifeDays: null,
   },
@@ -385,6 +421,90 @@ describe.skipIf(!integrationDatabaseEnabled())('CSV import', () => {
         requiredDays: 7,
         remainingDays: 0,
       })
+    }, 120_000)
+
+    it('keeps short history observational and names the missing requirement', async () => {
+      const uploadId = await seedUpload(LOCATION_ID, {
+        filename: 'partial-history.csv',
+        mapping: PARTIAL_MAPPING,
+      })
+
+      const summary = await imports.commitCsvImport(
+        new Headers(),
+        uploadId,
+        PARTIAL_RESOLUTIONS,
+        memoryStorage(PARTIAL_CSV),
+      )
+
+      expect(summary.rowsImported).toBe(partialDataLocationFixture.sales.length)
+
+      const { runPrecomputeForLocation } =
+        await import('../../src/server/metrics/precompute')
+      const run = await runPrecomputeForLocation(LOCATION_ID, {
+        now: new Date('2025-01-15T12:00:00.000Z'),
+      })
+      expect(run?.status).toBe('succeeded')
+
+      const { sql } = opened!.database
+      const [sufficiency] = await sql<
+        {
+          result: {
+            inputs?: {
+              historyWeeks?: string
+              predictionHistoryWeeks?: string
+            }
+            predictionEligible?: boolean
+          }
+        }[]
+      >`
+        select result
+        from metric_rollups
+        where run_id = ${run!.id} and metric_key = 'dataSufficiency'
+      `
+      expect(sufficiency?.result).toMatchObject({
+        inputs: {
+          historyWeeks: '1',
+          predictionHistoryWeeks: '4',
+        },
+        predictionEligible: false,
+      })
+
+      const itemMetrics = await sql<
+        {
+          metricKey: string
+          status: 'calculated' | 'cannot-calculate'
+          value: string | null
+          result: Record<string, unknown>
+        }[]
+      >`
+        select metric_key as "metricKey", status, value, result
+        from metric_results
+        where run_id = ${run!.id}
+          and inventory_item_id is not null
+      `
+      const findings = buildPartialDataFindings({
+        metrics: itemMetrics,
+        unit: 'each',
+        currentDate: new Date('2025-01-15T12:00:00.000Z'),
+        sales: partialDataLocationFixture.sales.map((sale) => ({
+          qty: sale.qty,
+          transactedAt: new Date(sale.transactedAt),
+        })),
+        quantities: [],
+      })
+      expect(findings).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            code: 'insufficient-history',
+            message:
+              'There are 1 week of transaction history here, so this is an observation rather than a prediction.',
+            details: expect.objectContaining({
+              requiredHistoryWeeks: '4',
+              supply: 'Add 4 weeks of transactions to enable a prediction.',
+            }),
+          }),
+        ]),
+      )
     }, 120_000)
 
     it('marks the upload imported so the history is honest', async () => {

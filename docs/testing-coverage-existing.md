@@ -19,7 +19,7 @@ figure is higher.
 | Vitest files | 111 |
 | Vitest cases | 582 statically, more after `.each` expansion |
 | Playwright specs | 4 files, 11 cases |
-| Line coverage | 72.54% with a database, 65.98% without |
+| Line coverage | 72.65% with a database, 65.98% without |
 
 ---
 
