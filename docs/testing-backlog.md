@@ -279,7 +279,10 @@ above 94% — expect few survivors and move on quickly.
       Added a regression proving an unresolved conflict cannot include a record even when its stale authority matches; mutation testing caught removing the resolved-status guard.
 - [x] `metrics/item-deep-dives.ts` — 66.7% of 345. (Codex, iteration 35 — item-scoped recommendations)
       Added a regression proving each item detail receives only its own recommendations; a mutant removing the item filter fails.
-- [ ] `metrics/scheduler.ts` — 57.9% of 209.
+- [x] `metrics/scheduler.ts` — 57.9% of 209. (Codex, iteration 36)
+      Added a scheduler-clock fallback regression for successful runs whose
+      precompute result has no completion timestamp; mutation testing caught
+      removing the fallback.
 - [ ] `metrics/dashboard-recommendations.ts` (50% of 72) and
       `metrics/dashboard-state.ts` (47.5% of 61).
 - [ ] The well-covered set, one pass each: `import-plan.ts`, `mapping.ts`,
