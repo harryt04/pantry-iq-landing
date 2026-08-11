@@ -46,7 +46,7 @@ it. `components/ui/**` is vendored and out of scope.
 Exit gate for every item: `pnpm prettify`, then `pnpm ci` until green.
 
 Then ratchet the coverage gate. [`vitest.config.ts`](../vitest.config.ts) holds
-  thresholds at 73.07/73.07/75.44/80.48 against 75.07% statements, 77.44% branches, 82.48% functions, and 75.07% lines measured 2026-08-11. Re-measure with
+  thresholds at 73.57/73.57/75.44/80.48 against 75.57% statements, 77.39% branches, 82.48% functions, and 75.57% lines measured 2026-08-11. Re-measure with
 `pnpm ci:tests` and raise each threshold to the new number minus two. Never
 lower one to make a build pass. Browser tests do not feed the v8 report, so
 Loops I, J, and L will not move the number. That is expected, not a failure.
@@ -324,12 +324,12 @@ them.
       import planning, file preview, mapping persistence, and CSV export.
 - [ ] Assert `security/formula-injection.csv` stays inert through the CSV
       **export** path (ING-11), not only on import.
-      **Blocked on Loop K's first item.** This entry assumed the export path
-      had a test to extend. It does not.
+      The Loop K export-service test is now in place; extend that real
+      query-path coverage with this fixture.
       [`src/server/csv/exports.test.ts`](../src/server/csv/exports.test.ts)
       tests `export-format.ts`, which is a pure formatter at 100%. The query
-      module `exports.ts` is 149 lines at 0%, and the one API test that reaches
-      it mocks it. Build that test first, then extend it here.
+      module `exports.ts` is now covered by the real service test; extend that
+      test here rather than the mocked API test.
 - [ ] Assert the guard rejects `security/renamed-xlsx.csv` and
       `security/renamed-pdf.csv` before any bytes reach storage.
 - [ ] Assert a rejected upload persists nothing — no row, no file, no history
@@ -484,9 +484,10 @@ including `requireOwnedLocation` in all ten. Those tests prove status mapping,
 which is worth having, and they leave the services at zero. One module per
 iteration, unit or integration as the module needs.
 
-- [ ] `csv/exports.ts` — 149 lines at 0%. Owner scoping, and formula-injection
-      neutralisation through the real query path. Unblocks the Loop G export
-      item.
+- [x] `csv/exports.ts` — 149 lines at 0%. (Codex, iteration 43)
+      Added real-Postgres coverage for all four export datasets, owner
+      scoping, and formula-injection neutralisation through the query path.
+      Unblocked the Loop G export item.
 - [ ] `menu/usage-variance-query.ts` — 208 lines at 0%.
 - [ ] `staffing/labor-efficiency-query.ts` — 143 lines at 0%.
 - [ ] `menu/menu-engineering-query.ts` — 117 lines at 0%.

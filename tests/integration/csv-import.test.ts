@@ -1394,4 +1394,119 @@ describe.skipIf(!integrationDatabaseEnabled())('CSV import', () => {
       ).rejects.toThrow()
     })
   })
+
+  describe('export service', () => {
+    it('scopes every dataset to the owner and neutralizes formula-looking cells', async () => {
+      const { sql } = opened!.database
+      const itemId = '00000000-0000-4000-8000-00000000e001'
+      const orderId = '00000000-0000-4000-8000-00000000e002'
+      const orderItemId = '00000000-0000-4000-8000-00000000e003'
+      const snapshotId = '00000000-0000-4000-8000-00000000e004'
+
+      await sql`
+        insert into inventory_items
+          (id, location_id, canonical_name, display_name, category, unit,
+           shelf_life_days, cost_per_unit, menu_price, par_level)
+        values
+          (
+            ${itemId}, ${LOCATION_ID}, 'formula item',
+            '=HYPERLINK("http://evil.example")', '@SUM(A1:A2)', 'each',
+            3, '8.50', '18.00', '4.00'
+          )
+      `
+      await sql`
+        insert into transactions
+          (id, location_id, transacted_at, external_id, source,
+           menu_item_id, raw_item_name, category, qty, unit_price,
+           total_revenue, total_cost, gross_margin)
+        values
+          (
+            '00000000-0000-4000-8000-00000000e005', ${LOCATION_ID},
+            '2026-08-08T04:00:00Z', 'formula-sale', 'test', ${itemId},
+            '=HYPERLINK("http://evil.example")', '+1+1', '2', '24.00',
+            '48.00', '12.50', '35.50'
+          ),
+          (
+            '00000000-0000-4000-8000-00000000e006', ${OTHER_LOCATION_ID},
+            '2026-08-08T05:00:00Z', 'other-sale', 'test', null,
+            'Other location item', 'Other', '1', '9.00',
+            '9.00', '4.00', '5.00'
+          )
+      `
+      await sql`
+        insert into purchase_orders
+          (id, location_id, ordered_at, received_at, external_id, source,
+           supplier_name)
+        values
+          (
+            ${orderId}, ${LOCATION_ID}, '2026-08-07T04:00:00Z',
+            '2026-08-08T04:00:00Z', '+1+1', 'test', '@SUM(A1:A2)'
+          )
+      `
+      await sql`
+        insert into purchase_order_items
+          (id, purchase_order_id, location_id, inventory_item_id,
+           raw_item_name, qty, unit_cost, total_cost)
+        values
+          (
+            ${orderItemId}, ${orderId}, ${LOCATION_ID}, ${itemId},
+            '=HYPERLINK("http://evil.example")', '2', '8.50', '17.00'
+          )
+      `
+      await sql`
+        insert into inventory_snapshots
+          (id, location_id, inventory_item_id, counted_at, qty, source)
+        values
+          (
+            ${snapshotId}, ${LOCATION_ID}, ${itemId},
+            '2026-08-08T04:00:00Z', '2', 'test'
+          )
+      `
+
+      const headers = new Headers()
+      const transactions = await exportsService.exportLocationCsv(
+        headers,
+        LOCATION_ID,
+        'transactions',
+      )
+      expect(transactions).toContain('\'=HYPERLINK(""http://evil.example"")')
+      expect(transactions).toContain("'+1+1")
+      expect(transactions).not.toContain(',other-sale,')
+
+      const purchaseOrders = await exportsService.exportLocationCsv(
+        headers,
+        LOCATION_ID,
+        'purchase_orders',
+      )
+      expect(purchaseOrders).toContain(",'+1+1,")
+      expect(purchaseOrders).toContain("'@SUM(A1:A2)")
+
+      const inventoryItems = await exportsService.exportLocationCsv(
+        headers,
+        LOCATION_ID,
+        'inventory_items',
+      )
+      expect(inventoryItems).toContain('\'=HYPERLINK(""http://evil.example"")')
+      expect(inventoryItems).toContain("'@SUM(A1:A2)")
+
+      const inventorySnapshots = await exportsService.exportLocationCsv(
+        headers,
+        LOCATION_ID,
+        'inventory_snapshots',
+      )
+      expect(inventorySnapshots).toContain(snapshotId)
+      expect(inventorySnapshots).toContain(
+        '\'=HYPERLINK(""http://evil.example"")',
+      )
+
+      sessionState.current = { user: { id: OTHER_OWNER_ID } }
+      const otherTransactions = await exportsService.exportLocationCsv(
+        headers,
+        OTHER_LOCATION_ID,
+        'transactions',
+      )
+      expect(otherTransactions).toContain(',other-sale,')
+      expect(otherTransactions).not.toContain('formula-sale')
+    })
+  })
 })
