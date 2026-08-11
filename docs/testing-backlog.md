@@ -200,8 +200,9 @@ stated reason. No "more of the same" files.
       10 MB. Added three manifest-backed fixtures; corpus coverage parses the
       100,000-row file and exercises both the below-cap and exact-cap guard
       boundaries.
-- [ ] Encoding: UTF-16LE with BOM, CP1252 smart quotes, mixed encodings in one
-      file.
+- [x] Encoding: UTF-16LE with BOM, CP1252 smart quotes, mixed encodings in one
+      file. Added manifest-backed UTF-16LE and Windows-1252 fixtures, plus a
+      security fixture that rejects ambiguous mixed encoding bytes.
 - [ ] Duplicates: the same file imported twice (INT-07 dedup), and two files
       with overlapping date ranges.
 - [ ] Item resolution near-misses: trailing whitespace, plurals, `&` vs `and`,

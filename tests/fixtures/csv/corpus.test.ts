@@ -114,6 +114,7 @@ describe('csv fixture corpus', () => {
       'malformed',
       'security',
       'scale',
+      'encoding',
     ]) {
       await walk(category)
     }

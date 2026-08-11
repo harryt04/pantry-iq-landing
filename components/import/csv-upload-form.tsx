@@ -18,7 +18,7 @@ import type {
 import { normalizeExactItemName } from '@/src/server/csv/item-resolution'
 
 type CsvPreview = {
-  encoding: 'utf-8' | 'latin-1'
+  encoding: 'utf-8' | 'latin-1' | 'windows-1252' | 'utf-16le'
   delimiter: ',' | ';' | '\t'
   hasHeader: boolean
   columns: string[]

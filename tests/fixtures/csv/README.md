@@ -1,6 +1,6 @@
 # CSV test corpus
 
-59 real-shaped CSV files for manual testing of `/import` and for the
+62 real-shaped CSV files for manual testing of `/import` and for the
 table-driven suite in [`corpus.test.ts`](corpus.test.ts). Every file is
 described in [`manifest.ts`](manifest.ts), which is the source of truth for
 what each file is supposed to prove.
@@ -20,6 +20,7 @@ against its `description` (and `knownIssue`, if present) in `manifest.ts`.
 | `malformed/` | Any — these exercise the parser, not a specific type |
 | `security/` | Any — these exercise the upload guard |
 | `scale/` | Transactions — large-file and upload-cap boundaries |
+| `encoding/` | Transactions — supported legacy encodings and mixed-encoding rejection |
 
 ## Known issues on purpose
 

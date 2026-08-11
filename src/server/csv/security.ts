@@ -47,6 +47,25 @@ function containsForbiddenControlByte(bytes: Uint8Array): boolean {
   )
 }
 
+function hasUtf8MultibyteSequence(bytes: Uint8Array): boolean {
+  return bytes.some(
+    (value, index) =>
+      value >= 0xc2 &&
+      value <= 0xf4 &&
+      bytes[index + 1] !== undefined &&
+      bytes[index + 1]! >= 0x80 &&
+      bytes[index + 1]! <= 0xbf,
+  )
+}
+
+function hasCp1252SmartQuote(bytes: Uint8Array): boolean {
+  return bytes.some((value) => value >= 0x91 && value <= 0x94)
+}
+
+function isUtf16Le(bytes: Uint8Array): boolean {
+  return bytes[0] === 0xff && bytes[1] === 0xfe
+}
+
 function hasCsvShape(bytes: Uint8Array): boolean {
   const start =
     bytes[0] === 0xef && bytes[1] === 0xbb && bytes[2] === 0xbf ? 3 : 0
@@ -58,21 +77,36 @@ function hasCsvShape(bytes: Uint8Array): boolean {
   )
 }
 
+function hasDecodedCsvShape(bytes: Uint8Array): boolean {
+  try {
+    const text = new TextDecoder('utf-16le', { fatal: true }).decode(
+      bytes.subarray(2),
+    )
+    return /[\n\r,;]/.test(text)
+  } catch {
+    return false
+  }
+}
+
 /**
  * Checks content rather than trusting a browser-provided MIME type or name.
- * Latin-1 bytes are allowed here because ING-03 owns character-set decoding.
+ * Legacy single-byte encodings are allowed here because ING-03 owns
+ * character-set decoding. UTF-16LE is validated after decoding so its null
+ * bytes are not mistaken for binary content.
  */
 export function assertCsvContent(sample: Uint8Array | string): void {
   const bytes = asBytes(sample)
+  const utf16le = isUtf16Le(bytes)
 
   if (bytes.length === 0) {
     throw new CsvSecurityError('EMPTY_FILE')
   }
 
   if (
-    containsForbiddenControlByte(bytes) ||
+    (!utf16le && containsForbiddenControlByte(bytes)) ||
+    (hasCp1252SmartQuote(bytes) && hasUtf8MultibyteSequence(bytes)) ||
     BINARY_SIGNATURES.some((signature) => hasPrefix(bytes, signature)) ||
-    !hasCsvShape(bytes)
+    (utf16le ? !hasDecodedCsvShape(bytes) : !hasCsvShape(bytes))
   ) {
     throw new CsvSecurityError('NOT_CSV_CONTENT')
   }
@@ -90,6 +124,8 @@ export async function* guardedCsvStream(
   const maxBytes = options.maxBytes ?? MAX_CSV_UPLOAD_BYTES
   let totalBytes = 0
   let sample = new Uint8Array(0)
+  const prefix: number[] = []
+  let utf16le = false
 
   for await (const rawChunk of input) {
     const chunk = asBytes(rawChunk)
@@ -101,7 +137,16 @@ export async function* guardedCsvStream(
       throw new CsvSecurityError('UPLOAD_TOO_LARGE')
     }
 
-    if (containsForbiddenControlByte(chunk)) {
+    for (const value of chunk) {
+      if (prefix.length < 2) prefix.push(value)
+    }
+    if (prefix.length === 2) utf16le = prefix[0] === 0xff && prefix[1] === 0xfe
+
+    if (
+      !utf16le &&
+      prefix.length === 2 &&
+      containsForbiddenControlByte(chunk)
+    ) {
       throw new CsvSecurityError('NOT_CSV_CONTENT')
     }
 

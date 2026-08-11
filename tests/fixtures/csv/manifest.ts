@@ -296,6 +296,41 @@ export const csvFixtures: CsvFixtureExpectation[] = [
     byteLength: 10 * 1024 * 1024,
   },
 
+  // --- encoding ---------------------------------------------------------
+  {
+    path: 'encoding/transactions-utf16le-bom.csv',
+    importType: 'transactions',
+    description:
+      'UTF-16LE transaction export with a byte-order mark and accented item names.',
+    security: 'passes',
+    parse: {
+      encoding: 'utf-16le',
+      hasHeader: true,
+      columns: ['Date', 'Item Name', 'Qty', 'Total Revenue'],
+      minReadableRows: 2,
+    },
+    plan: { outcome: 'ok', rowCount: 1, unmatchedItemCount: 1 },
+  },
+  {
+    path: 'encoding/transactions-cp1252-smart-quotes.csv',
+    importType: 'transactions',
+    description:
+      'CP1252 transaction export with curly quote bytes around an item name.',
+    security: 'passes',
+    parse: {
+      encoding: 'windows-1252',
+      hasHeader: true,
+      minReadableRows: 1,
+    },
+  },
+  {
+    path: 'encoding/transactions-mixed-encodings.csv',
+    importType: 'transactions',
+    description:
+      'Transaction export containing both UTF-8 and CP1252 byte sequences; reject ambiguous decoding.',
+    security: 'NOT_CSV_CONTENT',
+  },
+
   // --- purchase orders --------------------------------------------------
   {
     path: 'purchase-orders/sysco-invoice-export.csv',

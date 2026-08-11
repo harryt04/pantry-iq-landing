@@ -7,7 +7,7 @@ const PREVIEW_ROWS = 5
 const HEADER_SEARCH_ROWS = 50
 const DELIMITERS = [',', ';', '\t'] as const
 
-export type CsvEncoding = 'utf-8' | 'latin-1'
+export type CsvEncoding = 'utf-8' | 'latin-1' | 'windows-1252' | 'utf-16le'
 export type CsvDelimiter = (typeof DELIMITERS)[number]
 
 export type CsvPreviewProblem = {
@@ -69,10 +69,33 @@ function isUtf8(bytes: Uint8Array, allowIncompleteSuffix: boolean): boolean {
   }
 }
 
-function decode(bytes: Uint8Array, encoding: CsvEncoding): string {
-  return new TextDecoder(encoding === 'utf-8' ? 'utf-8' : 'iso-8859-1').decode(
-    bytes,
+function hasPrefix(bytes: Uint8Array, prefix: readonly number[]): boolean {
+  return prefix.every((value, index) => bytes[index] === value)
+}
+
+function hasUtf8MultibyteSequence(bytes: Uint8Array): boolean {
+  return bytes.some(
+    (value, index) =>
+      value >= 0xc2 &&
+      value <= 0xf4 &&
+      bytes[index + 1] !== undefined &&
+      bytes[index + 1]! >= 0x80 &&
+      bytes[index + 1]! <= 0xbf,
   )
+}
+
+function hasCp1252SmartQuote(bytes: Uint8Array): boolean {
+  return bytes.some((value) => value >= 0x91 && value <= 0x94)
+}
+
+function decoderLabel(encoding: CsvEncoding): string {
+  if (encoding === 'utf-8') return 'utf-8'
+  if (encoding === 'latin-1') return 'iso-8859-1'
+  return encoding
+}
+
+function decode(bytes: Uint8Array, encoding: CsvEncoding): string {
+  return new TextDecoder(decoderLabel(encoding)).decode(bytes)
 }
 
 function delimiterScore(text: string, delimiter: string): number {
@@ -171,14 +194,18 @@ async function prepareInput(input: ByteStream): Promise<{
   }
 
   const sniff = joinBytes(sniffChunks)
-  const encoding: CsvEncoding = isUtf8(sniff, !finished) ? 'utf-8' : 'latin-1'
+  const encoding: CsvEncoding = hasPrefix(sniff, [0xff, 0xfe])
+    ? 'utf-16le'
+    : isUtf8(sniff, !finished)
+      ? 'utf-8'
+      : hasCp1252SmartQuote(sniff)
+        ? 'windows-1252'
+        : 'latin-1'
   const sample = decode(sniff, encoding).replace(/^\uFEFF/, '')
   const delimiter = detectDelimiter(sample)
 
   async function* chunks() {
-    const decoder = new TextDecoder(
-      encoding === 'utf-8' ? 'utf-8' : 'iso-8859-1',
-    )
+    const decoder = new TextDecoder(decoderLabel(encoding))
     if (sniff.length > 0) yield decoder.decode(sniff, { stream: !finished })
     if (remainder && remainder.length > 0)
       yield decoder.decode(remainder, { stream: !finished })

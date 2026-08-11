@@ -149,6 +149,40 @@ describe('CSV preview parser', () => {
     expect(preview.previewRows[0]?.values).toEqual(['Café', '2'])
   })
 
+  it('decodes a UTF-16LE export with a byte-order mark', async () => {
+    const csv = 'Date,Item,Qty\n2026-08-01,Crème brûlée,2\n'
+    const encoded = Buffer.from(csv, 'utf16le')
+    const utf16le = new Uint8Array(2 + encoded.length)
+    utf16le.set([0xff, 0xfe])
+    utf16le.set(encoded, 2)
+
+    const preview = await parseCsvPreview(chunks(utf16le, 5))
+
+    expect(preview.encoding).toBe('utf-16le')
+    expect(preview.columns).toEqual(['Date', 'Item', 'Qty'])
+    expect(preview.previewRows[0]?.values).toEqual([
+      '2026-08-01',
+      'Crème brûlée',
+      '2',
+    ])
+  })
+
+  it('decodes CP1252 smart quotes without exposing control characters', async () => {
+    const cp1252 = new Uint8Array([
+      0x44, 0x61, 0x74, 0x65, 0x2c, 0x49, 0x74, 0x65, 0x6d, 0x0a, 0x32, 0x30,
+      0x32, 0x36, 0x2d, 0x30, 0x38, 0x2d, 0x30, 0x31, 0x2c, 0x93, 0x43, 0x68,
+      0x65, 0x66, 0x92, 0x73, 0x20, 0x73, 0x61, 0x6c, 0x61, 0x64, 0x94, 0x0a,
+    ])
+
+    const preview = await parseCsvPreview(chunks(cp1252, 4))
+
+    expect(preview.encoding).toBe('windows-1252')
+    expect(preview.previewRows[0]?.values).toEqual([
+      '2026-08-01',
+      '“Chef’s salad”',
+    ])
+  })
+
   it('keeps readable rows and reports a malformed row by example', async () => {
     const preview = await parseCsvPreview(
       chunks(
