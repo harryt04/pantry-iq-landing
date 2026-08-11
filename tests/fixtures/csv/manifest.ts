@@ -249,10 +249,8 @@ export const csvFixtures: CsvFixtureExpectation[] = [
     security: 'passes',
     plan: {
       outcome: 'error',
-      messageMatch: /not a valid number|is required/,
+      messageMatch: /currency code|percentage/,
     },
-    knownIssue:
-      '"1,234.56 USD" and "12.5%" are not recognized by decimal() and raise a row error rather than a clearer currency-format message.',
   },
   {
     path: 'purchase-orders/po-blank-received-dates.csv',

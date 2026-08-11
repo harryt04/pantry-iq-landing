@@ -89,6 +89,39 @@ describe('CSV import planning', () => {
     })
   })
 
+  it('explains unsupported currency-code and percentage formats', () => {
+    const buildPlan = (unitCost: string) =>
+      buildCsvImportPlan({
+        importType: 'purchase_orders',
+        mapping: {
+          Date: 'orderedAt',
+          Item: 'rawItemName',
+          Qty: 'qty',
+          Cost: 'unitCost',
+        },
+        items: [salmon],
+        csv: {
+          encoding: 'utf-8',
+          delimiter: ',',
+          hasHeader: true,
+          columns: ['Date', 'Item', 'Qty', 'Cost'],
+          rows: [
+            {
+              rowNumber: 2,
+              values: ['2026-08-08', 'Salmon', '2', unitCost],
+            },
+          ],
+        },
+      })
+
+    expect(() => buildPlan('1,234.56 USD')).toThrow(
+      'Row 2: unit cost uses a currency code; enter a numeric amount with an optional leading symbol instead.',
+    )
+    expect(() => buildPlan('12.5%')).toThrow(
+      'Row 2: unit cost uses a percentage; enter a currency amount instead.',
+    )
+  })
+
   it('holds a plan until every unmatched item receives an explicit decision', () => {
     const csv = {
       encoding: 'utf-8' as const,

@@ -46,7 +46,7 @@ it. `components/ui/**` is vendored and out of scope.
 Exit gate for every item: `pnpm prettify`, then `pnpm ci` until green.
 
 Then ratchet the coverage gate. [`vitest.config.ts`](../vitest.config.ts) holds
-thresholds at 70/70/74/79 against 72.06% measured 2026-08-10. Re-measure with
+thresholds at 70.47/70.47/74.84/79.69 against 72.47% measured 2026-08-10. Re-measure with
 `pnpm ci:tests` and raise each threshold to the new number minus two. Never
 lower one to make a build pass. Browser tests do not feed the v8 report, so
 Loops I, J, and L will not move the number. That is expected, not a failure.
@@ -65,10 +65,12 @@ focused unit test beside the module you changed, then clear the `knownIssue`.
       respect the file's decimal convention, not guess per value.
       Resolved by selecting comma-decimal parsing for semicolon-delimited files,
       with exact-decimal regression coverage.
-- [ ] **Currency-coded and percentage amounts rejected.**
+- [x] **Currency-coded and percentage amounts rejected.**
       `purchase-orders/po-currency-symbols-mixed.csv`. `"1,234.56 USD"` and
       `"12.5%"` are not recognized by `decimal()` and raise a generic row
       error instead of a clear currency-format message.
+      Resolved with format-specific validation messages and regression coverage
+      for both unsupported formats.
 - [ ] **Mixed-number fractions rejected.**
       `inventory/inventory-fractional-quantities.csv`. `"3 1/2"` is not
       recognized by `decimal()` and raises a row error.

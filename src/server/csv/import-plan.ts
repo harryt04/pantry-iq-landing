@@ -135,9 +135,18 @@ function numberValue(
   const text = required(value, field, rowNumber)
   const parsed = decimal(text, decimalSeparator)
   if (!parsed)
-    throw new CsvImportValidationError(
-      `Row ${rowNumber}: ${field} is not a valid number.`,
-    )
+    if (/[A-Za-z]{3}\s*$/.test(text))
+      throw new CsvImportValidationError(
+        `Row ${rowNumber}: ${field} uses a currency code; enter a numeric amount with an optional leading symbol instead.`,
+      )
+    else if (/%\s*$/.test(text))
+      throw new CsvImportValidationError(
+        `Row ${rowNumber}: ${field} uses a percentage; enter a currency amount instead.`,
+      )
+    else
+      throw new CsvImportValidationError(
+        `Row ${rowNumber}: ${field} is not a valid number.`,
+      )
   return decimalString(parsed)
 }
 
