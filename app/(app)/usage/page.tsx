@@ -1,7 +1,6 @@
 import { headers } from 'next/headers'
 import { notFound, redirect } from 'next/navigation'
 
-import { AppShell } from '@/components/app/app-shell'
 import { getAppShellData } from '@/components/app/app-shell-server'
 import { UsageVarianceView } from '@/components/menu/usage-variance-view'
 import { auth } from '@/src/server/auth/auth'
@@ -27,11 +26,7 @@ export default async function UsagePage({
 
   try {
     const result = await getUsageVariance(requestHeaders, locationId)
-    return (
-      <AppShell {...shellData} initialLocationId={locationId}>
-        <UsageVarianceView result={result} />
-      </AppShell>
-    )
+    return <UsageVarianceView result={result} />
   } catch (error) {
     if (error instanceof ForbiddenError) notFound()
     throw error

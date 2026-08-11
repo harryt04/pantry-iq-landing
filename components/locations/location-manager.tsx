@@ -314,7 +314,7 @@ export function LocationManager() {
               {locations.map((location) => (
                 <li className="location-list-item" key={location.id}>
                   <div>
-                    <h3>{location.name}</h3>
+                    <h2>{location.name}</h2>
                     <p>{location.address ?? 'No address added'}</p>
                     <small>
                       Added{' '}

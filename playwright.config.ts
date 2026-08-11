@@ -58,8 +58,15 @@ export default defineConfig({
     {
       name: 'design',
       testDir: './tests',
-      testMatch: ['accessibility/**/*.spec.ts', 'charts/**/*.spec.ts'],
+      testMatch: ['accessibility/landing.spec.ts', 'charts/**/*.spec.ts'],
       use: { ...devices['Desktop Chrome'] },
+    },
+    {
+      name: 'real-data',
+      testDir: './tests',
+      testMatch: 'accessibility/real-data.spec.ts',
+      dependencies: ['setup'],
+      use: { ...devices['Desktop Chrome'], storageState: authFile },
     },
   ],
 })

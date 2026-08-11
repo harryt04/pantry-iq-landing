@@ -350,8 +350,10 @@ QAG-01 and QAG-02 gate the design rules but likely run against seeded or empty
 states. Real data means long item names, negative figures, and empty
 categories.
 
-- [ ] Run the axe check on every screen reachable after importing a corpus
-      fixture, with that data on screen.
+- [x] (Codex, iteration 52) Run the axe check on every screen reachable after importing a corpus
+      fixture, with that data on screen. Added authenticated axe coverage for ten seeded
+      screens in light and dark themes, and fixed the surfaced definition-list, control-name,
+      duplicate-landmark, scroll-focus, heading-order, and disabled-group contrast defects.
 - [ ] Run the greyscale check on the same screens. Colour is never
       load-bearing; the greyscale test is a merge gate.
 

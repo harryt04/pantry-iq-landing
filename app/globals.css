@@ -739,7 +739,7 @@ body {
   padding-bottom: 0;
 }
 
-.location-list-item h3 {
+.location-list-item h2 {
   font-size: var(--text-lg);
   margin: 0;
 }
@@ -2429,6 +2429,7 @@ body {
   align-items: end;
   min-height: 76px;
   padding: var(--space-2);
+  opacity: 1;
 }
 
 .chat-composer__group textarea {
