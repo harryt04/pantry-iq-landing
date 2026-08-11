@@ -20,8 +20,8 @@ const databaseAvailable =
 const thresholds = {
   statements: 70.53,
   lines: 70.53,
-  branches: 74.84,
-  functions: 79.77,
+  branches: 74.85,
+  functions: 79.78,
 }
 
 export default defineConfig({

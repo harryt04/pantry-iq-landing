@@ -1,6 +1,123 @@
-import { expect, test } from '@playwright/test'
+import { expect, test, type Page } from '@playwright/test'
+import path from 'node:path'
 
 const password = 'pantryiq-critical-path-2026'
+
+const transactionFixtures = [
+  {
+    filename: 'square-item-sales-clean.csv',
+    rows: 10,
+    columns: 6,
+    delimiter: ',',
+  },
+  {
+    filename: 'toast-menu-item-sales.csv',
+    rows: 8,
+    columns: 5,
+    delimiter: ',',
+  },
+  {
+    filename: 'clover-payments-export.csv',
+    rows: 6,
+    columns: 5,
+    delimiter: ',',
+  },
+  {
+    filename: 'lightspeed-sales-semicolon.csv',
+    rows: 5,
+    columns: 5,
+    delimiter: ';',
+  },
+  {
+    filename: 'revel-sales-tab-delimited.csv',
+    rows: 5,
+    columns: 4,
+    delimiter: 'tab',
+  },
+] as const
+
+async function signInOrSignUp(page: Page) {
+  const email = process.env.TEST_USER_EMAIL
+  const configuredPassword = process.env.TEST_USER_PASSWORD
+
+  if (email && configuredPassword) {
+    await page.goto('/sign-in')
+    await page.getByLabel('Email').fill(email)
+    await page.getByLabel('Password').fill(configuredPassword)
+    await page.getByRole('button', { name: /Sign in/ }).click()
+    await expect(page).toHaveURL(/\/(dashboard|account)(\?|$)/)
+    return
+  }
+
+  const fallbackEmail = `transaction-batch-${Date.now()}@example.test`
+  await page.goto('/sign-up')
+  await page.getByLabel('Name').fill('Transaction Batch Operator')
+  await page.getByLabel('Email').fill(fallbackEmail)
+  await page.getByLabel('Password').fill(password)
+  await page.getByRole('button', { name: 'Create account' }).click()
+  await expect(page).toHaveURL(/\/account$/)
+}
+
+async function createTestLocation(page: Page) {
+  const response = await page.request.post('/api/locations', {
+    data: {
+      name: `Transaction batch ${Date.now()}`,
+      address: '100 Test Street',
+    },
+  })
+  expect(response.status()).toBe(201)
+  const body = (await response.json()) as { location?: { id: string } }
+  expect(body.location?.id).toBeTruthy()
+  return body.location!.id
+}
+
+async function reviewMapping(page: Page) {
+  const question = page.locator('.csv-mapping__question')
+  for (let attempt = 0; attempt < 12; attempt += 1) {
+    if (!(await question.isVisible())) return
+
+    const source = (await question.locator('h3').textContent())?.trim()
+    const field = question.locator('#mapping-field')
+    if (source === 'Gross Sales') await field.selectOption('')
+
+    const next = question.getByRole('button', {
+      name: /Next column|Review mapping/,
+    })
+    const isLastColumn = await next.getByText('Review mapping').count()
+    if (isLastColumn > 0) {
+      const mappingResponse = page.waitForResponse(
+        (response) =>
+          response.url().includes('/mapping') &&
+          response.request().method() === 'PATCH',
+      )
+      await next.click()
+      await mappingResponse
+      return
+    }
+    await next.click()
+  }
+  throw new Error('CSV mapping did not finish within the expected columns.')
+}
+
+async function resolveNewItems(page: Page) {
+  await expect(
+    page.locator('.csv-item-resolution, .csv-import-confirmation'),
+  ).toBeVisible()
+  const resolution = page.locator('.csv-item-resolution')
+  for (let attempt = 0; attempt < 12; attempt += 1) {
+    if (!(await resolution.isVisible())) return
+    const commitResponse = page.waitForResponse(
+      (response) =>
+        response.url().includes('/commit') &&
+        response.request().method() === 'POST',
+    )
+    await page.getByRole('button', { name: 'Create and use this item' }).click()
+    await commitResponse
+  }
+  throw new Error(
+    'CSV item resolution did not finish within the expected items.',
+  )
+}
 
 test('signup, location, CSV import, and dashboard', async ({ page }) => {
   const email = `critical-path-${Date.now()}@example.test`
@@ -59,4 +176,48 @@ test('signup, location, CSV import, and dashboard', async ({ page }) => {
     }),
   ).toBeVisible()
   await expect(page.getByText('1 / 7 days')).toBeVisible()
+})
+
+test('imports the first transaction corpus batch through /import', async ({
+  page,
+}) => {
+  await signInOrSignUp(page)
+  const locationId = await createTestLocation(page)
+
+  try {
+    for (const fixture of transactionFixtures) {
+      await test.step(`imports ${fixture.filename}`, async () => {
+        await page.goto(`/import?locationId=${locationId}`)
+        await page.locator('#import-type').selectOption('transactions')
+        await page
+          .locator('#csv-file')
+          .setInputFiles(
+            path.resolve('tests/fixtures/csv/transactions', fixture.filename),
+          )
+        await page.getByRole('button', { name: 'Upload CSV' }).click()
+
+        await expect(page.locator('#csv-preview-title')).toBeVisible()
+        await expect(
+          page.locator('.csv-preview .app-page__help'),
+        ).toContainText(
+          `${fixture.rows} rows · ${fixture.columns} columns · ${fixture.delimiter} delimited`,
+        )
+
+        await reviewMapping(page)
+        await resolveNewItems(page)
+        await expect(
+          page
+            .locator('.csv-import-confirmation')
+            .getByRole('heading', { name: /Ready to import/ }),
+        ).toBeVisible()
+        await page.getByRole('button', { name: 'Import now' }).click()
+        await expect(page.locator('.app-page__status')).toContainText(
+          `${fixture.rows} rows imported.`,
+        )
+      })
+    }
+  } finally {
+    const response = await page.request.delete(`/api/locations/${locationId}`)
+    expect(response.status()).toBe(204)
+  }
 })
