@@ -459,8 +459,10 @@ Percentages below are line coverage measured 2026-08-10.
 - [x] `/portfolio` — the rollup across both seeded locations. (Codex, iteration 60)
       Added a seeded full-year metric run and authenticated browser coverage for the partial rollup, per-location readiness, money totals, and dashboard links.
       `portfolio-rollup.tsx` 0%, `metrics/portfolio.ts` 33.2%.
-- [ ] `/settings` — item master and shelf-life defaults. Edit an item, save,
-      assert the change survives a reload.
+- [x] `/settings` — item master and shelf-life defaults. Edit an item, save,
+      assert the change survives a reload. (Codex, iteration 61) Added a
+      seeded browser journey that saves Tomato Soup's shelf life and verifies
+      the 7-day value remains after reload.
 - [ ] `/account` — create, rename, and delete a location. Deletion cascades
       seven tables;
       [`location-deletion.test.ts`](../tests/integration/location-deletion.test.ts)
