@@ -46,7 +46,7 @@ it. `components/ui/**` is vendored and out of scope.
 Exit gate for every item: `pnpm prettify`, then `pnpm ci` until green.
 
 Then ratchet the coverage gate. [`vitest.config.ts`](../vitest.config.ts) holds
-  thresholds at 72.34/72.34/75.29/80.33 against 74.34% statements, 77.29% branches, 82.33% functions, and 74.34% lines measured 2026-08-11. Re-measure with
+  thresholds at 72.44/72.44/75.35/80.33 against 74.44% statements, 77.35% branches, 82.33% functions, and 74.44% lines measured 2026-08-11. Re-measure with
 `pnpm ci:tests` and raise each threshold to the new number minus two. Never
 lower one to make a build pass. Browser tests do not feed the v8 report, so
 Loops I, J, and L will not move the number. That is expected, not a failure.
@@ -277,7 +277,8 @@ above 94% — expect few survivors and move on quickly.
       the empty-value guard caused the portfolio suite to fail.
 - [x] `ingestion/reconciliation.ts` — 53.7% of 367. (Codex, iteration 34 — unresolved overlap authority)
       Added a regression proving an unresolved conflict cannot include a record even when its stale authority matches; mutation testing caught removing the resolved-status guard.
-- [ ] `metrics/item-deep-dives.ts` — 66.7% of 345.
+- [x] `metrics/item-deep-dives.ts` — 66.7% of 345. (Codex, iteration 35 — item-scoped recommendations)
+      Added a regression proving each item detail receives only its own recommendations; a mutant removing the item filter fails.
 - [ ] `metrics/scheduler.ts` — 57.9% of 209.
 - [ ] `metrics/dashboard-recommendations.ts` (50% of 72) and
       `metrics/dashboard-state.ts` (47.5% of 61).
