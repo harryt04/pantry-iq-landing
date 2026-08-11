@@ -190,10 +190,9 @@ Exceptions that **stay** as text assertions:
 Do not disturb the `src/server/metrics`, `staffing`, `menu`, and `connectors`
 unit tests. They are good. Reuse `tests/fixtures/pantry.ts`.
 
-- [ ] `components/marketing/landing-claims.test.ts` reads `app/page.tsx` as
-      text and asserts on substrings. Render the page instead and assert on the
-      output. A banned claim must fail whether it is inlined or imported from a
-      constant.
+- [x] `components/marketing/landing-claims.test.tsx` renders `app/page.tsx`
+      and asserts on the output. A banned claim fails whether it is inlined or
+      imported from a constant; verified with a deliberately injected claim.
 - [ ] `tests/architecture-rules.test.ts` reads route and service source to
       prove the narration layer imports no database client and the chat route
       never writes. The rule is real; the mechanism is wrong. Move it to an
