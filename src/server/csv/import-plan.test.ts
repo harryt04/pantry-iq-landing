@@ -309,4 +309,31 @@ describe('CSV import planning', () => {
       laborCost: '135.25',
     })
   })
+
+  it('rejects negative labor hours before they enter the import plan', () => {
+    expect(() =>
+      buildCsvImportPlan({
+        importType: 'labor',
+        mapping: {
+          Start: 'shiftStart',
+          Employee: 'employeeReference',
+          Role: 'role',
+          Scheduled: 'scheduledHours',
+        },
+        items: [],
+        csv: {
+          encoding: 'utf-8',
+          delimiter: ',',
+          hasHeader: true,
+          columns: ['Start', 'Employee', 'Role', 'Scheduled'],
+          rows: [
+            {
+              rowNumber: 2,
+              values: ['2026-08-08T15:00:00Z', 'staff-7', 'Line cook', '-0.5'],
+            },
+          ],
+        },
+      }),
+    ).toThrow('Row 2: scheduled hours cannot be negative.')
+  })
 })
