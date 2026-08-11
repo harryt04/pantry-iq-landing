@@ -299,8 +299,10 @@ them.
 
 ## Security and isolation (Loop G)
 
-- [ ] Upload a fixture as location A; assert location B's owner cannot read the
-      import, preview, mapping, or export.
+- [x] Upload a fixture as location A; assert location B's owner cannot read the
+      import, preview, mapping, or export. (Codex, iteration 37)
+      Added a real-Postgres upload/commit regression covering import history,
+      import planning, file preview, mapping persistence, and CSV export.
 - [ ] Assert `security/formula-injection.csv` stays inert through the CSV
       **export** path (ING-11), not only on import.
       **Blocked on Loop K's first item.** This entry assumed the export path

@@ -23,7 +23,10 @@ import {
   openTestDatabase,
   type OpenTestDatabase,
 } from '../helpers/test-database'
-import type { ObjectStorage } from '../../src/server/storage/object-storage'
+import {
+  MemoryObjectStorage,
+  type ObjectStorage,
+} from '../../src/server/storage/object-storage'
 import { normalizeExactItemName } from '../../src/server/csv/item-resolution'
 import type { ImportItemResolution } from '../../src/server/csv/import-plan'
 import { buildPartialDataFindings } from '../../src/server/metrics/partial-data'
@@ -322,6 +325,19 @@ function memoryStorage(body = CSV): ObjectStorage {
 let opened: OpenTestDatabase | undefined
 let previousDatabaseUrl: string | undefined
 let imports: typeof import('../../src/server/csv/imports')
+let uploads: typeof import('../../src/server/csv/uploads')
+let previews: typeof import('../../src/server/csv/previews')
+let mappings: typeof import('../../src/server/csv/mapping-persistence')
+let exportsService: typeof import('../../src/server/csv/exports')
+
+function csvBody(body: string): ReadableStream<Uint8Array> {
+  return new ReadableStream({
+    start(controller) {
+      controller.enqueue(new TextEncoder().encode(body))
+      controller.close()
+    },
+  })
+}
 
 async function countTransactions(locationId = LOCATION_ID) {
   const { sql } = opened!.database
@@ -379,6 +395,10 @@ describe.skipIf(!integrationDatabaseEnabled())('CSV import', () => {
     previousDatabaseUrl = process.env.DATABASE_URL
     process.env.DATABASE_URL = url
     imports = await import('../../src/server/csv/imports')
+    uploads = await import('../../src/server/csv/uploads')
+    previews = await import('../../src/server/csv/previews')
+    mappings = await import('../../src/server/csv/mapping-persistence')
+    exportsService = await import('../../src/server/csv/exports')
   }, SETUP_TIMEOUT_MS)
 
   afterAll(async () => {
@@ -1320,6 +1340,57 @@ describe.skipIf(!integrationDatabaseEnabled())('CSV import', () => {
     it('refuses history for another account location', async () => {
       await expect(
         imports.listImportHistory(new Headers(), OTHER_LOCATION_ID),
+      ).rejects.toThrow()
+    })
+  })
+
+  describe('account isolation', () => {
+    it('keeps an upload and every read surface private to its owner', async () => {
+      const storage = new MemoryObjectStorage()
+      const byteLength = new TextEncoder().encode(CSV).byteLength
+      const upload = await uploads.uploadCsv({
+        headers: new Headers({ 'content-length': String(byteLength) }),
+        locationId: LOCATION_ID,
+        filename: 'sales.csv',
+        importType: 'transactions',
+        body: csvBody(CSV),
+        storage,
+      })
+
+      await mappings.saveCsvMapping(new Headers(), upload.id, MAPPING)
+      await imports.commitCsvImport(
+        new Headers(),
+        upload.id,
+        RESOLUTIONS,
+        storage,
+      )
+      expect(await countTransactions(LOCATION_ID)).toBe(2)
+
+      sessionState.current = { user: { id: OTHER_OWNER_ID } }
+
+      await expect(
+        imports.listImportHistory(new Headers(), LOCATION_ID),
+      ).rejects.toThrow()
+      await expect(
+        imports.previewCsvImport(
+          new Headers(),
+          upload.id,
+          RESOLUTIONS,
+          storage,
+        ),
+      ).rejects.toThrow()
+      await expect(
+        previews.previewCsv(new Headers(), upload.id, storage),
+      ).rejects.toThrow()
+      await expect(
+        mappings.saveCsvMapping(new Headers(), upload.id, MAPPING),
+      ).rejects.toThrow()
+      await expect(
+        exportsService.exportLocationCsv(
+          new Headers(),
+          LOCATION_ID,
+          'transactions',
+        ),
       ).rejects.toThrow()
     })
   })

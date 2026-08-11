@@ -152,7 +152,7 @@ Real PostgreSQL. Each runs migrate, seed, and rollback around itself.
 
 | File | Covers |
 | --- | --- |
-| [`csv-import.test.ts`](../tests/integration/csv-import.test.ts) | Preview, commit, transactional write, item resolution, same-file re-import deduplication, purchase-order import through MNU-03 recipe plate-cost history, labor import through STF-02 efficiency metrics, full-year and short-history precompute, refund aggregation, business-day boundary bucketing, exact money propagation through metrics and rendered dashboard output |
+| [`csv-import.test.ts`](../tests/integration/csv-import.test.ts) | Preview, commit, transactional write, item resolution, same-file re-import deduplication, purchase-order import through MNU-03 recipe plate-cost history, labor import through STF-02 efficiency metrics, full-year and short-history precompute, refund aggregation, business-day boundary bucketing, exact money propagation through metrics and rendered dashboard output, cross-account isolation across upload history, import planning, file preview, mapping persistence, and CSV export |
 | [`write-atomicity.test.ts`](../tests/integration/write-atomicity.test.ts) | A partial failure leaves no rows |
 | [`manual-entry-write.test.ts`](../tests/integration/manual-entry-write.test.ts) | Manual entry writes, location scoping, item creation |
 | [`ownership-boundary.test.ts`](../tests/integration/ownership-boundary.test.ts) | `requireOwnedLocation` — no session, cross-account, missing location |
