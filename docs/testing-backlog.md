@@ -134,7 +134,8 @@ wall-clock budget.
       `/import` route, including vendor-specific mappings, item resolution, and
       successful commits. Added `PO` as an explicit external-ID alias after
       the browser path exposed a date-mapping defect in the US Foods fixture.
-- [ ] Batch 5 — `purchase-orders/` fixtures 6–9
+- [x] Batch 5 — `purchase-orders/` fixtures 6–9 (Codex, iteration 11)
+      Covered received-before-ordered, unit-cost/total mismatch, mixed currency/percentage rejection, and blank received dates through the authenticated `/import` route.
 - [ ] Batch 6 — `inventory/` fixtures 1–7
 - [ ] Batch 7 — `labor/` fixtures 1–6
 - [ ] Batch 8 — `malformed/` fixtures 1–8

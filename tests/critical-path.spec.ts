@@ -187,6 +187,63 @@ const purchaseOrderBatchOneFixtures = [
   },
 ] as const
 
+const purchaseOrderBatchTwoFixtures = [
+  {
+    filename: 'po-received-before-ordered.csv',
+    rows: 2,
+    columns: [
+      'Order Date',
+      'Received Date',
+      'Supplier',
+      'Item',
+      'Qty',
+      'Unit Cost',
+    ],
+    delimiter: ',',
+    encoding: 'utf-8',
+    outcome: 'success',
+  },
+  {
+    filename: 'po-unit-cost-times-qty-mismatch.csv',
+    rows: 2,
+    columns: [
+      'Order Date',
+      'Supplier',
+      'Item',
+      'Qty',
+      'Unit Cost',
+      'Total Cost',
+    ],
+    delimiter: ',',
+    encoding: 'utf-8',
+    outcome: 'success',
+  },
+  {
+    filename: 'po-currency-symbols-mixed.csv',
+    rows: 5,
+    columns: ['Order Date', 'Supplier', 'Item', 'Qty', 'Unit Cost'],
+    delimiter: ',',
+    encoding: 'utf-8',
+    outcome: 'error',
+    error: /currency code|percentage/,
+  },
+  {
+    filename: 'po-blank-received-dates.csv',
+    rows: 3,
+    columns: [
+      'Order Date',
+      'Received Date',
+      'Supplier',
+      'Item',
+      'Qty',
+      'Unit Cost',
+    ],
+    delimiter: ',',
+    encoding: 'utf-8',
+    outcome: 'success',
+  },
+] as const
+
 async function signInOrSignUp(page: Page) {
   const email = process.env.TEST_USER_EMAIL
   const configuredPassword = process.env.TEST_USER_PASSWORD
@@ -603,6 +660,69 @@ test('imports the first purchase-order corpus batch through /import', async ({
         await expect(page.locator('.csv-mapping')).toContainText(
           /Mapping reviewed|All columns matched|reused your last mapping/,
         )
+        await resolveNewItems(page)
+        await expect(
+          page
+            .locator('.csv-import-confirmation')
+            .getByRole('heading', { name: /Ready to import/ }),
+        ).toBeVisible()
+        await page.getByRole('button', { name: 'Import now' }).click()
+        await expect(page.locator('.app-page__status')).toContainText(
+          `${fixture.rows.toLocaleString()} rows imported.`,
+        )
+      })
+    }
+  } finally {
+    const response = await page.request.delete(`/api/locations/${locationId}`)
+    expect(response.status()).toBe(204)
+  }
+})
+
+test('imports the second purchase-order corpus batch through /import', async ({
+  page,
+}) => {
+  test.setTimeout(120_000)
+  await signInOrSignUp(page)
+  const locationId = await createTestLocation(page)
+
+  try {
+    await seedPurchaseOrderItems(page, locationId)
+    for (const fixture of purchaseOrderBatchTwoFixtures) {
+      await test.step(`imports ${fixture.filename}`, async () => {
+        await page.goto(`/import?locationId=${locationId}`)
+        await page.locator('#import-type').selectOption('purchase_orders')
+        await page
+          .locator('#csv-file')
+          .setInputFiles(
+            path.resolve(
+              'tests/fixtures/csv/purchase-orders',
+              fixture.filename,
+            ),
+          )
+        await page.getByRole('button', { name: 'Upload CSV' }).click()
+
+        await expect(page.locator('#csv-preview-title')).toBeVisible()
+        await expect(
+          page.locator('.csv-preview .app-page__help'),
+        ).toContainText(
+          `${fixture.rows.toLocaleString()} rows · ${fixture.columns.length} columns · ${fixture.delimiter} delimited · ${fixture.encoding}`,
+        )
+        expect(
+          await page.locator('.csv-preview thead th').allTextContents(),
+        ).toEqual(fixture.columns)
+
+        await reviewMapping(page)
+        await expect(page.locator('.csv-mapping')).toContainText(
+          /Mapping reviewed|All columns matched|reused your last mapping/,
+        )
+
+        if (fixture.outcome === 'error') {
+          await expect(page.locator('p[role="alert"]')).toContainText(
+            fixture.error,
+          )
+          return
+        }
+
         await resolveNewItems(page)
         await expect(
           page
