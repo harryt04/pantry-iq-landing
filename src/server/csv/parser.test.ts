@@ -93,6 +93,31 @@ describe('CSV preview parser', () => {
     })
   })
 
+  it('detects headers when a source repeats a column name', async () => {
+    const input =
+      'Date,Item,Qty,Total,Total\n2025-03-01,Salmon Fillet,2,48.00,48.00\n'
+
+    const preview = await parseCsvPreview(chunks(utf8(input)))
+    const rows = await parseCsvRows(chunks(utf8(input)))
+
+    expect(preview).toMatchObject({
+      hasHeader: true,
+      columns: ['Date', 'Item', 'Qty', 'Total', 'Total (2)'],
+      rowCount: 1,
+      readableRowCount: 1,
+    })
+    expect(rows).toMatchObject({
+      hasHeader: true,
+      columns: ['Date', 'Item', 'Qty', 'Total', 'Total (2)'],
+      rows: [
+        {
+          rowNumber: 2,
+          values: ['2025-03-01', 'Salmon Fillet', '2', '48.00', '48.00'],
+        },
+      ],
+    })
+  })
+
   it.each([
     ['semicolon', 'Date;Item;Qty\n2026-08-01;Salmon;3\n', ';'],
     ['tab', 'Date\tItem\tQty\n2026-08-01\tSalmon\t3\n', '\t'],

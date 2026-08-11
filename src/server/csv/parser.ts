@@ -214,7 +214,11 @@ function looksNumeric(value: string): boolean {
 
 function looksLikeHeader(first: string[], second?: string[]) {
   const values = first.map(normalizedHeader)
-  const unique = new Set(values).size === values.length
+  // Some exports repeat a source label (for example, two Total columns).
+  // `columnNames()` disambiguates those labels for downstream mapping, so
+  // duplicate non-empty names must not make an otherwise valid header look
+  // like data. Empty labels still need a signal from a named column.
+  const hasUsableLabels = values.every((value) => value.length > 0)
   const signals = values.filter((value) =>
     /date|time|item|product|description|qty|quantity|amount|revenue|sales|cost|category|unit|supplier|vendor|order|received|on hand|stock/.test(
       value,
@@ -225,7 +229,7 @@ function looksLikeHeader(first: string[], second?: string[]) {
 
   return (
     first.length >= 2 &&
-    unique &&
+    hasUsableLabels &&
     firstLooksNumeric < Math.ceil(first.length / 2) &&
     (signals > 0 || secondLooksLikeData)
   )

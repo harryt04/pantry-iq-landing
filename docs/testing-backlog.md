@@ -88,10 +88,12 @@ focused unit test beside the module you changed, then clear the `knownIssue`.
       the first two lines seen, so a report title and date-range row above the
       real header make both the header and the data get misread. The import
       fails.
-- [ ] **Duplicate header names defeat header detection.**
-      `transactions/sales-duplicate-headers.csv`. `looksLikeHeader()` requires
-      every header value to be unique, so two columns named `Total` make the
-      header row get read as data.
+- [x] **Duplicate header names defeat header detection.** (Codex, iteration 4)
+      Resolved by allowing repeated non-empty labels and disambiguating the
+      generated column names (`Total`, `Total (2)`). Added parser regression
+      coverage and corrected the fixture manifest expectation.
+      The fixture `transactions/sales-duplicate-headers.csv` now detects the
+      repeated `Total` labels as a valid header.
 - [ ] **Toast "Last, first" item names never resolve.**
       `transactions/toast-menu-item-sales.csv`. Toast writes `"Fillet, salmon"`.
       Exact-match resolution never links these to the catalogue, so every row

@@ -140,9 +140,11 @@ export const csvFixtures: CsvFixtureExpectation[] = [
     importType: 'transactions',
     description: 'Export with two columns both named "Total".',
     security: 'passes',
-    parse: { hasHeader: false },
-    knownIssue:
-      'looksLikeHeader() requires every header value to be unique, so a repeated column name (two "Total" columns) makes the whole header row get misread as a data row.',
+    parse: {
+      hasHeader: true,
+      columns: ['Date', 'Item', 'Qty', 'Total', 'Total (2)'],
+      minReadableRows: 4,
+    },
   },
   {
     path: 'transactions/sales-ambiguous-headers.csv',
