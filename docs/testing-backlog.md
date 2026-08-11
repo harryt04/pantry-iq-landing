@@ -46,7 +46,7 @@ it. `components/ui/**` is vendored and out of scope.
 Exit gate for every item: `pnpm prettify`, then `pnpm ci` until green.
 
 Then ratchet the coverage gate. [`vitest.config.ts`](../vitest.config.ts) holds
-  thresholds at 72.29/72.29/75.06/80.33 against 74.29% statements, 77.06% branches, 82.33% functions, and 74.29% lines measured 2026-08-11. Re-measure with
+  thresholds at 72.34/72.34/75.29/80.33 against 74.34% statements, 77.29% branches, 82.33% functions, and 74.34% lines measured 2026-08-11. Re-measure with
 `pnpm ci:tests` and raise each threshold to the new number minus two. Never
 lower one to make a build pass. Browser tests do not feed the v8 report, so
 Loops I, J, and L will not move the number. That is expected, not a failure.
@@ -267,7 +267,8 @@ above 94% — expect few survivors and move on quickly.
       Mutation check caught an inverted decimal-validity guard. The largest uncovered
       mass in the repo, and the engine Loop C depends on. Split over several
       iterations; take branches in `coverage/index.html` order.
-- [ ] `menu/recipe-builder.ts` — 35.7% of 482.
+- [x] `menu/recipe-builder.ts` — 35.7% of 482. (Codex, iteration 31 — zero output-quantity validation)
+      Added a regression test for zero output quantities; mutation testing confirmed the positive-boundary guard is required.
 - [ ] `metrics/trends.ts` — 33.8% of 358.
 - [ ] `metrics/portfolio.ts` — 33.2% of 340.
 - [ ] `ingestion/reconciliation.ts` — 53.7% of 367.
