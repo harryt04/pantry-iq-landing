@@ -322,10 +322,13 @@ them.
       import, preview, mapping, or export. (Codex, iteration 37)
       Added a real-Postgres upload/commit regression covering import history,
       import planning, file preview, mapping persistence, and CSV export.
-- [ ] Assert `security/formula-injection.csv` stays inert through the CSV
+- [x] Assert `security/formula-injection.csv` stays inert through the CSV
       **export** path (ING-11), not only on import.
       The Loop K export-service test is now in place; extend that real
       query-path coverage with this fixture.
+      Covered the security fixture through real import persistence and the
+      owner-scoped transaction export, asserting all formula-like item names
+      are apostrophe-neutralized.
       [`src/server/csv/exports.test.ts`](../src/server/csv/exports.test.ts)
       tests `export-format.ts`, which is a pure formatter at 100%. The query
       module `exports.ts` is now covered by the real service test; extend that

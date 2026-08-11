@@ -1396,6 +1396,65 @@ describe.skipIf(!integrationDatabaseEnabled())('CSV import', () => {
   })
 
   describe('export service', () => {
+    it('keeps the formula-injection fixture inert through import and export', async () => {
+      const csv = await readFile(
+        path.resolve('tests/fixtures/csv/security/formula-injection.csv'),
+        'utf8',
+      )
+      const itemNames = [
+        '=HYPERLINK("http://evil.example")',
+        '+1+1',
+        '@SUM(A1:A2)',
+        '-2+3',
+        'House Salad',
+      ]
+      const resolutions: Record<string, ImportItemResolution> =
+        Object.fromEntries(
+          itemNames.map((displayName) => [
+            normalizeExactItemName(displayName),
+            {
+              canonicalName: normalizeExactItemName(displayName),
+              displayName,
+              category: 'test',
+              unit: 'each',
+              shelfLifeDays: null,
+            },
+          ]),
+        )
+      const uploadId = await seedUpload(LOCATION_ID, {
+        filename: 'formula-injection.csv',
+        mapping: {
+          Date: 'transactedAt',
+          'Item Name': 'rawItemName',
+          Qty: 'qty',
+          'Total Revenue': 'totalRevenue',
+        },
+      })
+
+      const summary = await imports.commitCsvImport(
+        new Headers(),
+        uploadId,
+        resolutions,
+        memoryStorage(csv),
+      )
+
+      expect(summary.rowsImported).toBe(5)
+
+      const exported = await exportsService.exportLocationCsv(
+        new Headers(),
+        LOCATION_ID,
+        'transactions',
+      )
+      expect(exported).toContain('\'=HYPERLINK(""http://evil.example"")')
+      expect(exported).toContain("'+1+1")
+      expect(exported).toContain("'@SUM(A1:A2)")
+      expect(exported).toContain("'-2+3")
+      expect(exported).not.toContain(',=HYPERLINK(')
+      expect(exported).not.toContain(',+1+1,')
+      expect(exported).not.toContain(',@SUM(A1:A2),')
+      expect(exported).not.toContain(',-2+3,')
+    })
+
     it('scopes every dataset to the owner and neutralizes formula-looking cells', async () => {
       const { sql } = opened!.database
       const itemId = '00000000-0000-4000-8000-00000000e001'
