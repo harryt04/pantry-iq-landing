@@ -47,6 +47,48 @@ describe('CSV import planning', () => {
     expect(plan.linkedItemCount).toBe(1)
   })
 
+  it('uses comma decimals for semicolon-delimited exports', () => {
+    const plan = buildCsvImportPlan({
+      importType: 'transactions',
+      mapping: {
+        Date: 'transactedAt',
+        Item: 'rawItemName',
+        Qty: 'qty',
+        UnitPrice: 'unitPrice',
+        Total: 'totalRevenue',
+        Cost: 'totalCost',
+      },
+      items: [salmon],
+      csv: {
+        encoding: 'utf-8',
+        delimiter: ';',
+        hasHeader: true,
+        columns: ['Date', 'Item', 'Qty', 'UnitPrice', 'Total', 'Cost'],
+        rows: [
+          {
+            rowNumber: 2,
+            values: [
+              '2026-08-08T12:00:00Z',
+              'Salmon',
+              '2',
+              '8,50',
+              '17,00',
+              '4,25',
+            ],
+          },
+        ],
+      },
+    })
+
+    expect(plan.rows[0]?.values).toMatchObject({
+      qty: '2',
+      unitPrice: '8.5',
+      totalRevenue: '17',
+      totalCost: '4.25',
+      grossMargin: '12.75',
+    })
+  })
+
   it('holds a plan until every unmatched item receives an explicit decision', () => {
     const csv = {
       encoding: 'utf-8' as const,

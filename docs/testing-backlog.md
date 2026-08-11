@@ -59,10 +59,12 @@ Seven fixtures document real defects in the import pipeline. Each item names
 the fixture that already proves it. Fix the defect in `src/server/csv/`, add a
 focused unit test beside the module you changed, then clear the `knownIssue`.
 
-- [ ] **European decimals read as thousands separators.**
+- [x] **European decimals read as thousands separators.**
       `transactions/lightspeed-sales-semicolon.csv`. `"8,50"` parses as `850`
       because `decimal()` in `import-plan.ts` strips every comma. Needs to
       respect the file's decimal convention, not guess per value.
+      Resolved by selecting comma-decimal parsing for semicolon-delimited files,
+      with exact-decimal regression coverage.
 - [ ] **Currency-coded and percentage amounts rejected.**
       `purchase-orders/po-currency-symbols-mixed.csv`. `"1,234.56 USD"` and
       `"12.5%"` are not recognized by `decimal()` and raise a generic row

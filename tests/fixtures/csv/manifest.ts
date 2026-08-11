@@ -89,8 +89,6 @@ export const csvFixtures: CsvFixtureExpectation[] = [
     security: 'passes',
     parse: { delimiter: ';', hasHeader: true, minReadableRows: 5 },
     plan: { outcome: 'ok', rowCount: 5 },
-    knownIssue:
-      'European decimals like "8,50" are read as 850 — decimal() in import-plan.ts strips all commas as thousands separators.',
   },
   {
     path: 'transactions/revel-sales-tab-delimited.csv',
