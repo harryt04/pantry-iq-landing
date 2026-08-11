@@ -74,6 +74,18 @@ ones:**
    [`feature-backlog.md`](feature-backlog.md) on the same day, to think it
    through rather than specify it in passing. See that file's §8.
 
+## Testing
+
+Testing is a second category that postdates the consolidation, and follows the
+same one-file-owns-one-category rule. Two files, and the split between them
+matters: one records what exists, the other records what is missing. Keep
+inventory out of the backlog and gaps out of the inventory, or they drift.
+
+| Document | Owns |
+|---|---|
+| [`testing-coverage-existing.md`](testing-coverage-existing.md) | **What exists.** Every test file, what it covers, the naming rules that decide where a test runs, the shared helpers and fixtures. Read it before writing a test, so you extend the file that already owns the surface instead of creating a second one |
+| [`testing-backlog.md`](testing-backlog.md) | **What is missing.** The claimable queue for the overnight GNHF loops, its claim protocol, and the fixture rules that outrank everything else in it |
+
 ## Reference material (not actively maintained as MVP scope)
 
 - **[`archive/existing-repo-audit-consolidated.md`](archive/existing-repo-audit-consolidated.md)**

@@ -9,6 +9,12 @@ does it, and ticks it in the same commit.
 This file owns test coverage and defect burndown. Do not add feature tickets
 here.
 
+[`testing-coverage-existing.md`](testing-coverage-existing.md) owns the
+inventory of what already exists. **Read it before you write a test.** It tells
+you which file already owns the surface you are about to cover, and which
+filename suffix decides whether your test gets a DOM. Record gaps here, record
+inventory there.
+
 ## Claim protocol
 
 1. Take the first unchecked `[ ]` item in your assigned section.
