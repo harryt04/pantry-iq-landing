@@ -46,7 +46,7 @@ it. `components/ui/**` is vendored and out of scope.
 Exit gate for every item: `pnpm prettify`, then `pnpm ci` until green.
 
 Then ratchet the coverage gate. [`vitest.config.ts`](../vitest.config.ts) holds
-  thresholds at 72.27/72.27/74.97/80.3 against 74.27% statements, 76.96% branches, 82.3% functions, and 74.27% lines measured 2026-08-11. Re-measure with
+  thresholds at 72.29/72.29/75.06/80.33 against 74.29% statements, 77.06% branches, 82.33% functions, and 74.29% lines measured 2026-08-11. Re-measure with
 `pnpm ci:tests` and raise each threshold to the new number minus two. Never
 lower one to make a build pass. Browser tests do not feed the v8 report, so
 Loops I, J, and L will not move the number. That is expected, not a failure.
@@ -203,8 +203,11 @@ stated reason. No "more of the same" files.
 - [x] Encoding: UTF-16LE with BOM, CP1252 smart quotes, mixed encodings in one
       file. Added manifest-backed UTF-16LE and Windows-1252 fixtures, plus a
       security fixture that rejects ambiguous mixed encoding bytes.
-- [ ] Duplicates: the same file imported twice (INT-07 dedup), and two files
+- [x] Duplicates: the same file imported twice (INT-07 dedup), and two files
       with overlapping date ranges.
+      (Codex, iteration 26) Added real-Postgres coverage for the same file
+      committed through two upload records, plus reconciliation coverage that
+      asserts the exact intersection of overlapping source periods.
 - [ ] Item resolution near-misses: trailing whitespace, plurals, `&` vs `and`,
       case-only differences.
 - [ ] Adversarial security: deeply nested quotes, a header row alone exceeding

@@ -116,6 +116,44 @@ describe('cross-source reconciliation', () => {
     ).toBe(false)
   })
 
+  it('records the intersecting period when two source files overlap', () => {
+    const conflicts = detectReconciliationConflicts([
+      {
+        kind: 'transaction',
+        source: 'csv',
+        externalId: null,
+        occurredAt: at('2026-08-01'),
+      },
+      {
+        kind: 'transaction',
+        source: 'csv',
+        externalId: null,
+        occurredAt: at('2026-08-03'),
+      },
+      {
+        kind: 'transaction',
+        source: 'square',
+        externalId: null,
+        occurredAt: at('2026-08-03'),
+      },
+      {
+        kind: 'transaction',
+        source: 'square',
+        externalId: null,
+        occurredAt: at('2026-08-05'),
+      },
+    ])
+
+    expect(conflicts).toHaveLength(1)
+    expect(conflicts[0]).toMatchObject({
+      conflictType: 'period-overlap',
+      periodStart: at('2026-08-03'),
+      periodEnd: at('2026-08-03'),
+      sources: ['square', 'csv'],
+      status: 'unresolved',
+    })
+  })
+
   it('does not compare records from different canonical tables', () => {
     expect(
       detectReconciliationConflicts([

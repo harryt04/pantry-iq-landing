@@ -1241,6 +1241,34 @@ describe.skipIf(!integrationDatabaseEnabled())('CSV import', () => {
       expect(second.alreadyImported).toBe(true)
     })
 
+    it('deduplicates the same file uploaded twice as separate imports', async () => {
+      const firstUploadId = await seedUpload(LOCATION_ID, {
+        filename: 'sales-retry.csv',
+      })
+      const secondUploadId = await seedUpload(LOCATION_ID, {
+        filename: 'sales-retry.csv',
+      })
+
+      const first = await imports.commitCsvImport(
+        new Headers(),
+        firstUploadId,
+        RESOLUTIONS,
+        memoryStorage(),
+      )
+      const second = await imports.commitCsvImport(
+        new Headers(),
+        secondUploadId,
+        RESOLUTIONS,
+        memoryStorage(),
+      )
+
+      expect(first.rowsImported).toBe(2)
+      expect(second.rowsImported).toBe(0)
+      expect(second.alreadyImported).toBe(false)
+      expect(await countTransactions()).toBe(2)
+      expect(await countItems()).toBe(2)
+    })
+
     it('refuses to commit into another account location', async () => {
       const uploadId = await seedUpload(OTHER_LOCATION_ID)
 

@@ -10,14 +10,14 @@ This file is descriptive. It records what exists.
 [`testing-backlog.md`](testing-backlog.md) is prescriptive and owns what is
 missing — do not add gaps or tickets here, and do not add inventory there.
 
-Measured 2026-08-10 against commit `4a4ef65`. Counts are static — `it.each`
+Measured 2026-08-11 against the current worktree. Counts are static — `it.each`
 blocks and the loop in `corpus.test.ts` expand at runtime, so the executed
 figure is higher.
 
 | | |
 | --- | --- |
 | Vitest files | 111 |
-| Vitest cases | 582 statically, more after `.each` expansion |
+| Vitest cases | 584 statically, more after `.each` expansion |
 | Playwright specs | 4 files, 11 cases |
 | Line coverage | 72.65% with a database, 65.98% without |
 
@@ -81,7 +81,7 @@ fixture-driven, no mocking of the thing under test. Do not disturb these.
 | [`src/server/chat/`](../src/server/chat/) | 6 | Grounding, decline, answer format, narration, misses, assumption override |
 | [`src/server/staffing/`](../src/server/staffing/) | 4 | Demand forecast, labor efficiency, shift recommendations, external signals |
 | [`src/server/observability/`](../src/server/observability/) | 2 | Logger and metrics |
-| [`src/server/ingestion/`](../src/server/ingestion/) | 2 | Records and reconciliation |
+| [`src/server/ingestion/`](../src/server/ingestion/) | 2 | Records and reconciliation, including exact cross-source overlap intersection |
 | [`src/server/inventory/`](../src/server/inventory/), [`locations/`](../src/server/locations/), [`storage/`](../src/server/storage/) | 5 | Input validation, shelf-life defaults, object storage |
 | [`src/chat/session-memory.test.ts`](../src/chat/session-memory.test.ts) | 1 | Outside `src/server/` — chat history truncation |
 
@@ -146,13 +146,13 @@ These eight cover the largest components in the repo. If you are adding a case
 for manual entry, CSV upload, chat, locations, recipes, settings, or the item
 master, **the file already exists** — extend it.
 
-## Layer 4 — Integration tests (`tests/integration/`, 12 files, 89 cases)
+## Layer 4 — Integration tests (`tests/integration/`, 12 files, 90 cases)
 
 Real PostgreSQL. Each runs migrate, seed, and rollback around itself.
 
 | File | Covers |
 | --- | --- |
-| [`csv-import.test.ts`](../tests/integration/csv-import.test.ts) | Preview, commit, transactional write, item resolution, purchase-order import through MNU-03 recipe plate-cost history, labor import through STF-02 efficiency metrics, full-year and short-history precompute, refund aggregation, business-day boundary bucketing, exact money propagation through metrics and rendered dashboard output |
+| [`csv-import.test.ts`](../tests/integration/csv-import.test.ts) | Preview, commit, transactional write, item resolution, same-file re-import deduplication, purchase-order import through MNU-03 recipe plate-cost history, labor import through STF-02 efficiency metrics, full-year and short-history precompute, refund aggregation, business-day boundary bucketing, exact money propagation through metrics and rendered dashboard output |
 | [`write-atomicity.test.ts`](../tests/integration/write-atomicity.test.ts) | A partial failure leaves no rows |
 | [`manual-entry-write.test.ts`](../tests/integration/manual-entry-write.test.ts) | Manual entry writes, location scoping, item creation |
 | [`ownership-boundary.test.ts`](../tests/integration/ownership-boundary.test.ts) | `requireOwnedLocation` — no session, cross-account, missing location |
@@ -244,11 +244,11 @@ assertion to make a test pass — that rule outranks everything else in
 
 Run a single file with `pnpm test path/to/file.test.ts`.
 
-Coverage thresholds in [`vitest.config.ts`](../vitest.config.ts) are 70
-statements, 70 lines, 74 branches, 79 functions, and apply **only** when a
-database is reachable. Integration suites carry roughly ten points, so gating a
-laptop without Docker would fail for no reason. CI always sets
-`TEST_DATABASE_URL`, so CI is always gated.
+Coverage thresholds in [`vitest.config.ts`](../vitest.config.ts) are 72.29
+statements, 72.29 lines, 75.06 branches, and 80.33 functions, and apply
+**only** when a database is reachable. Integration suites carry roughly ten
+points, so gating a laptop without Docker would fail for no reason. CI always
+sets `TEST_DATABASE_URL`, so CI is always gated.
 
 ---
 
