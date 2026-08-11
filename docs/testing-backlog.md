@@ -180,7 +180,11 @@ recommendations.
       Covered an imported Homebase labor export plus matching sales through the
       owner-scoped efficiency query, including exact shift ratios and a labor-only
       shift exclusion.
-- [ ] `purchase-orders/*` through MNU-03 plate costing.
+- [x] `purchase-orders/*` through MNU-03 plate costing. (Codex, iteration 22)
+      Imported the Sysco invoice fixture through the real CSV persistence path,
+      then saved a recipe against the imported ingredient items and asserted
+      exact plate cost, margin, food-cost percentage, arithmetic evidence, and
+      retained cost movement.
 
 ---
 

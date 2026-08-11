@@ -99,6 +99,16 @@ const MONEY_PRECISION_MAPPING = {
   'Total Cost': 'totalCost',
 }
 
+const PURCHASE_ORDER_MAPPING = {
+  'Order Date': 'orderedAt',
+  Supplier: 'supplierName',
+  'PO Number': 'externalId',
+  Item: 'rawItemName',
+  Qty: 'qty',
+  'Unit Cost': 'unitCost',
+  'Total Cost': 'totalCost',
+}
+
 const LABOR_MAPPING = {
   'Clock In': 'shiftStart',
   'Clock Out': 'shiftEnd',
@@ -245,6 +255,30 @@ const MONEY_PRECISION_RESOLUTIONS: Record<string, ImportItemResolution> = {
   },
 }
 
+const PURCHASE_ORDER_RESOLUTIONS: Record<string, ImportItemResolution> = {
+  [normalizeExactItemName('Salmon Fillet')]: {
+    canonicalName: 'salmon fillet',
+    displayName: 'Salmon Fillet',
+    category: 'seafood',
+    unit: 'lb',
+    shelfLifeDays: null,
+  },
+  [normalizeExactItemName('Romaine Lettuce')]: {
+    canonicalName: 'romaine lettuce',
+    displayName: 'Romaine Lettuce',
+    category: 'produce',
+    unit: 'lb',
+    shelfLifeDays: null,
+  },
+  [normalizeExactItemName('Tomato')]: {
+    canonicalName: 'tomato',
+    displayName: 'Tomato',
+    category: 'produce',
+    unit: 'lb',
+    shelfLifeDays: null,
+  },
+}
+
 const STAFFING_SALES_RESOLUTIONS: Record<string, ImportItemResolution> = {
   [normalizeExactItemName('House Salad')]: {
     canonicalName: 'house salad',
@@ -358,6 +392,11 @@ describe.skipIf(!integrationDatabaseEnabled())('CSV import', () => {
     const { sql } = opened!.database
     await sql`delete from transactions`
     await sql`delete from csv_upload_history`
+    await sql`delete from purchase_order_items`
+    await sql`delete from purchase_orders`
+    await sql`delete from recipe_cost_history`
+    await sql`delete from recipe_ingredients`
+    await sql`delete from recipes`
     await sql`delete from inventory_items`
     await sql`delete from locations`
     await sql`delete from "user"`
@@ -611,6 +650,170 @@ describe.skipIf(!integrationDatabaseEnabled())('CSV import', () => {
           }),
         ]),
       )
+    }, 120_000)
+
+    it('carries imported purchase costs into exact recipe plate-cost history', async () => {
+      const csv = await readFile(
+        path.resolve(
+          'tests/fixtures/csv/purchase-orders/sysco-invoice-export.csv',
+        ),
+        'utf8',
+      )
+      const uploadId = await seedUpload(LOCATION_ID, {
+        filename: 'sysco-invoice-export.csv',
+        mapping: PURCHASE_ORDER_MAPPING,
+        source: 'purchase_orders',
+      })
+
+      const summary = await imports.commitCsvImport(
+        new Headers(),
+        uploadId,
+        PURCHASE_ORDER_RESOLUTIONS,
+        memoryStorage(csv),
+      )
+
+      expect(summary.rowsImported).toBe(4)
+
+      const { sql } = opened!.database
+      const purchaseLines = await sql<
+        { itemName: string; unitCost: string; totalCost: string }[]
+      >`
+        select
+          purchase_order_items.raw_item_name as "itemName",
+          purchase_order_items.unit_cost as "unitCost",
+          purchase_order_items.total_cost as "totalCost"
+        from purchase_order_items
+        inner join purchase_orders
+          on purchase_orders.id = purchase_order_items.purchase_order_id
+        where purchase_orders.location_id = ${LOCATION_ID}
+        order by purchase_orders.ordered_at, purchase_order_items.created_at
+      `
+      expect(purchaseLines).toEqual([
+        { itemName: 'Salmon Fillet', unitCost: '12', totalCost: '240' },
+        { itemName: 'Romaine Lettuce', unitCost: '3.5', totalCost: '35' },
+        { itemName: 'Salmon Fillet', unitCost: '12.25', totalCost: '183.75' },
+        { itemName: 'Tomato', unitCost: '1.8', totalCost: '45' },
+      ])
+
+      const importedItems = await sql<{ id: string; canonicalName: string }[]>`
+        select id, canonical_name as "canonicalName"
+        from inventory_items
+        where location_id = ${LOCATION_ID}
+          and canonical_name in ('salmon fillet', 'romaine lettuce')
+      `
+      const salmon = importedItems.find(
+        (item) => item.canonicalName === 'salmon fillet',
+      )
+      const romaine = importedItems.find(
+        (item) => item.canonicalName === 'romaine lettuce',
+      )
+      const [menuItem] = await sql<{ id: string }[]>`
+        insert into inventory_items
+          (location_id, canonical_name, display_name, unit, item_type, menu_price)
+        values
+          (${LOCATION_ID}, 'salmon plate', 'Salmon plate', 'each', 'menu_item', '20')
+        returning id
+      `
+      expect(salmon?.canonicalName).toBe('salmon fillet')
+      expect(romaine?.canonicalName).toBe('romaine lettuce')
+      if (!menuItem || !salmon || !romaine)
+        throw new Error('Recipe fixture items were not imported.')
+
+      const salmonItemId = salmon.id
+      const romaineItemId = romaine.id
+      await sql`
+        update inventory_items
+        set cost_per_unit = case id
+          when ${salmonItemId} then ${'12.00'}::numeric
+          when ${romaineItemId} then ${'3.50'}::numeric
+        end
+        where id in (${salmonItemId}, ${romaineItemId})
+      `
+
+      const { saveRecipe } =
+        await import('../../src/server/menu/recipe-builder')
+      const recipe = await saveRecipe(new Headers(), LOCATION_ID, {
+        menuItemId: menuItem.id,
+        name: 'Salmon plate',
+        outputQuantity: '4',
+        outputUnit: 'each',
+        ingredients: [
+          { ingredientItemId: salmonItemId, quantity: '1', unit: 'lb' },
+          { ingredientItemId: romaineItemId, quantity: '2', unit: 'lb' },
+        ],
+      })
+
+      await sql`
+        update inventory_items
+        set cost_per_unit = '12.25'
+        where id = ${salmonItemId}
+      `
+      await saveRecipe(
+        new Headers(),
+        LOCATION_ID,
+        {
+          menuItemId: menuItem.id,
+          name: 'Salmon plate',
+          outputQuantity: '4',
+          outputUnit: 'each',
+          ingredients: [
+            { ingredientItemId: salmonItemId, quantity: '1', unit: 'lb' },
+            { ingredientItemId: romaineItemId, quantity: '2', unit: 'lb' },
+          ],
+        },
+        recipe.id,
+      )
+
+      const history = await sql<
+        {
+          status: string
+          batchCost: string | null
+          costPerOutput: string | null
+          plateMargin: string | null
+          foodCostPercentage: string | null
+          evidence: {
+            batch: { lines: { cost: string | null }[] }
+            plate: { effectiveOutputQuantity: string | null }
+          }
+        }[]
+      >`
+        select
+          status,
+          batch_cost as "batchCost",
+          cost_per_output as "costPerOutput",
+          plate_margin as "plateMargin",
+          food_cost_percentage as "foodCostPercentage",
+          evidence
+        from recipe_cost_history
+        where recipe_id = ${recipe.id}
+        order by calculated_at, id
+      `
+
+      expect(history).toHaveLength(2)
+      expect(history).toMatchObject([
+        {
+          status: 'complete',
+          batchCost: '19',
+          costPerOutput: '4.75',
+          plateMargin: '15.25',
+          foodCostPercentage: '23.75',
+          evidence: {
+            batch: { lines: [{ cost: '12' }, { cost: '7' }] },
+            plate: { effectiveOutputQuantity: '4' },
+          },
+        },
+        {
+          status: 'complete',
+          batchCost: '19.25',
+          costPerOutput: '4.8125',
+          plateMargin: '15.1875',
+          foodCostPercentage: '24.0625',
+          evidence: {
+            batch: { lines: [{ cost: '12.25' }, { cost: '7' }] },
+            plate: { effectiveOutputQuantity: '4' },
+          },
+        },
+      ])
     }, 120_000)
 
     it('nets refunds in revenue without turning them into negative waste', async () => {
