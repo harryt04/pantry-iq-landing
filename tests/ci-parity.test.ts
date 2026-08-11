@@ -68,6 +68,7 @@ describe('CI parity', () => {
     expect(local).toContain('test:a11y')
     expect(local).toContain('test:charts')
     expect(local).toContain('test:e2e')
+    expect(local).toContain('test:ui')
     expect(local).toContain('build')
   })
 

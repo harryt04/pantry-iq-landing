@@ -415,12 +415,14 @@ browser coverage needs two layers, not one.
       `forbidden`, `invalid`, `conflict`, `unavailable`, `server-error`, and
       `slow`. (Codex, iteration 54) Added the typed endpoint dispatcher and
       reusable response scenarios.
-- [ ] Move the two existing specs into `tests/e2e/` and drop their inline
+- [x] Move the two existing specs into `tests/e2e/` and drop their inline
       signup. Split `test:e2e` into `test:e2e` and `test:ui` in
       [`package.json`](../package.json), add both to `ci:browser`, and mirror
       the change in [`.github/workflows/ci.yml`](../.github/workflows/ci.yml).
       [`tests/ci-parity.test.ts`](../tests/ci-parity.test.ts) enforces parity
-      and fails otherwise.
+      and fails otherwise. (Codex, iteration 55) The critical-path journey now
+      uses the shared authenticated owner and cleans up its location; the
+      returning-user journey remains the one explicit signup path.
 
 ---
 
