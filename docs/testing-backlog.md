@@ -390,7 +390,7 @@ browser coverage needs two layers, not one.
       (Codex, iteration 49) Added the setup project auth state, loaded it for
       e2e and UI projects, and kept the returning-user signup/sign-in journey
       isolated from the shared session.
-- [ ] Add `tests/e2e/setup/seed.setup.ts`. Reuse `seedDatabase()` in
+- [x] Add `tests/e2e/setup/seed.setup.ts`. Reuse `seedDatabase()` in
       [`src/server/db/seed-database.ts`](../src/server/db/seed-database.ts),
       `fullYearLocationFixture` and `partialDataLocationFixture` in
       [`tests/fixtures/pantry.ts`](../tests/fixtures/pantry.ts), and the
@@ -399,7 +399,9 @@ browser coverage needs two layers, not one.
       Provision two locations on the `storageState` account: one with a full
       year of sales and weekly snapshots, one with 14 days and no snapshots.
       That pair alone unlocks both the populated and the insufficient-data
-      rendering of every screen.
+      rendering of every screen. (Codex, iteration 50) Added an owner-scoped
+      fixture seed setup with database row-count assertions and authenticated
+      location-list verification.
 - [ ] Add `tests/ui/fixtures/mock-api.ts`, a Playwright fixture that installs
       `page.route()` handlers keyed by scenario. Cover `/api/chat`,
       `/api/chat/override`, `/api/locations`, `/api/locations/:id`,

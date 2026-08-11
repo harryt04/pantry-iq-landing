@@ -38,6 +38,8 @@ export default defineConfig({
       name: 'setup',
       testDir: './tests/e2e/setup',
       testMatch: '**/*.setup.ts',
+      fullyParallel: false,
+      workers: 1,
       use: { ...devices['Desktop Chrome'], storageState: undefined },
     },
     {

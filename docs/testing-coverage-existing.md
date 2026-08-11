@@ -174,6 +174,7 @@ pattern to copy.
 | File | Covers |
 | --- | --- |
 | [`e2e/setup/auth.setup.ts`](../tests/e2e/setup/auth.setup.ts) | Creates or signs into the shared owner account and saves `tests/.auth/owner.json` for dependent browser projects |
+| [`e2e/setup/seed.setup.ts`](../tests/e2e/setup/seed.setup.ts) | Seeds the storage-state owner with full-year and partial-history locations, asserting real PostgreSQL counts and authenticated location visibility |
 | [`e2e/critical-path.spec.ts`](../tests/e2e/critical-path.spec.ts) | Sign up → create location → import a CSV → resolve an item → commit → dashboard; transaction corpus batches 1–3, purchase-order batches 1–2, inventory batch 1, labor batch 1, and malformed batch 1 through the authenticated `/import` route |
 | [`e2e/returning-user.spec.ts`](../tests/e2e/returning-user.spec.ts) | Sign in → switch location → open chat → export CSV over HTTP |
 | [`accessibility/landing.spec.ts`](../tests/accessibility/landing.spec.ts) | Axe on `/`, `/design/gallery`, `/design/tokens` in both themes; keyboard focus; 44px touch targets; 16px mobile type; reduced motion |
