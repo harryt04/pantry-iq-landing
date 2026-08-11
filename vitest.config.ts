@@ -18,10 +18,10 @@ const databaseAvailable =
  * them to make a build pass.
  */
 const thresholds = {
-  statements: 70.52,
-  lines: 70.52,
-  branches: 74.7,
-  functions: 79.74,
+  statements: 70.53,
+  lines: 70.53,
+  branches: 74.81,
+  functions: 79.77,
 }
 
 export default defineConfig({

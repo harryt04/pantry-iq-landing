@@ -121,9 +121,12 @@ export const csvFixtures: CsvFixtureExpectation[] = [
     description:
       'Toast export with report title and date-range rows above the real header.',
     security: 'passes',
-    plan: { outcome: 'error', messageMatch: /item name is required/ },
-    knownIssue:
-      'Report title and date-range rows above the real header are not skipped. Header detection locks onto the first two lines seen, so the real header and data both get misread and the import fails.',
+    parse: {
+      hasHeader: true,
+      columns: ['Date', 'Item Name', 'Qty', 'Total Revenue'],
+      minReadableRows: 5,
+    },
+    plan: { outcome: 'ok', rowCount: 5, unmatchedItemCount: 0 },
   },
   {
     path: 'transactions/pos-headerless-sales.csv',

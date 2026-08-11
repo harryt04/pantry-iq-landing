@@ -81,7 +81,9 @@ focused unit test beside the module you changed, then clear the `knownIssue`.
       `transactions/sales-messy-dates-mixed.csv`. A serial like `45717` fails
       `Date.parse` and raises "is not a readable date" rather than being
       recognized as a spreadsheet date.
-- [ ] **Preamble rows above the header are not skipped.**
+- [x] **Preamble rows above the header are not skipped.**
+      Resolved by scanning a bounded prefix for the first table header and
+      preserving source row numbers for the data that follows it.
       `transactions/toast-with-preamble-rows.csv`. Header detection locks onto
       the first two lines seen, so a report title and date-range row above the
       real header make both the header and the data get misread. The import

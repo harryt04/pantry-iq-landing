@@ -58,6 +58,41 @@ describe('CSV preview parser', () => {
     ])
   })
 
+  it('skips report preamble rows before detecting the real header', async () => {
+    const input = [
+      'Toast POS Sales Summary',
+      'Location: Downtown',
+      'Date Range: 2025-03-01 to 2025-03-05',
+      'Generated: 2025-03-06 08:00:00',
+      '',
+      'Date,Item Name,Qty,Total Revenue',
+      '2025-03-01,Salmon Fillet,2,48.00',
+    ].join('\n')
+
+    const preview = await parseCsvPreview(chunks(utf8(input)))
+    const rows = await parseCsvRows(chunks(utf8(input)))
+
+    expect(preview).toMatchObject({
+      hasHeader: true,
+      columns: ['Date', 'Item Name', 'Qty', 'Total Revenue'],
+      rowCount: 1,
+      readableRowCount: 1,
+    })
+    expect(preview.previewRows).toEqual([
+      { rowNumber: 6, values: ['2025-03-01', 'Salmon Fillet', '2', '48.00'] },
+    ])
+    expect(rows).toMatchObject({
+      hasHeader: true,
+      columns: ['Date', 'Item Name', 'Qty', 'Total Revenue'],
+      rows: [
+        {
+          rowNumber: 6,
+          values: ['2025-03-01', 'Salmon Fillet', '2', '48.00'],
+        },
+      ],
+    })
+  })
+
   it.each([
     ['semicolon', 'Date;Item;Qty\n2026-08-01;Salmon;3\n', ';'],
     ['tab', 'Date\tItem\tQty\n2026-08-01\tSalmon\t3\n', '\t'],

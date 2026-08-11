@@ -4,6 +4,7 @@ import { parse } from 'csv-parse'
 
 const SNIFF_BYTES = 64 * 1024
 const PREVIEW_ROWS = 5
+const HEADER_SEARCH_ROWS = 50
 const DELIMITERS = [',', ';', '\t'] as const
 
 export type CsvEncoding = 'utf-8' | 'latin-1'
@@ -223,11 +224,26 @@ function looksLikeHeader(first: string[], second?: string[]) {
   const secondLooksLikeData = second?.some(looksNumeric) ?? false
 
   return (
-    first.length > 0 &&
+    first.length >= 2 &&
     unique &&
     firstLooksNumeric < Math.ceil(first.length / 2) &&
     (signals > 0 || secondLooksLikeData)
   )
+}
+
+function findHeaderIndex(records: string[][]): number | null {
+  const searchLimit = Math.min(records.length, HEADER_SEARCH_ROWS)
+  for (let index = 0; index < searchLimit; index += 1) {
+    const row = records[index]
+    const next = records[index + 1]
+    if (!row || !looksLikeHeader(row, next)) continue
+
+    // A preamble can contain words such as "Date" or "Sales". Requiring a
+    // following row with the same width makes a later candidate look like a
+    // table header rather than a report label.
+    if (index === 0 || (next && next.length === row.length)) return index
+  }
+  return null
 }
 
 function columnNames(header: string[], columnCount: number): string[] {
@@ -289,7 +305,7 @@ export async function parseCsvPreview(input: ByteStream): Promise<CsvPreview> {
   })
   Readable.from(prepared.chunks).pipe(parser)
 
-  const bufferedRows: string[][] = []
+  const bufferedRows: Array<{ row: string[]; rowNumber: number }> = []
   const previewRows: Array<{ rowNumber: number; values: string[] }> = []
   let hasHeader = false
   let header: string[] = []
@@ -297,6 +313,7 @@ export async function parseCsvPreview(input: ByteStream): Promise<CsvPreview> {
   let readableRowCount = 0
   let dataRowCount = 0
   let dateColumnIndexes: number[] = []
+  let headerResolved = false
 
   function addProblem(code: string, example: string) {
     const message = problemMessage(code)
@@ -326,37 +343,43 @@ export async function parseCsvPreview(input: ByteStream): Promise<CsvPreview> {
     }
   }
 
+  function resolveHeader(index: number | null) {
+    hasHeader = index !== null
+    header = index === null ? [] : (bufferedRows[index]?.row ?? [])
+    columnCount = hasHeader ? header.length : 0
+    dateColumnIndexes = header.reduce<number[]>(
+      (indexes, value, columnIndex) => {
+        if (/date|time/.test(normalizedHeader(value))) indexes.push(columnIndex)
+        return indexes
+      },
+      [],
+    )
+
+    const dataRows =
+      index === null ? bufferedRows : bufferedRows.slice(index + 1)
+    for (const { row, rowNumber } of dataRows) processDataRow(row, rowNumber)
+    headerResolved = true
+  }
+
   for await (const record of parser) {
     sourceRowCount += 1
     const row = record as string[]
-    if (bufferedRows.length < 2) {
-      bufferedRows.push(row)
-      if (bufferedRows.length === 2) {
-        hasHeader = looksLikeHeader(bufferedRows[0] ?? [], bufferedRows[1])
-        header = hasHeader ? (bufferedRows[0] ?? []) : []
-        columnCount = hasHeader ? header.length : 0
-        dateColumnIndexes = header.reduce<number[]>((indexes, value, index) => {
-          if (/date|time/.test(normalizedHeader(value))) indexes.push(index)
-          return indexes
-        }, [])
-        if (hasHeader) {
-          processDataRow(bufferedRows[1] ?? [], sourceRowCount)
-        } else {
-          processDataRow(bufferedRows[0] ?? [], sourceRowCount - 1)
-          processDataRow(bufferedRows[1] ?? [], sourceRowCount)
-        }
-      }
-    } else {
-      processDataRow(row, sourceRowCount)
+    if (!headerResolved) {
+      bufferedRows.push({ row, rowNumber: sourceRowCount })
+      const headerIndex = findHeaderIndex(
+        bufferedRows.map(({ row: values }) => values),
+      )
+      if (headerIndex !== null || bufferedRows.length === HEADER_SEARCH_ROWS)
+        resolveHeader(headerIndex)
+      continue
     }
+    processDataRow(row, sourceRowCount)
   }
 
-  if (bufferedRows.length === 1) {
-    hasHeader = looksLikeHeader(bufferedRows[0] ?? [])
-    header = hasHeader ? (bufferedRows[0] ?? []) : []
-    columnCount = hasHeader ? header.length : 0
-    if (!hasHeader) processDataRow(bufferedRows[0] ?? [], 1)
-  }
+  if (!headerResolved)
+    resolveHeader(
+      findHeaderIndex(bufferedRows.map(({ row: values }) => values)),
+    )
 
   const columns = columnNames(hasHeader ? header : [], columnCount)
 
@@ -392,11 +415,10 @@ export async function parseCsvRows(input: ByteStream): Promise<CsvRows> {
   const records: string[][] = []
   for await (const record of parser) records.push(record as string[])
 
-  const first = records[0] ?? []
-  const second = records[1]
-  const hasHeader = looksLikeHeader(first, second)
-  const header = hasHeader ? first : []
-  const data = hasHeader ? records.slice(1) : records
+  const headerIndex = findHeaderIndex(records)
+  const hasHeader = headerIndex !== null
+  const header = hasHeader ? (records[headerIndex] ?? []) : []
+  const data = hasHeader ? records.slice(headerIndex + 1) : records
   const columnCount = Math.max(
     hasHeader ? header.length : 0,
     ...data.map((row) => row.length),
@@ -408,7 +430,7 @@ export async function parseCsvRows(input: ByteStream): Promise<CsvRows> {
     hasHeader,
     columns: columnNames(header, columnCount),
     rows: data.map((values, index) => ({
-      rowNumber: hasHeader ? index + 2 : index + 1,
+      rowNumber: hasHeader ? index + headerIndex + 2 : index + 1,
       values,
     })),
   }
