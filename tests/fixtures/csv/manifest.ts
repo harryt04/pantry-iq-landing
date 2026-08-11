@@ -282,12 +282,7 @@ export const csvFixtures: CsvFixtureExpectation[] = [
     description:
       'Fractional quantities: decimals, a leading-dot decimal, and a mixed-number fraction.',
     security: 'passes',
-    plan: {
-      outcome: 'error',
-      messageMatch: /not a valid number/,
-    },
-    knownIssue:
-      'Mixed-number fractions like "3 1/2" are not recognized by decimal() and raise a row error.',
+    plan: { outcome: 'ok', rowCount: 4, unmatchedItemCount: 0 },
   },
   {
     path: 'inventory/inventory-zero-and-blank-qty.csv',

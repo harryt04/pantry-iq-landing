@@ -71,9 +71,10 @@ focused unit test beside the module you changed, then clear the `knownIssue`.
       error instead of a clear currency-format message.
       Resolved with format-specific validation messages and regression coverage
       for both unsupported formats.
-- [ ] **Mixed-number fractions rejected.**
+- [x] **Mixed-number fractions rejected.**
       `inventory/inventory-fractional-quantities.csv`. `"3 1/2"` is not
       recognized by `decimal()` and raises a row error.
+      Resolved with exact mixed-number fraction parsing and corpus coverage.
 - [ ] **Excel serial dates rejected.**
       `transactions/sales-messy-dates-mixed.csv`. A serial like `45717` fails
       `Date.parse` and raises "is not a readable date" rather than being

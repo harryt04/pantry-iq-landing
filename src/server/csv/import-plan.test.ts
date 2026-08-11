@@ -89,6 +89,33 @@ describe('CSV import planning', () => {
     })
   })
 
+  it('parses mixed-number fractions as exact decimal quantities', () => {
+    const plan = buildCsvImportPlan({
+      importType: 'inventory',
+      mapping: {
+        Date: 'countedAt',
+        Item: 'rawItemName',
+        Qty: 'qty',
+        Unit: 'unit',
+      },
+      items: [salmon],
+      csv: {
+        encoding: 'utf-8',
+        delimiter: ',',
+        hasHeader: true,
+        columns: ['Date', 'Item', 'Qty', 'Unit'],
+        rows: [
+          {
+            rowNumber: 2,
+            values: ['2026-08-08', 'Salmon', '3 1/2', 'lb'],
+          },
+        ],
+      },
+    })
+
+    expect(plan.rows[0]?.values.qty).toBe('3.5')
+  })
+
   it('explains unsupported currency-code and percentage formats', () => {
     const buildPlan = (unitCost: string) =>
       buildCsvImportPlan({

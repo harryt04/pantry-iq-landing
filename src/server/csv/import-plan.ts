@@ -15,6 +15,47 @@ type DecimalSeparator = '.' | ','
 
 const DECIMAL_PATTERN = /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)$/
 
+function exactFractionToDecimal(
+  numerator: bigint,
+  denominator: bigint,
+): Decimal | null {
+  if (denominator === 0n) return null
+
+  const negative = numerator < 0n !== denominator < 0n
+  let reducedNumerator = numerator < 0n ? -numerator : numerator
+  let reducedDenominator = denominator < 0n ? -denominator : denominator
+  const gcd = (left: bigint, right: bigint) => {
+    let a = left
+    let b = right
+    while (b !== 0n) {
+      const remainder = a % b
+      a = b
+      b = remainder
+    }
+    return a
+  }
+  const divisor = gcd(reducedNumerator, reducedDenominator)
+  reducedNumerator /= divisor
+  reducedDenominator /= divisor
+
+  let twos = 0
+  let fives = 0
+  while (reducedDenominator % 2n === 0n) {
+    reducedDenominator /= 2n
+    twos += 1
+  }
+  while (reducedDenominator % 5n === 0n) {
+    reducedDenominator /= 5n
+    fives += 1
+  }
+  if (reducedDenominator !== 1n) return null
+
+  const scale = Math.max(twos, fives)
+  const digits =
+    reducedNumerator * 2n ** BigInt(scale - twos) * 5n ** BigInt(scale - fives)
+  return { digits: negative ? -digits : digits, scale }
+}
+
 function decimal(
   value: string,
   decimalSeparator: DecimalSeparator = '.',
@@ -27,6 +68,19 @@ function decimal(
     cleaned = cleaned.replaceAll('.', '').replace(',', '.')
   } else {
     cleaned = cleaned.replaceAll(',', '')
+  }
+  const mixed = cleaned.match(/^([+-]?\d+)\s+(\d+)\s*\/\s*(\d+)$/)
+  if (mixed) {
+    const [, wholeText, numeratorText, denominatorText] = mixed
+    const whole = BigInt(wholeText ?? '0')
+    const numerator = BigInt(numeratorText ?? '0')
+    const denominator = BigInt(denominatorText ?? '0')
+    const sign = whole < 0n ? -1n : 1n
+    const absoluteWhole = whole < 0n ? -whole : whole
+    return exactFractionToDecimal(
+      sign * (absoluteWhole * denominator + numerator),
+      denominator,
+    )
   }
   if (!DECIMAL_PATTERN.test(cleaned)) return null
   const negative = cleaned.startsWith('-')
