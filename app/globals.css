@@ -3875,7 +3875,7 @@ body {
   grid-row: 2;
 }
 
-.menu-matrix-cell h3 {
+.menu-matrix-cell h2 {
   font-size: var(--text-lg);
   margin: 0;
 }

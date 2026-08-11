@@ -150,6 +150,33 @@ async function seedUsageData(
       'each'
     )
   `
+  await client`
+    insert into recipe_cost_history (
+      id,
+      location_id,
+      recipe_id,
+      calculated_at,
+      status,
+      batch_cost,
+      cost_per_output,
+      menu_price,
+      plate_margin,
+      food_cost_percentage,
+      evidence
+    ) values (
+      ${randomUUID()},
+      ${fixture.locationId},
+      ${recipeId},
+      ${usageEnd.toISOString()},
+      'complete',
+      '1.00',
+      '1.00',
+      '10.00',
+      '9.00',
+      '10.00',
+      ${JSON.stringify({ source: 'e2e-fixture' })}::jsonb
+    )
+  `
 
   if (fixture.sales.length >= 365) {
     const beginning = new Date(usageEnd)

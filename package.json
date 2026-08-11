@@ -26,7 +26,7 @@
     "test:integration": "TESTCONTAINERS_ENABLED=1 REQUIRE_INTEGRATION_DB=1 vitest run tests/integration --no-file-parallelism",
     "test:a11y": "env -u NO_COLOR playwright test tests/accessibility",
     "test:charts": "env -u NO_COLOR playwright test tests/charts/greyscale.spec.ts",
-    "test:e2e": "env -u NO_COLOR PANTRYIQ_E2E=1 playwright test tests/e2e/critical-path.spec.ts tests/e2e/returning-user.spec.ts tests/e2e/staffing.spec.ts tests/e2e/usage.spec.ts",
+    "test:e2e": "env -u NO_COLOR PANTRYIQ_E2E=1 playwright test tests/e2e/critical-path.spec.ts tests/e2e/returning-user.spec.ts tests/e2e/staffing.spec.ts tests/e2e/usage.spec.ts tests/e2e/menu-engineering.spec.ts",
     "test:ui": "env -u NO_COLOR PANTRYIQ_E2E=1 playwright test tests/ui --project=ui --pass-with-no-tests",
     "test:watch": "vitest",
     "db:generate": "drizzle-kit generate",

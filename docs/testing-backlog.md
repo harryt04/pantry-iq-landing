@@ -446,9 +446,12 @@ Percentages below are line coverage measured 2026-08-10.
       `menu/usage-variance-query.ts` 0%. (Codex, iteration 57) Added seeded
       full-year and short-history browser coverage for calculated variance,
       waste attribution, exclusions, and the explicit missing-count state.
-- [ ] `/menu-engineering` — the popularity and margin matrix. View 225 lines at
+- [x] `/menu-engineering` — the popularity and margin matrix. View 225 lines at
       0%, `menu/menu-engineering-query.ts` 0%. It sits outside the `(app)`
-      route group; assert the shell still renders consistently.
+      route group; assert the shell still renders consistently. (Codex,
+      iteration 58) Added seeded full-year calculated-matrix coverage, including
+      printed quadrant and contribution figures plus the missing-margin
+      exclusion, and a short-history insufficient-data state.
 - [ ] `/recipes` — also outside `(app)`. Create a recipe, add ingredients,
       save, reload, assert it persisted.
 - [ ] `/portfolio` — the rollup across both seeded locations.

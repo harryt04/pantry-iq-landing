@@ -179,6 +179,7 @@ pattern to copy.
 | [`e2e/returning-user.spec.ts`](../tests/e2e/returning-user.spec.ts) | Sign in → switch location → open chat → export CSV over HTTP |
 | [`e2e/staffing.spec.ts`](../tests/e2e/staffing.spec.ts) | Full-year labor comparisons and demand forecast; 14-day insufficient-history state |
 | [`e2e/usage.spec.ts`](../tests/e2e/usage.spec.ts) | Full-year usage variance, waste attribution, and exclusions; 14-day missing-inventory-count state |
+| [`e2e/menu-engineering.spec.ts`](../tests/e2e/menu-engineering.spec.ts) | Full-year calculated popularity and margin matrix with printed quadrant/contribution values and missing-margin exclusion; 14-day insufficient-sales-history state |
 | [`ui/fixtures/mock-api.ts`](../tests/ui/fixtures/mock-api.ts) | Reusable scenario-keyed `page.route()` responses for mocked UI flows across chat, locations, recipes, items, and reconciliation |
 | [`accessibility/landing.spec.ts`](../tests/accessibility/landing.spec.ts) | Axe on `/`, `/design/gallery`, `/design/tokens` in both themes; keyboard focus; 44px touch targets; 16px mobile type; reduced motion |
 | [`accessibility/real-data.spec.ts`](../tests/accessibility/real-data.spec.ts) | Authenticated axe and grayscale screenshot sweeps across ten full-year-data screens in both themes at a mobile viewport; the dependent seed setup supplies real PostgreSQL rows and location visibility |
