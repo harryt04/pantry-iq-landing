@@ -140,7 +140,8 @@ wall-clock budget.
       Covered all seven inventory fixtures through the authenticated `/import` route, including shelf-life and fractional quantities, normalized item names, new-item resolution, snapshot deduplication isolation, and the expected blank-quantity error.
 - [x] Batch 7 — `labor/` fixtures 1–6 (Codex, iteration 13)
       Covered all six labor fixtures through the authenticated `/import` route, including vendor-specific mappings, scheduled-only and actual-only shifts, open shifts, successful commits, and the expected missing-hours error.
-- [ ] Batch 8 — `malformed/` fixtures 1–8
+- [x] Batch 8 — `malformed/` fixtures 1–8 (Codex, iteration 14)
+      Covered all eight malformed fixtures through the authenticated `/import` route, including parser warnings, safe upload/commit errors, item resolution, and successful commits.
 - [ ] Batch 9 — `security/` fixtures 1–5
 
 ---

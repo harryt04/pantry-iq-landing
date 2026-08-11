@@ -345,6 +345,70 @@ const laborBatchFixtures = [
   },
 ] as const
 
+const malformedBatchFixtures = [
+  {
+    filename: 'ragged-column-counts.csv',
+    columns: ['Date', 'Item Name', 'Qty', 'Total Revenue', 'Column 5'],
+    rows: 4,
+    outcome: 'error',
+    error: 'different number of columns than the header',
+    importError: 'map total revenue or unit price',
+  },
+  {
+    filename: 'quotes-unterminated.csv',
+    columns: ['Date', 'Item Name', 'Qty', 'Total Revenue'],
+    rows: 1,
+    outcome: 'error',
+    error: "had a quote I couldn't read",
+    importError: 'The import could not be completed. Nothing was changed.',
+  },
+  {
+    filename: 'quotes-embedded-newlines.csv',
+    columns: ['Date', 'Item Name', 'Qty', 'Total Revenue'],
+    rows: 2,
+    outcome: 'success',
+    importedRows: 2,
+    unresolvedItems: 1,
+  },
+  {
+    filename: 'quotes-escaped-doubled.csv',
+    columns: ['Date', 'Item Name', 'Qty', 'Total Revenue'],
+    rows: 2,
+    outcome: 'success',
+    importedRows: 2,
+    unresolvedItems: 1,
+  },
+  {
+    filename: 'blank-lines-and-trailing-whitespace.csv',
+    columns: ['Date', 'Item Name', 'Qty', 'Total Revenue'],
+    rows: 2,
+    outcome: 'success',
+    importedRows: 2,
+  },
+  {
+    filename: 'header-only-no-rows.csv',
+    columns: ['Date', 'Item Name', 'Qty', 'Total Revenue'],
+    rows: 0,
+    outcome: 'success',
+    importedRows: 0,
+  },
+  {
+    filename: 'single-column-no-delimiter.csv',
+    columns: ['Column 1'],
+    rows: 1,
+    outcome: 'rejected',
+    error: 'This file could not be processed.',
+  },
+  {
+    filename: 'trailing-totals-row.csv',
+    columns: ['Date', 'Item Name', 'Qty', 'Total Revenue'],
+    rows: 4,
+    outcome: 'error',
+    error: "had a date I couldn't read",
+    importError: 'item name is required',
+  },
+] as const
+
 async function signInOrSignUp(page: Page) {
   const email = process.env.TEST_USER_EMAIL
   const configuredPassword = process.env.TEST_USER_PASSWORD
@@ -380,14 +444,18 @@ async function createTestLocation(page: Page) {
   return body.location!.id
 }
 
-async function seedInventoryItems(page: Page, locationId: string) {
-  for (const displayName of [
+async function seedInventoryItems(
+  page: Page,
+  locationId: string,
+  displayNames = [
     'Salmon Fillet',
     'House Salad',
     'Tomato Soup',
     'Bubble Tea',
     'Burger',
-  ]) {
+  ],
+) {
+  for (const displayName of displayNames) {
     const response = await page.request.post(
       `/api/manual-entry?locationId=${locationId}`,
       {
@@ -982,6 +1050,101 @@ test('imports the labor corpus batch through /import', async ({ page }) => {
         await page.getByRole('button', { name: 'Import now' }).click()
         await expect(page.locator('.app-page__status')).toContainText(
           `${fixture.rows} rows imported.`,
+        )
+      })
+    } finally {
+      const response = await page.request.delete(`/api/locations/${locationId}`)
+      expect(response.status()).toBe(204)
+    }
+  }
+})
+
+test('imports the malformed CSV corpus batch through /import', async ({
+  page,
+}) => {
+  test.setTimeout(180_000)
+  await signInOrSignUp(page)
+
+  for (const fixture of malformedBatchFixtures) {
+    const locationId = await createTestLocation(page)
+    try {
+      await test.step(`checks ${fixture.filename}`, async () => {
+        if (fixture.outcome === 'error')
+          await seedInventoryItems(page, locationId, [
+            'Salmon Fillet',
+            'House Salad',
+            'Tomato Soup',
+          ])
+        else if (
+          fixture.outcome === 'success' &&
+          fixture.rows > 0 &&
+          (fixture.filename === 'quotes-embedded-newlines.csv' ||
+            fixture.filename === 'quotes-escaped-doubled.csv' ||
+            fixture.filename === 'blank-lines-and-trailing-whitespace.csv')
+        )
+          await seedInventoryItems(page, locationId, [
+            'Salmon Fillet',
+            'House Salad',
+          ])
+        await page.goto(`/import?locationId=${locationId}`)
+        await page.locator('#import-type').selectOption('transactions')
+        await page
+          .locator('#csv-file')
+          .setInputFiles(
+            path.resolve('tests/fixtures/csv/malformed', fixture.filename),
+          )
+        await page.getByRole('button', { name: 'Upload CSV' }).click()
+
+        if (fixture.outcome === 'rejected') {
+          await expect(page.locator('p[role="alert"]')).toContainText(
+            fixture.error,
+          )
+          await expect(page.locator('#csv-preview-title')).toHaveCount(0)
+          return
+        }
+
+        await expect(page.locator('#csv-preview-title')).toBeVisible()
+        await expect(
+          page.locator('.csv-preview .app-page__help').first(),
+        ).toContainText(
+          `${fixture.rows} rows · ${fixture.columns.length} columns`,
+        )
+        expect(
+          await page.locator('.csv-preview thead th').allTextContents(),
+        ).toEqual(fixture.columns)
+
+        if ('error' in fixture && fixture.error) {
+          await expect(page.locator('.csv-preview')).toContainText(
+            fixture.error,
+          )
+        }
+
+        await reviewMapping(page)
+        await expect(page.locator('.csv-mapping')).toContainText(
+          /Mapping reviewed|All columns matched|reused your last mapping/,
+        )
+
+        if (fixture.outcome === 'error') {
+          await expect(page.locator('p[role="alert"]')).toContainText(
+            fixture.importError,
+          )
+          return
+        }
+
+        if ('unresolvedItems' in fixture && fixture.unresolvedItems) {
+          await expect(page.locator('.csv-item-resolution')).toContainText(
+            `${fixture.unresolvedItems} unresolved item${fixture.unresolvedItems === 1 ? '' : 's'} remaining`,
+          )
+        }
+        await resolveNewItems(page)
+        await expect(
+          page
+            .locator('.csv-import-confirmation')
+            .getByRole('heading', { name: /Ready to import/ }),
+        ).toBeVisible()
+        await page.getByRole('button', { name: 'Import now' }).click()
+        await expect(page.locator('.app-page__status')).toContainText(
+          `${fixture.importedRows} rows imported.`,
         )
       })
     } finally {
