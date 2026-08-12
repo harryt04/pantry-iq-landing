@@ -58,7 +58,8 @@ function routeFetch(overrides: Record<string, unknown> = {}) {
     }
     if (url === '/api/locations' && method === 'POST') {
       return jsonResponse(overrides.create ?? { location: LOCATION }, {
-        status: 201,
+        ok: (overrides.createOk as boolean | undefined) ?? true,
+        status: (overrides.createStatus as number | undefined) ?? 201,
       })
     }
     return jsonResponse({})
@@ -87,6 +88,31 @@ describe('location manager', () => {
     render(<LocationManager />)
 
     expect(await screen.findByText('North')).toBeInTheDocument()
+  })
+
+  it('surfaces a duplicate-name conflict without pretending the location was added', async () => {
+    routeFetch({
+      create: { error: 'A location with this name already exists.' },
+      createOk: false,
+      createStatus: 409,
+    })
+    render(<LocationManager />)
+
+    await screen.findByText('North')
+    await userEvent.type(screen.getByLabelText('Location name'), 'North')
+    await userEvent.click(screen.getByRole('button', { name: 'Add location' }))
+
+    expect(
+      await screen.findByText('A location with this name already exists.'),
+    ).toBeInTheDocument()
+    expect(screen.getAllByText('North')).toHaveLength(1)
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/locations',
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({ name: 'North', address: '' }),
+      }),
+    )
   })
 
   it('states exactly what a delete will destroy', async () => {

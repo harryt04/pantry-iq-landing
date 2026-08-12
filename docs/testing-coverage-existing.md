@@ -19,7 +19,7 @@ figure is higher.
 | Vitest files | 111 |
 | Vitest cases | 584 statically, more after `.each` expansion |
 | Playwright specs | 12 files, 14 cases |
-| Line coverage | 76.04% with a database, 65.98% without |
+| Line coverage | 76.08% with a database, 65.98% without |
 
 ---
 
@@ -139,7 +139,10 @@ marketing files.
 [`manual-entry-form`](../components/import/manual-entry-form.dom.test.tsx) —
 15 cases covering all entry types, item creation, line management, and
 loading/save failure surfaces,
-[`location-manager`](../components/locations/location-manager.dom.test.tsx),
+[`location-manager`](../components/locations/location-manager.dom.test.tsx) —
+7 cases covering location listing, duplicate-name conflicts, deletion summary
+loading, explicit delete confirmation, cancel-without-delete, successful
+deletion, and failed deletion,
 [`recipe-builder`](../components/recipes/recipe-builder.dom.test.tsx),
 [`account-settings`](../components/settings/account-settings.dom.test.tsx),
 [`item-master`](../components/settings/item-master.dom.test.tsx).
@@ -262,8 +265,8 @@ assertion to make a test pass — that rule outranks everything else in
 
 Run a single file with `pnpm test path/to/file.test.ts`.
 
-Coverage thresholds in [`vitest.config.ts`](../vitest.config.ts) are 74.04
-statements, 74.04 lines, 75.73 branches, and 81.49 functions, and apply
+Coverage thresholds in [`vitest.config.ts`](../vitest.config.ts) are 74.08
+statements, 74.08 lines, 75.73 branches, and 81.66 functions, and apply
 **only** when a database is reachable. Integration suites carry roughly ten
 points, so gating a laptop without Docker would fail for no reason. CI always
 sets `TEST_DATABASE_URL`, so CI is always gated.

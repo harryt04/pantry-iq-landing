@@ -46,9 +46,9 @@ it. `components/ui/**` is vendored and out of scope.
 Exit gate for every item: `pnpm prettify`, then `pnpm ci` until green.
 
 Then ratchet the coverage gate. [`vitest.config.ts`](../vitest.config.ts) holds
-  thresholds at 74.04 statements, 74.04 lines, 75.73 branches, and 81.49
-  functions against 76.04% statements, 76.04% lines, 77.73% branches, and
-  83.49% functions measured 2026-08-11. Re-measure with
+  thresholds at 74.08 statements, 74.08 lines, 75.73 branches, and 81.66
+  functions against 76.08% statements, 76.08% lines, 77.62% branches, and
+  83.66% functions measured 2026-08-11. Re-measure with
 `pnpm ci:tests` and raise each threshold to the new number minus two. Never
 lower one to make a build pass. Browser tests do not feed the v8 report, so
 Loops I, J, and L will not move the number. That is expected, not a failure.
@@ -523,8 +523,10 @@ item below must intercept it. A browser test may never bill an LLM call.
       conflict, then reject one. (Codex, iteration 71) Added mocked browser
       coverage for authority selection clearing a resolved overlap and a
       rejected save preserving the unresolved conflict and readable error.
-- [ ] Location manager (`location-manager.tsx`, 67.1%): duplicate-name 409,
-      the delete confirmation, and the cancel path.
+- [x] Location manager (`location-manager.tsx`, 67.1%): duplicate-name 409,
+      the delete confirmation, and the cancel path. (Codex, iteration 72)
+      Added a DOM regression for the 409 duplicate-name response; existing
+      behavioral cases cover the destructive confirmation and cancel paths.
 - [ ] Auth form (`auth-form.tsx`, 0%): wrong password, unknown email, and an
       already-registered email. No message may disclose whether an account
       exists.
