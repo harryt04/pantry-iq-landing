@@ -531,9 +531,11 @@ item below must intercept it. A browser test may never bill an LLM call.
       already-registered email. No message may disclose whether an account
       exists. (Codex, iteration 73 — mocked browser coverage asserts one
       generic failure for distinct sign-in and sign-up backend errors.)
-- [ ] Every screen at 375×812 and in dark theme. Colour is never load-bearing
+- [x] Every screen at 375×812 and in dark theme. Colour is never load-bearing
       and the greyscale check is a merge gate, but only `/design/gallery` is
-      checked today.
+      checked today. (Codex, iteration 74) Added a seeded browser sweep for
+      all 17 page routes, asserting the exact mobile viewport, dark theme, and
+      no page-level horizontal overflow.
 
 ---
 

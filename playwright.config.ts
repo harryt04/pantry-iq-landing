@@ -64,7 +64,10 @@ export default defineConfig({
     {
       name: 'real-data',
       testDir: './tests',
-      testMatch: 'accessibility/real-data.spec.ts',
+      testMatch: [
+        'accessibility/real-data.spec.ts',
+        'accessibility/mobile-dark.spec.ts',
+      ],
       dependencies: ['setup'],
       use: { ...devices['Desktop Chrome'], storageState: authFile },
     },

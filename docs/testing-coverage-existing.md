@@ -197,6 +197,7 @@ pattern to copy.
 | [`ui/auth-form.spec.ts`](../tests/ui/auth-form.spec.ts) | Mocked wrong-password, unknown-email, and already-registered-email failures; all use generic account-safe copy |
 | [`accessibility/landing.spec.ts`](../tests/accessibility/landing.spec.ts) | Axe on `/`, `/design/gallery`, `/design/tokens` in both themes; keyboard focus; 44px touch targets; 16px mobile type; reduced motion |
 | [`accessibility/real-data.spec.ts`](../tests/accessibility/real-data.spec.ts) | Authenticated axe and grayscale screenshot sweeps across ten full-year-data screens in both themes at a mobile viewport; the dependent seed setup supplies real PostgreSQL rows and location visibility |
+| [`accessibility/mobile-dark.spec.ts`](../tests/accessibility/mobile-dark.spec.ts) | Authenticated seeded sweep across all 17 page routes at exactly 375×812 in dark theme, with route heading and page-overflow assertions |
 | [`charts/greyscale.spec.ts`](../tests/charts/greyscale.spec.ts) | `/design/gallery` desaturated at 375×900; bars keep pattern fills, lines keep dash patterns |
 
 The e2e and UI projects load the shared owner storage state produced by the

@@ -1289,6 +1289,15 @@ body {
   }
 }
 
+@media (max-width: 760px) {
+  .portfolio-summary__heading,
+  .portfolio-section-heading {
+    align-items: start;
+    display: grid;
+    gap: var(--space-3);
+  }
+}
+
 .portfolio-summary__heading,
 .portfolio-section-heading {
   align-items: end;
@@ -1333,7 +1342,9 @@ body {
   border: 1px solid var(--border);
   border-radius: var(--radius-surface);
   max-width: 100%;
+  min-width: 0;
   overflow-x: auto;
+  width: 100%;
 }
 
 .portfolio-table {
@@ -2072,7 +2083,9 @@ body {
   border-radius: var(--radius-surface);
   font: inherit;
   min-height: 48px;
+  max-width: 100%;
   padding: var(--space-2);
+  width: 100%;
 }
 
 .app-page__help,
