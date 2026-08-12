@@ -53,3 +53,48 @@ test.describe('CSV upload failure paths', () => {
     await expect(page.getByRole('button', { name: 'Import now' })).toBeEnabled()
   })
 })
+
+test.describe('CSV mapping review', () => {
+  test('saves a changed mapping and reuses it for the next upload', async ({
+    page,
+    mockApi,
+  }) => {
+    await mockApi({ mappingReview: true })
+    await page.goto(`/import?locationId=${fullYearLocationFixture.locationId}`)
+
+    const csv = {
+      name: 'sales.csv',
+      mimeType: 'text/csv',
+      buffer: Buffer.from('date,item,Quantity\n2026-08-01,salmon,2\n'),
+    }
+
+    await page.getByLabel('CSV file').setInputFiles(csv)
+    await page.getByRole('button', { name: 'Upload CSV' }).click()
+
+    await expect(
+      page.getByRole('heading', {
+        name: "Let's place the uncertain columns.",
+      }),
+    ).toBeVisible()
+    await page.locator('#mapping-field').selectOption('totalRevenue')
+    await page.getByRole('button', { name: 'Review mapping' }).click()
+
+    await expect(
+      page.getByRole('heading', { name: 'Mapping reviewed.' }),
+    ).toBeVisible()
+    await expect(page.locator('p.app-page__status')).toContainText(
+      'Mapping saved. Checking item names',
+    )
+
+    await page.getByLabel('CSV file').setInputFiles(csv)
+    await page.getByRole('button', { name: 'Upload CSV' }).click()
+
+    await expect(
+      page.getByRole('heading', { name: 'We reused your last mapping.' }),
+    ).toBeVisible()
+    await page.getByRole('button', { name: 'Change mapping' }).click()
+    await page.getByRole('button', { name: 'Next column' }).click()
+    await page.getByRole('button', { name: 'Next column' }).click()
+    await expect(page.locator('#mapping-field')).toHaveValue('totalRevenue')
+  })
+})

@@ -18,7 +18,10 @@ import type {
   ReconciliationConflict,
   refreshLocationReconciliation,
 } from '@/src/server/ingestion/reconciliation'
-import type { CsvMappingDetection } from '@/src/server/csv/mapping'
+import type {
+  CanonicalField,
+  CsvMappingDetection,
+} from '@/src/server/csv/mapping'
 import type { CsvPreview } from '@/src/server/csv/parser'
 
 export const MOCK_LOCATION_ID = '00000000-0000-4000-8000-000000000001'
@@ -49,8 +52,13 @@ export type MockApiEndpoint =
   | 'uploadMapping'
   | 'uploadCommit'
 
-export type MockApiScenario =
-  MockApiOutcome | Partial<Record<MockApiEndpoint, MockApiOutcome>>
+type MockApiScenarioOptions = Partial<
+  Record<MockApiEndpoint, MockApiOutcome>
+> & {
+  mappingReview?: boolean
+}
+
+export type MockApiScenario = MockApiOutcome | MockApiScenarioOptions
 
 type LocationRow = Awaited<ReturnType<typeof listLocations>>[number]
 type InventoryItemRow = Awaited<ReturnType<typeof listInventoryItems>>[number]
@@ -174,6 +182,9 @@ type MockResponseBody =
   | { error: string; summary: MockUploadSummary }
 
 type MockApiInstaller = (scenario?: MockApiScenario) => Promise<void>
+type MockApiState = {
+  savedMapping: Record<string, CanonicalField | null> | null
+}
 
 const responseStatuses: Record<
   Exclude<MockApiOutcome, 'ok' | 'slow'>,
@@ -342,6 +353,42 @@ const uploadPreview = {
   },
 } satisfies CsvPreview & { mapping: CsvMappingDetection }
 
+const mappingReviewPreview = {
+  ...uploadPreview,
+  mapping: {
+    ...uploadPreview.mapping,
+    mapping: {
+      ...uploadPreview.mapping.mapping,
+      Quantity: 'qty' as const,
+    },
+    columns: uploadPreview.mapping.columns.map((column) =>
+      column.sourceColumn === 'Quantity'
+        ? {
+            ...column,
+            targetField: 'qty' as const,
+            confidence: 0.64,
+            band: 'review' as const,
+            evidence: ['number-shaped values'] as string[],
+            candidates: [
+              {
+                field: 'qty' as const,
+                confidence: 0.64,
+                evidence: ['number-shaped values'],
+                prior: false,
+              },
+              {
+                field: 'totalRevenue' as const,
+                confidence: 0.58,
+                evidence: ['number-shaped values'],
+                prior: false,
+              },
+            ],
+          }
+        : column,
+    ),
+  },
+} satisfies CsvPreview & { mapping: CsvMappingDetection }
+
 const uploadItem = {
   id: MOCK_ITEM_ID,
   canonicalName: 'unmatched item',
@@ -396,6 +443,10 @@ function outcomeFor(
   return scenario[endpoint] ?? 'ok'
 }
 
+function isMappingReviewScenario(scenario: MockApiScenario | undefined) {
+  return typeof scenario === 'object' && scenario?.mappingReview === true
+}
+
 function errorBody(outcome: MockApiOutcome): { error: string } {
   switch (outcome) {
     case 'unauthorized':
@@ -447,6 +498,7 @@ async function handleMockRequest(
   page: Page,
   route: Route,
   scenario: MockApiScenario | undefined,
+  state: MockApiState,
 ) {
   const request = route.request()
   const { pathname } = new URL(request.url())
@@ -643,15 +695,41 @@ async function handleMockRequest(
     return
   }
 
-  if (endpoint === 'uploadPreview') {
-    await fulfill(page, route, outcome, { preview: uploadPreview })
+  if (endpoint === 'uploadMapping') {
+    const requestBody = request.postDataJSON() as {
+      mapping?: Record<string, CanonicalField | null>
+    }
+    if (isMappingReviewScenario(scenario) && requestBody.mapping) {
+      state.savedMapping = requestBody.mapping
+    }
+    await fulfill(page, route, outcome, {
+      mapping: state.savedMapping ?? uploadPreview.mapping.mapping,
+    })
     return
   }
 
-  if (endpoint === 'uploadMapping') {
-    await fulfill(page, route, outcome, {
-      mapping: uploadPreview.mapping.mapping,
-    })
+  if (endpoint === 'uploadPreview' && isMappingReviewScenario(scenario)) {
+    const preview = state.savedMapping
+      ? {
+          ...mappingReviewPreview,
+          mapping: {
+            ...mappingReviewPreview.mapping,
+            mapping: state.savedMapping,
+            reused: true,
+            columns: mappingReviewPreview.mapping.columns.map((column) => ({
+              ...column,
+              targetField: (state.savedMapping?.[column.sourceColumn] ??
+                column.targetField) as CanonicalField | null,
+            })),
+          },
+        }
+      : mappingReviewPreview
+    await fulfill(page, route, outcome, { preview })
+    return
+  }
+
+  if (endpoint === 'uploadPreview') {
+    await fulfill(page, route, outcome, { preview: uploadPreview })
     return
   }
 
@@ -677,13 +755,15 @@ async function handleMockRequest(
 
 export const test = base.extend<{ mockApi: MockApiInstaller }>({
   mockApi: async ({ page }, use) => {
+    const state: MockApiState = { savedMapping: null }
     await page.route('**/api/**', (route) =>
-      handleMockRequest(page, route, undefined),
+      handleMockRequest(page, route, undefined, state),
     )
     await use(async (scenario) => {
+      state.savedMapping = null
       await page.unroute('**/api/**')
       await page.route('**/api/**', (route) =>
-        handleMockRequest(page, route, scenario),
+        handleMockRequest(page, route, scenario, state),
       )
     })
   },

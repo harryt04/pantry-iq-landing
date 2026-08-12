@@ -19,7 +19,7 @@ figure is higher.
 | Vitest files | 111 |
 | Vitest cases | 584 statically, more after `.each` expansion |
 | Playwright specs | 12 files, 14 cases |
-| Line coverage | 75.61% with a database, 65.98% without |
+| Line coverage | 76.04% with a database, 65.98% without |
 
 ---
 
@@ -188,7 +188,7 @@ pattern to copy.
 | [`e2e/returning-user.spec.ts`](../tests/e2e/returning-user.spec.ts) | Returning-user location switching and export; authenticated account-page create, rename, delete confirmation, and post-delete state |
 | [`ui/fixtures/mock-api.ts`](../tests/ui/fixtures/mock-api.ts) | Reusable scenario-keyed `page.route()` responses for mocked UI flows across chat, locations, recipes, items, and reconciliation |
 | [`ui/chat.spec.ts`](../tests/ui/chat.spec.ts) | Mocked chat question submission with the five-part grounded answer, evidence affordance, and explicit prediction limit; assumption recalculation and conversation-only override round trip; 500/503 failure messages preserve the submitted question |
-| [`ui/import.spec.ts`](../tests/ui/import.spec.ts) | Mocked CSV upload storage outage and final unresolved-item commit conflict, including retryable upload state and preserved import state |
+| [`ui/import.spec.ts`](../tests/ui/import.spec.ts) | Mocked CSV upload storage outage and final unresolved-item commit conflict, plus mapping review persistence across uploads, including retryable upload state and preserved import state |
 | [`ui/auth-recovery.spec.ts`](../tests/ui/auth-recovery.spec.ts) | Mocked forgot-password and reset-password form submissions, authentication-only confirmation copy, and Better Auth endpoint requests |
 | [`accessibility/landing.spec.ts`](../tests/accessibility/landing.spec.ts) | Axe on `/`, `/design/gallery`, `/design/tokens` in both themes; keyboard focus; 44px touch targets; 16px mobile type; reduced motion |
 | [`accessibility/real-data.spec.ts`](../tests/accessibility/real-data.spec.ts) | Authenticated axe and grayscale screenshot sweeps across ten full-year-data screens in both themes at a mobile viewport; the dependent seed setup supplies real PostgreSQL rows and location visibility |
@@ -261,8 +261,8 @@ assertion to make a test pass — that rule outranks everything else in
 
 Run a single file with `pnpm test path/to/file.test.ts`.
 
-Coverage thresholds in [`vitest.config.ts`](../vitest.config.ts) are 73.05
-statements, 73.05 lines, 75.35 branches, and 80.48 functions, and apply
+Coverage thresholds in [`vitest.config.ts`](../vitest.config.ts) are 74.04
+statements, 74.04 lines, 75.73 branches, and 81.49 functions, and apply
 **only** when a database is reachable. Integration suites carry roughly ten
 points, so gating a laptop without Docker would fail for no reason. CI always
 sets `TEST_DATABASE_URL`, so CI is always gated.

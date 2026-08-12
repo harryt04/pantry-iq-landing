@@ -46,7 +46,9 @@ it. `components/ui/**` is vendored and out of scope.
 Exit gate for every item: `pnpm prettify`, then `pnpm ci` until green.
 
 Then ratchet the coverage gate. [`vitest.config.ts`](../vitest.config.ts) holds
-  thresholds at 73.61/73.61/75.44/80.49 against 75.61% statements, 77.44% branches, 82.49% functions, and 75.61% lines measured 2026-08-11. Re-measure with
+  thresholds at 74.04 statements, 74.04 lines, 75.73 branches, and 81.49
+  functions against 76.04% statements, 76.04% lines, 77.73% branches, and
+  83.49% functions measured 2026-08-11. Re-measure with
 `pnpm ci:tests` and raise each threshold to the new number minus two. Never
 lower one to make a build pass. Browser tests do not feed the v8 report, so
 Loops I, J, and L will not move the number. That is expected, not a failure.
@@ -507,8 +509,10 @@ item below must intercept it. A browser test may never bill an LLM call.
       that leaves upload retryable and an unresolved-item conflict on final
       commit that preserves the import state.
       for unresolved items. `csv-upload-form.tsx` is 60.9%.
-- [ ] CSV mapping review (`csv-mapping-review.tsx`, 34.7%): change a detected
-      mapping, save, assert it persists into the next upload.
+- [x] CSV mapping review (`csv-mapping-review.tsx`, 34.7%): change a detected
+      mapping, save, assert it persists into the next upload. (Codex, iteration
+      69) Added a mocked browser journey that changes Quantity to Total revenue,
+      saves it, reuploads the same shape, and verifies the reused mapping.
 - [ ] CSV item resolution (`csv-item-resolution.tsx`, 1.1%): all three
       outcomes — match an existing item, create a new one, skip.
 - [ ] Reconciliation review (`reconciliation-review.tsx`, 0%): accept a
