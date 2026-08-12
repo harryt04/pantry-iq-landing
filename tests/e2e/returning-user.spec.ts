@@ -1,5 +1,10 @@
 import { expect, test } from '@playwright/test'
 
+import {
+  foreignAccountLocationId,
+  foreignAccountLocationName,
+} from '../fixtures/pantry'
+
 /**
  * The second end-to-end path, added by the 2026-08-10 testing audit.
  *
@@ -156,4 +161,23 @@ test.describe('account location lifecycle', () => {
       }
     }
   })
+})
+
+test('does not render a foreign account location dashboard', async ({
+  page,
+}) => {
+  await page.goto('/dashboard')
+  await expect(page.getByRole('button', { name: /Sign out/ })).toBeVisible()
+
+  await page.goto(`/dashboard?locationId=${foreignAccountLocationId}`)
+
+  // The server rejects the foreign location before any dashboard component is
+  // rendered. Keep the browser assertion focused on the trust boundary: the
+  // framework's error response must not contain foreign figures.
+  await expect(
+    page.getByText(foreignAccountLocationName, { exact: true }),
+  ).toHaveCount(0)
+  await expect(
+    page.getByRole('heading', { name: 'What is costing you money?' }),
+  ).toHaveCount(0)
 })

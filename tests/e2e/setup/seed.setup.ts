@@ -4,6 +4,8 @@ import path from 'node:path'
 import postgres from 'postgres'
 
 import {
+  foreignAccountLocationFixture,
+  foreignAccountLocationName,
   fullYearLocationFixture,
   type LocationFixture,
   partialDataLocationFixture,
@@ -13,6 +15,7 @@ import { runPrecomputeForLocation } from '../../../src/server/metrics/precompute
 import { integrationDatabaseEnabled } from '../../helpers/test-database'
 
 const authFile = path.resolve('tests/.auth/owner.json')
+const foreignOwnerId = '10000000-0000-4000-8000-000000000011'
 
 function shiftFixtureToRecent(
   fixture: LocationFixture,
@@ -290,10 +293,37 @@ setup('seed the shared owner locations', async ({ page }) => {
       ownerId,
       fixtureLocations: [recentFullYearFixture, recentPartialDataFixture],
     })
+
+    await client`
+      insert into "user" (id, name, email, email_verified)
+      values (
+        ${foreignOwnerId},
+        'Foreign account fixture owner',
+        'foreign-account-fixture@example.invalid',
+        true
+      )
+      on conflict (id) do nothing
+    `
+    const recentForeignFixture = shiftFixtureToRecent(
+      foreignAccountLocationFixture,
+      targetEnd,
+    )
+    await seedDatabase(client, {
+      ownerId: foreignOwnerId,
+      fixtureLocations: [recentForeignFixture],
+    })
+    await client`
+      update locations
+      set name = ${foreignAccountLocationName}
+      where id = ${recentForeignFixture.locationId}
+    `
     await seedUsageData(client, recentFullYearFixture, new Date())
     await seedUsageData(client, recentPartialDataFixture, new Date())
     await seedLaborShifts(client, recentFullYearFixture)
     await runPrecomputeForLocation(fullYearLocationFixture.locationId, {
+      now: targetEnd,
+    })
+    await runPrecomputeForLocation(recentForeignFixture.locationId, {
       now: targetEnd,
     })
 

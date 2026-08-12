@@ -67,3 +67,12 @@ export const fullYearLocationFixture: LocationFixture = {
     qty: String(12 - (week % 4)),
   })),
 }
+
+/** A separate-account fixture used by browser ownership-boundary coverage. */
+export const foreignAccountLocationFixture: LocationFixture = {
+  ...fullYearLocationFixture,
+  locationId: '10000000-0000-4000-8000-000000000012',
+}
+
+export const foreignAccountLocationId = foreignAccountLocationFixture.locationId
+export const foreignAccountLocationName = 'Private foreign account kitchen'

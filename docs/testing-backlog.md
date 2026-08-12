@@ -598,8 +598,11 @@ handler forgets to call it.
       signed Better Auth session covering every owner-scoped route, including
       foreign upload records; also fixed connector status to reject a foreign
       location instead of returning an empty 200 response.
-- [ ] The browser equivalent: sign in as A, open
+- [x] The browser equivalent: sign in as A, open
       `/dashboard?locationId=<B's id>`, assert none of B's figures render.
+      (Codex, iteration 83) Seeded a full-year location for a separate account
+      and verified the authenticated owner’s browser never renders its name or
+      wallet figures.
 
 Verify both by deleting a `requireOwnedLocation` call from one handler. The
 sweep must go red. Restore it.

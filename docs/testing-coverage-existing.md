@@ -18,7 +18,7 @@ figure is higher.
 | --- | --- |
 | Vitest files | 111 |
 | Vitest cases | 588 statically, more after `.each` expansion |
-| Playwright specs | 12 files, 14 cases |
+| Playwright specs | 12 files, 15 cases |
 | Line coverage | 76.08% with a database, 65.98% without |
 
 ---
@@ -183,16 +183,16 @@ pattern to copy.
 | File | Covers |
 | --- | --- |
 | [`e2e/setup/auth.setup.ts`](../tests/e2e/setup/auth.setup.ts) | Creates or signs into the shared owner account and saves `tests/.auth/owner.json` for dependent browser projects |
-| [`e2e/setup/seed.setup.ts`](../tests/e2e/setup/seed.setup.ts) | Seeds the storage-state owner with full-year and partial-history locations, asserting real PostgreSQL counts and authenticated location visibility |
+| [`e2e/setup/seed.setup.ts`](../tests/e2e/setup/seed.setup.ts) | Seeds the storage-state owner with full-year and partial-history locations plus a precomputed full-year location owned by a separate account, asserting real PostgreSQL counts and authenticated location visibility |
 | [`e2e/critical-path.spec.ts`](../tests/e2e/critical-path.spec.ts) | Sign up → create location → import a CSV → resolve an item → commit → dashboard; transaction corpus batches 1–3, purchase-order batches 1–2, inventory batch 1, labor batch 1, and malformed batch 1 through the authenticated `/import` route |
-| [`e2e/returning-user.spec.ts`](../tests/e2e/returning-user.spec.ts) | Sign in → switch location → open chat → export CSV over HTTP |
+| [`e2e/returning-user.spec.ts`](../tests/e2e/returning-user.spec.ts) | Sign in → switch location → open chat → export CSV over HTTP; foreign-account dashboard figures never render |
 | [`e2e/staffing.spec.ts`](../tests/e2e/staffing.spec.ts) | Full-year labor comparisons and demand forecast; 14-day insufficient-history state |
 | [`e2e/usage.spec.ts`](../tests/e2e/usage.spec.ts) | Full-year usage variance, waste attribution, and exclusions; 14-day missing-inventory-count state |
 | [`e2e/menu-engineering.spec.ts`](../tests/e2e/menu-engineering.spec.ts) | Full-year calculated popularity and margin matrix with printed quadrant/contribution values and missing-margin exclusion; 14-day insufficient-sales-history state |
 | [`e2e/recipes.spec.ts`](../tests/e2e/recipes.spec.ts) | Full-year recipe creation with an ingredient, save/reload persistence, and edit-state verification |
 | [`e2e/portfolio.spec.ts`](../tests/e2e/portfolio.spec.ts) | Full-year metric rollup across the seeded full-year and short-history locations, preserving each location's data status |
 | [`e2e/settings.spec.ts`](../tests/e2e/settings.spec.ts) | Full-year item-master shelf-life edit, save confirmation, and persistence after reload |
-| [`e2e/returning-user.spec.ts`](../tests/e2e/returning-user.spec.ts) | Returning-user location switching and export; authenticated account-page create, rename, delete confirmation, and post-delete state |
+| [`e2e/returning-user.spec.ts`](../tests/e2e/returning-user.spec.ts) | Returning-user location switching and export; authenticated account-page create, rename, delete confirmation, and post-delete state; foreign-account dashboard figures never render |
 | [`ui/fixtures/mock-api.ts`](../tests/ui/fixtures/mock-api.ts) | Reusable scenario-keyed `page.route()` responses for mocked UI flows across chat, locations, recipes, items, and reconciliation |
 | [`ui/chat.spec.ts`](../tests/ui/chat.spec.ts) | Mocked chat question submission with the five-part grounded answer, evidence affordance, and explicit prediction limit; assumption recalculation and conversation-only override round trip; 500/503 failure messages preserve the submitted question |
 | [`ui/import.spec.ts`](../tests/ui/import.spec.ts) | Mocked CSV upload storage outage and final unresolved-item commit conflict, mapping review persistence across uploads, and item-resolution create-new/blocked states, including retryable upload state and preserved import state |
