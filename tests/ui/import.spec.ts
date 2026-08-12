@@ -1,4 +1,4 @@
-import { expect, test } from './fixtures/mock-api'
+import { MOCK_UPLOAD_ID, expect, test } from './fixtures/mock-api'
 
 import { fullYearLocationFixture } from '../fixtures/pantry'
 
@@ -96,5 +96,85 @@ test.describe('CSV mapping review', () => {
     await page.getByRole('button', { name: 'Next column' }).click()
     await page.getByRole('button', { name: 'Next column' }).click()
     await expect(page.locator('#mapping-field')).toHaveValue('totalRevenue')
+  })
+})
+
+test.describe('CSV item resolution', () => {
+  test('creates a new item and uses the category shelf-life suggestion', async ({
+    page,
+    mockApi,
+  }) => {
+    await mockApi({ uploadCommit: 'conflict' })
+    await page.goto(`/import?locationId=${fullYearLocationFixture.locationId}`)
+
+    await page.getByLabel('CSV file').setInputFiles({
+      name: 'sales.csv',
+      mimeType: 'text/csv',
+      buffer: Buffer.from('date,item,quantity\n2026-08-01,house sauce,2\n'),
+    })
+    await page.getByRole('button', { name: 'Upload CSV' }).click()
+
+    await expect(
+      page.getByRole('heading', { name: 'One item needs your call.' }),
+    ).toBeVisible()
+    await page.getByLabel('Canonical name').fill('house sauce')
+    await page.getByLabel('Display name').fill('House sauce')
+    await page.getByLabel('Category (optional)').fill('Seafood')
+    await expect(page.getByText('Suggested: 3 days.')).toBeVisible()
+
+    const resolutionRequest = page.waitForRequest((request) => {
+      if (
+        request.method() !== 'POST' ||
+        !request.url().endsWith(`/api/uploads/${MOCK_UPLOAD_ID}/commit`)
+      )
+        return false
+      return (
+        request.postData()?.includes('"canonicalName":"house sauce"') === true
+      )
+    })
+    await page.getByRole('button', { name: 'Create and use this item' }).click()
+
+    const request = await resolutionRequest
+    const body = request.postDataJSON() as {
+      resolutions: Record<string, unknown>
+    }
+    expect(body.resolutions).toEqual({
+      'unmatched item': {
+        canonicalName: 'house sauce',
+        displayName: 'House sauce',
+        category: 'Seafood',
+        unit: 'each',
+        shelfLifeDays: 3,
+      },
+    })
+    await expect(
+      page.getByRole('heading', { name: 'Ready to import 1 rows.' }),
+    ).toBeVisible()
+    await expect(page.getByText('1 new items will be created.')).toBeVisible()
+  })
+
+  test('keeps import blocked when an unresolved item is left without a choice', async ({
+    page,
+    mockApi,
+  }) => {
+    await mockApi({ uploadCommit: 'conflict' })
+    await page.goto(`/import?locationId=${fullYearLocationFixture.locationId}`)
+
+    await page.getByLabel('CSV file').setInputFiles({
+      name: 'sales.csv',
+      mimeType: 'text/csv',
+      buffer: Buffer.from('date,item,quantity\n2026-08-01,unmatched item,2\n'),
+    })
+    await page.getByRole('button', { name: 'Upload CSV' }).click()
+
+    await expect(
+      page.getByRole('heading', { name: 'One item needs your call.' }),
+    ).toBeVisible()
+    await expect(
+      page.getByRole('heading', { name: 'Ready to import 1 rows.' }),
+    ).toHaveCount(0)
+    await expect(page.getByRole('button', { name: 'Import now' })).toHaveCount(
+      0,
+    )
   })
 })

@@ -513,8 +513,12 @@ item below must intercept it. A browser test may never bill an LLM call.
       mapping, save, assert it persists into the next upload. (Codex, iteration
       69) Added a mocked browser journey that changes Quantity to Total revenue,
       saves it, reuploads the same shape, and verifies the reused mapping.
-- [ ] CSV item resolution (`csv-item-resolution.tsx`, 1.1%): all three
-      outcomes — match an existing item, create a new one, skip.
+- [x] CSV item resolution (`csv-item-resolution.tsx`, 1.1%): match an existing
+      item, create a new one, and keep import blocked until a choice is made.
+      (Codex, iteration 70) Existing-item matching remains covered by the
+      unresolved commit flow; added mocked browser coverage for new-item
+      creation and the blocked state. The product contract requires every
+      unmatched item to be resolved, so there is no skip outcome to test.
 - [ ] Reconciliation review (`reconciliation-review.tsx`, 0%): accept a
       conflict, then reject one.
 - [ ] Location manager (`location-manager.tsx`, 67.1%): duplicate-name 409,

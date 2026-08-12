@@ -549,7 +549,17 @@ async function handleMockRequest(
       return
     }
     if (Object.keys(requestBody.resolutions ?? {}).length > 0) {
-      await fulfill(page, route, 'ok', { summary: readyUploadSummary })
+      const hasNewItem = Object.values(requestBody.resolutions ?? {}).some(
+        (resolution) =>
+          typeof resolution === 'object' &&
+          resolution !== null &&
+          'canonicalName' in resolution,
+      )
+      await fulfill(page, route, 'ok', {
+        summary: hasNewItem
+          ? { ...readyUploadSummary, newItems: 1, linkedItems: 0 }
+          : readyUploadSummary,
+      })
       return
     }
     await fulfill(
