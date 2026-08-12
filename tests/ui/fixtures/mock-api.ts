@@ -18,10 +18,13 @@ import type {
   ReconciliationConflict,
   refreshLocationReconciliation,
 } from '@/src/server/ingestion/reconciliation'
+import type { CsvMappingDetection } from '@/src/server/csv/mapping'
+import type { CsvPreview } from '@/src/server/csv/parser'
 
 export const MOCK_LOCATION_ID = '00000000-0000-4000-8000-000000000001'
 export const MOCK_ITEM_ID = '00000000-0000-4000-8000-000000000002'
 export const MOCK_RECIPE_ID = '00000000-0000-4000-8000-000000000003'
+export const MOCK_UPLOAD_ID = '00000000-0000-4000-8000-000000000007'
 
 export type MockApiOutcome =
   | 'ok'
@@ -41,6 +44,10 @@ export type MockApiEndpoint =
   | 'recipes'
   | 'items'
   | 'reconciliation'
+  | 'uploads'
+  | 'uploadPreview'
+  | 'uploadMapping'
+  | 'uploadCommit'
 
 export type MockApiScenario =
   MockApiOutcome | Partial<Record<MockApiEndpoint, MockApiOutcome>>
@@ -124,6 +131,31 @@ type ChatOverridePayload = {
   override: NormalizedAssumptionOverride
 }
 
+type MockUploadSummary = {
+  rowsToImport: number
+  rowsImported: number
+  newItems: number
+  linkedItems: number
+  alreadyImported: boolean
+  ready: boolean
+  unmatchedItems: Array<{
+    rawItemName: string
+    normalizedItemName: string
+    reason: 'empty-name' | 'no-exact-match' | 'ambiguous-match'
+    occurrenceCount: number
+    rowNumbers: number[]
+    context: Array<{ rowNumber: number; values: Record<string, string> }>
+  }>
+  items: Array<{
+    id: string
+    canonicalName: string
+    displayName: string
+    category: string | null
+    unit: string
+    isActive?: boolean
+  }>
+}
+
 type MockResponseBody =
   | { error: string }
   | { locations: LocationRow[] }
@@ -135,6 +167,11 @@ type MockResponseBody =
   | { comparison: AssumptionComparison; override: NormalizedAssumptionOverride }
   | { conflicts: ReconciliationRow[] }
   | { conflict: ReconciliationConflict }
+  | { upload: { id: string; filename: string } }
+  | { preview: CsvPreview & { mapping: CsvMappingDetection } }
+  | { mapping: Record<string, string | null> }
+  | { summary: MockUploadSummary }
+  | { error: string; summary: MockUploadSummary }
 
 type MockApiInstaller = (scenario?: MockApiScenario) => Promise<void>
 
@@ -253,6 +290,103 @@ const comparison: AssumptionComparison = {
   calculation: 'deterministic-precompute',
 }
 
+const uploadPreview = {
+  encoding: 'utf-8' as const,
+  delimiter: ',' as const,
+  hasHeader: true,
+  columns: ['Date', 'Item', 'Quantity'],
+  columnCount: 3,
+  rowCount: 1,
+  readableRowCount: 1,
+  previewRows: [
+    { rowNumber: 2, values: ['2026-08-01', 'unmatched item', '2'] },
+  ],
+  problems: [],
+  mapping: {
+    importType: 'transactions' as const,
+    mapping: {
+      Date: 'transactedAt' as const,
+      Item: 'rawItemName' as const,
+      Quantity: 'qty' as const,
+    },
+    reused: false,
+    columns: [
+      {
+        sourceColumn: 'Date',
+        sourceIndex: 0,
+        targetField: 'transactedAt' as const,
+        confidence: 0.98,
+        band: 'auto' as const,
+        evidence: ['header match'],
+        candidates: [],
+      },
+      {
+        sourceColumn: 'Item',
+        sourceIndex: 1,
+        targetField: 'rawItemName' as const,
+        confidence: 0.98,
+        band: 'auto' as const,
+        evidence: ['header match'],
+        candidates: [],
+      },
+      {
+        sourceColumn: 'Quantity',
+        sourceIndex: 2,
+        targetField: 'qty' as const,
+        confidence: 0.98,
+        band: 'auto' as const,
+        evidence: ['header match'],
+        candidates: [],
+      },
+    ],
+  },
+} satisfies CsvPreview & { mapping: CsvMappingDetection }
+
+const uploadItem = {
+  id: MOCK_ITEM_ID,
+  canonicalName: 'unmatched item',
+  displayName: 'Unmatched item',
+  category: null,
+  unit: 'each',
+  isActive: true,
+}
+
+const unresolvedUploadSummary = {
+  rowsToImport: 1,
+  rowsImported: 0,
+  newItems: 0,
+  linkedItems: 0,
+  alreadyImported: false,
+  ready: false,
+  unmatchedItems: [
+    {
+      rawItemName: 'unmatched item',
+      normalizedItemName: 'unmatched item',
+      reason: 'no-exact-match' as const,
+      occurrenceCount: 1,
+      rowNumbers: [2],
+      context: [
+        {
+          rowNumber: 2,
+          values: {
+            Date: '2026-08-01',
+            Item: 'unmatched item',
+            Quantity: '2',
+          },
+        },
+      ],
+    },
+  ],
+  items: [uploadItem],
+}
+
+const readyUploadSummary = {
+  ...unresolvedUploadSummary,
+  linkedItems: 1,
+  ready: true,
+  unmatchedItems: [],
+}
+
 function outcomeFor(
   scenario: MockApiScenario | undefined,
   endpoint: MockApiEndpoint,
@@ -331,7 +465,15 @@ async function handleMockRequest(
                 ? 'items'
                 : pathname === '/api/reconciliation'
                   ? 'reconciliation'
-                  : null
+                  : pathname === '/api/uploads' && request.method() === 'POST'
+                    ? 'uploads'
+                    : /^\/api\/uploads\/[^/]+\/preview$/.test(pathname)
+                      ? 'uploadPreview'
+                      : /^\/api\/uploads\/[^/]+\/mapping$/.test(pathname)
+                        ? 'uploadMapping'
+                        : /^\/api\/uploads\/[^/]+\/commit$/.test(pathname)
+                          ? 'uploadCommit'
+                          : null
 
   if (!endpoint) {
     await route.fallback()
@@ -339,6 +481,37 @@ async function handleMockRequest(
   }
 
   const outcome = outcomeFor(scenario, endpoint)
+  if (endpoint === 'uploadCommit' && outcome === 'conflict') {
+    const requestBody = request.postDataJSON() as {
+      dryRun?: boolean
+      resolutions?: Record<string, unknown>
+    }
+    if (!requestBody.dryRun) {
+      await fulfill(
+        page,
+        route,
+        outcome,
+        { error: 'One or more item names are still unresolved.' },
+        409,
+      )
+      return
+    }
+    if (Object.keys(requestBody.resolutions ?? {}).length > 0) {
+      await fulfill(page, route, 'ok', { summary: readyUploadSummary })
+      return
+    }
+    await fulfill(
+      page,
+      route,
+      outcome,
+      {
+        error: 'One or more item names are still unresolved.',
+        summary: unresolvedUploadSummary,
+      },
+      409,
+    )
+    return
+  }
   if (outcome !== 'ok' && outcome !== 'slow') {
     await fulfill(
       page,
@@ -460,6 +633,30 @@ async function handleMockRequest(
         },
       ],
     })
+    return
+  }
+
+  if (endpoint === 'uploads') {
+    await fulfill(page, route, outcome, {
+      upload: { id: MOCK_UPLOAD_ID, filename: 'sales.csv' },
+    })
+    return
+  }
+
+  if (endpoint === 'uploadPreview') {
+    await fulfill(page, route, outcome, { preview: uploadPreview })
+    return
+  }
+
+  if (endpoint === 'uploadMapping') {
+    await fulfill(page, route, outcome, {
+      mapping: uploadPreview.mapping.mapping,
+    })
+    return
+  }
+
+  if (endpoint === 'uploadCommit') {
+    await fulfill(page, route, outcome, { summary: readyUploadSummary })
     return
   }
 

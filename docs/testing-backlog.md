@@ -502,7 +502,10 @@ item below must intercept it. A browser test may never bill an LLM call.
       validation branch, plus a 400 from `/api/manual-entry` surfacing field
       errors. Added 15 DOM cases for all entry types, item creation, line
       management, loading failures, request failures, and server field errors.
-- [ ] CSV upload: 503 from `/api/uploads` for storage down, and 409 on commit
+- [x] CSV upload: 503 from `/api/uploads` for storage down, and 409 on commit
+      (Codex, iteration 68) Added mocked browser coverage for a storage outage
+      that leaves upload retryable and an unresolved-item conflict on final
+      commit that preserves the import state.
       for unresolved items. `csv-upload-form.tsx` is 60.9%.
 - [ ] CSV mapping review (`csv-mapping-review.tsx`, 34.7%): change a detected
       mapping, save, assert it persists into the next upload.
