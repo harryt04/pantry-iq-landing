@@ -260,11 +260,20 @@ Coolify if either machine's address changes.
 request`**
 
 This is an `@aws-sdk/client-s3` failure, not a MinIO configuration
-problem: the SDK's default flexible-checksum streaming (`aws-chunked`
-trailers) isn't compatible with every self-hosted S3-compatible server.
-The app's `S3Client` already sets `requestChecksumCalculation:
-'WHEN_REQUIRED'` (`src/server/storage/object-storage.ts`) to avoid this —
-if you still hit it after pulling that change, check:
+problem. It has two layers, both already fixed in
+`src/server/storage/object-storage.ts`:
+
+1. The SDK's default flexible-checksum streaming (`aws-chunked` trailers)
+   isn't compatible with every self-hosted S3-compatible server. The
+   `S3Client` sets `requestChecksumCalculation: 'WHEN_REQUIRED'` to avoid
+   it.
+2. Uploads read the incoming file as a stream of unknown length, so a
+   plain `PutObjectCommand` can't set `Content-Length` up front — MinIO
+   rejects that with `MissingContentLength`. The upload path uses `Upload`
+   from `@aws-sdk/lib-storage` instead, which multiparts/streams without
+   needing the length in advance.
+
+If you still hit either error after pulling those changes, check:
 
 - The MinIO server logs for the same request (timestamps line up with the
   failed upload).

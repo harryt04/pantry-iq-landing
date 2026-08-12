@@ -5,9 +5,9 @@ import { Readable } from 'node:stream'
 import {
   DeleteObjectCommand,
   GetObjectCommand,
-  PutObjectCommand,
   S3Client,
 } from '@aws-sdk/client-s3'
+import { Upload } from '@aws-sdk/lib-storage'
 
 export type ObjectStoragePutInput = {
   key: string
@@ -35,14 +35,20 @@ export class S3ObjectStorage implements ObjectStorage {
   ) {}
 
   async putObject(input: ObjectStoragePutInput): Promise<void> {
-    await this.client.send(
-      new PutObjectCommand({
+    // The upload body is a stream of unknown length, so PutObjectCommand
+    // can't set Content-Length up front — some S3-compatible servers
+    // (e.g. MinIO) reject that. Upload handles unknown-length streams by
+    // buffering into parts and multipart-uploading as needed.
+    const upload = new Upload({
+      client: this.client,
+      params: {
         Bucket: this.bucket,
         Key: input.key,
         Body: Readable.from(input.body),
         ContentType: input.contentType,
-      }),
-    )
+      },
+    })
+    await upload.done()
   }
 
   async deleteObject(key: string): Promise<void> {
