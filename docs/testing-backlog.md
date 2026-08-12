@@ -527,9 +527,10 @@ item below must intercept it. A browser test may never bill an LLM call.
       the delete confirmation, and the cancel path. (Codex, iteration 72)
       Added a DOM regression for the 409 duplicate-name response; existing
       behavioral cases cover the destructive confirmation and cancel paths.
-- [ ] Auth form (`auth-form.tsx`, 0%): wrong password, unknown email, and an
+- [x] Auth form (`auth-form.tsx`, 0%): wrong password, unknown email, and an
       already-registered email. No message may disclose whether an account
-      exists.
+      exists. (Codex, iteration 73 — mocked browser coverage asserts one
+      generic failure for distinct sign-in and sign-up backend errors.)
 - [ ] Every screen at 375×812 and in dark theme. Colour is never load-bearing
       and the greyscale check is a merge gate, but only `/design/gallery` is
       checked today.

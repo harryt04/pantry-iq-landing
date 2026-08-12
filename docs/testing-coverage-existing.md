@@ -194,6 +194,7 @@ pattern to copy.
 | [`ui/import.spec.ts`](../tests/ui/import.spec.ts) | Mocked CSV upload storage outage and final unresolved-item commit conflict, mapping review persistence across uploads, and item-resolution create-new/blocked states, including retryable upload state and preserved import state |
 | [`ui/reconciliation.spec.ts`](../tests/ui/reconciliation.spec.ts) | Mocked reconciliation authority selection that clears a resolved overlap and preserves the conflict after a rejected save |
 | [`ui/auth-recovery.spec.ts`](../tests/ui/auth-recovery.spec.ts) | Mocked forgot-password and reset-password form submissions, authentication-only confirmation copy, and Better Auth endpoint requests |
+| [`ui/auth-form.spec.ts`](../tests/ui/auth-form.spec.ts) | Mocked wrong-password, unknown-email, and already-registered-email failures; all use generic account-safe copy |
 | [`accessibility/landing.spec.ts`](../tests/accessibility/landing.spec.ts) | Axe on `/`, `/design/gallery`, `/design/tokens` in both themes; keyboard focus; 44px touch targets; 16px mobile type; reduced motion |
 | [`accessibility/real-data.spec.ts`](../tests/accessibility/real-data.spec.ts) | Authenticated axe and grayscale screenshot sweeps across ten full-year-data screens in both themes at a mobile viewport; the dependent seed setup supplies real PostgreSQL rows and location visibility |
 | [`charts/greyscale.spec.ts`](../tests/charts/greyscale.spec.ts) | `/design/gallery` desaturated at 375×900; bars keep pattern fills, lines keep dash patterns |
