@@ -558,7 +558,10 @@ iteration, unit or integration as the module needs.
       Added real-Postgres coverage for owner isolation and the sales, labor,
       and external-signal lookback windows; a removed labor owner predicate
       makes the regression fail.
-- [ ] `menu/menu-engineering-query.ts` — 117 lines at 0%.
+- [x] `menu/menu-engineering-query.ts` — 117 lines at 0%. (Codex, iteration 77)
+      Added real-Postgres coverage for owner-scoped active menu items, the
+      365-day sales window, newest complete recipe margins, business-week
+      sufficiency, and explainable exclusions.
 - [ ] `staffing/external-signal-sync.ts` — 136 lines at 0%.
 - [ ] `csv/previews.ts`, `csv/uploads.ts`, and `csv/mapping-persistence.ts` —
       all 0%, all mocked in their API tests.

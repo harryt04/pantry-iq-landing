@@ -330,6 +330,7 @@ let previews: typeof import('../../src/server/csv/previews')
 let mappings: typeof import('../../src/server/csv/mapping-persistence')
 let exportsService: typeof import('../../src/server/csv/exports')
 let usageVariance: typeof import('../../src/server/menu/usage-variance-query')
+let menuEngineering: typeof import('../../src/server/menu/menu-engineering-query')
 
 function csvBody(body: string): ReadableStream<Uint8Array> {
   return new ReadableStream({
@@ -411,6 +412,8 @@ describe.skipIf(!integrationDatabaseEnabled())('CSV import', () => {
     mappings = await import('../../src/server/csv/mapping-persistence')
     exportsService = await import('../../src/server/csv/exports')
     usageVariance = await import('../../src/server/menu/usage-variance-query')
+    menuEngineering =
+      await import('../../src/server/menu/menu-engineering-query')
   }, SETUP_TIMEOUT_MS)
 
   afterAll(async () => {
@@ -1392,6 +1395,133 @@ describe.skipIf(!integrationDatabaseEnabled())('CSV import', () => {
       await expect(
         getLaborEfficiency(new Headers(), OTHER_LOCATION_ID),
       ).rejects.toThrow()
+    }, 120_000)
+
+    it('assembles owner-scoped menu engineering inputs and keeps exclusions explainable', async () => {
+      const { sql } = opened!.database
+      const steakId = '00000000-0000-4000-8000-00000000f101'
+      const pastaId = '00000000-0000-4000-8000-00000000f102'
+      const noRecipeId = '00000000-0000-4000-8000-00000000f103'
+      const shortHistoryId = '00000000-0000-4000-8000-00000000f104'
+      const inactiveId = '00000000-0000-4000-8000-00000000f105'
+      const otherMenuId = '00000000-0000-4000-8000-00000000f110'
+      const steakRecipeId = '00000000-0000-4000-8000-00000000f106'
+      const pastaRecipeId = '00000000-0000-4000-8000-00000000f107'
+      const shortRecipeId = '00000000-0000-4000-8000-00000000f108'
+      const inactiveRecipeId = '00000000-0000-4000-8000-00000000f109'
+
+      await sql`
+        update locations
+        set timezone = 'UTC', business_day_boundary = '04:00:00'
+        where id = ${LOCATION_ID}
+      `
+      await sql`
+        insert into inventory_items
+          (id, location_id, canonical_name, display_name, unit, item_type, is_active)
+        values
+          (${steakId}, ${LOCATION_ID}, 'steak', 'Steak', 'each', 'menu_item', true),
+          (${pastaId}, ${LOCATION_ID}, 'pasta', 'Pasta', 'each', 'menu_item', true),
+          (${noRecipeId}, ${LOCATION_ID}, 'no recipe', 'No Recipe', 'each', 'menu_item', true),
+          (${shortHistoryId}, ${LOCATION_ID}, 'short history', 'Short History', 'each', 'menu_item', true),
+          (${inactiveId}, ${LOCATION_ID}, 'inactive', 'Inactive', 'each', 'menu_item', false),
+          (${otherMenuId}, ${OTHER_LOCATION_ID}, 'other menu', 'Other Menu', 'each', 'menu_item', true)
+      `
+      await sql`
+        insert into recipes
+          (id, location_id, menu_item_id, name, output_quantity, output_unit,
+           yield_factor, waste_factor, is_active)
+        values
+          (${steakRecipeId}, ${LOCATION_ID}, ${steakId}, 'Steak', '1', 'each', '1', '0', true),
+          (${pastaRecipeId}, ${LOCATION_ID}, ${pastaId}, 'Pasta', '1', 'each', '1', '0', true),
+          (${shortRecipeId}, ${LOCATION_ID}, ${shortHistoryId}, 'Short History', '1', 'each', '1', '0', true),
+          (${inactiveRecipeId}, ${LOCATION_ID}, ${inactiveId}, 'Inactive', '1', 'each', '1', '0', true)
+      `
+      await sql`
+        insert into recipe_cost_history
+          (location_id, recipe_id, calculated_at, status, plate_margin, evidence)
+        values
+          (${LOCATION_ID}, ${steakRecipeId}, '2026-07-01T12:00:00Z', 'complete', '2', '{}'),
+          (${LOCATION_ID}, ${steakRecipeId}, '2026-08-02T12:00:00Z', 'complete', '9.50', '{}'),
+          (${LOCATION_ID}, ${pastaRecipeId}, '2026-08-02T12:00:00Z', 'complete', '12.00', '{}'),
+          (${LOCATION_ID}, ${shortRecipeId}, '2026-08-02T12:00:00Z', 'complete', '5.00', '{}'),
+          (${LOCATION_ID}, ${inactiveRecipeId}, '2026-08-02T12:00:00Z', 'complete', '99.00', '{}')
+      `
+      await sql`
+        insert into transactions
+          (location_id, transacted_at, external_id, source, menu_item_id,
+           raw_item_name, qty, unit_price, total_revenue)
+        values
+          (${LOCATION_ID}, '2026-08-01T12:00:00Z', 'menu-steak-1', 'query-test', ${steakId}, 'Steak', '2.5', '20', '50'),
+          (${LOCATION_ID}, '2026-07-25T12:00:00Z', 'menu-steak-2', 'query-test', ${steakId}, 'Steak', '2.5', '20', '50'),
+          (${LOCATION_ID}, '2026-07-18T12:00:00Z', 'menu-steak-3', 'query-test', ${steakId}, 'Steak', '2.5', '20', '50'),
+          (${LOCATION_ID}, '2026-07-11T12:00:00Z', 'menu-steak-4', 'query-test', ${steakId}, 'Steak', '2.5', '20', '50'),
+          (${LOCATION_ID}, '2026-08-01T12:00:00Z', 'menu-pasta-1', 'query-test', ${pastaId}, 'Pasta', '1', '20', '20'),
+          (${LOCATION_ID}, '2026-07-25T12:00:00Z', 'menu-pasta-2', 'query-test', ${pastaId}, 'Pasta', '1', '20', '20'),
+          (${LOCATION_ID}, '2026-07-18T12:00:00Z', 'menu-pasta-3', 'query-test', ${pastaId}, 'Pasta', '1', '20', '20'),
+          (${LOCATION_ID}, '2026-07-11T12:00:00Z', 'menu-pasta-4', 'query-test', ${pastaId}, 'Pasta', '1', '20', '20'),
+          (${LOCATION_ID}, '2026-08-01T12:00:00Z', 'menu-no-recipe-1', 'query-test', ${noRecipeId}, 'No Recipe', '1', '20', '20'),
+          (${LOCATION_ID}, '2026-07-25T12:00:00Z', 'menu-no-recipe-2', 'query-test', ${noRecipeId}, 'No Recipe', '1', '20', '20'),
+          (${LOCATION_ID}, '2026-07-18T12:00:00Z', 'menu-no-recipe-3', 'query-test', ${noRecipeId}, 'No Recipe', '1', '20', '20'),
+          (${LOCATION_ID}, '2026-07-11T12:00:00Z', 'menu-no-recipe-4', 'query-test', ${noRecipeId}, 'No Recipe', '1', '20', '20'),
+          (${LOCATION_ID}, '2026-08-01T12:00:00Z', 'menu-short-1', 'query-test', ${shortHistoryId}, 'Short History', '4', '20', '80'),
+          (${LOCATION_ID}, '2026-08-01T12:00:00Z', 'menu-inactive-1', 'query-test', ${inactiveId}, 'Inactive', '100', '20', '2000'),
+          (${OTHER_LOCATION_ID}, '2026-08-01T12:00:00Z', 'menu-other-steak-1', 'query-test', ${steakId}, 'Steak', '999', '20', '19980'),
+          (${OTHER_LOCATION_ID}, '2026-08-01T12:00:00Z', 'menu-other-1', 'query-test', ${otherMenuId}, 'Other Menu', '999', '20', '19980')
+      `
+
+      const result = await menuEngineering.getMenuEngineering(
+        new Headers(),
+        LOCATION_ID,
+      )
+
+      expect(result).toMatchObject({
+        status: 'calculated',
+        minimumHistoryWeeks: 4,
+        observedWeeks: 4,
+        popularityThreshold: '7',
+        marginThreshold: '10.75',
+      })
+      expect(result.rows).toEqual([
+        expect.objectContaining({
+          menuItemId: steakId,
+          name: 'Steak',
+          unitsSold: '10',
+          marginPerItem: '9.5',
+          contributionMargin: '95',
+          popularity: 'high',
+          profitability: 'low',
+          quadrant: 'plowhorse',
+        }),
+        expect.objectContaining({
+          menuItemId: pastaId,
+          name: 'Pasta',
+          unitsSold: '4',
+          marginPerItem: '12',
+          contributionMargin: '48',
+          popularity: 'low',
+          profitability: 'high',
+          quadrant: 'puzzle',
+        }),
+      ])
+      expect(result.excluded).toEqual([
+        {
+          menuItemId: noRecipeId,
+          name: 'No Recipe',
+          reason: 'A complete recipe-derived plate margin is not available.',
+        },
+        {
+          menuItemId: shortHistoryId,
+          name: 'Short History',
+          reason:
+            'Only 1 complete business week of sales; at least 4 are needed.',
+        },
+      ])
+      expect(result.rows.some((row) => row.menuItemId === inactiveId)).toBe(
+        false,
+      )
+      await expect(
+        menuEngineering.getMenuEngineering(new Headers(), OTHER_LOCATION_ID),
+      ).rejects.toMatchObject({ name: 'ForbiddenError' })
     }, 120_000)
 
     it('marks the upload imported so the history is honest', async () => {
