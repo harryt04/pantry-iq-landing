@@ -83,3 +83,77 @@ test.describe('explicit signup and returning-user journey', () => {
     expect(response.headers()['cache-control']).toContain('no-store')
   })
 })
+
+test.describe('account location lifecycle', () => {
+  test('creates, renames, and removes a location from the account page', async ({
+    page,
+  }) => {
+    const locationName = `Lifecycle Kitchen ${Date.now()}`
+    const renamedLocationName = `${locationName} Renamed`
+    let locationId: string | undefined
+
+    try {
+      await page.goto('/account')
+
+      await page.getByLabel('Location name').fill(locationName)
+      await page.getByLabel('Address').fill('1 Lifecycle Street')
+      const createResponse = page.waitForResponse(
+        (response) =>
+          response.url().endsWith('/api/locations') &&
+          response.request().method() === 'POST',
+      )
+      await page.getByRole('button', { name: 'Add location' }).click()
+      const created = (await (await createResponse).json()) as {
+        location?: { id?: string }
+      }
+      locationId = created.location?.id
+      expect(locationId).toBeTruthy()
+
+      await expect(page.getByRole('status')).toContainText('Location added.')
+      const location = page
+        .locator('.location-list-item')
+        .filter({ hasText: locationName })
+      await expect(location).toBeVisible()
+      await expect(location).toContainText('1 Lifecycle Street')
+
+      await location.getByRole('button', { name: 'Edit location' }).click()
+      await expect(
+        page
+          .locator('[data-slot="card-title"]')
+          .filter({ hasText: 'Edit location' }),
+      ).toBeVisible()
+      await page.getByLabel('Location name').fill(renamedLocationName)
+      await page.getByLabel('Address').fill('2 Lifecycle Street')
+      await page.getByRole('button', { name: 'Save location' }).click()
+
+      await expect(page.getByRole('status')).toContainText('Location updated.')
+      const renamedLocation = page
+        .locator('.location-list-item')
+        .filter({ hasText: renamedLocationName })
+      await expect(renamedLocation).toBeVisible()
+      await expect(renamedLocation).toContainText('2 Lifecycle Street')
+
+      await renamedLocation
+        .getByRole('button', { name: 'Remove location' })
+        .click()
+      await expect(
+        page.getByRole('heading', { name: `Remove ${renamedLocationName}?` }),
+      ).toBeVisible()
+      await expect(
+        page.getByText('This deletes 0 imports and 0 imported rows.'),
+      ).toBeVisible()
+
+      await page.getByRole('button', { name: 'Remove location' }).last().click()
+
+      await expect(page.getByRole('status')).toContainText('Location removed.')
+      await expect(renamedLocation).toHaveCount(0)
+    } finally {
+      if (locationId) {
+        const response = await page.request.delete(
+          `/api/locations/${locationId}`,
+        )
+        expect([204, 404]).toContain(response.status())
+      }
+    }
+  })
+})

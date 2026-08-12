@@ -463,11 +463,13 @@ Percentages below are line coverage measured 2026-08-10.
       assert the change survives a reload. (Codex, iteration 61) Added a
       seeded browser journey that saves Tomato Soup's shelf life and verifies
       the 7-day value remains after reload.
-- [ ] `/account` — create, rename, and delete a location. Deletion cascades
+- [x] `/account` — create, rename, and delete a location. Deletion cascades
       seven tables;
       [`location-deletion.test.ts`](../tests/integration/location-deletion.test.ts)
-      proves the cascade, but nothing proves the confirmation dialogue or the
-      state the user lands in afterwards.
+      proves the cascade. (Codex, iteration 62) Added an authenticated browser
+      journey that creates and renames a location, checks the deletion summary
+      and confirmation dialog, then asserts the removed location disappears
+      and the account page reports the completed deletion.
 - [ ] `/forgot-password` and `/reset-password` — never rendered by any test.
       Assert the form submits and the confirmation copy appears. Email is
       authentication plumbing only (tech-stack §3.14), so assert no marketing

@@ -183,6 +183,7 @@ pattern to copy.
 | [`e2e/recipes.spec.ts`](../tests/e2e/recipes.spec.ts) | Full-year recipe creation with an ingredient, save/reload persistence, and edit-state verification |
 | [`e2e/portfolio.spec.ts`](../tests/e2e/portfolio.spec.ts) | Full-year metric rollup across the seeded full-year and short-history locations, preserving each location's data status |
 | [`e2e/settings.spec.ts`](../tests/e2e/settings.spec.ts) | Full-year item-master shelf-life edit, save confirmation, and persistence after reload |
+| [`e2e/returning-user.spec.ts`](../tests/e2e/returning-user.spec.ts) | Returning-user location switching and export; authenticated account-page create, rename, delete confirmation, and post-delete state |
 | [`ui/fixtures/mock-api.ts`](../tests/ui/fixtures/mock-api.ts) | Reusable scenario-keyed `page.route()` responses for mocked UI flows across chat, locations, recipes, items, and reconciliation |
 | [`accessibility/landing.spec.ts`](../tests/accessibility/landing.spec.ts) | Axe on `/`, `/design/gallery`, `/design/tokens` in both themes; keyboard focus; 44px touch targets; 16px mobile type; reduced motion |
 | [`accessibility/real-data.spec.ts`](../tests/accessibility/real-data.spec.ts) | Authenticated axe and grayscale screenshot sweeps across ten full-year-data screens in both themes at a mobile viewport; the dependent seed setup supplies real PostgreSQL rows and location visibility |
