@@ -46,9 +46,9 @@ it. `components/ui/**` is vendored and out of scope.
 Exit gate for every item: `pnpm prettify`, then `pnpm ci` until green.
 
 Then ratchet the coverage gate. [`vitest.config.ts`](../vitest.config.ts) holds
-  thresholds at 74.08 statements, 74.08 lines, 75.73 branches, and 81.66
-  functions against 76.08% statements, 76.08% lines, 77.62% branches, and
-  83.66% functions measured 2026-08-11. Re-measure with
+  thresholds at 74.79 statements, 74.79 lines, 75.73 branches, and 81.74
+  functions against 76.79% statements, 76.79% lines, 77.61% branches, and
+  83.74% functions measured 2026-08-11. Re-measure with
 `pnpm ci:tests` and raise each threshold to the new number minus two. Never
 lower one to make a build pass. Browser tests do not feed the v8 report, so
 Loops I, J, and L will not move the number. That is expected, not a failure.
@@ -550,7 +550,10 @@ iteration, unit or integration as the module needs.
       Added real-Postgres coverage for all four export datasets, owner
       scoping, and formula-injection neutralisation through the query path.
       Unblocked the Loop G export item.
-- [ ] `menu/usage-variance-query.ts` — 208 lines at 0%.
+- [x] `menu/usage-variance-query.ts` — 208 lines at 0%. (Codex, iteration 75)
+      Added real-Postgres coverage for owner-scoped recipe, sales, purchase,
+      snapshot, and unit-conversion assembly, including exact variance output
+      and cross-account rejection.
 - [ ] `staffing/labor-efficiency-query.ts` — 143 lines at 0%.
 - [ ] `menu/menu-engineering-query.ts` — 117 lines at 0%.
 - [ ] `staffing/external-signal-sync.ts` — 136 lines at 0%.

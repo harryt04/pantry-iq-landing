@@ -329,6 +329,7 @@ let uploads: typeof import('../../src/server/csv/uploads')
 let previews: typeof import('../../src/server/csv/previews')
 let mappings: typeof import('../../src/server/csv/mapping-persistence')
 let exportsService: typeof import('../../src/server/csv/exports')
+let usageVariance: typeof import('../../src/server/menu/usage-variance-query')
 
 function csvBody(body: string): ReadableStream<Uint8Array> {
   return new ReadableStream({
@@ -409,6 +410,7 @@ describe.skipIf(!integrationDatabaseEnabled())('CSV import', () => {
     previews = await import('../../src/server/csv/previews')
     mappings = await import('../../src/server/csv/mapping-persistence')
     exportsService = await import('../../src/server/csv/exports')
+    usageVariance = await import('../../src/server/menu/usage-variance-query')
   }, SETUP_TIMEOUT_MS)
 
   afterAll(async () => {
@@ -427,6 +429,8 @@ describe.skipIf(!integrationDatabaseEnabled())('CSV import', () => {
     await sql`delete from recipe_cost_history`
     await sql`delete from recipe_ingredients`
     await sql`delete from recipes`
+    await sql`delete from inventory_snapshots`
+    await sql`delete from item_unit_conversions`
     await sql`delete from inventory_items`
     await sql`delete from locations`
     await sql`delete from "user"`
@@ -890,6 +894,108 @@ describe.skipIf(!integrationDatabaseEnabled())('CSV import', () => {
           },
         },
       ])
+    }, 120_000)
+
+    it('assembles owner-scoped usage variance inputs from persisted operations', async () => {
+      const { sql } = opened!.database
+      const menuItemId = '00000000-0000-4000-8000-00000000f001'
+      const ingredientItemId = '00000000-0000-4000-8000-00000000f002'
+      const recipeId = '00000000-0000-4000-8000-00000000f003'
+      const recipeIngredientId = '00000000-0000-4000-8000-00000000f004'
+      const conversionId = '00000000-0000-4000-8000-00000000f005'
+      const purchaseOrderId = '00000000-0000-4000-8000-00000000f006'
+      const purchaseLineId = '00000000-0000-4000-8000-00000000f007'
+      const transactionId = '00000000-0000-4000-8000-00000000f008'
+      const beginningSnapshotId = '00000000-0000-4000-8000-00000000f009'
+      const endingSnapshotId = '00000000-0000-4000-8000-00000000f010'
+      const otherMenuItemId = '00000000-0000-4000-8000-00000000f011'
+      const otherTransactionId = '00000000-0000-4000-8000-00000000f012'
+
+      await sql`
+        insert into inventory_items
+          (id, location_id, canonical_name, display_name, unit, item_type)
+        values
+          (${menuItemId}, ${LOCATION_ID}, 'salmon plate', 'Salmon plate', 'each', 'menu_item'),
+          (${ingredientItemId}, ${LOCATION_ID}, 'salmon', 'Salmon', 'lb', 'ingredient'),
+          (${otherMenuItemId}, ${OTHER_LOCATION_ID}, 'other plate', 'Other plate', 'each', 'menu_item')
+      `
+      await sql`
+        insert into recipes
+          (id, location_id, menu_item_id, name, output_quantity, output_unit,
+           yield_factor, waste_factor)
+        values
+          (${recipeId}, ${LOCATION_ID}, ${menuItemId}, 'Salmon plate', '10', 'each', '1', '0')
+      `
+      await sql`
+        insert into recipe_ingredients
+          (id, recipe_id, ingredient_item_id, quantity, unit)
+        values
+          (${recipeIngredientId}, ${recipeId}, ${ingredientItemId}, '4', 'lb')
+      `
+      await sql`
+        insert into item_unit_conversions
+          (id, location_id, inventory_item_id, from_unit, to_unit, factor)
+        values
+          (${conversionId}, ${LOCATION_ID}, ${ingredientItemId}, 'oz', 'lb', '0.0625')
+      `
+      await sql`
+        insert into purchase_orders
+          (id, location_id, ordered_at, external_id, source)
+        values
+          (${purchaseOrderId}, ${LOCATION_ID}, '2026-08-02T12:00:00Z', 'usage-po', 'test')
+      `
+      await sql`
+        insert into purchase_order_items
+          (id, purchase_order_id, location_id, inventory_item_id,
+           raw_item_name, qty, unit_cost, total_cost)
+        values
+          (${purchaseLineId}, ${purchaseOrderId}, ${LOCATION_ID}, ${ingredientItemId},
+           'Salmon', '2', '2', '4')
+      `
+      await sql`
+        insert into transactions
+          (id, location_id, transacted_at, external_id, source, menu_item_id,
+           raw_item_name, qty, unit_price, total_revenue)
+        values
+          (${transactionId}, ${LOCATION_ID}, '2026-08-03T18:00:00Z', 'usage-sale', 'test',
+           ${menuItemId}, 'Salmon plate', '5', '20', '100'),
+          (${otherTransactionId}, ${OTHER_LOCATION_ID}, '2026-08-03T18:00:00Z', 'other-sale', 'test',
+           ${otherMenuItemId}, 'Other plate', '99', '20', '1980')
+      `
+      await sql`
+        insert into inventory_snapshots
+          (id, location_id, inventory_item_id, counted_at, qty, source)
+        values
+          (${beginningSnapshotId}, ${LOCATION_ID}, ${ingredientItemId}, '2026-07-01T12:00:00Z', '10', 'test'),
+          (${endingSnapshotId}, ${LOCATION_ID}, ${ingredientItemId}, '2026-08-10T12:00:00Z', '6', 'test')
+      `
+
+      const result = await usageVariance.getUsageVariance(
+        new Headers(),
+        LOCATION_ID,
+      )
+
+      expect(result.rows).toEqual([
+        expect.objectContaining({
+          ingredientItemId,
+          ingredientName: 'Salmon',
+          unit: 'lb',
+          theoreticalUsage: '2',
+          actualUsage: '6',
+          variance: '4',
+          variancePercent: '200',
+          status: 'calculated',
+        }),
+      ])
+      expect(result.excluded).toEqual([])
+      expect(result.periodStart).not.toBeNull()
+      expect(result.periodEnd).not.toBeNull()
+
+      await expect(
+        usageVariance.getUsageVariance(new Headers(), OTHER_LOCATION_ID),
+      ).rejects.toMatchObject({
+        name: 'ForbiddenError',
+      })
     }, 120_000)
 
     it('nets refunds in revenue without turning them into negative waste', async () => {
