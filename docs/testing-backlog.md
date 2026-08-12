@@ -46,9 +46,9 @@ it. `components/ui/**` is vendored and out of scope.
 Exit gate for every item: `pnpm prettify`, then `pnpm ci` until green.
 
 Then ratchet the coverage gate. [`vitest.config.ts`](../vitest.config.ts) holds
-  thresholds at 74.79 statements, 74.79 lines, 75.73 branches, and 81.74
-  functions against 76.79% statements, 76.79% lines, 77.61% branches, and
-  83.74% functions measured 2026-08-11. Re-measure with
+  thresholds at 75.47 statements, 75.47 lines, 75.77 branches, and 81.90
+  functions against 77.42% statements, 77.42% lines, 77.77% branches, and
+  83.90% functions measured 2026-08-11. Re-measure with
 `pnpm ci:tests` and raise each threshold to the new number minus two. Never
 lower one to make a build pass. Browser tests do not feed the v8 report, so
 Loops I, J, and L will not move the number. That is expected, not a failure.
@@ -562,7 +562,10 @@ iteration, unit or integration as the module needs.
       Added real-Postgres coverage for owner-scoped active menu items, the
       365-day sales window, newest complete recipe margins, business-week
       sufficiency, and explainable exclusions.
-- [ ] `staffing/external-signal-sync.ts` — 136 lines at 0%.
+- [x] `staffing/external-signal-sync.ts` — 136 lines at 0%. (Codex, iteration 78)
+      Added real-Postgres coverage for successful fetch provenance, exact cost
+      persistence, feature upserts, empty provider results, and failure
+      journaling with error propagation.
 - [ ] `csv/previews.ts`, `csv/uploads.ts`, and `csv/mapping-persistence.ts` —
       all 0%, all mocked in their API tests.
 - [ ] `inventory/items.ts` and `locations/locations.ts` — both 0%.

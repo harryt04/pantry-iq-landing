@@ -17,7 +17,7 @@ figure is higher.
 | | |
 | --- | --- |
 | Vitest files | 111 |
-| Vitest cases | 584 statically, more after `.each` expansion |
+| Vitest cases | 588 statically, more after `.each` expansion |
 | Playwright specs | 12 files, 14 cases |
 | Line coverage | 76.08% with a database, 65.98% without |
 
@@ -151,13 +151,14 @@ These eight cover the largest components in the repo. If you are adding a case
 for manual entry, CSV upload, chat, locations, recipes, settings, or the item
 master, **the file already exists** — extend it.
 
-## Layer 4 — Integration tests (`tests/integration/`, 12 files, 90 cases)
+## Layer 4 — Integration tests (`tests/integration/`, 13 files, 94 cases)
 
 Real PostgreSQL. Each runs migrate, seed, and rollback around itself.
 
 | File | Covers |
 | --- | --- |
 | [`csv-import.test.ts`](../tests/integration/csv-import.test.ts) | Preview, commit, transactional write, item resolution, same-file re-import deduplication, purchase-order import through MNU-03 recipe plate-cost history, labor import through STF-02 efficiency metrics, owner-scoped staffing query reads with sales/labor/signal windows, owner-scoped menu-engineering query reads with latest recipe margins and explainable exclusions, full-year and short-history precompute, refund aggregation, business-day boundary bucketing, exact money propagation through metrics and rendered dashboard output, cross-account isolation across upload history, import planning, file preview, mapping persistence, renamed XLSX/PDF rejection before storage with no persisted history, owner-scoped usage-variance query assembly, and all four CSV export datasets through the real owner-scoped query service, including formula neutralisation from the security fixture |
+| [`external-signal-sync.test.ts`](../tests/integration/external-signal-sync.test.ts) | Provider fetch ledger success/failure, exact cost and provenance persistence, normalized signal upsert replacement, and empty-result handling |
 | [`write-atomicity.test.ts`](../tests/integration/write-atomicity.test.ts) | A partial failure leaves no rows |
 | [`manual-entry-write.test.ts`](../tests/integration/manual-entry-write.test.ts) | Manual entry writes, location scoping, item creation |
 | [`ownership-boundary.test.ts`](../tests/integration/ownership-boundary.test.ts) | `requireOwnedLocation` — no session, cross-account, missing location |
@@ -267,8 +268,8 @@ assertion to make a test pass — that rule outranks everything else in
 
 Run a single file with `pnpm test path/to/file.test.ts`.
 
-Coverage thresholds in [`vitest.config.ts`](../vitest.config.ts) are 74.08
-statements, 74.08 lines, 75.73 branches, and 81.66 functions, and apply
+Coverage thresholds in [`vitest.config.ts`](../vitest.config.ts) are 75.47
+statements, 75.47 lines, 75.77 branches, and 81.90 functions, and apply
 **only** when a database is reachable. Integration suites carry roughly ten
 points, so gating a laptop without Docker would fail for no reason. CI always
 sets `TEST_DATABASE_URL`, so CI is always gated.
