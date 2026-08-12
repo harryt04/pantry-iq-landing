@@ -168,6 +168,42 @@ describe('CSV upload form', () => {
     ).toBeInTheDocument()
   })
 
+  it('keeps the five-step path visible and works one file at a time', async () => {
+    mockSuccessfulBatch()
+
+    render(<CsvUploadForm locationId={LOCATION_ID} />)
+    await userEvent.upload(screen.getByLabelText('CSV file'), [
+      csvFile('sales.csv'),
+      csvFile('labor.csv'),
+    ])
+
+    const steps = screen.getByRole('navigation', { name: 'Import steps' })
+    expect(within(steps).getByText('Location')).toBeInTheDocument()
+    expect(within(steps).getByText('Upload file')).toBeInTheDocument()
+    expect(within(steps).getByText('Map columns')).toBeInTheDocument()
+    expect(within(steps).getByText('Match items')).toBeInTheDocument()
+    expect(within(steps).getByText('Confirm import')).toBeInTheDocument()
+    await waitFor(() =>
+      expect(
+        within(steps).getByText('Map columns').closest('li'),
+      ).toHaveAttribute('aria-current', 'step'),
+    )
+
+    expect(
+      screen.getAllByRole('heading', {
+        name: "Let's place the uncertain columns.",
+      }),
+    ).toHaveLength(1)
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Work on labor.csv' }),
+    )
+    expect(
+      screen.getAllByRole('heading', {
+        name: "Let's place the uncertain columns.",
+      }),
+    ).toHaveLength(1)
+  })
+
   it('detects each file type and keeps an override on its own job', async () => {
     const uploadedTypes: string[] = []
     const overriddenTypes: string[] = []

@@ -143,7 +143,7 @@ reorder.
       proves valid jobs survive rejection, and `tests/ui/import.spec.ts` proves
       the real renamed-XLSX fixture fails independently and retries.
 
-- [ ] **Make the five steps visible.** [`ux-flows.md`](ux-flows.md) §Import
+- [x] **Make the five steps visible.** [`ux-flows.md`](ux-flows.md) §Import
       defines five steps. The page renders them as one long scroll with
       preview, mapping, resolution, and confirmation all mounted at once, plus
       manual entry, history, reconciliation, and export below. Show the
@@ -152,6 +152,9 @@ reorder.
       **Acceptance:** at every point in the flow the current step and the
       remaining steps are on screen, and the sections that belong to other
       tasks are not competing for attention during an import.
+      Added a five-step navigator, sequential per-file mapping/resolution
+      detail, and a closed supporting-tools disclosure; `tests/ui/import.spec.ts`
+      and `csv-upload-form.dom.test.tsx` prove the flow at desktop and 375px.
 
 - [ ] **Survive a reload.** The upload exists server-side, but a refresh
       mid-mapping loses everything held in component state and the operator

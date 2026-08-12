@@ -85,8 +85,37 @@ type UploadJob = {
   isCommitting: boolean
 }
 
+type ImportStep =
+  'location' | 'upload' | 'mapping' | 'resolution' | 'confirmation'
+
+const importSteps: Array<{ id: ImportStep; label: string }> = [
+  { id: 'location', label: 'Location' },
+  { id: 'upload', label: 'Upload file' },
+  { id: 'mapping', label: 'Map columns' },
+  { id: 'resolution', label: 'Match items' },
+  { id: 'confirmation', label: 'Confirm import' },
+]
+
 function importTypeLabel(importType: CsvImportType) {
   return importTypes.find(([value]) => value === importType)?.[1] ?? importType
+}
+
+function currentStepFor(job: UploadJob | undefined): ImportStep {
+  if (!job || job.isUploading || !job.preview) return 'upload'
+  if (!job.summary) return 'mapping'
+  if (job.summary.unmatchedItems.length > 0) return 'resolution'
+  return 'confirmation'
+}
+
+function stepStatus(
+  step: ImportStep,
+  currentStep: ImportStep,
+): 'complete' | 'current' | 'upcoming' {
+  const currentIndex = importSteps.findIndex(({ id }) => id === currentStep)
+  const stepIndex = importSteps.findIndex(({ id }) => id === step)
+  if (stepIndex < currentIndex) return 'complete'
+  if (stepIndex === currentIndex) return 'current'
+  return 'upcoming'
 }
 
 function firstCsvRecord(sample: string) {
@@ -152,6 +181,7 @@ async function detectImportType(file: File): Promise<CsvImportType> {
 
 export function CsvUploadForm({ locationId }: { locationId: string }) {
   const [jobs, setJobs] = React.useState<Record<string, UploadJob>>({})
+  const [activeJobId, setActiveJobId] = React.useState<string | null>(null)
   const [isDragging, setIsDragging] = React.useState(false)
   const nextJobId = React.useRef(0)
   const fileInputRef = React.useRef<HTMLInputElement>(null)
@@ -256,9 +286,17 @@ export function CsvUploadForm({ locationId }: { locationId: string }) {
       delete nextJobs[jobId]
       return nextJobs
     })
+    setActiveJobId((currentJobId) => {
+      if (currentJobId !== jobId) return currentJobId
+      return (
+        Object.keys(jobs).find((remainingJobId) => remainingJobId !== jobId) ??
+        null
+      )
+    })
   }
 
   function retryJob(jobId: string, job: UploadJob) {
+    setActiveJobId(jobId)
     updateJob(jobId, (currentJob) => ({
       ...currentJob,
       uploadId: null,
@@ -304,6 +342,7 @@ export function CsvUploadForm({ locationId }: { locationId: string }) {
       ...currentJobs,
       ...Object.fromEntries(entries.map(({ jobId, job }) => [jobId, job])),
     }))
+    setActiveJobId(entries[0]?.jobId ?? null)
 
     for (const { jobId, selectedFile } of entries) {
       void detectAndUpload(jobId, selectedFile)
@@ -522,6 +561,12 @@ export function CsvUploadForm({ locationId }: { locationId: string }) {
         summary: { ...result.summary!, uploadId: job.uploadId! },
         status: `${result.summary!.rowsImported.toLocaleString()} rows imported. ${result.summary!.newItems.toLocaleString()} new items created.`,
       }))
+      const nextJob = jobEntries.find(
+        ([nextJobId, nextJob]) =>
+          nextJobId !== jobId &&
+          !(nextJob.summary?.rowsImported || nextJob.summary?.alreadyImported),
+      )
+      if (nextJob) setActiveJobId(nextJob[0])
       window.dispatchEvent(new Event('pantryiq-import-complete'))
     } catch (commitError) {
       updateJob(jobId, (currentJob) => ({
@@ -540,8 +585,37 @@ export function CsvUploadForm({ locationId }: { locationId: string }) {
   }
 
   const jobEntries = Object.entries(jobs)
+  const activeJob = activeJobId ? jobs[activeJobId] : undefined
+  const currentStep = currentStepFor(activeJob)
   return (
     <div className="app-page__form">
+      <nav className="csv-import-steps" aria-label="Import steps">
+        <p className="app-page__eyebrow">Your import</p>
+        <ol>
+          {importSteps.map(({ id, label }) => {
+            const status = stepStatus(id, currentStep)
+            return (
+              <li
+                key={id}
+                className={`csv-import-step csv-import-step--${status}`}
+                aria-current={status === 'current' ? 'step' : undefined}
+              >
+                <span className="csv-import-step__number" aria-hidden="true">
+                  {importSteps.findIndex((step) => step.id === id) + 1}
+                </span>
+                <span className="csv-import-step__label">{label}</span>
+                <span className="csv-import-step__status">
+                  {status === 'complete'
+                    ? 'Done'
+                    : status === 'current'
+                      ? 'Current'
+                      : 'Next'}
+                </span>
+              </li>
+            )
+          })}
+        </ol>
+      </nav>
       <form
         className={`csv-upload-dropzone${isDragging ? 'is-dragging' : ''}`}
         aria-label="CSV upload drop zone"
@@ -632,6 +706,17 @@ export function CsvUploadForm({ locationId }: { locationId: string }) {
           <p aria-live="polite" className="app-page__status">
             {job.status}
           </p>
+          {jobId !== activeJobId && job.preview ? (
+            <div className="csv-upload-job__waiting">
+              <p>
+                This file is ready. Finish the active file first, or switch here
+                when you are ready.
+              </p>
+              <Button type="button" onClick={() => setActiveJobId(jobId)}>
+                Work on {job.fileName}
+              </Button>
+            </div>
+          ) : null}
           {job.preview ? (
             <CsvPreviewTable
               preview={job.preview}
@@ -642,7 +727,7 @@ export function CsvUploadForm({ locationId }: { locationId: string }) {
               }
             />
           ) : null}
-          {job.preview && job.mapping ? (
+          {jobId === activeJobId && job.preview && job.mapping ? (
             <CsvMappingReview
               mapping={job.mapping}
               preview={job.preview}
@@ -653,7 +738,9 @@ export function CsvUploadForm({ locationId }: { locationId: string }) {
               }
             />
           ) : null}
-          {job.summary?.unmatchedItems.length && job.uploadId ? (
+          {jobId === activeJobId &&
+          job.summary?.unmatchedItems.length &&
+          job.uploadId ? (
             <CsvItemResolution
               unmatchedItems={job.summary.unmatchedItems}
               items={job.summary.items}
@@ -677,7 +764,7 @@ export function CsvUploadForm({ locationId }: { locationId: string }) {
               }
             />
           ) : null}
-          {job.summary?.ready ? (
+          {jobId === activeJobId && job.summary?.ready ? (
             <section
               className="csv-import-confirmation"
               aria-labelledby={`${jobId}-confirm-title`}

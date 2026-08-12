@@ -7,6 +7,7 @@ test.describe('reconciliation review', () => {
   }) => {
     await mockApi('ok')
     await page.goto(`/import?locationId=${MOCK_LOCATION_ID}`)
+    await page.getByText('Other ways to add and review data').click()
 
     await expect(
       page.getByRole('heading', { name: 'Keep overlapping data honest.' }),
@@ -49,6 +50,7 @@ test.describe('reconciliation review', () => {
   }) => {
     await mockApi({ reconciliation: 'ok', reconciliationSave: 'conflict' })
     await page.goto(`/import?locationId=${MOCK_LOCATION_ID}`)
+    await page.getByText('Other ways to add and review data').click()
 
     await page
       .getByLabel('Use this source for the overlap')

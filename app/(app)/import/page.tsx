@@ -26,10 +26,15 @@ export default async function ImportPage({
       {locationId ? (
         <>
           <CsvUploadForm locationId={locationId} />
-          <ManualEntryForm locationId={locationId} />
-          <ImportHistory locationId={locationId} />
-          <ReconciliationReview locationId={locationId} />
-          <CsvExportOptions locationId={locationId} />
+          <details className="import-supporting-tools">
+            <summary>Other ways to add and review data</summary>
+            <div className="import-supporting-tools__content">
+              <ManualEntryForm locationId={locationId} />
+              <ImportHistory locationId={locationId} />
+              <ReconciliationReview locationId={locationId} />
+              <CsvExportOptions locationId={locationId} />
+            </div>
+          </details>
         </>
       ) : null}
     </main>

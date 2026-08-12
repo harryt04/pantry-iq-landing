@@ -88,6 +88,57 @@ test.describe('CSV batch upload', () => {
     await expect(page.locator('input[type="file"]')).toBeHidden()
     await expect(page.locator('.csv-upload-job')).toHaveCount(3)
   })
+
+  test('keeps the five steps visible and puts other import tools behind a disclosure', async ({
+    page,
+    mockApi,
+  }) => {
+    await mockApi({ mappingReview: true })
+    await page.setViewportSize({ width: 375, height: 812 })
+    await page.goto(`/import?locationId=${fullYearLocationFixture.locationId}`)
+
+    const steps = page.getByRole('navigation', { name: 'Import steps' })
+    await expect(steps).toContainText('Location')
+    await expect(steps).toContainText('Upload file')
+    await expect(steps).toContainText('Map columns')
+    await expect(steps).toContainText('Match items')
+    await expect(steps).toContainText('Confirm import')
+    await expect(
+      steps.locator('li').filter({ hasText: 'Upload file' }),
+    ).toHaveAttribute('aria-current', 'step')
+
+    const supportingTools = page.locator('details.import-supporting-tools')
+    await expect(supportingTools).not.toHaveAttribute('open', '')
+    await expect(
+      page.getByRole('heading', { name: 'Record what happened today.' }),
+    ).toBeHidden()
+
+    await page.getByLabel('CSV file').setInputFiles({
+      name: 'sales.csv',
+      mimeType: 'text/csv',
+      buffer: Buffer.from('date,item,quantity\n2026-08-01,salmon,2\n'),
+    })
+    await expect(
+      steps.locator('li').filter({ hasText: 'Map columns' }),
+    ).toHaveAttribute('aria-current', 'step')
+    await expect(
+      page.getByRole('heading', { name: 'A look at the first rows.' }),
+    ).toBeVisible()
+    await expect
+      .poll(() =>
+        page
+          .getByLabel('Import type for sales.csv')
+          .evaluate((element) => element.getBoundingClientRect().height),
+      )
+      .toBeGreaterThanOrEqual(44)
+    await expect
+      .poll(() =>
+        page.evaluate(
+          () => document.documentElement.scrollWidth <= window.innerWidth,
+        ),
+      )
+      .toBe(true)
+  })
 })
 
 test.describe('CSV upload failure paths', () => {
@@ -132,6 +183,11 @@ test.describe('CSV upload failure paths', () => {
         .locator('.csv-upload-job')
         .filter({ hasText: 'sales-one-year-daily.csv' }),
     ).toContainText('Ready to import 1 rows.')
+    await page
+      .locator('.csv-upload-job')
+      .filter({ hasText: '7shifts-timesheet.csv' })
+      .getByRole('button', { name: 'Work on 7shifts-timesheet.csv' })
+      .click()
     await expect(
       page
         .locator('.csv-upload-job')
