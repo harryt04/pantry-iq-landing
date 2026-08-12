@@ -114,12 +114,82 @@ Summary:
 | `QUICKBOOKS_VERIFIER_TOKEN` | when QuickBooks webhooks are enabled (`INT-05`) | Intuit HMAC-SHA256 webhook verifier token |
 | `QUICKBOOKS_CURRENCY_CODE` / `QUICKBOOKS_TAX_MODE` | when QuickBooks is enabled (`INT-05`) | Location currency and explicit `include` or `exclude` tax policy; mismatches are rejected |
 | `QUICKBOOKS_API_BASE_URL` / `QUICKBOOKS_OAUTH_BASE_URL` | optional (`INT-05`) | Override the API and OAuth hosts for sandbox testing |
-| `S3_ENDPOINT` / `S3_ACCESS_KEY_ID` / `S3_SECRET_ACCESS_KEY` / `S3_BUCKET` | later (`ING-02`) | S3-compatible object storage for raw CSV uploads |
-| `S3_REGION` / `S3_FORCE_PATH_STYLE` | optional (`ING-02`) | S3-compatible client settings; defaults to `auto` and virtual-hosted style |
+| `S3_ENDPOINT` / `S3_ACCESS_KEY_ID` / `S3_SECRET_ACCESS_KEY` / `S3_BUCKET` | yes (except local dev) | S3-compatible object storage for raw CSV uploads — see [Object storage](#object-storage-csv-uploads) |
+| `S3_REGION` / `S3_FORCE_PATH_STYLE` | optional; `S3_FORCE_PATH_STYLE=1` required for MinIO | S3-compatible client settings; defaults to `auto` region and virtual-hosted style |
+| `PANTRYIQ_E2E` / `PANTRYIQ_E2E_STORAGE_DIR` | yes (local dev) | Enables the disk-backed storage fallback instead of S3; see [Object storage](#object-storage-csv-uploads) |
 | `RESEND_API_KEY` | later | Transactional email — auth flows only, never notifications |
 | `ANTHROPIC_API_KEY` | later (`CHT-02`) | LLM narration via the Vercel AI SDK |
 
 No secrets are committed. `.env.local` is gitignored.
+
+## Object storage (CSV uploads)
+
+Raw CSV uploads go through `src/server/storage/object-storage.ts`, which
+speaks the S3 API only. Without `S3_ENDPOINT` / `S3_ACCESS_KEY_ID` /
+`S3_SECRET_ACCESS_KEY` / `S3_BUCKET` (or the local fallback below), uploads
+fail with `ObjectStorageConfigurationError`.
+
+### Local (`pnpm dev`)
+
+Use the disk-backed fallback instead of running a real S3 endpoint:
+
+```bash
+PANTRYIQ_E2E=1
+```
+
+Add that to `.env.local`. Uploaded files land under
+`.tmp/pantryiq-e2e-storage` by default; set `PANTRYIQ_E2E_STORAGE_DIR` to
+override the path. This mode is fine for solo local dev, but files are
+unencrypted on disk and vanish when `.tmp` is cleared — don't use it for
+beta or production.
+
+### Beta and production (Coolify, self-hosted on Unraid via MinIO)
+
+Coolify runs on a VM on the same LAN as an Unraid machine. Rather than a
+cloud S3 provider, host [MinIO](https://min.io) (a self-hosted,
+S3-compatible object store) on Unraid and point the app's existing `S3_*`
+vars at it — no code changes needed, since `S3ObjectStorage` already talks
+plain S3 API.
+
+**1. Install MinIO on Unraid**
+
+- From Unraid's Community Applications, install the `MinIO` template (or
+  run `docker run -d -p 9000:9000 -p 9001:9001 -v
+  /mnt/user/appdata/minio:/data minio/minio server /data --console-address
+  ":9001"`).
+- Point MinIO's data directory at an Unraid share, e.g.
+  `/mnt/user/appdata/minio`, so uploaded files persist on the array.
+- Confirm the API port (default `9000`) is reachable from the Coolify VM
+  over the LAN.
+
+**2. Create a bucket and access keys per environment**
+
+In the MinIO console (default `9001`):
+
+- Create one bucket per environment — e.g. `pantryiq-beta` and
+  `pantryiq-production`. Don't share a bucket between them.
+- Generate a dedicated access key/secret pair per bucket. Don't reuse beta
+  credentials in production or vice versa.
+
+**3. Configure each Coolify app**
+
+In each app's environment variables (beta and production are separate
+Coolify apps, so this is set twice, once per bucket/key pair):
+
+```
+S3_ENDPOINT=http://<unraid-lan-ip>:9000
+S3_ACCESS_KEY_ID=<minio-access-key>
+S3_SECRET_ACCESS_KEY=<minio-secret-key>
+S3_BUCKET=<pantryiq-beta or pantryiq-production>
+S3_FORCE_PATH_STYLE=1
+```
+
+`S3_FORCE_PATH_STYLE=1` is required — MinIO doesn't support
+virtual-hosted-style bucket addressing. Leave `S3_REGION` unset (defaults
+to `auto`) unless MinIO is configured with a specific region.
+
+Since the VM reaches Unraid by LAN IP, `S3_ENDPOINT` needs updating in
+Coolify if either machine's address changes.
 
 ## Stack
 
