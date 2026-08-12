@@ -498,9 +498,10 @@ item below must intercept it. A browser test may never bill an LLM call.
       readable message and must not lose the typed question. (Codex, iteration
       66) Added mocked browser coverage for both response statuses, asserting
       the status-specific message and retained user question.
-- [ ] Manual entry (`manual-entry-form.tsx`, 673 lines, 59.1%): every
+- [x] Manual entry (`manual-entry-form.tsx`, 673 lines, 59.1%, Codex iteration 67): every
       validation branch, plus a 400 from `/api/manual-entry` surfacing field
-      errors.
+      errors. Added 15 DOM cases for all entry types, item creation, line
+      management, loading failures, request failures, and server field errors.
 - [ ] CSV upload: 503 from `/api/uploads` for storage down, and 409 on commit
       for unresolved items. `csv-upload-form.tsx` is 60.9%.
 - [ ] CSV mapping review (`csv-mapping-review.tsx`, 34.7%): change a detected

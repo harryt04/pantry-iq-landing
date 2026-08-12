@@ -136,7 +136,9 @@ marketing files.
 [`chat-surface`](../components/chat/chat-surface.dom.test.tsx),
 [`item-deep-dives`](../components/dashboard/item-deep-dives.dom.test.tsx),
 [`csv-upload-form`](../components/import/csv-upload-form.dom.test.tsx),
-[`manual-entry-form`](../components/import/manual-entry-form.dom.test.tsx),
+[`manual-entry-form`](../components/import/manual-entry-form.dom.test.tsx) —
+15 cases covering all entry types, item creation, line management, and
+loading/save failure surfaces,
 [`location-manager`](../components/locations/location-manager.dom.test.tsx),
 [`recipe-builder`](../components/recipes/recipe-builder.dom.test.tsx),
 [`account-settings`](../components/settings/account-settings.dom.test.tsx),
