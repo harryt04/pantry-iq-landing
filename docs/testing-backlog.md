@@ -570,7 +570,10 @@ iteration, unit or integration as the module needs.
       Added real-Postgres and in-memory-storage coverage for failed-upload cleanup,
       preview mapping reuse and unreadable objects, and invalid mapping rejection
       without overwriting the saved mapping.
-- [ ] `inventory/items.ts` and `locations/locations.ts` — both 0%.
+- [x] `inventory/items.ts` and `locations/locations.ts` — both 0%. (Codex, iteration 80)
+      Added real-Postgres service coverage for item persistence, active filtering,
+      exact numeric values, usage updates, location lifecycle mutations, and
+      owner scoping; the inactive-filter mutation was caught.
 - [ ] `auth/email.ts` — 0%. Assert it sends authentication mail only and never
       a notification (tech-stack §3.14).
 

@@ -151,7 +151,7 @@ These eight cover the largest components in the repo. If you are adding a case
 for manual entry, CSV upload, chat, locations, recipes, settings, or the item
 master, **the file already exists** — extend it.
 
-## Layer 4 — Integration tests (`tests/integration/`, 13 files, 94 cases)
+## Layer 4 — Integration tests (`tests/integration/`, 14 files, 98 cases)
 
 Real PostgreSQL. Each runs migrate, seed, and rollback around itself.
 
@@ -161,6 +161,7 @@ Real PostgreSQL. Each runs migrate, seed, and rollback around itself.
 | [`external-signal-sync.test.ts`](../tests/integration/external-signal-sync.test.ts) | Provider fetch ledger success/failure, exact cost and provenance persistence, normalized signal upsert replacement, and empty-result handling |
 | [`write-atomicity.test.ts`](../tests/integration/write-atomicity.test.ts) | A partial failure leaves no rows |
 | [`manual-entry-write.test.ts`](../tests/integration/manual-entry-write.test.ts) | Manual entry writes, location scoping, item creation |
+| [`inventory-and-locations-services.test.ts`](../tests/integration/inventory-and-locations-services.test.ts) | Inventory item persistence, active filtering, exact numeric values, usage updates, location lifecycle mutations, and owner scoping |
 | [`ownership-boundary.test.ts`](../tests/integration/ownership-boundary.test.ts) | `requireOwnedLocation` — no session, cross-account, missing location |
 | [`location-deletion.test.ts`](../tests/integration/location-deletion.test.ts) | Cascade delete across seven child tables |
 | [`connector-framework.test.ts`](../tests/integration/connector-framework.test.ts) | OAuth state tokens, credential encryption, account isolation |
