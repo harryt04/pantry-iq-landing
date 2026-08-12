@@ -491,7 +491,9 @@ item below must intercept it. A browser test may never bill an LLM call.
       stated limits. (Codex, iteration 64) Added a mocked authenticated browser
       journey that submits a question, checks the grounded answer sections and
       no-prediction limit, then opens Sources, Calculations, and Assumptions.
-- [ ] Chat: an assumption override round trip through `/api/chat/override`.
+- [x] Chat: an assumption override round trip through `/api/chat/override`. (Codex, iteration 65)
+      Added mocked browser coverage for recalculation, the conversation-only
+      choice, and the resulting override payload on the next chat request.
 - [ ] Chat: 500 and 503 from `/api/chat`. The surface must degrade with a
       readable message and must not lose the typed question.
 - [ ] Manual entry (`manual-entry-form.tsx`, 673 lines, 59.1%): every
