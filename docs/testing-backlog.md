@@ -554,7 +554,10 @@ iteration, unit or integration as the module needs.
       Added real-Postgres coverage for owner-scoped recipe, sales, purchase,
       snapshot, and unit-conversion assembly, including exact variance output
       and cross-account rejection.
-- [ ] `staffing/labor-efficiency-query.ts` — 143 lines at 0%.
+- [x] `staffing/labor-efficiency-query.ts` — 143 lines at 0%. (Codex, iteration 76)
+      Added real-Postgres coverage for owner isolation and the sales, labor,
+      and external-signal lookback windows; a removed labor owner predicate
+      makes the regression fail.
 - [ ] `menu/menu-engineering-query.ts` — 117 lines at 0%.
 - [ ] `staffing/external-signal-sync.ts` — 136 lines at 0%.
 - [ ] `csv/previews.ts`, `csv/uploads.ts`, and `csv/mapping-persistence.ts` —

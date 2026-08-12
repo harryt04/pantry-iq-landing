@@ -1338,6 +1338,62 @@ describe.skipIf(!integrationDatabaseEnabled())('CSV import', () => {
       ).toBe(true)
     }, 120_000)
 
+    it('keeps staffing reads owner-scoped and applies each source window', async () => {
+      const { sql } = opened!.database
+      await sql`
+          update locations
+          set timezone = 'UTC', business_day_boundary = '04:00:00'
+          where id in (${LOCATION_ID}, ${OTHER_LOCATION_ID})
+        `
+      await sql`
+          insert into transactions
+            (location_id, transacted_at, external_id, source, raw_item_name,
+             qty, unit_price, total_revenue, total_cost)
+          values
+            (${LOCATION_ID}, '2026-08-01T12:00:00Z', 'staffing-current-a', 'query-test', 'House Salad', '1', '100', '100', '30'),
+            (${LOCATION_ID}, '2025-07-01T12:00:00Z', 'staffing-old-a', 'query-test', 'House Salad', '1', '900', '900', '270'),
+            (${OTHER_LOCATION_ID}, '2026-08-01T12:00:00Z', 'staffing-current-b', 'query-test', 'Other Salad', '1', '999', '999', '999')
+      `
+      await sql`
+          insert into labor_shifts
+            (location_id, shift_start, shift_end, external_id, source, role,
+             scheduled_hours, actual_hours, labor_cost)
+          values
+            (${LOCATION_ID}, '2026-08-01T11:00:00Z', '2026-08-01T19:00:00Z', 'shift-current-a', 'query-test', 'line cook', '8', '8', '20'),
+            (${LOCATION_ID}, '2025-07-01T11:00:00Z', '2025-07-01T19:00:00Z', 'shift-old-a', 'query-test', 'line cook', '8', '8', '200'),
+            (${OTHER_LOCATION_ID}, '2026-08-01T11:00:00Z', '2026-08-01T19:00:00Z', 'shift-current-b', 'query-test', 'other role', '8', '8', '999')
+      `
+      await sql`
+          insert into external_signals
+            (location_id, kind, business_date, valid_from, valid_to, status,
+             source, external_id, feature, condition, value, raw_data, retrieved_at)
+          values
+            (${LOCATION_ID}, 'weather', '2026-08-01', '2026-08-01T00:00:00Z', '2026-08-02T00:00:00Z', 'observed', 'query-weather', 'signal-current-a', 'temperature', 'warm', '25', '{}', '2026-08-01T00:00:00Z'),
+            (${LOCATION_ID}, 'weather', '2025-07-01', '2025-07-01T00:00:00Z', '2025-07-02T00:00:00Z', 'observed', 'query-weather', 'signal-old-a', 'temperature', 'cool', '10', '{}', '2025-07-01T00:00:00Z'),
+            (${OTHER_LOCATION_ID}, 'weather', '2026-08-01', '2026-08-01T00:00:00Z', '2026-08-02T00:00:00Z', 'observed', 'query-weather', 'signal-current-b', 'temperature', 'hot', '40', '{}', '2026-08-01T00:00:00Z')
+      `
+
+      const { getLaborEfficiency } =
+        await import('../../src/server/staffing/labor-efficiency-query')
+      const result = await getLaborEfficiency(new Headers(), LOCATION_ID)
+      const shiftPeriods = result.periods.filter(
+        (period) => period.dimension === 'shift',
+      )
+
+      expect(shiftPeriods).toHaveLength(1)
+      expect(shiftPeriods[0]).toMatchObject({
+        label: 'line cook · 2026-08-01',
+        sales: '100',
+        laborCost: '20',
+      })
+      expect(result.forecast.externalSignals.sources).toEqual([
+        expect.objectContaining({ source: 'query-weather', rowCount: 1 }),
+      ])
+      await expect(
+        getLaborEfficiency(new Headers(), OTHER_LOCATION_ID),
+      ).rejects.toThrow()
+    }, 120_000)
+
     it('marks the upload imported so the history is honest', async () => {
       const uploadId = await seedUpload()
       await imports.commitCsvImport(
