@@ -2,6 +2,57 @@ import { MOCK_UPLOAD_ID, expect, test } from './fixtures/mock-api'
 
 import { fullYearLocationFixture } from '../fixtures/pantry'
 
+test.describe('CSV batch upload', () => {
+  test('drops three CSVs, starts each upload immediately, and hides the native input', async ({
+    page,
+    mockApi,
+  }) => {
+    await mockApi()
+    await page.goto(`/import?locationId=${fullYearLocationFixture.locationId}`)
+
+    const uploadRequests: string[] = []
+    page.on('request', (request) => {
+      if (
+        request.method() === 'POST' &&
+        new URL(request.url()).pathname === '/api/uploads'
+      ) {
+        uploadRequests.push(request.url())
+      }
+    })
+
+    await page.evaluate(() => {
+      const dataTransfer = new DataTransfer()
+      for (const filename of ['sales.csv', 'labor.csv', 'inventory.csv']) {
+        dataTransfer.items.add(
+          new File(['date,item,quantity\n2026-08-01,salmon,2\n'], filename, {
+            type: 'text/csv',
+          }),
+        )
+      }
+      document
+        .querySelector<HTMLFormElement>(
+          'form[aria-label="CSV upload drop zone"]',
+        )
+        ?.dispatchEvent(
+          new DragEvent('drop', {
+            bubbles: true,
+            cancelable: true,
+            dataTransfer,
+          }),
+        )
+    })
+
+    await expect(page.getByRole('heading', { name: 'sales.csv' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'labor.csv' })).toBeVisible()
+    await expect(
+      page.getByRole('heading', { name: 'inventory.csv' }),
+    ).toBeVisible()
+    await expect.poll(() => uploadRequests.length).toBe(3)
+    await expect(page.locator('input[type="file"]')).toBeHidden()
+    await expect(page.locator('.csv-upload-job')).toHaveCount(3)
+  })
+})
+
 test.describe('CSV upload failure paths', () => {
   test('surfaces a storage outage and leaves upload available to retry', async ({
     page,

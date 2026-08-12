@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -79,6 +79,37 @@ function jsonResponse(
   }
 }
 
+function mockSuccessfulBatch() {
+  fetchMock.mockImplementation((url: string) => {
+    if (url.includes('/preview')) {
+      const preview = csvPreview()
+      return Promise.resolve(
+        jsonResponse({
+          preview: {
+            ...preview,
+            mapping: {
+              ...preview.mapping,
+              columns: preview.mapping.columns.map((column, index) =>
+                index === 0
+                  ? { ...column, band: 'review' as const, confidence: 0.7 }
+                  : column,
+              ),
+            },
+          },
+        }),
+      )
+    }
+    return Promise.resolve(
+      jsonResponse({
+        upload: {
+          id: `upload-${fetchMock.mock.calls.length}`,
+          filename: 'selected.csv',
+        },
+      }),
+    )
+  })
+}
+
 describe('CSV upload form', () => {
   beforeEach(() => {
     fetchMock.mockReset()
@@ -95,15 +126,57 @@ describe('CSV upload form', () => {
     expect(screen.getByText(/CSV files up to 10 MB/)).toBeInTheDocument()
   })
 
-  it('keeps upload disabled until a file is chosen', async () => {
+  it('starts uploading as soon as a file is chosen', async () => {
     render(<CsvUploadForm locationId={LOCATION_ID} />)
-
-    const button = screen.getByRole('button', { name: 'Upload CSV' })
-    expect(button).toBeDisabled()
 
     await userEvent.upload(screen.getByLabelText('CSV file'), csvFile())
 
-    expect(button).toBeEnabled()
+    expect(fetchMock).toHaveBeenCalledWith(
+      `/api/uploads?locationId=${LOCATION_ID}`,
+      expect.objectContaining({ method: 'POST' }),
+    )
+  })
+
+  it('accepts several selected files and gives each one its own upload job', async () => {
+    mockSuccessfulBatch()
+
+    render(<CsvUploadForm locationId={LOCATION_ID} />)
+    await userEvent.upload(screen.getByLabelText('CSV file'), [
+      csvFile('sales.csv'),
+      csvFile('labor.csv'),
+      csvFile('inventory.csv'),
+    ])
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(6))
+    expect(
+      screen.getByRole('heading', { name: 'sales.csv' }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('heading', { name: 'labor.csv' }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('heading', { name: 'inventory.csv' }),
+    ).toBeInTheDocument()
+  })
+
+  it('accepts three files from the drop target without a submit click', async () => {
+    mockSuccessfulBatch()
+
+    render(<CsvUploadForm locationId={LOCATION_ID} />)
+    const fileInput = screen.getByLabelText('CSV file')
+    fireEvent.drop(screen.getByRole('form', { name: 'CSV upload drop zone' }), {
+      dataTransfer: {
+        files: [
+          csvFile('sales.csv'),
+          csvFile('labor.csv'),
+          csvFile('inventory.csv'),
+        ],
+      },
+    })
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(6))
+    expect(fileInput).toHaveClass('csv-upload__input')
+    expect(screen.getAllByRole('heading', { name: /\.csv$/ })).toHaveLength(3)
   })
 
   it('sends the filename and import type as headers, not a multipart form', async () => {
@@ -115,7 +188,6 @@ describe('CSV upload form', () => {
 
     render(<CsvUploadForm locationId={LOCATION_ID} />)
     await userEvent.upload(screen.getByLabelText('CSV file'), csvFile())
-    await userEvent.click(screen.getByRole('button', { name: 'Upload CSV' }))
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalled())
 
@@ -140,7 +212,6 @@ describe('CSV upload form', () => {
 
     render(<CsvUploadForm locationId={LOCATION_ID} />)
     await userEvent.upload(screen.getByLabelText('CSV file'), csvFile())
-    await userEvent.click(screen.getByRole('button', { name: 'Upload CSV' }))
 
     expect(
       await screen.findByText('That file is not a CSV.'),
@@ -152,7 +223,6 @@ describe('CSV upload form', () => {
 
     render(<CsvUploadForm locationId={LOCATION_ID} />)
     await userEvent.upload(screen.getByLabelText('CSV file'), csvFile())
-    await userEvent.click(screen.getByRole('button', { name: 'Upload CSV' }))
 
     expect(await screen.findByText(/network down/)).toBeInTheDocument()
   })
@@ -166,7 +236,6 @@ describe('CSV upload form', () => {
 
     render(<CsvUploadForm locationId={LOCATION_ID} />)
     await userEvent.upload(screen.getByLabelText('CSV file'), csvFile())
-    await userEvent.click(screen.getByRole('button', { name: 'Upload CSV' }))
 
     const status = await screen.findByText('sales.csv is ready to map.')
 
@@ -185,7 +254,6 @@ describe('CSV upload form', () => {
 
     render(<CsvUploadForm locationId={LOCATION_ID} />)
     await userEvent.upload(screen.getByLabelText('CSV file'), csvFile())
-    await userEvent.click(screen.getByRole('button', { name: 'Upload CSV' }))
 
     await screen.findByText('Storage is unavailable.')
     expect(screen.getByRole('button', { name: 'Upload CSV' })).toBeEnabled()
@@ -208,11 +276,9 @@ describe('CSV upload form', () => {
     const fileInput = screen.getByLabelText('CSV file')
 
     await userEvent.upload(fileInput, csvFile('sales.csv'))
-    await userEvent.click(screen.getByRole('button', { name: 'Upload CSV' }))
     await screen.findByText('sales.csv is ready to map.')
 
     await userEvent.upload(fileInput, csvFile('bad.csv'))
-    await userEvent.click(screen.getByRole('button', { name: 'Upload CSV' }))
 
     expect(
       await screen.findByText('That file is not a CSV.'),

@@ -2088,6 +2088,32 @@ body {
   width: 100%;
 }
 
+.csv-upload-dropzone {
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-surface);
+  display: grid;
+  gap: var(--space-5);
+  padding: var(--space-5);
+  transition:
+    background-color 160ms ease-out,
+    border-color 160ms ease-out;
+}
+
+.csv-upload-dropzone.is-dragging {
+  background: var(--muted);
+  border-color: var(--primary);
+}
+
+.csv-upload__input {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .csv-upload-dropzone {
+    transition: none;
+  }
+}
+
 .app-page__help,
 .app-page__status,
 .app-page__error {

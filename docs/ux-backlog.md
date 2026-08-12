@@ -104,7 +104,7 @@ reorder.
       `csv-upload-form.dom.test.tsx` proves a later rejected file leaves the
       earlier file's preview and ready status intact.
 
-- [ ] **Select or drop several files at once.** The input at
+- [x] **Select or drop several files at once.** The input at
       `csv-upload-form.tsx:283` takes one file and needs a second click on
       `Upload CSV` to do anything. Add `multiple`, add a real drop target over
       the form region, and start each file as soon as it is chosen. The native
@@ -113,6 +113,9 @@ reorder.
       **Acceptance:** dropping three CSVs uploads three files with no further
       click, each appears in a list with its own state, and no native file
       input is visible on the page.
+      Implemented multi-file selection and drag/drop with immediate independent
+      upload jobs; `tests/ui/import.spec.ts` proves three dropped files render
+      separate states without a submit click and the native input is hidden.
 
 - [ ] **Detect the import type per file.** The `What kind of data is this?`
       select at `csv-upload-form.tsx:268` gates the upload and applies to the

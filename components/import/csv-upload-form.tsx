@@ -83,9 +83,10 @@ type UploadJob = {
 
 export function CsvUploadForm({ locationId }: { locationId: string }) {
   const [importType, setImportType] = React.useState('transactions')
-  const [file, setFile] = React.useState<File | null>(null)
   const [jobs, setJobs] = React.useState<Record<string, UploadJob>>({})
+  const [isDragging, setIsDragging] = React.useState(false)
   const nextJobId = React.useRef(0)
+  const fileInputRef = React.useRef<HTMLInputElement>(null)
 
   function updateJob(jobId: string, update: (job: UploadJob) => UploadJob) {
     setJobs((currentJobs) => {
@@ -95,32 +96,11 @@ export function CsvUploadForm({ locationId }: { locationId: string }) {
     })
   }
 
-  async function submit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    if (!file) {
-      return
-    }
-
-    const jobId = `upload-job-${nextJobId.current++}`
-    const selectedFile = file
-    const selectedImportType = importType
-    setJobs((currentJobs) => ({
-      ...currentJobs,
-      [jobId]: {
-        fileName: selectedFile.name,
-        importType: selectedImportType,
-        uploadId: null,
-        preview: null,
-        mapping: null,
-        resolutions: {},
-        summary: null,
-        status: 'Checking the file',
-        error: '',
-        isUploading: true,
-        isCommitting: false,
-      },
-    }))
-
+  async function uploadFile(
+    jobId: string,
+    selectedFile: File,
+    selectedImportType: string,
+  ) {
     try {
       const response = await fetch(
         `/api/uploads?locationId=${encodeURIComponent(locationId)}`,
@@ -145,7 +125,7 @@ export function CsvUploadForm({ locationId }: { locationId: string }) {
       updateJob(jobId, (job) => ({
         ...job,
         uploadId: result.upload!.id,
-        status: 'Reading the file',
+        status: `${selectedFile.name} is being read.`,
       }))
       const previewResponse = await fetch(
         `/api/uploads/${encodeURIComponent(result.upload.id)}/preview`,
@@ -161,10 +141,9 @@ export function CsvUploadForm({ locationId }: { locationId: string }) {
         ...job,
         preview: previewResult.preview!,
         mapping: previewResult.preview!.mapping,
-        status: `${result.upload!.filename} is ready to map.`,
+        status: `${selectedFile.name} is ready to map.`,
         isUploading: false,
       }))
-      setFile(null)
     } catch (uploadError) {
       updateJob(jobId, (job) => ({
         ...job,
@@ -178,6 +157,53 @@ export function CsvUploadForm({ locationId }: { locationId: string }) {
     } finally {
       updateJob(jobId, (job) => ({ ...job, isUploading: false }))
     }
+  }
+
+  function startUploads(files: File[]) {
+    if (!files.length) return
+
+    const selectedImportType = importType
+    const entries = files.map((selectedFile) => {
+      const jobId = `upload-job-${nextJobId.current++}`
+      return {
+        jobId,
+        selectedFile,
+        job: {
+          fileName: selectedFile.name,
+          importType: selectedImportType,
+          uploadId: null,
+          preview: null,
+          mapping: null,
+          resolutions: {},
+          summary: null,
+          status: 'Checking the file',
+          error: '',
+          isUploading: true,
+          isCommitting: false,
+        } satisfies UploadJob,
+      }
+    })
+
+    setJobs((currentJobs) => ({
+      ...currentJobs,
+      ...Object.fromEntries(entries.map(({ jobId, job }) => [jobId, job])),
+    }))
+
+    for (const { jobId, selectedFile } of entries) {
+      void uploadFile(jobId, selectedFile, selectedImportType)
+    }
+  }
+
+  function chooseFiles(event: React.ChangeEvent<HTMLInputElement>) {
+    startUploads(Array.from(event.target.files ?? []))
+    // Allow the same file to be chosen again after a failed upload.
+    event.target.value = ''
+  }
+
+  function dropFiles(event: React.DragEvent<HTMLFormElement>) {
+    event.preventDefault()
+    setIsDragging(false)
+    startUploads(Array.from(event.dataTransfer.files))
   }
 
   async function refreshSummary(
@@ -336,18 +362,29 @@ export function CsvUploadForm({ locationId }: { locationId: string }) {
   }
 
   const jobEntries = Object.entries(jobs)
-  const hasUploadingJob = jobEntries.some(([, job]) => job.isUploading)
-
   return (
     <div className="app-page__form">
-      <form onSubmit={submit}>
+      <form
+        className={`csv-upload-dropzone${isDragging ? 'is-dragging' : ''}`}
+        aria-label="CSV upload drop zone"
+        onDragEnter={(event) => {
+          event.preventDefault()
+          setIsDragging(true)
+        }}
+        onDragOver={(event) => {
+          event.preventDefault()
+          setIsDragging(true)
+        }}
+        onDragLeave={() => setIsDragging(false)}
+        onDrop={dropFiles}
+        onSubmit={(event) => event.preventDefault()}
+      >
         <div className="app-page__form-row">
           <Label htmlFor="import-type">What kind of data is this?</Label>
           <NativeSelect
             id="import-type"
             value={importType}
             onChange={(event) => setImportType(event.target.value)}
-            disabled={hasUploadingJob}
           >
             {importTypes.map(([value, label]) => (
               <option key={value} value={value}>
@@ -357,20 +394,29 @@ export function CsvUploadForm({ locationId }: { locationId: string }) {
           </NativeSelect>
         </div>
         <div className="app-page__form-row">
-          <Label htmlFor="csv-file">CSV file</Label>
+          <Label htmlFor="csv-file">CSV files</Label>
           <input
             id="csv-file"
             type="file"
             accept=".csv,text/csv"
-            onChange={(event) => setFile(event.target.files?.[0] ?? null)}
-            disabled={hasUploadingJob}
+            aria-label="CSV file"
+            className="csv-upload__input"
+            multiple
+            onChange={chooseFiles}
+            ref={fileInputRef}
           />
           <p className="app-page__help">
-            CSV files up to 10 MB. The file is checked before anything is saved.
+            Drop one or more CSV files here, or use Upload CSV. Each file starts
+            as soon as it is chosen. CSV files up to 10 MB are checked before
+            anything is saved.
           </p>
         </div>
-        <Button type="submit" disabled={hasUploadingJob || !file}>
-          {hasUploadingJob ? 'Uploading' : 'Upload CSV'}
+        <Button
+          type="button"
+          onClick={() => fileInputRef.current?.click()}
+          aria-label="Upload CSV"
+        >
+          Upload CSV
         </Button>
       </form>
       {jobEntries.map(([jobId, job]) => (
@@ -383,7 +429,16 @@ export function CsvUploadForm({ locationId }: { locationId: string }) {
           <p aria-live="polite" className="app-page__status">
             {job.status}
           </p>
-          {job.preview ? <CsvPreviewTable preview={job.preview} /> : null}
+          {job.preview ? (
+            <CsvPreviewTable
+              preview={job.preview}
+              titleId={
+                jobId === 'upload-job-0'
+                  ? 'csv-preview-title'
+                  : `${jobId}-preview-title`
+              }
+            />
+          ) : null}
           {job.preview && job.mapping ? (
             <CsvMappingReview
               mapping={job.mapping}
@@ -468,13 +523,19 @@ export function CsvUploadForm({ locationId }: { locationId: string }) {
   )
 }
 
-function CsvPreviewTable({ preview }: { preview: CsvPreview }) {
+function CsvPreviewTable({
+  preview,
+  titleId,
+}: {
+  preview: CsvPreview
+  titleId: string
+}) {
   const delimiterName = preview.delimiter === '\t' ? 'tab' : preview.delimiter
   return (
-    <section className="csv-preview" aria-labelledby="csv-preview-title">
+    <section className="csv-preview" aria-labelledby={titleId}>
       <div>
         <p className="app-page__eyebrow">Preview</p>
-        <h2 id="csv-preview-title">A look at the first rows.</h2>
+        <h2 id={titleId}>A look at the first rows.</h2>
         <p className="app-page__help">
           {preview.rowCount.toLocaleString()} rows · {preview.columnCount}{' '}
           columns · {delimiterName} delimited · {preview.encoding}
