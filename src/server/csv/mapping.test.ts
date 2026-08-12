@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
   detectionFromStoredCsvMapping,
+  detectCsvImportType,
   detectColumnMappings,
   findReusableCsvMapping,
   parseStoredCsvMapping,
@@ -23,6 +24,25 @@ function mappingFor(
 }
 
 describe('CSV column mapping detection', () => {
+  it.each([
+    ['transactions', ['Transaction Date', 'Item Name', 'Qty', 'Total Revenue']],
+    [
+      'labor',
+      ['Shift Start', 'Shift End', 'Employee Code', 'Role', 'Actual Hours'],
+    ],
+  ] as const)('detects a %s source from its headers', (importType, columns) => {
+    expect(detectCsvImportType(columns)).toMatchObject({ importType })
+  })
+
+  it('keeps the matched fields available to explain a type guess', () => {
+    expect(
+      detectCsvImportType(['Shift Start', 'Role', 'Actual Hours']),
+    ).toMatchObject({
+      importType: 'labor',
+      matchedFields: ['shiftStart', 'role', 'actualHours'],
+    })
+  })
+
   it('maps the labor shift fields without an item column', () => {
     const detection = mappingFor(
       [

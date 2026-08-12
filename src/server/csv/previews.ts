@@ -15,7 +15,7 @@ import {
   detectColumnMappings,
   findReusableCsvMapping,
 } from './mapping'
-import { CSV_IMPORT_TYPES } from './upload-input'
+import { CSV_IMPORT_TYPES, type CsvImportType } from './upload-input'
 
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
@@ -34,6 +34,55 @@ export class CsvPreviewReadError extends Error {
     super('That file could not be read. Nothing was changed.')
     this.name = 'CsvPreviewReadError'
   }
+}
+
+export class CsvImportTypeUpdateError extends Error {
+  constructor() {
+    super('That upload cannot be changed after it has been imported.')
+    this.name = 'CsvImportTypeUpdateError'
+  }
+}
+
+export async function updateCsvImportType(
+  headers: Headers,
+  uploadId: string,
+  importType: CsvImportType,
+): Promise<{ id: string; source: CsvImportType }> {
+  const session = await requireSession(headers)
+  if (!UUID_PATTERN.test(uploadId)) throw new CsvPreviewNotFoundError()
+
+  const [upload] = await db
+    .select({
+      id: csvUploadHistory.id,
+      locationId: csvUploadHistory.locationId,
+      status: csvUploadHistory.status,
+    })
+    .from(csvUploadHistory)
+    .innerJoin(locations, eq(locations.id, csvUploadHistory.locationId))
+    .where(
+      and(
+        eq(csvUploadHistory.id, uploadId),
+        eq(locations.userId, session.user.id),
+      ),
+    )
+    .limit(1)
+
+  if (!upload || upload.status !== 'uploaded')
+    throw new CsvImportTypeUpdateError()
+
+  const [updated] = await db
+    .update(csvUploadHistory)
+    .set({
+      source: importType,
+      mappingUsed: {},
+      itemResolution: null,
+      unmatchedItems: null,
+    })
+    .where(eq(csvUploadHistory.id, upload.id))
+    .returning({ id: csvUploadHistory.id, source: csvUploadHistory.source })
+
+  if (!updated) throw new CsvPreviewNotFoundError()
+  return { id: updated.id, source: updated.source as CsvImportType }
 }
 
 export async function previewCsv(

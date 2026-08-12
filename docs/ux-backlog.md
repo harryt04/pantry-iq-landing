@@ -117,7 +117,8 @@ reorder.
       upload jobs; `tests/ui/import.spec.ts` proves three dropped files render
       separate states without a submit click and the native input is hidden.
 
-- [ ] **Detect the import type per file.** The `What kind of data is this?`
+- [x] **Detect the import type per file.**
+      The `What kind of data is this?`
       select at `csv-upload-form.tsx:268` gates the upload and applies to the
       whole form, so a mixed batch is impossible and a wrong answer wastes the
       whole upload. Detect the type from the header row using the existing
@@ -127,6 +128,9 @@ reorder.
       **Acceptance:** a transactions file and a labor file dropped together are
       each detected correctly, the operator sets nothing before dropping, and
       an override on one file does not touch the other.
+      Implemented header-based per-file detection, persisted overrides, and
+      independent mixed-batch coverage in `tests/ui/import.spec.ts` and
+      `csv-upload-form.dom.test.tsx`.
 
 - [ ] **Per-file status and per-file failure.** `status` and `error` are single
       strings that clobber each other. One bad file must not stop the batch or

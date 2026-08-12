@@ -1,8 +1,45 @@
+import path from 'node:path'
+
 import { MOCK_UPLOAD_ID, expect, test } from './fixtures/mock-api'
 
 import { fullYearLocationFixture } from '../fixtures/pantry'
 
 test.describe('CSV batch upload', () => {
+  test('detects transaction and labor fixtures independently', async ({
+    page,
+    mockApi,
+  }) => {
+    await mockApi()
+    await page.goto(`/import?locationId=${fullYearLocationFixture.locationId}`)
+
+    const uploadedTypes: string[] = []
+    page.on('request', (request) => {
+      if (
+        request.method() === 'POST' &&
+        new URL(request.url()).pathname === '/api/uploads'
+      ) {
+        uploadedTypes.push(request.headers()['x-pantryiq-import-type'] ?? '')
+      }
+    })
+
+    await page
+      .getByLabel('CSV file')
+      .setInputFiles([
+        path.resolve(
+          'tests/fixtures/csv/transactions/sales-one-year-daily.csv',
+        ),
+        path.resolve('tests/fixtures/csv/labor/7shifts-timesheet.csv'),
+      ])
+
+    await expect(
+      page.getByLabel('Import type for sales-one-year-daily.csv'),
+    ).toHaveValue('transactions')
+    await expect(
+      page.getByLabel('Import type for 7shifts-timesheet.csv'),
+    ).toHaveValue('labor')
+    await expect.poll(() => uploadedTypes).toEqual(['transactions', 'labor'])
+  })
+
   test('drops three CSVs, starts each upload immediately, and hides the native input', async ({
     page,
     mockApi,

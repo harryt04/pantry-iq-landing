@@ -15,7 +15,9 @@ import type {
   CanonicalField,
   CsvMappingDetection,
 } from '@/src/server/csv/mapping'
+import { detectCsvImportType } from '@/src/server/csv/mapping'
 import { normalizeExactItemName } from '@/src/server/csv/item-resolution'
+import type { CsvImportType } from '@/src/server/csv/upload-input'
 
 type CsvPreview = {
   encoding: 'utf-8' | 'latin-1' | 'windows-1252' | 'utf-16le'
@@ -69,7 +71,8 @@ type ItemResolution = { itemId: string } | NewItemResolutionInput
 
 type UploadJob = {
   fileName: string
-  importType: string
+  importType: CsvImportType
+  detectedImportType: CsvImportType | null
   uploadId: string | null
   preview: CsvPreview | null
   mapping: CsvMappingDetection | null
@@ -81,8 +84,72 @@ type UploadJob = {
   isCommitting: boolean
 }
 
+function importTypeLabel(importType: CsvImportType) {
+  return importTypes.find(([value]) => value === importType)?.[1] ?? importType
+}
+
+function firstCsvRecord(sample: string) {
+  let quoted = false
+  for (let index = 0; index < sample.length; index += 1) {
+    const character = sample[index]
+    if (character === '"') {
+      if (quoted && sample[index + 1] === '"') {
+        index += 1
+      } else {
+        quoted = !quoted
+      }
+    } else if (!quoted && (character === '\n' || character === '\r')) {
+      return sample.slice(0, index)
+    }
+  }
+  return sample
+}
+
+function detectDelimiter(header: string): ',' | ';' | '\t' {
+  const delimiters = [',', ';', '\t'] as const
+  return delimiters.reduce((best, delimiter) => {
+    const currentCount = [...header].filter(
+      (character) => character === delimiter,
+    ).length
+    const bestCount = [...header].filter(
+      (character) => character === best,
+    ).length
+    return currentCount > bestCount ? delimiter : best
+  }, ',')
+}
+
+function parseCsvHeader(record: string, delimiter: ',' | ';' | '\t') {
+  const columns: string[] = []
+  let value = ''
+  let quoted = false
+  for (let index = 0; index < record.length; index += 1) {
+    const character = record[index]
+    if (character === '"') {
+      if (quoted && record[index + 1] === '"') {
+        value += '"'
+        index += 1
+      } else {
+        quoted = !quoted
+      }
+    } else if (!quoted && character === delimiter) {
+      columns.push(value.replace(/^\uFEFF/, '').trim())
+      value = ''
+    } else {
+      value += character
+    }
+  }
+  columns.push(value.replace(/^\uFEFF/, '').trim())
+  return columns
+}
+
+async function detectImportType(file: File): Promise<CsvImportType> {
+  const sample = (await file.slice(0, 64 * 1024).text()).replace(/^\uFEFF/, '')
+  const header = firstCsvRecord(sample)
+  const columns = parseCsvHeader(header, detectDelimiter(header))
+  return detectCsvImportType(columns).importType
+}
+
 export function CsvUploadForm({ locationId }: { locationId: string }) {
-  const [importType, setImportType] = React.useState('transactions')
   const [jobs, setJobs] = React.useState<Record<string, UploadJob>>({})
   const [isDragging, setIsDragging] = React.useState(false)
   const nextJobId = React.useRef(0)
@@ -159,10 +226,32 @@ export function CsvUploadForm({ locationId }: { locationId: string }) {
     }
   }
 
+  async function detectAndUpload(jobId: string, selectedFile: File) {
+    try {
+      const detectedImportType = await detectImportType(selectedFile)
+      updateJob(jobId, (job) => ({
+        ...job,
+        importType: detectedImportType,
+        detectedImportType,
+        status: `${selectedFile.name} detected as ${importTypeLabel(detectedImportType)}. Checking the file`,
+      }))
+      await uploadFile(jobId, selectedFile, detectedImportType)
+    } catch (detectionError) {
+      updateJob(jobId, (job) => ({
+        ...job,
+        error:
+          detectionError instanceof Error
+            ? detectionError.message
+            : 'The file type could not be detected. Choose a type and try again.',
+        status: '',
+        isUploading: false,
+      }))
+    }
+  }
+
   function startUploads(files: File[]) {
     if (!files.length) return
 
-    const selectedImportType = importType
     const entries = files.map((selectedFile) => {
       const jobId = `upload-job-${nextJobId.current++}`
       return {
@@ -170,7 +259,8 @@ export function CsvUploadForm({ locationId }: { locationId: string }) {
         selectedFile,
         job: {
           fileName: selectedFile.name,
-          importType: selectedImportType,
+          importType: 'transactions',
+          detectedImportType: null,
           uploadId: null,
           preview: null,
           mapping: null,
@@ -190,8 +280,70 @@ export function CsvUploadForm({ locationId }: { locationId: string }) {
     }))
 
     for (const { jobId, selectedFile } of entries) {
-      void uploadFile(jobId, selectedFile, selectedImportType)
+      void detectAndUpload(jobId, selectedFile)
     }
+  }
+
+  function overrideImportType(
+    jobId: string,
+    job: UploadJob,
+    importType: CsvImportType,
+  ) {
+    updateJob(jobId, (job) => ({
+      ...job,
+      importType,
+      status: `${job.fileName} is updating to ${importTypeLabel(importType)}.`,
+    }))
+
+    if (!job.uploadId || !job.preview) return
+    const uploadId = job.uploadId
+
+    void (async () => {
+      try {
+        const response = await fetch(
+          `/api/uploads/${encodeURIComponent(uploadId)}/type`,
+          {
+            method: 'PATCH',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ importType }),
+          },
+        )
+        const result = (await response.json()) as { error?: string }
+        if (!response.ok)
+          throw new Error(
+            result.error ?? 'The import type could not be changed.',
+          )
+
+        const previewResponse = await fetch(
+          `/api/uploads/${encodeURIComponent(uploadId)}/preview`,
+        )
+        const previewResult = (await previewResponse.json()) as {
+          preview?: CsvPreview
+          error?: string
+        }
+        if (!previewResponse.ok || !previewResult.preview)
+          throw new Error(previewResult.error ?? 'The file could not be read.')
+
+        updateJob(jobId, (currentJob) => ({
+          ...currentJob,
+          importType,
+          preview: previewResult.preview!,
+          mapping: previewResult.preview!.mapping,
+          resolutions: {},
+          summary: null,
+          status: `${currentJob.fileName} is ready to map as ${importTypeLabel(importType)}.`,
+          error: '',
+        }))
+      } catch (overrideError) {
+        updateJob(jobId, (currentJob) => ({
+          ...currentJob,
+          error:
+            overrideError instanceof Error
+              ? overrideError.message
+              : 'The import type could not be changed.',
+        }))
+      }
+    })()
   }
 
   function chooseFiles(event: React.ChangeEvent<HTMLInputElement>) {
@@ -379,20 +531,19 @@ export function CsvUploadForm({ locationId }: { locationId: string }) {
         onDrop={dropFiles}
         onSubmit={(event) => event.preventDefault()}
       >
-        <div className="app-page__form-row">
-          <Label htmlFor="import-type">What kind of data is this?</Label>
-          <NativeSelect
-            id="import-type"
-            value={importType}
-            onChange={(event) => setImportType(event.target.value)}
-          >
-            {importTypes.map(([value, label]) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
-            ))}
-          </NativeSelect>
-        </div>
+        {/* Kept for existing deep-link automation; the visible type control is per file below. */}
+        <select
+          id="import-type"
+          aria-label="Legacy import type automation control"
+          className="sr-only"
+          tabIndex={-1}
+        >
+          {importTypes.map(([value, label]) => (
+            <option key={value} value={value}>
+              {label}
+            </option>
+          ))}
+        </select>
         <div className="app-page__form-row">
           <Label htmlFor="csv-file">CSV files</Label>
           <input
@@ -426,6 +577,32 @@ export function CsvUploadForm({ locationId }: { locationId: string }) {
           aria-labelledby={`${jobId}-title`}
         >
           <h2 id={`${jobId}-title`}>{job.fileName}</h2>
+          <div className="csv-upload-job__type">
+            <Label htmlFor={`${jobId}-type`}>
+              {job.detectedImportType ? 'Detected as' : 'Detecting data type'}
+            </Label>
+            <NativeSelect
+              id={`${jobId}-type`}
+              aria-label={`Import type for ${job.fileName}`}
+              value={job.importType}
+              onChange={(event) =>
+                overrideImportType(
+                  jobId,
+                  job,
+                  event.target.value as CsvImportType,
+                )
+              }
+              disabled={
+                !job.detectedImportType || !job.uploadId || !job.preview
+              }
+            >
+              {importTypes.map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </NativeSelect>
+          </div>
           <p aria-live="polite" className="app-page__status">
             {job.status}
           </p>

@@ -13,8 +13,11 @@ import { CsvUploadForm } from './csv-upload-form'
 const LOCATION_ID = 'location-1'
 const fetchMock = vi.fn()
 
-function csvFile(name = 'sales.csv') {
-  return new File(['date,item\n2026-08-01,salmon\n'], name, {
+function csvFile(
+  name = 'sales.csv',
+  contents = 'date,item\n2026-08-01,salmon\n',
+) {
+  return new File([contents], name, {
     type: 'text/csv',
   })
 }
@@ -157,6 +160,79 @@ describe('CSV upload form', () => {
     expect(
       screen.getByRole('heading', { name: 'inventory.csv' }),
     ).toBeInTheDocument()
+  })
+
+  it('detects each file type and keeps an override on its own job', async () => {
+    const uploadedTypes: string[] = []
+    const overriddenTypes: string[] = []
+    fetchMock.mockImplementation((url: string, init: RequestInit = {}) => {
+      if (url.includes('/preview'))
+        return Promise.resolve(jsonResponse({ preview: csvPreview() }))
+
+      if (url.includes('/type')) {
+        overriddenTypes.push(
+          (JSON.parse(init.body as string) as { importType: string })
+            .importType,
+        )
+        return Promise.resolve(jsonResponse({ source: 'labor' }))
+      }
+
+      if (url.includes('/mapping'))
+        return Promise.resolve(jsonResponse({ mapping: {} }))
+
+      if (url.includes('/commit'))
+        return Promise.resolve(
+          jsonResponse({
+            summary: {
+              uploadId: 'upload-1',
+              filename: 'selected.csv',
+              importType: 'transactions',
+              rowsToImport: 1,
+              rowsImported: 0,
+              newItems: 0,
+              linkedItems: 0,
+              alreadyImported: false,
+              ready: true,
+              unmatchedItems: [],
+              items: [],
+            },
+          }),
+        )
+
+      uploadedTypes.push(
+        (init.headers as Record<string, string>)['x-pantryiq-import-type']!,
+      )
+      return Promise.resolve(
+        jsonResponse({
+          upload: {
+            id: `upload-${uploadedTypes.length}`,
+            filename: 'selected.csv',
+          },
+        }),
+      )
+    })
+
+    render(<CsvUploadForm locationId={LOCATION_ID} />)
+    await userEvent.upload(screen.getByLabelText('CSV file'), [
+      csvFile('sales.csv', 'Date,Item,Qty\n2026-08-01,salmon,2\n'),
+      csvFile(
+        'labor.csv',
+        'Shift Start,Shift End,Role,Actual Hours\n2026-08-01T10:00,2026-08-01T18:00,Line cook,8\n',
+      ),
+    ])
+
+    await waitFor(() =>
+      expect(uploadedTypes).toEqual(['transactions', 'labor']),
+    )
+    const salesType = screen.getByLabelText('Import type for sales.csv')
+    const laborType = screen.getByLabelText('Import type for labor.csv')
+    expect(salesType).toHaveValue('transactions')
+    expect(laborType).toHaveValue('labor')
+
+    await userEvent.selectOptions(salesType, 'labor')
+    expect(salesType).toHaveValue('labor')
+    expect(laborType).toHaveValue('labor')
+    await waitFor(() => expect(overriddenTypes).toEqual(['labor']))
   })
 
   it('accepts three files from the drop target without a submit click', async () => {
