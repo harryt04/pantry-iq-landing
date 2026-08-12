@@ -487,8 +487,10 @@ paths a healthy seeded stack cannot produce on demand.
 [`src/server/chat/narration.ts`](../src/server/chat/narration.ts). Every chat
 item below must intercept it. A browser test may never bill an LLM call.
 
-- [ ] Chat: ask a question, assert the answer renders with its evidence and its
-      stated limits.
+- [x] Chat: ask a question, assert the answer renders with its evidence and its
+      stated limits. (Codex, iteration 64) Added a mocked authenticated browser
+      journey that submits a question, checks the grounded answer sections and
+      no-prediction limit, then opens Sources, Calculations, and Assumptions.
 - [ ] Chat: an assumption override round trip through `/api/chat/override`.
 - [ ] Chat: 500 and 503 from `/api/chat`. The surface must degrade with a
       readable message and must not lose the typed question.

@@ -356,10 +356,10 @@ async function handleMockRequest(
       route,
       outcome,
       [
-        'Observation: Salmon has about $40 at risk from current spoilage.',
+        'Observation: Tomato Soup has about $40 at risk from current spoilage.',
         'Financial impact: About $40 at risk from current spoilage.',
         'Prediction: Not provided. The available history earns an observation, not a prediction.',
-        'Recommendation: Consider reviewing Salmon this week.',
+        'Recommendation: Consider reviewing Tomato Soup this week.',
         'Show your work: Ask to review the sources, calculations, and assumptions behind this recommendation.',
       ].join('\n'),
     )

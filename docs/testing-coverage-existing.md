@@ -185,6 +185,7 @@ pattern to copy.
 | [`e2e/settings.spec.ts`](../tests/e2e/settings.spec.ts) | Full-year item-master shelf-life edit, save confirmation, and persistence after reload |
 | [`e2e/returning-user.spec.ts`](../tests/e2e/returning-user.spec.ts) | Returning-user location switching and export; authenticated account-page create, rename, delete confirmation, and post-delete state |
 | [`ui/fixtures/mock-api.ts`](../tests/ui/fixtures/mock-api.ts) | Reusable scenario-keyed `page.route()` responses for mocked UI flows across chat, locations, recipes, items, and reconciliation |
+| [`ui/chat.spec.ts`](../tests/ui/chat.spec.ts) | Mocked chat question submission with the five-part grounded answer, evidence affordance, and explicit prediction limit |
 | [`ui/auth-recovery.spec.ts`](../tests/ui/auth-recovery.spec.ts) | Mocked forgot-password and reset-password form submissions, authentication-only confirmation copy, and Better Auth endpoint requests |
 | [`accessibility/landing.spec.ts`](../tests/accessibility/landing.spec.ts) | Axe on `/`, `/design/gallery`, `/design/tokens` in both themes; keyboard focus; 44px touch targets; 16px mobile type; reduced motion |
 | [`accessibility/real-data.spec.ts`](../tests/accessibility/real-data.spec.ts) | Authenticated axe and grayscale screenshot sweeps across ten full-year-data screens in both themes at a mobile viewport; the dependent seed setup supplies real PostgreSQL rows and location visibility |
