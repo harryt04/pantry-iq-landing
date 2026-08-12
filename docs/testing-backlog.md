@@ -470,10 +470,11 @@ Percentages below are line coverage measured 2026-08-10.
       journey that creates and renames a location, checks the deletion summary
       and confirmation dialog, then asserts the removed location disappears
       and the account page reports the completed deletion.
-- [ ] `/forgot-password` and `/reset-password` — never rendered by any test.
+- [x] `/forgot-password` and `/reset-password` — never rendered by any test. (Codex, iteration 63)
       Assert the form submits and the confirmation copy appears. Email is
       authentication plumbing only (tech-stack §3.14), so assert no marketing
-      or notification framing.
+      or notification framing. Added a mocked UI journey for both forms,
+      including their Better Auth requests and authentication-only notices.
 
 ---
 
