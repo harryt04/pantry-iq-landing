@@ -16,6 +16,7 @@ import {
 import { requireSession } from '@/src/server/auth/authorization'
 import { db } from '@/src/server/db/client'
 import { csvUploadHistory, locations } from '@/src/server/db/schema'
+import { createLogger } from '@/src/server/observability/logger'
 import {
   createConfiguredObjectStorage,
   type ObjectStorage,
@@ -31,6 +32,8 @@ export class CsvUploadStorageError extends Error {
     this.name = 'CsvUploadStorageError'
   }
 }
+
+const logger = createLogger({ service: 'pantryiq.csv.uploads' })
 
 const uploadRateLimiter = new SlidingWindowUploadRateLimiter({
   limit: 10,
@@ -137,6 +140,11 @@ export async function uploadCsv(input: {
     }
     if (error instanceof CsvSecurityError) throw error
     if (error instanceof CsvUploadValidationError) throw error
+    logger.error(
+      'CSV upload storage failed',
+      error instanceof Error ? error : new Error(String(error)),
+      { locationId: input.locationId, storageKey },
+    )
     throw new CsvUploadStorageError()
   }
 }

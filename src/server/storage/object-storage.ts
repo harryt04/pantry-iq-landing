@@ -105,6 +105,10 @@ export function createConfiguredObjectStorage(
       region: environment.S3_REGION ?? 'auto',
       credentials: { accessKeyId, secretAccessKey },
       forcePathStyle: environment.S3_FORCE_PATH_STYLE === '1',
+      // Some self-hosted S3-compatible servers (e.g. MinIO) don't handle
+      // the SDK's default flexible-checksum aws-chunked streaming, which
+      // fails as a non-retryable error mid-upload.
+      requestChecksumCalculation: 'WHEN_REQUIRED',
     }),
     bucket,
   )

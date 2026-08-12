@@ -164,12 +164,77 @@ plain S3 API.
 
 **2. Create a bucket and access keys per environment**
 
-In the MinIO console (default `9001`):
+- In the MinIO console (default `9001`), create one bucket per
+  environment — e.g. `pantry-iq-beta` and `pantry-iq-prod`. Don't share a
+  bucket between them.
+- MinIO Community Edition's console has no "create access key" button —
+  IAM/access-key management was pulled out of the free console and gated
+  behind the paid AIStor console. Create keys with the `mc` CLI instead
+  (verified against MinIO server `2025-09-07T16:13:09Z`; commands may
+  differ slightly on other versions — run `mc admin accesskey create
+  --help` if something below doesn't match):
 
-- Create one bucket per environment — e.g. `pantryiq-beta` and
-  `pantryiq-production`. Don't share a bucket between them.
-- Generate a dedicated access key/secret pair per bucket. Don't reuse beta
-  credentials in production or vice versa.
+  1. Install `mc` on your workstation (not the Unraid box — the
+     `minio/minio` server image doesn't bundle the `mc` client, so
+     `docker exec` into it likely won't have `mc` available). On macOS:
+     `brew install minio/stable/mc` (skip if `command -v mc` already finds
+     it). Other platforms:
+     https://min.io/docs/minio/linux/reference/minio-mc.html. Every
+     command below runs from your workstation; it only needs network
+     access to the Unraid box's port `9000`.
+
+  2. Register an alias pointing at the server, using the **root**
+     username/password you set when you started the MinIO container (on
+     Unraid, check the container's `MINIO_ROOT_USER` /
+     `MINIO_ROOT_PASSWORD` env vars if unsure). Single-quote both values —
+     generated MinIO passwords often contain `!`, `$`, or `` ` ``, which
+     zsh/bash will otherwise try to interpret (`!` in particular triggers
+     zsh history expansion and breaks the command):
+     ```bash
+     mc alias set pantry-iq-beta 'http://<unraid-lan-ip>:9000' '<root-user>' '<root-password>'
+     ```
+     The alias name is just a local label — use one per bucket/environment
+     so it's clear which credentials you're using, or reuse one alias for
+     everything since they all point at the same server. Confirm it
+     authenticated before moving on:
+     ```bash
+     mc admin info pantry-iq-beta
+     ```
+     A signature-mismatch error here means the username/password don't
+     match the server's actual root credentials — double check them and
+     re-run `mc alias set` (it overwrites the existing entry).
+
+  3. Write a policy scoped to one bucket, e.g. `pantry-iq-beta-policy.json`:
+     ```json
+     {
+       "Version": "2012-10-17",
+       "Statement": [
+         {
+           "Effect": "Allow",
+           "Action": ["s3:*"],
+           "Resource": [
+             "arn:aws:s3:::pantry-iq-beta",
+             "arn:aws:s3:::pantry-iq-beta/*"
+           ]
+         }
+       ]
+     }
+     ```
+
+  4. Create the access key, passing the policy file directly:
+     ```bash
+     mc admin accesskey create pantry-iq-beta --policy pantry-iq-beta-policy.json
+     ```
+     This prints the Access Key and Secret Key once — copy both
+     immediately and store them (Coolify env vars, password manager). They
+     are never shown again; list key IDs later with `mc admin accesskey
+     list pantry-iq-beta`, but not the secret. Omitting `--policy` falls
+     back to the root user's full permissions, which works but isn't
+     scoped to the one bucket.
+
+  5. Repeat steps 3–4 for the second bucket (`pantry-iq-prod`), with its
+     own policy file and its own access key — don't reuse the beta key in
+     production or vice versa.
 
 **3. Configure each Coolify app**
 
@@ -180,7 +245,7 @@ Coolify apps, so this is set twice, once per bucket/key pair):
 S3_ENDPOINT=http://<unraid-lan-ip>:9000
 S3_ACCESS_KEY_ID=<minio-access-key>
 S3_SECRET_ACCESS_KEY=<minio-secret-key>
-S3_BUCKET=<pantryiq-beta or pantryiq-production>
+S3_BUCKET=<pantry-iq-beta or pantry-iq-prod>
 S3_FORCE_PATH_STYLE=1
 ```
 
@@ -190,6 +255,23 @@ to `auto`) unless MinIO is configured with a specific region.
 
 Since the VM reaches Unraid by LAN IP, `S3_ENDPOINT` needs updating in
 Coolify if either machine's address changes.
+
+**Troubleshooting: `An error was encountered in a non-retryable streaming
+request`**
+
+This is an `@aws-sdk/client-s3` failure, not a MinIO configuration
+problem: the SDK's default flexible-checksum streaming (`aws-chunked`
+trailers) isn't compatible with every self-hosted S3-compatible server.
+The app's `S3Client` already sets `requestChecksumCalculation:
+'WHEN_REQUIRED'` (`src/server/storage/object-storage.ts`) to avoid this —
+if you still hit it after pulling that change, check:
+
+- The MinIO server logs for the same request (timestamps line up with the
+  failed upload).
+- That the alias still authenticates: `mc admin info <your-alias>`.
+- Upload/preview failures are logged via the app's structured logger
+  (`pantryiq.csv.uploads` / `pantryiq.csv.previews`) with the real
+  underlying error — check Coolify's log viewer for the failing app first.
 
 ## Stack
 
