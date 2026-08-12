@@ -519,8 +519,10 @@ item below must intercept it. A browser test may never bill an LLM call.
       unresolved commit flow; added mocked browser coverage for new-item
       creation and the blocked state. The product contract requires every
       unmatched item to be resolved, so there is no skip outcome to test.
-- [ ] Reconciliation review (`reconciliation-review.tsx`, 0%): accept a
-      conflict, then reject one.
+- [x] Reconciliation review (`reconciliation-review.tsx`, 0%): accept a
+      conflict, then reject one. (Codex, iteration 71) Added mocked browser
+      coverage for authority selection clearing a resolved overlap and a
+      rejected save preserving the unresolved conflict and readable error.
 - [ ] Location manager (`location-manager.tsx`, 67.1%): duplicate-name 409,
       the delete confirmation, and the cancel path.
 - [ ] Auth form (`auth-form.tsx`, 0%): wrong password, unknown email, and an

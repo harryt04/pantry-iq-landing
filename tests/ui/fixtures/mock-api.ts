@@ -56,6 +56,7 @@ type MockApiScenarioOptions = Partial<
   Record<MockApiEndpoint, MockApiOutcome>
 > & {
   mappingReview?: boolean
+  reconciliationSave?: MockApiOutcome
 }
 
 export type MockApiScenario = MockApiOutcome | MockApiScenarioOptions
@@ -184,6 +185,7 @@ type MockResponseBody =
 type MockApiInstaller = (scenario?: MockApiScenario) => Promise<void>
 type MockApiState = {
   savedMapping: Record<string, CanonicalField | null> | null
+  resolvedReconciliationIds: Set<string>
 }
 
 const responseStatuses: Record<
@@ -447,6 +449,12 @@ function isMappingReviewScenario(scenario: MockApiScenario | undefined) {
   return typeof scenario === 'object' && scenario?.mappingReview === true
 }
 
+function reconciliationSaveOutcome(scenario: MockApiScenario | undefined) {
+  return typeof scenario === 'object'
+    ? (scenario.reconciliationSave ?? 'ok')
+    : 'ok'
+}
+
 function errorBody(outcome: MockApiOutcome): { error: string } {
   switch (outcome) {
     case 'unauthorized':
@@ -532,7 +540,10 @@ async function handleMockRequest(
     return
   }
 
-  const outcome = outcomeFor(scenario, endpoint)
+  const outcome =
+    endpoint === 'reconciliation' && request.method() === 'POST'
+      ? reconciliationSaveOutcome(scenario)
+      : outcomeFor(scenario, endpoint)
   if (endpoint === 'uploadCommit' && outcome === 'conflict') {
     const requestBody = request.postDataJSON() as {
       dryRun?: boolean
@@ -749,28 +760,41 @@ async function handleMockRequest(
   }
 
   if (request.method() === 'POST') {
+    const requestBody = request.postDataJSON() as {
+      conflictId?: string
+      authoritySource?: string
+    }
+    if (requestBody.conflictId) {
+      state.resolvedReconciliationIds.add(requestBody.conflictId)
+    }
     await fulfill(page, route, outcome, {
       conflict: {
         ...reconciliationConflict,
         status: 'resolved',
-        authoritySource: 'csv',
+        authoritySource: requestBody.authoritySource ?? 'csv',
       },
     })
   } else {
     await fulfill(page, route, outcome, {
-      conflicts: [reconciliationConflict],
+      conflicts: state.resolvedReconciliationIds.has(reconciliationConflict.id)
+        ? []
+        : [reconciliationConflict],
     })
   }
 }
 
 export const test = base.extend<{ mockApi: MockApiInstaller }>({
   mockApi: async ({ page }, use) => {
-    const state: MockApiState = { savedMapping: null }
+    const state: MockApiState = {
+      savedMapping: null,
+      resolvedReconciliationIds: new Set(),
+    }
     await page.route('**/api/**', (route) =>
       handleMockRequest(page, route, undefined, state),
     )
     await use(async (scenario) => {
       state.savedMapping = null
+      state.resolvedReconciliationIds.clear()
       await page.unroute('**/api/**')
       await page.route('**/api/**', (route) =>
         handleMockRequest(page, route, scenario, state),
