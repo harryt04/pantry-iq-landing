@@ -152,7 +152,7 @@ These eight cover the largest components in the repo. If you are adding a case
 for manual entry, CSV upload, chat, locations, recipes, settings, or the item
 master, **the file already exists** — extend it.
 
-## Layer 4 — Integration tests (`tests/integration/`, 14 files, 98 cases)
+## Layer 4 — Integration tests (`tests/integration/`, 15 files, 100 cases)
 
 Real PostgreSQL. Each runs migrate, seed, and rollback around itself.
 
@@ -164,6 +164,7 @@ Real PostgreSQL. Each runs migrate, seed, and rollback around itself.
 | [`manual-entry-write.test.ts`](../tests/integration/manual-entry-write.test.ts) | Manual entry writes, location scoping, item creation |
 | [`inventory-and-locations-services.test.ts`](../tests/integration/inventory-and-locations-services.test.ts) | Inventory item persistence, active filtering, exact numeric values, usage updates, location lifecycle mutations, and owner scoping |
 | [`ownership-boundary.test.ts`](../tests/integration/ownership-boundary.test.ts) | `requireOwnedLocation` — no session, cross-account, missing location |
+| [`api-ownership-sweep.test.ts`](../tests/integration/api-ownership-sweep.test.ts) | Every owner-scoped API route rejects account A requests for account B locations or upload records; the account-scoped location collection is checked for data leakage |
 | [`location-deletion.test.ts`](../tests/integration/location-deletion.test.ts) | Cascade delete across seven child tables |
 | [`connector-framework.test.ts`](../tests/integration/connector-framework.test.ts) | OAuth state tokens, credential encryption, account isolation |
 | [`observability-store.test.ts`](../tests/integration/observability-store.test.ts) | Health status, LLM spend, account isolation |

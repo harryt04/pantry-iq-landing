@@ -590,10 +590,14 @@ proves `requireOwnedLocation` works. All ten files in `tests/api/` mock it.
 checks each route appears in a hand-maintained list. So nothing fails if a
 handler forgets to call it.
 
-- [ ] Replace the inventory check with a behavioral sweep. For every route
+- [x] Replace the inventory check with a behavioral sweep. For every route
       under `app/api/` except `health` and `auth/[...all]`, call it with
       account A's session and account B's `locationId` against a real database,
       and assert 403 or 404. Table-driven, one case per route, nothing mocked.
+      (Codex, iteration 82) Added a real-Postgres table-driven sweep with a
+      signed Better Auth session covering every owner-scoped route, including
+      foreign upload records; also fixed connector status to reject a foreign
+      location instead of returning an empty 200 response.
 - [ ] The browser equivalent: sign in as A, open
       `/dashboard?locationId=<B's id>`, assert none of B's figures render.
 

@@ -3,15 +3,18 @@ import { headers } from 'next/headers'
 import {
   UnauthorizedError,
   ForbiddenError,
+  requireOwnedLocation,
 } from '@/src/server/auth/authorization'
 import { listConnectorConnectionStatuses } from '@/src/server/connectors/framework'
 
 export async function GET(request: Request) {
   try {
     const locationId = new URL(request.url).searchParams.get('locationId')
+    const requestHeaders = await headers()
+    if (locationId) await requireOwnedLocation(requestHeaders, locationId)
     return Response.json({
       connections: await listConnectorConnectionStatuses({
-        headers: await headers(),
+        headers: requestHeaders,
         ...(locationId ? { locationId } : {}),
       }),
     })
