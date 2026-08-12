@@ -102,3 +102,39 @@ test.describe('chat happy path', () => {
     ])
   })
 })
+
+test.describe('chat failure paths', () => {
+  for (const scenario of [
+    {
+      outcome: 'server-error' as const,
+      message: 'Something went wrong. Try again.',
+      label: '500 server error',
+    },
+    {
+      outcome: 'unavailable' as const,
+      message: 'This service is temporarily unavailable.',
+      label: '503 service unavailable',
+    },
+  ]) {
+    test(`${scenario.label} keeps the submitted question visible`, async ({
+      page,
+      mockApi,
+    }) => {
+      await page.goto(`/chat?locationId=${fullYearLocationFixture.locationId}`)
+      await mockApi({ chat: scenario.outcome })
+
+      const question = `Why did the ${scenario.label} happen?`
+      await page
+        .getByRole('textbox', { name: /Ask a question about/ })
+        .fill(question)
+      await page.getByRole('button', { name: 'Send question' }).click()
+
+      await expect(
+        page.getByRole('article', { name: 'Your message' }),
+      ).toContainText(question)
+      await expect(
+        page.getByRole('article', { name: 'PantryIQ message' }),
+      ).toContainText(scenario.message)
+    })
+  }
+})

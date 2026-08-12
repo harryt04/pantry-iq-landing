@@ -494,8 +494,10 @@ item below must intercept it. A browser test may never bill an LLM call.
 - [x] Chat: an assumption override round trip through `/api/chat/override`. (Codex, iteration 65)
       Added mocked browser coverage for recalculation, the conversation-only
       choice, and the resulting override payload on the next chat request.
-- [ ] Chat: 500 and 503 from `/api/chat`. The surface must degrade with a
-      readable message and must not lose the typed question.
+- [x] Chat: 500 and 503 from `/api/chat`. The surface must degrade with a
+      readable message and must not lose the typed question. (Codex, iteration
+      66) Added mocked browser coverage for both response statuses, asserting
+      the status-specific message and retained user question.
 - [ ] Manual entry (`manual-entry-form.tsx`, 673 lines, 59.1%): every
       validation branch, plus a 400 from `/api/manual-entry` surfacing field
       errors.
