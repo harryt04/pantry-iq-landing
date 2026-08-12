@@ -46,9 +46,9 @@ it. `components/ui/**` is vendored and out of scope.
 Exit gate for every item: `pnpm prettify`, then `pnpm ci` until green.
 
 Then ratchet the coverage gate. [`vitest.config.ts`](../vitest.config.ts) holds
-  thresholds at 75.47 statements, 75.47 lines, 75.77 branches, and 81.90
-  functions against 77.42% statements, 77.42% lines, 77.77% branches, and
-  83.90% functions measured 2026-08-11. Re-measure with
+  thresholds at 75.63 statements, 75.63 lines, 75.83 branches, and 82.23
+  functions against 77.63% statements, 77.63% lines, 77.83% branches, and
+  84.23% functions measured 2026-08-11. Re-measure with
 `pnpm ci:tests` and raise each threshold to the new number minus two. Never
 lower one to make a build pass. Browser tests do not feed the v8 report, so
 Loops I, J, and L will not move the number. That is expected, not a failure.
@@ -566,8 +566,10 @@ iteration, unit or integration as the module needs.
       Added real-Postgres coverage for successful fetch provenance, exact cost
       persistence, feature upserts, empty provider results, and failure
       journaling with error propagation.
-- [ ] `csv/previews.ts`, `csv/uploads.ts`, and `csv/mapping-persistence.ts` —
-      all 0%, all mocked in their API tests.
+- [x] `csv/previews.ts`, `csv/uploads.ts`, and `csv/mapping-persistence.ts` — (Codex, iteration 79)
+      Added real-Postgres and in-memory-storage coverage for failed-upload cleanup,
+      preview mapping reuse and unreadable objects, and invalid mapping rejection
+      without overwriting the saved mapping.
 - [ ] `inventory/items.ts` and `locations/locations.ts` — both 0%.
 - [ ] `auth/email.ts` — 0%. Assert it sends authentication mail only and never
       a notification (tech-stack §3.14).

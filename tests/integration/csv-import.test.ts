@@ -498,9 +498,95 @@ describe.skipIf(!integrationDatabaseEnabled())('CSV import', () => {
       `
       expect(Number(history?.count ?? 0)).toBe(0)
     })
+
+    it('deletes a stored object when saving its history row fails', async () => {
+      const storedKeys: string[] = []
+      const deletedKeys: string[] = []
+      const storage: ObjectStorage = {
+        putObject: async ({ key, body }) => {
+          for await (const _chunk of body) {
+            // Consume the guarded stream before simulating a storage failure.
+          }
+          storedKeys.push(key)
+          throw new Error('object store unavailable')
+        },
+        deleteObject: async (key) => {
+          deletedKeys.push(key)
+        },
+        getObject: async () => memoryStorage().getObject('unused'),
+      }
+
+      await expect(
+        uploads.uploadCsv({
+          headers: new Headers({
+            'content-length': String(new TextEncoder().encode(CSV).byteLength),
+          }),
+          locationId: LOCATION_ID,
+          filename: 'sales.csv',
+          importType: 'transactions',
+          body: csvBody(CSV),
+          storage,
+        }),
+      ).rejects.toBeInstanceOf(uploads.CsvUploadStorageError)
+
+      expect(deletedKeys).toEqual(storedKeys)
+      const { sql } = opened!.database
+      const [history] = await sql<{ count: string }[]>`
+        select count(*)::text as count
+        from csv_upload_history
+        where location_id = ${LOCATION_ID}
+      `
+      expect(Number(history?.count ?? 0)).toBe(0)
+    })
   })
 
   describe('preview', () => {
+    it('reads the stored CSV and reuses a prior mapping for the same shape', async () => {
+      await seedUpload()
+      const uploadId = await seedUpload()
+
+      const result = await previews.previewCsv(
+        new Headers(),
+        uploadId,
+        memoryStorage(),
+      )
+
+      expect(result.upload).toMatchObject({
+        id: uploadId,
+        filename: 'sales.csv',
+        source: 'transactions',
+      })
+      expect(result.preview).toMatchObject({
+        columns: ['Date', 'Item', 'Quantity', 'Unit price', 'Total'],
+        rowCount: 2,
+        mapping: {
+          reused: true,
+          mapping: MAPPING,
+        },
+      })
+    })
+
+    it('reports an unreadable stored object without changing the upload', async () => {
+      const uploadId = await seedUpload()
+      const storage: ObjectStorage = {
+        putObject: async () => {},
+        deleteObject: async () => {},
+        getObject: async () => {
+          throw new Error('object disappeared')
+        },
+      }
+
+      await expect(
+        previews.previewCsv(new Headers(), uploadId, storage),
+      ).rejects.toBeInstanceOf(previews.CsvPreviewReadError)
+
+      const { sql } = opened!.database
+      const [history] = await sql<{ status: string }[]>`
+        select status from csv_upload_history where id = ${uploadId}
+      `
+      expect(history?.status).toBe('uploaded')
+    })
+
     it('reports what would be imported without writing anything', async () => {
       const uploadId = await seedUpload()
 
@@ -1740,6 +1826,26 @@ describe.skipIf(!integrationDatabaseEnabled())('CSV import', () => {
           'transactions',
         ),
       ).rejects.toThrow()
+    })
+  })
+
+  describe('mapping persistence', () => {
+    it('rejects invalid mappings without overwriting the saved mapping', async () => {
+      const uploadId = await seedUpload()
+
+      await expect(
+        mappings.saveCsvMapping(new Headers(), uploadId, {
+          Date: 'not-a-canonical-field',
+        }),
+      ).rejects.toBeInstanceOf(mappings.CsvMappingValidationError)
+
+      const { sql } = opened!.database
+      const [upload] = await sql<{ mapping_used: Record<string, string> }[]>`
+        select mapping_used
+        from csv_upload_history
+        where id = ${uploadId}
+      `
+      expect(upload?.mapping_used).toEqual(MAPPING)
     })
   })
 

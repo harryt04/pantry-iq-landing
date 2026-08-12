@@ -13,17 +13,15 @@ const databaseAvailable =
   process.env.TESTCONTAINERS_ENABLED === '1'
 
 /**
- * Measured at 77.42% statements, 77.77% branches, 83.90% functions, and
- * 77.42% lines on 2026-08-11. Thresholds stay at least two points below the
- * measured result; the statements and lines thresholds retain the prior
- * 75.47 floor because coverage varies slightly between complete runs. Never
- * lower a threshold to make a build pass.
+ * Measured at 77.63% statements, 77.83% branches, 84.23% functions, and
+ * 77.63% lines on 2026-08-11. Thresholds stay at least two points below the
+ * measured result. Never lower a threshold to make a build pass.
  */
 const thresholds = {
-  statements: 75.47,
-  lines: 75.47,
-  branches: 75.77,
-  functions: 81.9,
+  statements: 75.63,
+  lines: 75.63,
+  branches: 75.83,
+  functions: 82.23,
 }
 
 export default defineConfig({
