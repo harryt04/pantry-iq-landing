@@ -83,6 +83,7 @@ fixture-driven, no mocking of the thing under test. Do not disturb these.
 | [`src/server/observability/`](../src/server/observability/) | 2 | Logger and metrics |
 | [`src/server/ingestion/`](../src/server/ingestion/) | 2 | Records and reconciliation, including exact cross-source overlap intersection and unresolved-overlap inclusion guard |
 | [`src/server/inventory/`](../src/server/inventory/), [`locations/`](../src/server/locations/), [`storage/`](../src/server/storage/) | 5 | Input validation, shelf-life defaults, object storage |
+| [`src/server/auth/`](../src/server/auth/) | 1 | `email.test.ts` covers configured authentication delivery, Better Auth reset and verification callbacks, local omission, production configuration failure, and provider failures |
 | [`src/chat/session-memory.test.ts`](../src/chat/session-memory.test.ts) | 1 | Outside `src/server/` — chat history truncation |
 
 One trap: [`src/server/csv/exports.test.ts`](../src/server/csv/exports.test.ts)

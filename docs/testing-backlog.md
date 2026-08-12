@@ -574,8 +574,7 @@ iteration, unit or integration as the module needs.
       Added real-Postgres service coverage for item persistence, active filtering,
       exact numeric values, usage updates, location lifecycle mutations, and
       owner scoping; the inactive-filter mutation was caught.
-- [ ] `auth/email.ts` — 0%. Assert it sends authentication mail only and never
-      a notification (tech-stack §3.14).
+- [x] `auth/email.ts` — 0%. (Codex, iteration 81) Added behavioral delivery coverage for the Resend payload, both Better Auth authentication callbacks, local omission, production configuration failure, and provider errors; the tests assert no notification-style message is emitted.
 
 The pure calculators these queries feed — `menu-engineering.ts`,
 `labor-efficiency.ts`, `usage-variance.ts` — already have good unit tests. The
