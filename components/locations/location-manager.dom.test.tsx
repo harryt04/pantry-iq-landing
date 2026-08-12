@@ -90,6 +90,29 @@ describe('location manager', () => {
     expect(await screen.findByText('North')).toBeInTheDocument()
   })
 
+  /**
+   * Oxide is reserved for "act now" (brand-foundations.md §8). One filled
+   * destructive control per row meant an account with 20 locations rendered 20
+   * Oxide pills, and the colour stopped carrying urgency. The row control stays
+   * quiet; the confirmation dialog is where Oxide belongs.
+   */
+  it('keeps Oxide out of the location rows and on the deletion confirmation', async () => {
+    render(<LocationManager />)
+    await screen.findByText('North')
+
+    const rowRemove = screen.getByRole('button', { name: 'Remove location' })
+    expect(rowRemove).not.toHaveAttribute('data-variant', 'destructive')
+
+    await userEvent.click(rowRemove)
+
+    const confirm = await screen.findByRole('button', {
+      name: 'Remove location',
+    })
+    await waitFor(() =>
+      expect(confirm).toHaveAttribute('data-variant', 'destructive'),
+    )
+  })
+
   it('surfaces a duplicate-name conflict without pretending the location was added', async () => {
     routeFetch({
       create: { error: 'A location with this name already exists.' },
