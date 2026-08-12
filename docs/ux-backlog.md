@@ -92,13 +92,17 @@ unrelated sections on one scroll.
 Items are dependency-ordered. Item 1 unblocks items 2, 4, 5, and 10. Do not
 reorder.
 
-- [ ] **One job per file, not one job per form.** Replace the single
+- [x] **One job per file, not one job per form.**
+      Replace the single
       `uploadId` / `preview` / `summary` / `status` / `error` state with a
       keyed collection of per-file jobs, each holding its own upload id,
       preview, mapping, resolutions, summary, and error.
       **Acceptance:** behaviour with one file is unchanged, every existing
       import test still passes, and a second file's failure leaves the first
       file's state intact.
+      Implemented keyed upload jobs and preserved each job's lifecycle state;
+      `csv-upload-form.dom.test.tsx` proves a later rejected file leaves the
+      earlier file's preview and ready status intact.
 
 - [ ] **Select or drop several files at once.** The input at
       `csv-upload-form.tsx:283` takes one file and needs a second click on

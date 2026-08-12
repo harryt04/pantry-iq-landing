@@ -190,4 +190,36 @@ describe('CSV upload form', () => {
     await screen.findByText('Storage is unavailable.')
     expect(screen.getByRole('button', { name: 'Upload CSV' })).toBeEnabled()
   })
+
+  it("keeps an earlier file's preview when a later file fails", async () => {
+    fetchMock
+      .mockResolvedValueOnce(
+        jsonResponse({ upload: { id: 'upload-1', filename: 'sales.csv' } }),
+      )
+      .mockResolvedValueOnce(jsonResponse({ preview: csvPreview() }))
+      .mockResolvedValueOnce(
+        jsonResponse(
+          { error: 'That file is not a CSV.' },
+          { ok: false, status: 400 },
+        ),
+      )
+
+    render(<CsvUploadForm locationId={LOCATION_ID} />)
+    const fileInput = screen.getByLabelText('CSV file')
+
+    await userEvent.upload(fileInput, csvFile('sales.csv'))
+    await userEvent.click(screen.getByRole('button', { name: 'Upload CSV' }))
+    await screen.findByText('sales.csv is ready to map.')
+
+    await userEvent.upload(fileInput, csvFile('bad.csv'))
+    await userEvent.click(screen.getByRole('button', { name: 'Upload CSV' }))
+
+    expect(
+      await screen.findByText('That file is not a CSV.'),
+    ).toBeInTheDocument()
+    expect(screen.getByText('sales.csv is ready to map.')).toBeInTheDocument()
+    expect(
+      screen.getByRole('heading', { name: 'A look at the first rows.' }),
+    ).toBeInTheDocument()
+  })
 })

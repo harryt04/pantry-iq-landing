@@ -65,44 +65,72 @@ const importTypes = [
   ['labor', 'Labor shifts'],
 ] as const
 
+type ItemResolution = { itemId: string } | NewItemResolutionInput
+
+type UploadJob = {
+  fileName: string
+  importType: string
+  uploadId: string | null
+  preview: CsvPreview | null
+  mapping: CsvMappingDetection | null
+  resolutions: Record<string, ItemResolution>
+  summary: ImportSummary | null
+  status: string
+  error: string
+  isUploading: boolean
+  isCommitting: boolean
+}
+
 export function CsvUploadForm({ locationId }: { locationId: string }) {
   const [importType, setImportType] = React.useState('transactions')
   const [file, setFile] = React.useState<File | null>(null)
-  const [status, setStatus] = React.useState('')
-  const [error, setError] = React.useState('')
-  const [isUploading, setIsUploading] = React.useState(false)
-  const [preview, setPreview] = React.useState<CsvPreview | null>(null)
-  const [uploadId, setUploadId] = React.useState<string | null>(null)
-  const [summary, setSummary] = React.useState<ImportSummary | null>(null)
-  const [resolutions, setResolutions] = React.useState<
-    Record<string, { itemId: string } | NewItemResolutionInput>
-  >({})
-  const [isCommitting, setIsCommitting] = React.useState(false)
+  const [jobs, setJobs] = React.useState<Record<string, UploadJob>>({})
+  const nextJobId = React.useRef(0)
+
+  function updateJob(jobId: string, update: (job: UploadJob) => UploadJob) {
+    setJobs((currentJobs) => {
+      const job = currentJobs[jobId]
+      if (!job) return currentJobs
+      return { ...currentJobs, [jobId]: update(job) }
+    })
+  }
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
     if (!file) {
-      setError('Choose a CSV file before uploading.')
       return
     }
 
-    setError('')
-    setPreview(null)
-    setSummary(null)
-    setResolutions({})
-    setStatus('Checking the file')
-    setIsUploading(true)
+    const jobId = `upload-job-${nextJobId.current++}`
+    const selectedFile = file
+    const selectedImportType = importType
+    setJobs((currentJobs) => ({
+      ...currentJobs,
+      [jobId]: {
+        fileName: selectedFile.name,
+        importType: selectedImportType,
+        uploadId: null,
+        preview: null,
+        mapping: null,
+        resolutions: {},
+        summary: null,
+        status: 'Checking the file',
+        error: '',
+        isUploading: true,
+        isCommitting: false,
+      },
+    }))
 
     try {
       const response = await fetch(
         `/api/uploads?locationId=${encodeURIComponent(locationId)}`,
         {
           method: 'POST',
-          body: file,
+          body: selectedFile,
           headers: {
             'content-type': 'text/csv',
-            'x-pantryiq-filename': file.name,
-            'x-pantryiq-import-type': importType,
+            'x-pantryiq-filename': selectedFile.name,
+            'x-pantryiq-import-type': selectedImportType,
           },
         },
       )
@@ -114,8 +142,11 @@ export function CsvUploadForm({ locationId }: { locationId: string }) {
         throw new Error(result.error ?? 'The file could not be saved.')
 
       if (!result.upload?.id) throw new Error('The file could not be read.')
-      setUploadId(result.upload.id)
-      setStatus('Reading the file')
+      updateJob(jobId, (job) => ({
+        ...job,
+        uploadId: result.upload!.id,
+        status: 'Reading the file',
+      }))
       const previewResponse = await fetch(
         `/api/uploads/${encodeURIComponent(result.upload.id)}/preview`,
       )
@@ -126,58 +157,34 @@ export function CsvUploadForm({ locationId }: { locationId: string }) {
       if (!previewResponse.ok || !previewResult.preview)
         throw new Error(previewResult.error ?? 'The file could not be read.')
 
-      setPreview(previewResult.preview)
-      setStatus(`${result.upload.filename} is ready to map.`)
+      updateJob(jobId, (job) => ({
+        ...job,
+        preview: previewResult.preview!,
+        mapping: previewResult.preview!.mapping,
+        status: `${result.upload!.filename} is ready to map.`,
+        isUploading: false,
+      }))
       setFile(null)
     } catch (uploadError) {
-      setError(
-        uploadError instanceof Error
-          ? uploadError.message
-          : 'The file could not be saved. Nothing was saved, so your existing data is untouched.',
-      )
-      setStatus('')
+      updateJob(jobId, (job) => ({
+        ...job,
+        error:
+          uploadError instanceof Error
+            ? uploadError.message
+            : 'The file could not be saved. Nothing was saved, so your existing data is untouched.',
+        status: '',
+        isUploading: false,
+      }))
     } finally {
-      setIsUploading(false)
+      updateJob(jobId, (job) => ({ ...job, isUploading: false }))
     }
   }
 
-  const saveMapping = React.useCallback(
-    (mapping: Record<string, CanonicalField | null>) => {
-      if (!uploadId) return
-      void (async () => {
-        try {
-          const response = await fetch(
-            `/api/uploads/${encodeURIComponent(uploadId)}/mapping`,
-            {
-              method: 'PATCH',
-              headers: { 'content-type': 'application/json' },
-              body: JSON.stringify({ mapping }),
-            },
-          )
-          const result = (await response.json()) as { error?: string }
-          if (!response.ok)
-            throw new Error(result.error ?? 'The mapping could not be saved.')
-          setStatus('Mapping saved. Checking item names')
-          await refreshSummary({})
-        } catch (mappingError) {
-          setError(
-            mappingError instanceof Error
-              ? mappingError.message
-              : 'The mapping could not be saved. Nothing was changed.',
-          )
-        }
-      })()
-    },
-    [uploadId],
-  )
-
   async function refreshSummary(
-    nextResolutions: Record<
-      string,
-      { itemId: string } | NewItemResolutionInput
-    >,
+    jobId: string,
+    uploadId: string,
+    nextResolutions: Record<string, ItemResolution>,
   ) {
-    if (!uploadId) return
     const response = await fetch(
       `/api/uploads/${encodeURIComponent(uploadId)}/commit`,
       {
@@ -192,50 +199,112 @@ export function CsvUploadForm({ locationId }: { locationId: string }) {
     }
     if (!response.ok && !result.summary)
       throw new Error(result.error ?? 'The import could not be prepared.')
-    if (result.summary) setSummary({ ...result.summary, uploadId })
+    if (result.summary)
+      updateJob(jobId, (job) => ({
+        ...job,
+        summary: { ...result.summary!, uploadId },
+        resolutions: nextResolutions,
+        error: '',
+      }))
   }
 
-  function linkExisting(rawItemName: string, itemId: string) {
-    const next = {
+  function saveMapping(
+    jobId: string,
+    uploadId: string,
+    mapping: Record<string, CanonicalField | null>,
+  ) {
+    void (async () => {
+      try {
+        updateJob(jobId, (job) => ({
+          ...job,
+          error: '',
+        }))
+        const response = await fetch(
+          `/api/uploads/${encodeURIComponent(uploadId)}/mapping`,
+          {
+            method: 'PATCH',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ mapping }),
+          },
+        )
+        const result = (await response.json()) as { error?: string }
+        if (!response.ok)
+          throw new Error(result.error ?? 'The mapping could not be saved.')
+        updateJob(jobId, (job) => ({
+          ...job,
+          status: 'Mapping saved. Checking item names',
+        }))
+        await refreshSummary(jobId, uploadId, {})
+      } catch (mappingError) {
+        updateJob(jobId, (job) => ({
+          ...job,
+          error:
+            mappingError instanceof Error
+              ? mappingError.message
+              : 'The mapping could not be saved. Nothing was changed.',
+        }))
+      }
+    })()
+  }
+
+  function linkExisting(
+    jobId: string,
+    uploadId: string,
+    resolutions: Record<string, ItemResolution>,
+    rawItemName: string,
+    itemId: string,
+  ) {
+    const next: Record<string, ItemResolution> = {
       ...resolutions,
       [normalizeExactItemName(rawItemName)]: { itemId },
     }
-    setResolutions(next)
-    void refreshSummary(next).catch((refreshError) =>
-      setError(
-        refreshError instanceof Error
-          ? refreshError.message
-          : 'The import could not be prepared.',
-      ),
+    void refreshSummary(jobId, uploadId, next).catch((refreshError) =>
+      updateJob(jobId, (job) => ({
+        ...job,
+        error:
+          refreshError instanceof Error
+            ? refreshError.message
+            : 'The import could not be prepared.',
+      })),
     )
   }
 
-  function createNew(rawItemName: string, input: NewItemResolutionInput) {
-    const next = {
+  function createNew(
+    jobId: string,
+    uploadId: string,
+    resolutions: Record<string, ItemResolution>,
+    rawItemName: string,
+    input: NewItemResolutionInput,
+  ) {
+    const next: Record<string, ItemResolution> = {
       ...resolutions,
       [normalizeExactItemName(rawItemName)]: input,
     }
-    setResolutions(next)
-    void refreshSummary(next).catch((refreshError) =>
-      setError(
-        refreshError instanceof Error
-          ? refreshError.message
-          : 'The import could not be prepared.',
-      ),
+    void refreshSummary(jobId, uploadId, next).catch((refreshError) =>
+      updateJob(jobId, (job) => ({
+        ...job,
+        error:
+          refreshError instanceof Error
+            ? refreshError.message
+            : 'The import could not be prepared.',
+      })),
     )
   }
 
-  async function commit() {
-    if (!uploadId || !summary?.ready) return
-    setError('')
-    setIsCommitting(true)
+  async function commit(jobId: string, job: UploadJob) {
+    if (!job.uploadId || !job.summary?.ready) return
+    updateJob(jobId, (currentJob) => ({
+      ...currentJob,
+      error: '',
+      isCommitting: true,
+    }))
     try {
       const response = await fetch(
-        `/api/uploads/${encodeURIComponent(uploadId)}/commit`,
+        `/api/uploads/${encodeURIComponent(job.uploadId)}/commit`,
         {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ resolutions }),
+          body: JSON.stringify({ resolutions: job.resolutions }),
         },
       )
       const result = (await response.json()) as {
@@ -244,21 +313,30 @@ export function CsvUploadForm({ locationId }: { locationId: string }) {
       }
       if (!response.ok || !result.summary)
         throw new Error(result.error ?? 'The import could not be completed.')
-      setSummary({ ...result.summary, uploadId })
-      setStatus(
-        `${result.summary.rowsImported.toLocaleString()} rows imported. ${result.summary.newItems.toLocaleString()} new items created.`,
-      )
+      updateJob(jobId, (currentJob) => ({
+        ...currentJob,
+        summary: { ...result.summary!, uploadId: job.uploadId! },
+        status: `${result.summary!.rowsImported.toLocaleString()} rows imported. ${result.summary!.newItems.toLocaleString()} new items created.`,
+      }))
       window.dispatchEvent(new Event('pantryiq-import-complete'))
     } catch (commitError) {
-      setError(
-        commitError instanceof Error
-          ? commitError.message
-          : 'The import could not be completed. Nothing was changed.',
-      )
+      updateJob(jobId, (currentJob) => ({
+        ...currentJob,
+        error:
+          commitError instanceof Error
+            ? commitError.message
+            : 'The import could not be completed. Nothing was changed.',
+      }))
     } finally {
-      setIsCommitting(false)
+      updateJob(jobId, (currentJob) => ({
+        ...currentJob,
+        isCommitting: false,
+      }))
     }
   }
+
+  const jobEntries = Object.entries(jobs)
+  const hasUploadingJob = jobEntries.some(([, job]) => job.isUploading)
 
   return (
     <div className="app-page__form">
@@ -269,7 +347,7 @@ export function CsvUploadForm({ locationId }: { locationId: string }) {
             id="import-type"
             value={importType}
             onChange={(event) => setImportType(event.target.value)}
-            disabled={isUploading}
+            disabled={hasUploadingJob}
           >
             {importTypes.map(([value, label]) => (
               <option key={value} value={value}>
@@ -285,76 +363,107 @@ export function CsvUploadForm({ locationId }: { locationId: string }) {
             type="file"
             accept=".csv,text/csv"
             onChange={(event) => setFile(event.target.files?.[0] ?? null)}
-            disabled={isUploading}
+            disabled={hasUploadingJob}
           />
           <p className="app-page__help">
             CSV files up to 10 MB. The file is checked before anything is saved.
           </p>
         </div>
-        <Button type="submit" disabled={isUploading || !file}>
-          {isUploading ? 'Uploading' : 'Upload CSV'}
+        <Button type="submit" disabled={hasUploadingJob || !file}>
+          {hasUploadingJob ? 'Uploading' : 'Upload CSV'}
         </Button>
       </form>
-      <p aria-live="polite" className="app-page__status">
-        {status}
-      </p>
-      {preview ? <CsvPreviewTable preview={preview} /> : null}
-      {preview ? (
-        <CsvMappingReview
-          mapping={preview.mapping}
-          preview={preview}
-          onMappingAccepted={saveMapping}
-        />
-      ) : null}
-      {summary?.unmatchedItems.length ? (
-        <CsvItemResolution
-          unmatchedItems={summary.unmatchedItems}
-          items={summary.items}
-          onLinkExisting={linkExisting}
-          onCreateNew={createNew}
-        />
-      ) : null}
-      {summary?.ready ? (
+      {jobEntries.map(([jobId, job]) => (
         <section
-          className="csv-import-confirmation"
-          aria-labelledby="csv-confirm-title"
+          key={jobId}
+          className="csv-upload-job"
+          aria-labelledby={`${jobId}-title`}
         >
-          <p className="app-page__eyebrow">Import confirmation</p>
-          <h2 id="csv-confirm-title">
-            Ready to import {summary.rowsToImport.toLocaleString()} rows.
-          </h2>
-          <p className="app-page__help">
-            {summary.newItems.toLocaleString()} new items will be created.{' '}
-            {summary.linkedItems.toLocaleString()} rows will link to existing
-            items. Re-importing this file will not duplicate rows.
+          <h2 id={`${jobId}-title`}>{job.fileName}</h2>
+          <p aria-live="polite" className="app-page__status">
+            {job.status}
           </p>
-          <Button
-            type="button"
-            onClick={() => void commit()}
-            disabled={isCommitting || summary.alreadyImported}
-          >
-            {isCommitting
-              ? 'Importing'
-              : summary.alreadyImported
-                ? 'Already imported'
-                : 'Import now'}
-          </Button>
-          {summary.rowsImported > 0 || summary.alreadyImported ? (
-            <Button asChild type="button" variant="outline">
-              <Link
-                href={`/dashboard?locationId=${encodeURIComponent(locationId)}`}
+          {job.preview ? <CsvPreviewTable preview={job.preview} /> : null}
+          {job.preview && job.mapping ? (
+            <CsvMappingReview
+              mapping={job.mapping}
+              preview={job.preview}
+              onMappingAccepted={(mapping) =>
+                job.uploadId
+                  ? saveMapping(jobId, job.uploadId, mapping)
+                  : undefined
+              }
+            />
+          ) : null}
+          {job.summary?.unmatchedItems.length && job.uploadId ? (
+            <CsvItemResolution
+              unmatchedItems={job.summary.unmatchedItems}
+              items={job.summary.items}
+              onLinkExisting={(rawItemName, itemId) =>
+                linkExisting(
+                  jobId,
+                  job.uploadId!,
+                  job.resolutions,
+                  rawItemName,
+                  itemId,
+                )
+              }
+              onCreateNew={(rawItemName, input) =>
+                createNew(
+                  jobId,
+                  job.uploadId!,
+                  job.resolutions,
+                  rawItemName,
+                  input,
+                )
+              }
+            />
+          ) : null}
+          {job.summary?.ready ? (
+            <section
+              className="csv-import-confirmation"
+              aria-labelledby={`${jobId}-confirm-title`}
+            >
+              <p className="app-page__eyebrow">Import confirmation</p>
+              <h2 id={`${jobId}-confirm-title`}>
+                Ready to import {job.summary.rowsToImport.toLocaleString()}{' '}
+                rows.
+              </h2>
+              <p className="app-page__help">
+                {job.summary.newItems.toLocaleString()} new items will be
+                created. {job.summary.linkedItems.toLocaleString()} rows will
+                link to existing items. Re-importing this file will not
+                duplicate rows.
+              </p>
+              <Button
+                type="button"
+                onClick={() => void commit(jobId, job)}
+                disabled={job.isCommitting || job.summary.alreadyImported}
               >
-                Continue to dashboard
-              </Link>
-            </Button>
+                {job.isCommitting
+                  ? 'Importing'
+                  : job.summary.alreadyImported
+                    ? 'Already imported'
+                    : 'Import now'}
+              </Button>
+              {job.summary.rowsImported > 0 || job.summary.alreadyImported ? (
+                <Button asChild type="button" variant="outline">
+                  <Link
+                    href={`/dashboard?locationId=${encodeURIComponent(locationId)}`}
+                  >
+                    Continue to dashboard
+                  </Link>
+                </Button>
+              ) : null}
+            </section>
+          ) : null}
+          {job.error ? (
+            <p role="alert" className="app-page__error">
+              {job.error}
+            </p>
           ) : null}
         </section>
-      ) : null}
-      {error ? (
-        <p role="alert" className="app-page__error">
-          {error}
-        </p>
-      ) : null}
+      ))}
     </div>
   )
 }
