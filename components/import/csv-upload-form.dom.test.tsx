@@ -1,4 +1,10 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -362,6 +368,156 @@ describe('CSV upload form', () => {
     expect(screen.getByText('sales.csv is ready to map.')).toBeInTheDocument()
     expect(
       screen.getByRole('heading', { name: 'A look at the first rows.' }),
+    ).toBeInTheDocument()
+  })
+
+  it('isolates one rejected file and lets it retry without disturbing valid files', async () => {
+    let rejectedAttempts = 0
+    fetchMock.mockImplementation((url: string, init: RequestInit = {}) => {
+      if (url.includes('/preview'))
+        return Promise.resolve(jsonResponse({ preview: csvPreview() }))
+      if (url.includes('/mapping'))
+        return Promise.resolve(jsonResponse({ mapping: {} }))
+      if (url.includes('/commit'))
+        return Promise.resolve(
+          jsonResponse({
+            summary: {
+              uploadId: 'upload-1',
+              filename: 'selected.csv',
+              importType: 'transactions',
+              rowsToImport: 1,
+              rowsImported: 0,
+              newItems: 0,
+              linkedItems: 1,
+              alreadyImported: false,
+              ready: true,
+              unmatchedItems: [],
+              items: [],
+            },
+          }),
+        )
+
+      const headers = init.headers as Record<string, string> | undefined
+      if (
+        headers?.['x-pantryiq-filename'] === 'bad.csv' &&
+        rejectedAttempts++ === 0
+      ) {
+        return Promise.resolve(
+          jsonResponse(
+            { error: 'That file is not a CSV.' },
+            { ok: false, status: 400 },
+          ),
+        )
+      }
+
+      return Promise.resolve(
+        jsonResponse({
+          upload: {
+            id: `upload-${fetchMock.mock.calls.length}`,
+            filename: 'selected.csv',
+          },
+        }),
+      )
+    })
+
+    render(<CsvUploadForm locationId={LOCATION_ID} />)
+    await userEvent.upload(screen.getByLabelText('CSV file'), [
+      csvFile('sales.csv'),
+      csvFile('bad.csv'),
+      csvFile('inventory.csv'),
+    ])
+
+    const badJob = screen
+      .getByRole('heading', { name: 'bad.csv' })
+      .closest('section')
+    expect(badJob).not.toBeNull()
+    expect(await within(badJob!).findByRole('alert')).toHaveTextContent(
+      'That file is not a CSV.',
+    )
+    expect(
+      within(badJob!).getByRole('button', { name: 'Try again with bad.csv' }),
+    ).toBeVisible()
+    expect(
+      within(badJob!).getByRole('button', { name: 'Remove bad.csv' }),
+    ).toBeVisible()
+    expect(
+      await within(
+        screen.getByRole('heading', { name: 'sales.csv' }).closest('section')!,
+      ).findByText('A look at the first rows.'),
+    ).toBeInTheDocument()
+    expect(
+      await within(
+        screen
+          .getByRole('heading', { name: 'inventory.csv' })
+          .closest('section')!,
+      ).findByText('A look at the first rows.'),
+    ).toBeInTheDocument()
+
+    await userEvent.click(
+      within(badJob!).getByRole('button', { name: 'Try again with bad.csv' }),
+    )
+
+    await waitFor(() =>
+      expect(
+        within(badJob!).getByText('A look at the first rows.'),
+      ).toBeVisible(),
+    )
+    expect(
+      within(
+        screen.getByRole('heading', { name: 'sales.csv' }).closest('section')!,
+      ).getByText('A look at the first rows.'),
+    ).toBeInTheDocument()
+    expect(
+      within(
+        screen
+          .getByRole('heading', { name: 'inventory.csv' })
+          .closest('section')!,
+      ).getByText('A look at the first rows.'),
+    ).toBeInTheDocument()
+  })
+
+  it('removes a rejected file without removing the other file jobs', async () => {
+    fetchMock.mockImplementation((url: string, init: RequestInit = {}) => {
+      if (url.includes('/preview'))
+        return Promise.resolve(jsonResponse({ preview: csvPreview() }))
+
+      const headers = init.headers as Record<string, string> | undefined
+      if (headers?.['x-pantryiq-filename'] === 'bad.csv')
+        return Promise.resolve(
+          jsonResponse(
+            { error: 'That file is not a CSV.' },
+            { ok: false, status: 400 },
+          ),
+        )
+
+      return Promise.resolve(
+        jsonResponse({
+          upload: { id: 'upload-good', filename: 'selected.csv' },
+        }),
+      )
+    })
+
+    render(<CsvUploadForm locationId={LOCATION_ID} />)
+    await userEvent.upload(screen.getByLabelText('CSV file'), [
+      csvFile('sales.csv'),
+      csvFile('bad.csv'),
+    ])
+
+    const badJob = screen
+      .getByRole('heading', { name: 'bad.csv' })
+      .closest('section')
+    expect(badJob).not.toBeNull()
+    await within(badJob!).findByRole('alert')
+
+    await userEvent.click(
+      within(badJob!).getByRole('button', { name: 'Remove bad.csv' }),
+    )
+
+    expect(
+      screen.queryByRole('heading', { name: 'bad.csv' }),
+    ).not.toBeInTheDocument()
+    expect(
+      screen.getByRole('heading', { name: 'sales.csv' }),
     ).toBeInTheDocument()
   })
 })

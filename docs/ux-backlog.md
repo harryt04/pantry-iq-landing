@@ -132,13 +132,16 @@ reorder.
       independent mixed-batch coverage in `tests/ui/import.spec.ts` and
       `csv-upload-form.dom.test.tsx`.
 
-- [ ] **Per-file status and per-file failure.** `status` and `error` are single
+- [x] **Per-file status and per-file failure.** `status` and `error` are single
       strings that clobber each other. One bad file must not stop the batch or
       erase another file's message.
       **Acceptance:** drop `security/renamed-xlsx.csv` alongside two valid
       files — the rejected file shows its own reason on its own row, the two
       valid files finish, and the rejected file offers a way to remove it and
       retry.
+      Implemented isolated retry/remove actions for failed jobs; DOM coverage
+      proves valid jobs survive rejection, and `tests/ui/import.spec.ts` proves
+      the real renamed-XLSX fixture fails independently and retries.
 
 - [ ] **Make the five steps visible.** [`ux-flows.md`](ux-flows.md) §Import
       defines five steps. The page renders them as one long scroll with

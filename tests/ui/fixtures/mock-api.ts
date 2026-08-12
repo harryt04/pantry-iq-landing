@@ -57,6 +57,7 @@ type MockApiScenarioOptions = Partial<
 > & {
   mappingReview?: boolean
   reconciliationSave?: MockApiOutcome
+  uploadFailure?: { filename: string; message: string }
 }
 
 export type MockApiScenario = MockApiOutcome | MockApiScenarioOptions
@@ -186,6 +187,7 @@ type MockApiInstaller = (scenario?: MockApiScenario) => Promise<void>
 type MockApiState = {
   savedMapping: Record<string, CanonicalField | null> | null
   resolvedReconciliationIds: Set<string>
+  failedUploadFilenames: Set<string>
 }
 
 const responseStatuses: Record<
@@ -544,6 +546,20 @@ async function handleMockRequest(
     endpoint === 'reconciliation' && request.method() === 'POST'
       ? reconciliationSaveOutcome(scenario)
       : outcomeFor(scenario, endpoint)
+  const uploadFailure =
+    endpoint === 'uploads' && typeof scenario === 'object'
+      ? scenario.uploadFailure
+      : undefined
+  const uploadFilename = request.headers()['x-pantryiq-filename']
+  if (
+    uploadFailure &&
+    uploadFilename === uploadFailure.filename &&
+    !state.failedUploadFilenames.has(uploadFilename)
+  ) {
+    state.failedUploadFilenames.add(uploadFilename)
+    await fulfill(page, route, 'invalid', { error: uploadFailure.message }, 400)
+    return
+  }
   if (endpoint === 'uploadCommit' && outcome === 'conflict') {
     const requestBody = request.postDataJSON() as {
       dryRun?: boolean
@@ -788,6 +804,7 @@ export const test = base.extend<{ mockApi: MockApiInstaller }>({
     const state: MockApiState = {
       savedMapping: null,
       resolvedReconciliationIds: new Set(),
+      failedUploadFilenames: new Set(),
     }
     await page.route('**/api/**', (route) =>
       handleMockRequest(page, route, undefined, state),
@@ -795,6 +812,7 @@ export const test = base.extend<{ mockApi: MockApiInstaller }>({
     await use(async (scenario) => {
       state.savedMapping = null
       state.resolvedReconciliationIds.clear()
+      state.failedUploadFilenames.clear()
       await page.unroute('**/api/**')
       await page.route('**/api/**', (route) =>
         handleMockRequest(page, route, scenario, state),

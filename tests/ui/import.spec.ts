@@ -91,6 +91,59 @@ test.describe('CSV batch upload', () => {
 })
 
 test.describe('CSV upload failure paths', () => {
+  test('keeps valid batch files running when a security-rejected file fails', async ({
+    page,
+    mockApi,
+  }) => {
+    await mockApi({
+      uploadFailure: {
+        filename: 'renamed-xlsx.csv',
+        message: 'That file is not a CSV.',
+      },
+    })
+
+    await page.goto(`/import?locationId=${fullYearLocationFixture.locationId}`)
+    await page
+      .getByLabel('CSV file')
+      .setInputFiles([
+        path.resolve(
+          'tests/fixtures/csv/transactions/sales-one-year-daily.csv',
+        ),
+        path.resolve('tests/fixtures/csv/labor/7shifts-timesheet.csv'),
+        path.resolve('tests/fixtures/csv/security/renamed-xlsx.csv'),
+      ])
+
+    const rejectedJob = page
+      .locator('.csv-upload-job')
+      .filter({ hasText: 'renamed-xlsx.csv' })
+    await expect(rejectedJob.getByRole('alert')).toContainText(
+      'That file is not a CSV.',
+    )
+    await expect(
+      rejectedJob.getByRole('button', {
+        name: 'Try again with renamed-xlsx.csv',
+      }),
+    ).toBeVisible()
+    await expect(
+      rejectedJob.getByRole('button', { name: 'Remove renamed-xlsx.csv' }),
+    ).toBeVisible()
+    await expect(
+      page
+        .locator('.csv-upload-job')
+        .filter({ hasText: 'sales-one-year-daily.csv' }),
+    ).toContainText('Ready to import 1 rows.')
+    await expect(
+      page
+        .locator('.csv-upload-job')
+        .filter({ hasText: '7shifts-timesheet.csv' }),
+    ).toContainText('Ready to import 1 rows.')
+
+    await rejectedJob
+      .getByRole('button', { name: 'Try again with renamed-xlsx.csv' })
+      .click()
+    await expect(rejectedJob).toContainText('A look at the first rows.')
+  })
+
   test('surfaces a storage outage and leaves upload available to retry', async ({
     page,
     mockApi,

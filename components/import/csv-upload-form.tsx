@@ -70,6 +70,7 @@ const importTypes = [
 type ItemResolution = { itemId: string } | NewItemResolutionInput
 
 type UploadJob = {
+  file: File
   fileName: string
   importType: CsvImportType
   detectedImportType: CsvImportType | null
@@ -249,6 +250,30 @@ export function CsvUploadForm({ locationId }: { locationId: string }) {
     }
   }
 
+  function removeJob(jobId: string) {
+    setJobs((currentJobs) => {
+      const nextJobs = { ...currentJobs }
+      delete nextJobs[jobId]
+      return nextJobs
+    })
+  }
+
+  function retryJob(jobId: string, job: UploadJob) {
+    updateJob(jobId, (currentJob) => ({
+      ...currentJob,
+      uploadId: null,
+      preview: null,
+      mapping: null,
+      resolutions: {},
+      summary: null,
+      status: 'Checking the file',
+      error: '',
+      isUploading: true,
+      isCommitting: false,
+    }))
+    void detectAndUpload(jobId, job.file)
+  }
+
   function startUploads(files: File[]) {
     if (!files.length) return
 
@@ -258,6 +283,7 @@ export function CsvUploadForm({ locationId }: { locationId: string }) {
         jobId,
         selectedFile,
         job: {
+          file: selectedFile,
           fileName: selectedFile.name,
           importType: 'transactions',
           detectedImportType: null,
@@ -690,9 +716,28 @@ export function CsvUploadForm({ locationId }: { locationId: string }) {
             </section>
           ) : null}
           {job.error ? (
-            <p role="alert" className="app-page__error">
-              {job.error}
-            </p>
+            <>
+              <p role="alert" className="app-page__error">
+                {job.error}
+              </p>
+              <div className="csv-upload-job__actions">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => retryJob(jobId, job)}
+                  disabled={job.isUploading}
+                >
+                  Try again with {job.fileName}
+                </Button>
+                <Button
+                  type="button"
+                  variant="destructive"
+                  onClick={() => removeJob(jobId)}
+                >
+                  Remove {job.fileName}
+                </Button>
+              </div>
+            </>
           ) : null}
         </section>
       ))}
