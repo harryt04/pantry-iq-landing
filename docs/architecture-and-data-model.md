@@ -35,9 +35,10 @@ matching external IDs are retained once for metric input (with the preferred
 provider recorded), while overlapping periods without stable IDs are excluded
 until the operator chooses an authority source. Raw rows remain available for
 audit, and every choice is included in the evidence trace. Exact item
-resolution is also source-independent: case, whitespace, and the explicitly
-listed POS customization clauses are presentation normalization only. No
-fuzzy matching is available to connectors.
+resolution is also source-independent: case, whitespace, a deterministic
+two-part `last, first` presentation order, and the explicitly listed POS
+customization clauses are presentation normalization only. No fuzzy matching
+is available to connectors.
 
 The existing CSV flow is the first adapter. It retains its preview and
 one-at-a-time resolution UX, then converts its resolved plan into normalized

@@ -1,0 +1,608 @@
+# Testing backlog
+
+Queue file for the overnight GNHF loops described in
+[`gnhf-brainstorming.md`](gnhf-brainstorming.md). One section per loop. An
+agent claims the **first unchecked item** in the section its prompt names,
+does it, and ticks it in the same commit.
+
+[`feature-backlog.md`](feature-backlog.md) owns feature work and is complete.
+This file owns test coverage and defect burndown. Do not add feature tickets
+here.
+
+[`testing-coverage-existing.md`](testing-coverage-existing.md) owns the
+inventory of what already exists. **Read it before you write a test.** It tells
+you which file already owns the surface you are about to cover, and which
+filename suffix decides whether your test gets a DOM. Record gaps here, record
+inventory there.
+
+## Claim protocol
+
+1. Take the first unchecked `[ ]` item in your assigned section.
+2. Change it to `[~]` and put your agent name after it, in the commit that
+   starts the work.
+3. Finish it, tick `[x]`, and note in one line what you changed.
+4. If you cannot finish it, set it back to `[!]`, write why under the item,
+   and pick the next one. Never delete an item.
+
+## The rule that outranks everything else here
+
+[`tests/fixtures/csv/manifest.ts`](../tests/fixtures/csv/manifest.ts) is the
+source of truth for what each CSV fixture proves. A `knownIssue` field records
+behaviour we know is **wrong**, and `corpus.test.ts` asserts that wrong
+behaviour on purpose.
+
+- Never edit a `.csv` fixture file to make a test pass.
+- Never delete a fixture.
+- Never loosen or delete an assertion.
+- Fix the pipeline. Then update the manifest entry to the correct expectation
+  and remove its `knownIssue`.
+- If you cannot fix the pipeline, leave the fixture, the test, and the manifest
+  untouched. Mark the item `[!]` and move on.
+
+Assert on behavior, not on source text. No `readFileSync`-on-source tests.
+Break the code a new test protects and confirm the test fails before you accept
+it. `components/ui/**` is vendored and out of scope.
+
+Exit gate for every item: `pnpm prettify`, then `pnpm ci` until green.
+
+Then ratchet the coverage gate. [`vitest.config.ts`](../vitest.config.ts) holds
+  thresholds at 75.63 statements, 75.63 lines, 75.83 branches, and 82.23
+  functions against 77.63% statements, 77.63% lines, 77.83% branches, and
+  84.23% functions measured 2026-08-11. Re-measure with
+`pnpm ci:tests` and raise each threshold to the new number minus two. Never
+lower one to make a build pass. Browser tests do not feed the v8 report, so
+Loops I, J, and L will not move the number. That is expected, not a failure.
+
+---
+
+## Known issues (Loop A)
+
+Seven fixtures document real defects in the import pipeline. Each item names
+the fixture that already proves it. Fix the defect in `src/server/csv/`, add a
+focused unit test beside the module you changed, then clear the `knownIssue`.
+
+- [x] **European decimals read as thousands separators.**
+      `transactions/lightspeed-sales-semicolon.csv`. `"8,50"` parses as `850`
+      because `decimal()` in `import-plan.ts` strips every comma. Needs to
+      respect the file's decimal convention, not guess per value.
+      Resolved by selecting comma-decimal parsing for semicolon-delimited files,
+      with exact-decimal regression coverage.
+- [x] **Currency-coded and percentage amounts rejected.**
+      `purchase-orders/po-currency-symbols-mixed.csv`. `"1,234.56 USD"` and
+      `"12.5%"` are not recognized by `decimal()` and raise a generic row
+      error instead of a clear currency-format message.
+      Resolved with format-specific validation messages and regression coverage
+      for both unsupported formats.
+- [x] **Mixed-number fractions rejected.**
+      `inventory/inventory-fractional-quantities.csv`. `"3 1/2"` is not
+      recognized by `decimal()` and raises a row error.
+      Resolved with exact mixed-number fraction parsing and corpus coverage.
+- [x] **Excel serial dates rejected.**
+      Resolved with 1900-system serial-date conversion and regression coverage;
+      the mixed-date fixture now fails only for its intentionally blank date.
+      `transactions/sales-messy-dates-mixed.csv`. A serial like `45717` fails
+      `Date.parse` and raises "is not a readable date" rather than being
+      recognized as a spreadsheet date.
+- [x] **Preamble rows above the header are not skipped.**
+      Resolved by scanning a bounded prefix for the first table header and
+      preserving source row numbers for the data that follows it.
+      `transactions/toast-with-preamble-rows.csv`. Header detection locks onto
+      the first two lines seen, so a report title and date-range row above the
+      real header make both the header and the data get misread. The import
+      fails.
+- [x] **Duplicate header names defeat header detection.** (Codex, iteration 4)
+      Resolved by allowing repeated non-empty labels and disambiguating the
+      generated column names (`Total`, `Total (2)`). Added parser regression
+      coverage and corrected the fixture manifest expectation.
+      The fixture `transactions/sales-duplicate-headers.csv` now detects the
+      repeated `Total` labels as a valid header.
+- [x] **Toast "Last, first" item names never resolve.** (Codex, iteration 6)
+      `transactions/toast-menu-item-sales.csv`. Resolved with deterministic
+      two-part presentation normalization (`Fillet, salmon` → `salmon fillet`)
+      while preserving ING-08 exact-match-only behavior; added regression
+      coverage and corrected the fixture expectation.
+
+The first three are all `decimal()` in `import-plan.ts`. Expect them to
+interact; do them in order and re-check the later two after the first lands.
+
+---
+
+## End-to-end import (Loop B)
+
+`corpus.test.ts` covers guard → parse → map → plan. Nothing drives the real
+`/import` route. Take **five fixtures per iteration**, in manifest order. Sign
+in, open `/import`, pick the import type from the
+[fixture README](../tests/fixtures/csv/README.md) table, upload the file, and
+assert the visible outcome matches the fixture's `description` — preview row
+count, mapping bands, and either a successful commit or the specific error.
+Seed state through the API, not by clicking. Keep the e2e suite under its
+wall-clock budget.
+
+- [x] Batch 1 — `transactions/` fixtures 1–5
+      Covered the first five transaction fixtures through the authenticated
+      `/import` route, including preview metadata, mapping review, item
+      resolution, and successful commit assertions.
+- [x] Batch 2 — `transactions/` fixtures 6–10 (Codex, iteration 8)
+      Covered Latin-1, UTF-8 BOM, preamble, headerless, and duplicate-header
+      fixtures through the authenticated `/import` route; headerless data
+      asserts the expected item-name validation error.
+- [x] Batch 3 — `transactions/` fixtures 11–15 (Codex, iteration 9)
+      Covered ambiguous headers, modifier normalization, refunds, mixed dates,
+      and the full-year transaction file through the authenticated `/import`
+      route, including preview metadata, mapping completion, validation errors,
+      and successful commits.
+- [x] Batch 4 — `purchase-orders/` fixtures 1–5 (Codex, iteration 10)
+      Covered the first five purchase-order fixtures through the authenticated
+      `/import` route, including vendor-specific mappings, item resolution, and
+      successful commits. Added `PO` as an explicit external-ID alias after
+      the browser path exposed a date-mapping defect in the US Foods fixture.
+- [x] Batch 5 — `purchase-orders/` fixtures 6–9 (Codex, iteration 11)
+      Covered received-before-ordered, unit-cost/total mismatch, mixed currency/percentage rejection, and blank received dates through the authenticated `/import` route.
+- [x] Batch 6 — `inventory/` fixtures 1–7 (Codex, iteration 12)
+      Covered all seven inventory fixtures through the authenticated `/import` route, including shelf-life and fractional quantities, normalized item names, new-item resolution, snapshot deduplication isolation, and the expected blank-quantity error.
+- [x] Batch 7 — `labor/` fixtures 1–6 (Codex, iteration 13)
+      Covered all six labor fixtures through the authenticated `/import` route, including vendor-specific mappings, scheduled-only and actual-only shifts, open shifts, successful commits, and the expected missing-hours error.
+- [x] Batch 8 — `malformed/` fixtures 1–8 (Codex, iteration 14)
+      Covered all eight malformed fixtures through the authenticated `/import` route, including parser warnings, safe upload/commit errors, item resolution, and successful commits.
+- [x] Batch 9 — `security/` fixtures 1–5 (Codex, iteration 15)
+      Covered binary masquerades, embedded null bytes, formula-looking item names, and empty files through the authenticated `/import` route, including HTTP rejection status and successful formula-row import.
+
+---
+
+## Downstream of import (Loop C)
+
+Nothing proves imported rows produce correct metrics, scores, or
+recommendations.
+
+- [x] Import `transactions/sales-one-year-daily.csv`, run the precompute
+      pipeline, assert Data Sufficiency crosses the four-week gate and the
+      dashboard leaves the insufficient-data state.
+      Covered in the real-Postgres CSV import integration suite: the fixture
+      imports 1,825 rows, precompute marks prediction eligibility true, and
+      the owner-scoped dashboard state is ready.
+- [x] Import under four weeks of history; assert it does **not** cross the gate
+      and the insufficient-data state states what is missing. (Codex, iteration 17)
+      Covered a 14-day real CSV import through precompute; prediction remains
+      ineligible and the persisted finding asks for four weeks of history.
+- [x] `transactions/sales-with-refunds-negative.csv` — assert refunds reduce
+      revenue and never surface as negative-quantity waste. (Codex, iteration 18)
+      Covered the fixture through real CSV commit and precompute, asserting
+      net item quantities/revenue and non-negative spoilage output.
+- [x] Business-day boundary: build a fixture with a 01:30 sale and assert it
+      buckets to the prior business day (tech-stack §3.10).
+      Covered same-calendar-day pre- and post-boundary sales through real CSV
+      commit and precompute; both demand forecast and dashboard count two
+      business days.
+- [x] Money never touches a float (§3.9) — assert an imported amount stays
+      exact from row through metric to rendered figure. (Codex, iteration 20)
+      Added a precision fixture and real-Postgres coverage from normalized
+      transaction values through precompute margin output to the rendered
+      dashboard dollar figure.
+- [x] `labor/*` through STF-02 labor efficiency metrics. (Codex, iteration 21)
+      Covered an imported Homebase labor export plus matching sales through the
+      owner-scoped efficiency query, including exact shift ratios and a labor-only
+      shift exclusion.
+- [x] `purchase-orders/*` through MNU-03 plate costing. (Codex, iteration 22)
+      Imported the Sysco invoice fixture through the real CSV persistence path,
+      then saved a recipe against the imported ingredient items and asserted
+      exact plate cost, margin, food-cost percentage, arithmetic evidence, and
+      retained cost movement.
+
+---
+
+## Corpus gaps (Loop D)
+
+One family per iteration. Every new fixture needs a `manifest.ts` entry and a
+stated reason. No "more of the same" files.
+
+- [x] Time: DST-boundary day, timezone-suffixed timestamps, `DD/MM` vs `MM/DD`
+      ambiguity. Added three transaction fixtures; the manifest asserts both
+      offset-preserving UTC instants and the slash-date corpus shape.
+- [x] Scale: a 100k-row file under the cap, a 9.9 MB file, a file at exactly
+      10 MB. Added three manifest-backed fixtures; corpus coverage parses the
+      100,000-row file and exercises both the below-cap and exact-cap guard
+      boundaries.
+- [x] Encoding: UTF-16LE with BOM, CP1252 smart quotes, mixed encodings in one
+      file. Added manifest-backed UTF-16LE and Windows-1252 fixtures, plus a
+      security fixture that rejects ambiguous mixed encoding bytes.
+- [x] Duplicates: the same file imported twice (INT-07 dedup), and two files
+      with overlapping date ranges.
+      (Codex, iteration 26) Added real-Postgres coverage for the same file
+      committed through two upload records, plus reconciliation coverage that
+      asserts the exact intersection of overlapping source periods.
+- [x] Item resolution near-misses: trailing whitespace, plurals, `&` vs `and`,
+      case-only differences.
+      Added a manifest-backed transaction fixture covering whitespace and case
+      normalization plus unresolved plural and ampersand near-misses; the
+      corpus suite confirms only exact normalized matches enter the plan.
+- [x] Adversarial security: deeply nested quotes, a header row alone exceeding
+      the row limit, a highly compressible file near the cap.
+      Added manifest-backed fixtures for deeply escaped quote fields, a
+      header-only record over the 1 MiB parser record limit, and a repetitive
+      9.75 MB upload; bounded parsing and streaming guard coverage pass.
+
+---
+
+## Behavioral test conversion (Loop E)
+
+Replace the source-text "contract" tests with behavioral ones. This loop is
+nearly finished. An audit on 2026-08-10 found only five `readFileSync` callers
+left, and three of them are legitimate. Two items remain.
+
+Exceptions that **stay** as text assertions:
+
+- regex over `.sql` migration files in `tests/integration/schema-contract.test.ts`
+  and `auth-schema-contract.test.ts` — migrations really are text artifacts;
+- `tests/ci-parity.test.ts` — it reads `package.json` and the workflow file.
+  Both are configuration, not application source;
+- `tests/charts/greyscale-gate.test.ts` — it also renders React and inspects
+  the SVG. The source scan is a second net, not the only one;
+- `tests/copy-rules.test.tsx` — it renders components. One assertion reads
+  `docs/brand/marketing-copy.md`, which is a document, not source.
+
+Do not disturb the `src/server/metrics`, `staffing`, `menu`, and `connectors`
+unit tests. They are good. Reuse `tests/fixtures/pantry.ts`.
+
+- [x] `components/marketing/landing-claims.test.tsx` renders `app/page.tsx`
+      and asserts on the output. A banned claim fails whether it is inlined or
+      imported from a constant; verified with a deliberately injected claim.
+- [x] The architecture boundary now lives in ESLint: database imports are
+      restricted in narration and API routes, and direct mutation calls are
+      rejected in the chat route. The former source-reading test was deleted;
+      a deliberate violation was rejected by lint.
+
+---
+
+## Mutation testing (Loop F)
+
+Each iteration: pick one `src/server/**` module, mutate one branch or boundary
+by hand, run its tests, and if they still pass, write the test that catches it.
+Restore the code. Log every surviving mutant found.
+
+Ranked by uncovered lines, measured 2026-08-10. The first five hold roughly
+1,550 unexercised lines between them, so start there. The last group is already
+above 94% — expect few survivors and move on quickly.
+
+- [x] `metrics/precompute.ts` — 49.5% of 1,209 lines. (Codex, iteration 30 — decimal parsing boundary)
+      Added behavioral regression coverage for malformed numeric input; it
+      remains explicitly uncalculable rather than crashing or becoming zero.
+      Mutation check caught an inverted decimal-validity guard. The largest uncovered
+      mass in the repo, and the engine Loop C depends on. Split over several
+      iterations; take branches in `coverage/index.html` order.
+- [x] `menu/recipe-builder.ts` — 35.7% of 482. (Codex, iteration 31 — zero output-quantity validation)
+      Added a regression test for zero output quantities; mutation testing confirmed the positive-boundary guard is required.
+- [x] `metrics/trends.ts` — 33.8% of 358. (Codex, iteration 32)
+      Added a behavioral regression for exact-decimal equality across scales;
+      mutation testing caught equality being treated as a downward trend.
+- [x] `metrics/portfolio.ts` — 33.2% of 340. (Codex, iteration 33)
+      Added an all-locations-uncalculable money-at-risk regression; mutating
+      the empty-value guard caused the portfolio suite to fail.
+- [x] `ingestion/reconciliation.ts` — 53.7% of 367. (Codex, iteration 34 — unresolved overlap authority)
+      Added a regression proving an unresolved conflict cannot include a record even when its stale authority matches; mutation testing caught removing the resolved-status guard.
+- [x] `metrics/item-deep-dives.ts` — 66.7% of 345. (Codex, iteration 35 — item-scoped recommendations)
+      Added a regression proving each item detail receives only its own recommendations; a mutant removing the item filter fails.
+- [x] `metrics/scheduler.ts` — 57.9% of 209. (Codex, iteration 36)
+      Added a scheduler-clock fallback regression for successful runs whose
+      precompute result has no completion timestamp; mutation testing caught
+      removing the fallback.
+- [x] `metrics/dashboard-recommendations.ts` (50% of 72) and
+      `metrics/dashboard-state.ts` (47.5% of 61). (Codex, iteration 38)
+      Added a behavioral regression that drops an otherwise valid recommendation
+      when its evidence trace has no key; the surviving always-true validation
+      mutant fails. Existing dashboard-state tests continue to cover the
+      business-day status boundaries and invalid timestamps.
+- [x] `import-plan.ts` — mutation pass (Codex, iteration 39).
+      Added a behavioral regression requiring negative labor hours to be
+      rejected before they enter the import plan; removing the non-negative
+      guard makes the focused suite fail.
+- [x] `mapping.ts` mutation pass (Codex, iteration 40).
+      Added a behavioral regression proving reusable mappings reject duplicate
+      incoming column labels; removing the uniqueness guard makes the test
+      reuse an invalid mapping.
+- [x] `parser.ts` mutation pass (Codex, iteration 41).
+      Added a behavioral regression requiring long problem examples to retain
+      their prefix while being truncated; changing the truncation boundary
+      makes the focused parser test fail.
+- [x] `security.ts` mutation pass (Codex, iteration 42).
+      Added a streaming regression proving forbidden control bytes are rejected
+      even after the bounded content sample is full; mutation testing caught
+      checking the sample instead of the current chunk. The remaining
+      well-covered set continues with `impact.ts`, `urgency.ts`, `ranking.ts`,
+      `sufficiency.ts`, `spoilage.ts`, `evidence.ts`.
+
+Those percentages come from a run with no database, so the integration-only
+modules — `csv/imports.ts`, `manual/manual-entry.ts`, `connectors/framework.ts`,
+`ingestion/persistence.ts`, `observability/store.ts` — report 0% there and their
+true figure is unknown. Re-measure with `TEST_DATABASE_URL` set before ranking
+them.
+
+---
+
+## Security and isolation (Loop G)
+
+- [x] Upload a fixture as location A; assert location B's owner cannot read the
+      import, preview, mapping, or export. (Codex, iteration 37)
+      Added a real-Postgres upload/commit regression covering import history,
+      import planning, file preview, mapping persistence, and CSV export.
+- [x] Assert `security/formula-injection.csv` stays inert through the CSV
+      **export** path (ING-11), not only on import.
+      The Loop K export-service test is now in place; extend that real
+      query-path coverage with this fixture.
+      Covered the security fixture through real import persistence and the
+      owner-scoped transaction export, asserting all formula-like item names
+      are apostrophe-neutralized.
+      [`src/server/csv/exports.test.ts`](../src/server/csv/exports.test.ts)
+      tests `export-format.ts`, which is a pure formatter at 100%. The query
+      module `exports.ts` is now covered by the real service test; extend that
+      test here rather than the mocked API test.
+- [x] (Codex, iteration 45) Assert the guard rejects `security/renamed-xlsx.csv` and
+      `security/renamed-pdf.csv` before any bytes reach storage.
+      Added real upload-path coverage with split signature chunks and asserted
+      the storage consumer receives no bytes before rejection.
+- [x] Assert a rejected upload persists nothing — no row, no file, no history
+      entry. (Codex, iteration 46)
+      Extended the real upload-path security coverage to assert both renamed
+      binary fixtures leave no stored bytes and no `csv_upload_history` row.
+
+---
+
+## Accessibility and greyscale over real data (Loop H)
+
+QAG-01 and QAG-02 gate the design rules but likely run against seeded or empty
+states. Real data means long item names, negative figures, and empty
+categories.
+
+- [x] (Codex, iteration 52) Run the axe check on every screen reachable after importing a corpus
+      fixture, with that data on screen. Added authenticated axe coverage for ten seeded
+      screens in light and dark themes, and fixed the surfaced definition-list, control-name,
+      duplicate-landmark, scroll-focus, heading-order, and disabled-group contrast defects.
+- [x] (Codex, iteration 53) Run the greyscale check on the same screens. Colour is never
+      load-bearing; the greyscale test is a merge gate. Added a seeded light/dark
+      sweep over the ten real-data screens with desaturated screenshot artifacts,
+      preserved text assertions, and chart pattern/value semantics checks.
+
+---
+
+## Browser test architecture (prerequisite for Loops I and J)
+
+The product has **two** functional browser tests.
+[`critical-path.spec.ts`](../tests/critical-path.spec.ts) and
+[`returning-user.spec.ts`](../tests/returning-user.spec.ts) hold one `test()`
+each. Between them they open 6 of the 17 routes. This section builds the
+scaffolding those two loops need. Do it before claiming anything in them.
+
+One fact decides the design. Sixteen of the seventeen pages are React Server
+Components that call `src/server/**` directly, not over HTTP.
+[`app/(app)/dashboard/page.tsx`](<../app/(app)/dashboard/page.tsx>) awaits
+`getDashboardDataState`, `getDashboardTrends`, and
+`listConnectorConnectionStatuses` during render. A `page.route('**/api/**')`
+handler never sees that traffic. Route mocking reaches only the six client
+components that fetch: `chat-surface`, `location-manager`, `recipe-builder`,
+`manual-entry-form`, `reconciliation-review`, and the export control. So
+browser coverage needs two layers, not one.
+
+- [x] Split [`playwright.config.ts`](../playwright.config.ts) into four
+      projects sharing the current `webServer` block: `setup`
+      (`tests/e2e/setup/`), `e2e` (`tests/e2e/`, seeded database, real stack),
+      `ui` (`tests/ui/`, mocked, no database), and `design`
+      (`tests/accessibility/` and `tests/charts/`, unchanged). `e2e` and `ui`
+      both declare `dependencies: ['setup']`. Keep `expect.timeout` at 15s and
+      `retries: 2` in CI. (Codex, iteration 48) The existing journeys now
+      live under `tests/e2e/`; the four projects share the existing web server.
+- [x] Add `tests/e2e/setup/auth.setup.ts`. Both current specs sign up from
+      scratch, which is slow and is why there are only two of them. Sign up
+      once, save `storageState` to `tests/.auth/owner.json`, and load it from
+      `use.storageState`. Keep one spec that still exercises signup itself.
+      (Codex, iteration 49) Added the setup project auth state, loaded it for
+      e2e and UI projects, and kept the returning-user signup/sign-in journey
+      isolated from the shared session.
+- [x] Add `tests/e2e/setup/seed.setup.ts`. Reuse `seedDatabase()` in
+      [`src/server/db/seed-database.ts`](../src/server/db/seed-database.ts),
+      `fullYearLocationFixture` and `partialDataLocationFixture` in
+      [`tests/fixtures/pantry.ts`](../tests/fixtures/pantry.ts), and the
+      `REQUIRE_INTEGRATION_DB` guard in
+      [`tests/helpers/test-database.ts`](../tests/helpers/test-database.ts).
+      Provision two locations on the `storageState` account: one with a full
+      year of sales and weekly snapshots, one with 14 days and no snapshots.
+      That pair alone unlocks both the populated and the insufficient-data
+      rendering of every screen. (Codex, iteration 50) Added an owner-scoped
+      fixture seed setup with database row-count assertions and authenticated
+      location-list verification.
+- [x] Add `tests/ui/fixtures/mock-api.ts`, a Playwright fixture that installs
+      `page.route()` handlers keyed by scenario. Cover `/api/chat`,
+      `/api/chat/override`, `/api/locations`, `/api/locations/:id`,
+      `/api/recipes`, `/api/items`, and `/api/reconciliation`. Type the bodies
+      against the real route return types, so a route change breaks the mock
+      instead of drifting from it. Each handler needs `ok`, `unauthorized`,
+      `forbidden`, `invalid`, `conflict`, `unavailable`, `server-error`, and
+      `slow`. (Codex, iteration 54) Added the typed endpoint dispatcher and
+      reusable response scenarios.
+- [x] Move the two existing specs into `tests/e2e/` and drop their inline
+      signup. Split `test:e2e` into `test:e2e` and `test:ui` in
+      [`package.json`](../package.json), add both to `ci:browser`, and mirror
+      the change in [`.github/workflows/ci.yml`](../.github/workflows/ci.yml).
+      [`tests/ci-parity.test.ts`](../tests/ci-parity.test.ts) enforces parity
+      and fails otherwise. (Codex, iteration 55) The critical-path journey now
+      uses the shared authenticated owner and cleans up its location; the
+      returning-user journey remains the one explicit signup path.
+
+---
+
+## Screens never opened in a browser (Loop I)
+
+`tests/e2e/`, seeded project. One screen per iteration. For each: load it
+against the full-year location and assert the real figures render; reload
+against the 14-day location and assert the insufficient-data state names what is
+missing rather than showing zeros.
+
+Percentages below are line coverage measured 2026-08-10.
+
+- [x] `/staffing` — labor efficiency. (Codex, iteration 56)
+      Added authenticated seeded coverage for full-year labor comparisons and
+      forecast output, plus the 14-day insufficient-history state. The browser
+      seed now keeps both fixtures inside the staffing lookback and supplies
+      complete labor shifts for the full-year location.
+      `components/staffing/labor-efficiency-view.tsx` is 464 lines at 0%, and
+      `staffing/labor-efficiency-query.ts` is 0%.
+- [x] `/usage` — usage variance. View 231 lines at 0%,
+      `menu/usage-variance-query.ts` 0%. (Codex, iteration 57) Added seeded
+      full-year and short-history browser coverage for calculated variance,
+      waste attribution, exclusions, and the explicit missing-count state.
+- [x] `/menu-engineering` — the popularity and margin matrix. View 225 lines at
+      0%, `menu/menu-engineering-query.ts` 0%. It sits outside the `(app)`
+      route group; assert the shell still renders consistently. (Codex,
+      iteration 58) Added seeded full-year calculated-matrix coverage, including
+      printed quadrant and contribution figures plus the missing-margin
+      exclusion, and a short-history insufficient-data state.
+- [x] `/recipes` — also outside `(app)`. Create a recipe, add ingredients,
+      save, reload, assert it persisted. (Codex, iteration 59) Added a seeded
+      real-data journey that saves a recipe with Tomato, reloads the page, and
+      reopens it to verify the persisted ingredient quantity and unit.
+- [x] `/portfolio` — the rollup across both seeded locations. (Codex, iteration 60)
+      Added a seeded full-year metric run and authenticated browser coverage for the partial rollup, per-location readiness, money totals, and dashboard links.
+      `portfolio-rollup.tsx` 0%, `metrics/portfolio.ts` 33.2%.
+- [x] `/settings` — item master and shelf-life defaults. Edit an item, save,
+      assert the change survives a reload. (Codex, iteration 61) Added a
+      seeded browser journey that saves Tomato Soup's shelf life and verifies
+      the 7-day value remains after reload.
+- [x] `/account` — create, rename, and delete a location. Deletion cascades
+      seven tables;
+      [`location-deletion.test.ts`](../tests/integration/location-deletion.test.ts)
+      proves the cascade. (Codex, iteration 62) Added an authenticated browser
+      journey that creates and renames a location, checks the deletion summary
+      and confirmation dialog, then asserts the removed location disappears
+      and the account page reports the completed deletion.
+- [x] `/forgot-password` and `/reset-password` — never rendered by any test. (Codex, iteration 63)
+      Assert the form submits and the confirmation copy appears. Email is
+      authentication plumbing only (tech-stack §3.14), so assert no marketing
+      or notification framing. Added a mocked UI journey for both forms,
+      including their Better Auth requests and authentication-only notices.
+
+---
+
+## Interaction and failure paths, backend mocked (Loop J)
+
+`tests/ui/`, mocked project, no database. One flow per iteration. These are the
+paths a healthy seeded stack cannot produce on demand.
+
+`/api/chat` reaches a live LLM through `createNarrationService` in
+[`src/server/chat/narration.ts`](../src/server/chat/narration.ts). Every chat
+item below must intercept it. A browser test may never bill an LLM call.
+
+- [x] Chat: ask a question, assert the answer renders with its evidence and its
+      stated limits. (Codex, iteration 64) Added a mocked authenticated browser
+      journey that submits a question, checks the grounded answer sections and
+      no-prediction limit, then opens Sources, Calculations, and Assumptions.
+- [x] Chat: an assumption override round trip through `/api/chat/override`. (Codex, iteration 65)
+      Added mocked browser coverage for recalculation, the conversation-only
+      choice, and the resulting override payload on the next chat request.
+- [x] Chat: 500 and 503 from `/api/chat`. The surface must degrade with a
+      readable message and must not lose the typed question. (Codex, iteration
+      66) Added mocked browser coverage for both response statuses, asserting
+      the status-specific message and retained user question.
+- [x] Manual entry (`manual-entry-form.tsx`, 673 lines, 59.1%, Codex iteration 67): every
+      validation branch, plus a 400 from `/api/manual-entry` surfacing field
+      errors. Added 15 DOM cases for all entry types, item creation, line
+      management, loading failures, request failures, and server field errors.
+- [x] CSV upload: 503 from `/api/uploads` for storage down, and 409 on commit
+      (Codex, iteration 68) Added mocked browser coverage for a storage outage
+      that leaves upload retryable and an unresolved-item conflict on final
+      commit that preserves the import state.
+      for unresolved items. `csv-upload-form.tsx` is 60.9%.
+- [x] CSV mapping review (`csv-mapping-review.tsx`, 34.7%): change a detected
+      mapping, save, assert it persists into the next upload. (Codex, iteration
+      69) Added a mocked browser journey that changes Quantity to Total revenue,
+      saves it, reuploads the same shape, and verifies the reused mapping.
+- [x] CSV item resolution (`csv-item-resolution.tsx`, 1.1%): match an existing
+      item, create a new one, and keep import blocked until a choice is made.
+      (Codex, iteration 70) Existing-item matching remains covered by the
+      unresolved commit flow; added mocked browser coverage for new-item
+      creation and the blocked state. The product contract requires every
+      unmatched item to be resolved, so there is no skip outcome to test.
+- [x] Reconciliation review (`reconciliation-review.tsx`, 0%): accept a
+      conflict, then reject one. (Codex, iteration 71) Added mocked browser
+      coverage for authority selection clearing a resolved overlap and a
+      rejected save preserving the unresolved conflict and readable error.
+- [x] Location manager (`location-manager.tsx`, 67.1%): duplicate-name 409,
+      the delete confirmation, and the cancel path. (Codex, iteration 72)
+      Added a DOM regression for the 409 duplicate-name response; existing
+      behavioral cases cover the destructive confirmation and cancel paths.
+- [x] Auth form (`auth-form.tsx`, 0%): wrong password, unknown email, and an
+      already-registered email. No message may disclose whether an account
+      exists. (Codex, iteration 73 — mocked browser coverage asserts one
+      generic failure for distinct sign-in and sign-up backend errors.)
+- [x] Every screen at 375×812 and in dark theme. Colour is never load-bearing
+      and the greyscale check is a merge gate, but only `/design/gallery` is
+      checked today. (Codex, iteration 74) Added a seeded browser sweep for
+      all 17 page routes, asserting the exact mobile viewport, dark theme, and
+      no page-level horizontal overflow.
+
+---
+
+## The service layer the API tests mock away (Loop K)
+
+Every file in `tests/api/` mocks the module beneath it — 27 `vi.mock` calls,
+including `requireOwnedLocation` in all ten. Those tests prove status mapping,
+which is worth having, and they leave the services at zero. One module per
+iteration, unit or integration as the module needs.
+
+- [x] `csv/exports.ts` — 149 lines at 0%. (Codex, iteration 43)
+      Added real-Postgres coverage for all four export datasets, owner
+      scoping, and formula-injection neutralisation through the query path.
+      Unblocked the Loop G export item.
+- [x] `menu/usage-variance-query.ts` — 208 lines at 0%. (Codex, iteration 75)
+      Added real-Postgres coverage for owner-scoped recipe, sales, purchase,
+      snapshot, and unit-conversion assembly, including exact variance output
+      and cross-account rejection.
+- [x] `staffing/labor-efficiency-query.ts` — 143 lines at 0%. (Codex, iteration 76)
+      Added real-Postgres coverage for owner isolation and the sales, labor,
+      and external-signal lookback windows; a removed labor owner predicate
+      makes the regression fail.
+- [x] `menu/menu-engineering-query.ts` — 117 lines at 0%. (Codex, iteration 77)
+      Added real-Postgres coverage for owner-scoped active menu items, the
+      365-day sales window, newest complete recipe margins, business-week
+      sufficiency, and explainable exclusions.
+- [x] `staffing/external-signal-sync.ts` — 136 lines at 0%. (Codex, iteration 78)
+      Added real-Postgres coverage for successful fetch provenance, exact cost
+      persistence, feature upserts, empty provider results, and failure
+      journaling with error propagation.
+- [x] `csv/previews.ts`, `csv/uploads.ts`, and `csv/mapping-persistence.ts` — (Codex, iteration 79)
+      Added real-Postgres and in-memory-storage coverage for failed-upload cleanup,
+      preview mapping reuse and unreadable objects, and invalid mapping rejection
+      without overwriting the saved mapping.
+- [x] `inventory/items.ts` and `locations/locations.ts` — both 0%. (Codex, iteration 80)
+      Added real-Postgres service coverage for item persistence, active filtering,
+      exact numeric values, usage updates, location lifecycle mutations, and
+      owner scoping; the inactive-filter mutation was caught.
+- [x] `auth/email.ts` — 0%. (Codex, iteration 81) Added behavioral delivery coverage for the Resend payload, both Better Auth authentication callbacks, local omission, production configuration failure, and provider errors; the tests assert no notification-style message is emitted.
+
+The pure calculators these queries feed — `menu-engineering.ts`,
+`labor-efficiency.ts`, `usage-variance.ts` — already have good unit tests. The
+gap is the layer that hands them their rows.
+
+---
+
+## Ownership proven at the route, not at the helper (Loop L)
+
+[`ownership-boundary.test.ts`](../tests/integration/ownership-boundary.test.ts)
+proves `requireOwnedLocation` works. All ten files in `tests/api/` mock it.
+[`api-route-inventory.test.ts`](../tests/api-route-inventory.test.ts) only
+checks each route appears in a hand-maintained list. So nothing fails if a
+handler forgets to call it.
+
+- [x] Replace the inventory check with a behavioral sweep. For every route
+      under `app/api/` except `health` and `auth/[...all]`, call it with
+      account A's session and account B's `locationId` against a real database,
+      and assert 403 or 404. Table-driven, one case per route, nothing mocked.
+      (Codex, iteration 82) Added a real-Postgres table-driven sweep with a
+      signed Better Auth session covering every owner-scoped route, including
+      foreign upload records; also fixed connector status to reject a foreign
+      location instead of returning an empty 200 response.
+- [x] The browser equivalent: sign in as A, open
+      `/dashboard?locationId=<B's id>`, assert none of B's figures render.
+      (Codex, iteration 83) Seeded a full-year location for a separate account
+      and verified the authenticated owner’s browser never renders its name or
+      wallet figures.
+
+Verify both by deleting a `requireOwnedLocation` call from one handler. The
+sweep must go red. Restore it.

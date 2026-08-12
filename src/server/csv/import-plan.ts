@@ -11,15 +11,79 @@ import {
 import type { CsvImportType } from './upload-input'
 
 type Decimal = { digits: bigint; scale: number }
+type DecimalSeparator = '.' | ','
 
 const DECIMAL_PATTERN = /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)$/
+const EXCEL_SERIAL_PATTERN = /^(\d+)(?:\.(\d+))?$/
+const MILLISECONDS_PER_DAY = 86_400_000n
 
-function decimal(value: string): Decimal | null {
-  const cleaned = value
+function exactFractionToDecimal(
+  numerator: bigint,
+  denominator: bigint,
+): Decimal | null {
+  if (denominator === 0n) return null
+
+  const negative = numerator < 0n !== denominator < 0n
+  let reducedNumerator = numerator < 0n ? -numerator : numerator
+  let reducedDenominator = denominator < 0n ? -denominator : denominator
+  const gcd = (left: bigint, right: bigint) => {
+    let a = left
+    let b = right
+    while (b !== 0n) {
+      const remainder = a % b
+      a = b
+      b = remainder
+    }
+    return a
+  }
+  const divisor = gcd(reducedNumerator, reducedDenominator)
+  reducedNumerator /= divisor
+  reducedDenominator /= divisor
+
+  let twos = 0
+  let fives = 0
+  while (reducedDenominator % 2n === 0n) {
+    reducedDenominator /= 2n
+    twos += 1
+  }
+  while (reducedDenominator % 5n === 0n) {
+    reducedDenominator /= 5n
+    fives += 1
+  }
+  if (reducedDenominator !== 1n) return null
+
+  const scale = Math.max(twos, fives)
+  const digits =
+    reducedNumerator * 2n ** BigInt(scale - twos) * 5n ** BigInt(scale - fives)
+  return { digits: negative ? -digits : digits, scale }
+}
+
+function decimal(
+  value: string,
+  decimalSeparator: DecimalSeparator = '.',
+): Decimal | null {
+  let cleaned = value
     .trim()
-    .replaceAll(',', '')
     .replace(/^[$£€]/, '')
     .replace(/^\((.*)\)$/, '-$1')
+  if (decimalSeparator === ',') {
+    cleaned = cleaned.replaceAll('.', '').replace(',', '.')
+  } else {
+    cleaned = cleaned.replaceAll(',', '')
+  }
+  const mixed = cleaned.match(/^([+-]?\d+)\s+(\d+)\s*\/\s*(\d+)$/)
+  if (mixed) {
+    const [, wholeText, numeratorText, denominatorText] = mixed
+    const whole = BigInt(wholeText ?? '0')
+    const numerator = BigInt(numeratorText ?? '0')
+    const denominator = BigInt(denominatorText ?? '0')
+    const sign = whole < 0n ? -1n : 1n
+    const absoluteWhole = whole < 0n ? -whole : whole
+    return exactFractionToDecimal(
+      sign * (absoluteWhole * denominator + numerator),
+      denominator,
+    )
+  }
   if (!DECIMAL_PATTERN.test(cleaned)) return null
   const negative = cleaned.startsWith('-')
   const unsigned = cleaned.replace(/^[+-]/, '')
@@ -96,6 +160,28 @@ function valueFor(
   return value || undefined
 }
 
+function excelSerialDate(value: string): Date | null {
+  const match = value.match(EXCEL_SERIAL_PATTERN)
+  if (!match) return null
+
+  const wholeDays = BigInt(match[1] ?? '0')
+  if (wholeDays === 60n) return null
+
+  const fractionText = match[2] ?? ''
+  const fractionUnits = fractionText ? BigInt(fractionText) : 0n
+  const fractionDenominator = 10n ** BigInt(fractionText.length)
+  const milliseconds =
+    fractionUnits === 0n
+      ? 0n
+      : (fractionUnits * MILLISECONDS_PER_DAY + fractionDenominator / 2n) /
+        fractionDenominator
+  const excelLeapYearAdjustment = wholeDays >= 60n ? 1n : 0n
+  const millisecondsSinceEpoch =
+    (wholeDays - excelLeapYearAdjustment) * MILLISECONDS_PER_DAY + milliseconds
+  const date = new Date(Date.UTC(1899, 11, 31) + Number(millisecondsSinceEpoch))
+  return Number.isNaN(date.getTime()) ? null : date
+}
+
 function required(value: string | undefined, field: string, rowNumber: number) {
   if (!value)
     throw new CsvImportValidationError(
@@ -110,7 +196,7 @@ function dateValue(
   rowNumber: number,
 ) {
   const text = required(value, field, rowNumber)
-  const date = new Date(text)
+  const date = excelSerialDate(text) ?? new Date(text)
   if (Number.isNaN(date.getTime()))
     throw new CsvImportValidationError(
       `Row ${rowNumber}: ${field} is not a readable date.`,
@@ -122,21 +208,33 @@ function numberValue(
   value: string | undefined,
   field: string,
   rowNumber: number,
+  decimalSeparator: DecimalSeparator = '.',
 ) {
   const text = required(value, field, rowNumber)
-  if (!decimal(text))
-    throw new CsvImportValidationError(
-      `Row ${rowNumber}: ${field} is not a valid number.`,
-    )
-  return decimalString(decimal(text) as Decimal)
+  const parsed = decimal(text, decimalSeparator)
+  if (!parsed)
+    if (/[A-Za-z]{3}\s*$/.test(text))
+      throw new CsvImportValidationError(
+        `Row ${rowNumber}: ${field} uses a currency code; enter a numeric amount with an optional leading symbol instead.`,
+      )
+    else if (/%\s*$/.test(text))
+      throw new CsvImportValidationError(
+        `Row ${rowNumber}: ${field} uses a percentage; enter a currency amount instead.`,
+      )
+    else
+      throw new CsvImportValidationError(
+        `Row ${rowNumber}: ${field} is not a valid number.`,
+      )
+  return decimalString(parsed)
 }
 
 function nonNegativeNumberValue(
   value: string | undefined,
   field: string,
   rowNumber: number,
+  decimalSeparator: DecimalSeparator = '.',
 ) {
-  const normalized = numberValue(value, field, rowNumber)
+  const normalized = numberValue(value, field, rowNumber, decimalSeparator)
   if (normalized.startsWith('-'))
     throw new CsvImportValidationError(
       `Row ${rowNumber}: ${field} cannot be negative.`,
@@ -277,6 +375,8 @@ export function buildCsvImportPlan(input: {
   resolutions?: Readonly<Record<string, ImportItemResolution>>
 }): ImportPlan {
   const resolutions = input.resolutions ?? {}
+  const decimalSeparator: DecimalSeparator =
+    input.csv.delimiter === ';' ? ',' : '.'
   const rows: PlannedRow[] = []
   const unmatched = new Map<string, UnmatchedItem>()
   const newItems = new Map<string, Extract<PlannedItem, { kind: 'new' }>>()
@@ -420,6 +520,7 @@ export function buildCsvImportPlan(input: {
                 scheduledHoursRaw,
                 'scheduled hours',
                 row.rowNumber,
+                decimalSeparator,
               )
             : null,
           actualHours: actualHoursRaw
@@ -427,6 +528,7 @@ export function buildCsvImportPlan(input: {
                 actualHoursRaw,
                 'actual hours',
                 row.rowNumber,
+                decimalSeparator,
               )
             : null,
           laborCost: valueFor(
@@ -444,6 +546,7 @@ export function buildCsvImportPlan(input: {
                 ),
                 'labor cost',
                 row.rowNumber,
+                decimalSeparator,
               )
             : null,
         },
@@ -455,6 +558,7 @@ export function buildCsvImportPlan(input: {
       valueFor(row.values, input.csv.columns, input.mapping, 'qty'),
       'quantity',
       row.rowNumber,
+      decimalSeparator,
     )
     if (input.importType === 'transactions') {
       const totalRevenueRaw = valueFor(
@@ -474,13 +578,28 @@ export function buildCsvImportPlan(input: {
           `Row ${row.rowNumber}: map total revenue or unit price.`,
         )
       const totalRevenue = totalRevenueRaw
-        ? numberValue(totalRevenueRaw, 'total revenue', row.rowNumber)
+        ? numberValue(
+            totalRevenueRaw,
+            'total revenue',
+            row.rowNumber,
+            decimalSeparator,
+          )
         : multiplyDecimal(
             qty,
-            numberValue(unitPriceRaw, 'unit price', row.rowNumber),
+            numberValue(
+              unitPriceRaw,
+              'unit price',
+              row.rowNumber,
+              decimalSeparator,
+            ),
           )
       const unitPrice = unitPriceRaw
-        ? numberValue(unitPriceRaw, 'unit price', row.rowNumber)
+        ? numberValue(
+            unitPriceRaw,
+            'unit price',
+            row.rowNumber,
+            decimalSeparator,
+          )
         : divideDecimal(totalRevenue, qty)
       const totalCostRaw = valueFor(
         row.values,
@@ -489,7 +608,12 @@ export function buildCsvImportPlan(input: {
         'totalCost',
       )
       const totalCost = totalCostRaw
-        ? numberValue(totalCostRaw, 'total cost', row.rowNumber)
+        ? numberValue(
+            totalCostRaw,
+            'total cost',
+            row.rowNumber,
+            decimalSeparator,
+          )
         : null
       rows.push({
         rowNumber: row.rowNumber,
@@ -550,13 +674,23 @@ export function buildCsvImportPlan(input: {
           `Row ${row.rowNumber}: map total cost or unit cost.`,
         )
       const unitCost = unitCostRaw
-        ? numberValue(unitCostRaw, 'unit cost', row.rowNumber)
+        ? numberValue(unitCostRaw, 'unit cost', row.rowNumber, decimalSeparator)
         : divideDecimal(
-            numberValue(totalCostRaw, 'total cost', row.rowNumber),
+            numberValue(
+              totalCostRaw,
+              'total cost',
+              row.rowNumber,
+              decimalSeparator,
+            ),
             qty,
           )
       const totalCost = totalCostRaw
-        ? numberValue(totalCostRaw, 'total cost', row.rowNumber)
+        ? numberValue(
+            totalCostRaw,
+            'total cost',
+            row.rowNumber,
+            decimalSeparator,
+          )
         : multiplyDecimal(qty, unitCost)
       rows.push({
         rowNumber: row.rowNumber,
@@ -644,6 +778,7 @@ export function buildCsvImportPlan(input: {
                 ),
                 'shelf life',
                 row.rowNumber,
+                decimalSeparator,
               )
             : null,
         },

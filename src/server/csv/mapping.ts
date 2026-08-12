@@ -191,6 +191,7 @@ const definitions: Record<CsvImportType, FieldDefinition[]> = {
       aliases: [
         'id',
         'po id',
+        'po',
         'po number',
         'purchase order',
         'purchase order number',

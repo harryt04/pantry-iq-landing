@@ -1392,7 +1392,7 @@ export async function runPrecomputeForLocation(
         .returning({ id: metricRuns.id })
       if (!run) throw new Error('The metric run could not be started.')
 
-      await tx.insert(metricResults).values([
+      const metricResultRows = [
         ...output.itemResults.flatMap((item) =>
           item.metrics.map((metric) => ({
             runId: run.id,
@@ -1413,7 +1413,10 @@ export async function runPrecomputeForLocation(
           value: recommendation.score,
           result: recommendation,
         })),
-      ])
+      ]
+      if (metricResultRows.length > 0) {
+        await tx.insert(metricResults).values(metricResultRows)
+      }
       await tx.insert(metricRollups).values(
         output.rollups.map((metric) => ({
           runId: run.id,

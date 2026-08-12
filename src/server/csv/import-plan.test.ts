@@ -47,6 +47,137 @@ describe('CSV import planning', () => {
     expect(plan.linkedItemCount).toBe(1)
   })
 
+  it('uses comma decimals for semicolon-delimited exports', () => {
+    const plan = buildCsvImportPlan({
+      importType: 'transactions',
+      mapping: {
+        Date: 'transactedAt',
+        Item: 'rawItemName',
+        Qty: 'qty',
+        UnitPrice: 'unitPrice',
+        Total: 'totalRevenue',
+        Cost: 'totalCost',
+      },
+      items: [salmon],
+      csv: {
+        encoding: 'utf-8',
+        delimiter: ';',
+        hasHeader: true,
+        columns: ['Date', 'Item', 'Qty', 'UnitPrice', 'Total', 'Cost'],
+        rows: [
+          {
+            rowNumber: 2,
+            values: [
+              '2026-08-08T12:00:00Z',
+              'Salmon',
+              '2',
+              '8,50',
+              '17,00',
+              '4,25',
+            ],
+          },
+        ],
+      },
+    })
+
+    expect(plan.rows[0]?.values).toMatchObject({
+      qty: '2',
+      unitPrice: '8.5',
+      totalRevenue: '17',
+      totalCost: '4.25',
+      grossMargin: '12.75',
+    })
+  })
+
+  it('parses mixed-number fractions as exact decimal quantities', () => {
+    const plan = buildCsvImportPlan({
+      importType: 'inventory',
+      mapping: {
+        Date: 'countedAt',
+        Item: 'rawItemName',
+        Qty: 'qty',
+        Unit: 'unit',
+      },
+      items: [salmon],
+      csv: {
+        encoding: 'utf-8',
+        delimiter: ',',
+        hasHeader: true,
+        columns: ['Date', 'Item', 'Qty', 'Unit'],
+        rows: [
+          {
+            rowNumber: 2,
+            values: ['2026-08-08', 'Salmon', '3 1/2', 'lb'],
+          },
+        ],
+      },
+    })
+
+    expect(plan.rows[0]?.values.qty).toBe('3.5')
+  })
+
+  it('parses Excel serial dates using the 1900 date system', () => {
+    const plan = buildCsvImportPlan({
+      importType: 'transactions',
+      mapping: {
+        Date: 'transactedAt',
+        Item: 'rawItemName',
+        Qty: 'qty',
+        Revenue: 'totalRevenue',
+      },
+      items: [salmon],
+      csv: {
+        encoding: 'utf-8',
+        delimiter: ',',
+        hasHeader: true,
+        columns: ['Date', 'Item', 'Qty', 'Revenue'],
+        rows: [
+          {
+            rowNumber: 2,
+            values: ['45717', 'Salmon', '1', '24.00'],
+          },
+        ],
+      },
+    })
+
+    expect(plan.rows[0]?.values.transactedAt).toEqual(
+      new Date('2025-03-01T00:00:00.000Z'),
+    )
+  })
+
+  it('explains unsupported currency-code and percentage formats', () => {
+    const buildPlan = (unitCost: string) =>
+      buildCsvImportPlan({
+        importType: 'purchase_orders',
+        mapping: {
+          Date: 'orderedAt',
+          Item: 'rawItemName',
+          Qty: 'qty',
+          Cost: 'unitCost',
+        },
+        items: [salmon],
+        csv: {
+          encoding: 'utf-8',
+          delimiter: ',',
+          hasHeader: true,
+          columns: ['Date', 'Item', 'Qty', 'Cost'],
+          rows: [
+            {
+              rowNumber: 2,
+              values: ['2026-08-08', 'Salmon', '2', unitCost],
+            },
+          ],
+        },
+      })
+
+    expect(() => buildPlan('1,234.56 USD')).toThrow(
+      'Row 2: unit cost uses a currency code; enter a numeric amount with an optional leading symbol instead.',
+    )
+    expect(() => buildPlan('12.5%')).toThrow(
+      'Row 2: unit cost uses a percentage; enter a currency amount instead.',
+    )
+  })
+
   it('holds a plan until every unmatched item receives an explicit decision', () => {
     const csv = {
       encoding: 'utf-8' as const,
@@ -177,5 +308,32 @@ describe('CSV import planning', () => {
       actualHours: '7.5',
       laborCost: '135.25',
     })
+  })
+
+  it('rejects negative labor hours before they enter the import plan', () => {
+    expect(() =>
+      buildCsvImportPlan({
+        importType: 'labor',
+        mapping: {
+          Start: 'shiftStart',
+          Employee: 'employeeReference',
+          Role: 'role',
+          Scheduled: 'scheduledHours',
+        },
+        items: [],
+        csv: {
+          encoding: 'utf-8',
+          delimiter: ',',
+          hasHeader: true,
+          columns: ['Start', 'Employee', 'Role', 'Scheduled'],
+          rows: [
+            {
+              rowNumber: 2,
+              values: ['2026-08-08T15:00:00Z', 'staff-7', 'Line cook', '-0.5'],
+            },
+          ],
+        },
+      }),
+    ).toThrow('Row 2: scheduled hours cannot be negative.')
   })
 })

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { parseCsvPreview, parseCsvRows } from './parser'
+import { MAX_CSV_RECORD_BYTES, parseCsvPreview, parseCsvRows } from './parser'
 
 async function* chunks(bytes: Uint8Array, size = bytes.length) {
   for (let offset = 0; offset < bytes.length; offset += size)
@@ -58,6 +58,66 @@ describe('CSV preview parser', () => {
     ])
   })
 
+  it('skips report preamble rows before detecting the real header', async () => {
+    const input = [
+      'Toast POS Sales Summary',
+      'Location: Downtown',
+      'Date Range: 2025-03-01 to 2025-03-05',
+      'Generated: 2025-03-06 08:00:00',
+      '',
+      'Date,Item Name,Qty,Total Revenue',
+      '2025-03-01,Salmon Fillet,2,48.00',
+    ].join('\n')
+
+    const preview = await parseCsvPreview(chunks(utf8(input)))
+    const rows = await parseCsvRows(chunks(utf8(input)))
+
+    expect(preview).toMatchObject({
+      hasHeader: true,
+      columns: ['Date', 'Item Name', 'Qty', 'Total Revenue'],
+      rowCount: 1,
+      readableRowCount: 1,
+    })
+    expect(preview.previewRows).toEqual([
+      { rowNumber: 6, values: ['2025-03-01', 'Salmon Fillet', '2', '48.00'] },
+    ])
+    expect(rows).toMatchObject({
+      hasHeader: true,
+      columns: ['Date', 'Item Name', 'Qty', 'Total Revenue'],
+      rows: [
+        {
+          rowNumber: 6,
+          values: ['2025-03-01', 'Salmon Fillet', '2', '48.00'],
+        },
+      ],
+    })
+  })
+
+  it('detects headers when a source repeats a column name', async () => {
+    const input =
+      'Date,Item,Qty,Total,Total\n2025-03-01,Salmon Fillet,2,48.00,48.00\n'
+
+    const preview = await parseCsvPreview(chunks(utf8(input)))
+    const rows = await parseCsvRows(chunks(utf8(input)))
+
+    expect(preview).toMatchObject({
+      hasHeader: true,
+      columns: ['Date', 'Item', 'Qty', 'Total', 'Total (2)'],
+      rowCount: 1,
+      readableRowCount: 1,
+    })
+    expect(rows).toMatchObject({
+      hasHeader: true,
+      columns: ['Date', 'Item', 'Qty', 'Total', 'Total (2)'],
+      rows: [
+        {
+          rowNumber: 2,
+          values: ['2025-03-01', 'Salmon Fillet', '2', '48.00', '48.00'],
+        },
+      ],
+    })
+  })
+
   it.each([
     ['semicolon', 'Date;Item;Qty\n2026-08-01;Salmon;3\n', ';'],
     ['tab', 'Date\tItem\tQty\n2026-08-01\tSalmon\t3\n', '\t'],
@@ -89,6 +149,40 @@ describe('CSV preview parser', () => {
     expect(preview.previewRows[0]?.values).toEqual(['Café', '2'])
   })
 
+  it('decodes a UTF-16LE export with a byte-order mark', async () => {
+    const csv = 'Date,Item,Qty\n2026-08-01,Crème brûlée,2\n'
+    const encoded = Buffer.from(csv, 'utf16le')
+    const utf16le = new Uint8Array(2 + encoded.length)
+    utf16le.set([0xff, 0xfe])
+    utf16le.set(encoded, 2)
+
+    const preview = await parseCsvPreview(chunks(utf16le, 5))
+
+    expect(preview.encoding).toBe('utf-16le')
+    expect(preview.columns).toEqual(['Date', 'Item', 'Qty'])
+    expect(preview.previewRows[0]?.values).toEqual([
+      '2026-08-01',
+      'Crème brûlée',
+      '2',
+    ])
+  })
+
+  it('decodes CP1252 smart quotes without exposing control characters', async () => {
+    const cp1252 = new Uint8Array([
+      0x44, 0x61, 0x74, 0x65, 0x2c, 0x49, 0x74, 0x65, 0x6d, 0x0a, 0x32, 0x30,
+      0x32, 0x36, 0x2d, 0x30, 0x38, 0x2d, 0x30, 0x31, 0x2c, 0x93, 0x43, 0x68,
+      0x65, 0x66, 0x92, 0x73, 0x20, 0x73, 0x61, 0x6c, 0x61, 0x64, 0x94, 0x0a,
+    ])
+
+    const preview = await parseCsvPreview(chunks(cp1252, 4))
+
+    expect(preview.encoding).toBe('windows-1252')
+    expect(preview.previewRows[0]?.values).toEqual([
+      '2026-08-01',
+      '“Chef’s salad”',
+    ])
+  })
+
   it('keeps readable rows and reports a malformed row by example', async () => {
     const preview = await parseCsvPreview(
       chunks(
@@ -108,6 +202,20 @@ describe('CSV preview parser', () => {
       expect.objectContaining({
         count: 1,
         message: "had a quote I couldn't read",
+      }),
+    ])
+  })
+
+  it('truncates a long problem example while retaining its prefix', async () => {
+    const row = `${'x'.repeat(180)},Salmon,1`
+    const preview = await parseCsvPreview(
+      chunks(utf8(`Date,Item,Qty\n${row}\n`)),
+    )
+
+    expect(preview.problems).toEqual([
+      expect.objectContaining({
+        message: "had a date I couldn't read",
+        example: `${row.slice(0, 157)} (truncated)`,
       }),
     ])
   })
@@ -138,5 +246,21 @@ describe('CSV preview parser', () => {
     expect(preview.rowCount).toBe(10_000)
     expect(preview.readableRowCount).toBe(10_000)
     expect(preview.previewRows).toHaveLength(5)
+  })
+
+  it('reports a single oversized record without buffering an unbounded row', async () => {
+    const oversizedHeader = `Date,Item,${'Metadata'.repeat(MAX_CSV_RECORD_BYTES)}\n`
+
+    const preview = await parseCsvPreview(chunks(utf8(oversizedHeader), 4096))
+
+    expect(preview.hasHeader).toBe(false)
+    expect(preview.readableRowCount).toBe(0)
+    expect(preview.problems[0]).toEqual(
+      expect.objectContaining({
+        count: expect.any(Number),
+        message: "had a row I couldn't read",
+      }),
+    )
+    expect(preview.problems[0]?.count).toBeGreaterThan(0)
   })
 })

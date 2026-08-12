@@ -1,6 +1,8 @@
-import { readFileSync } from 'node:fs'
-
+import * as React from 'react'
+import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
+
+import LandingPage from '@/app/page'
 
 /**
  * Claims discipline for the landing page — `docs/brand/marketing-copy.md` §7.
@@ -8,10 +10,7 @@ import { describe, expect, it } from 'vitest'
  *
  * This restates the guard that used to live in `app/marketing-claims.test.ts`.
  */
-const landingPage = readFileSync(
-  new URL('../../app/page.tsx', import.meta.url),
-  'utf8',
-)
+const landingPage = renderToStaticMarkup(<LandingPage />)
 
 describe('landing page claims discipline', () => {
   it('promises no integration, alert, or multi-location capability', () => {

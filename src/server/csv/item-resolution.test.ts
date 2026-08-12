@@ -55,6 +55,25 @@ describe('CSV item name resolution', () => {
     ).toMatchObject({ status: 'matched', item: lobster })
   })
 
+  it('links deterministic last-first labels without introducing fuzzy matching', () => {
+    expect(
+      resolveExactItemName('Fillet, salmon', [
+        { ...lobster, canonicalName: 'salmon fillet' },
+      ]),
+    ).toMatchObject({
+      status: 'matched',
+      item: { canonicalName: 'salmon fillet' },
+    })
+    expect(
+      resolveExactItemName('Fillet, salmon, special', [
+        { ...lobster, canonicalName: 'salmon fillet' },
+      ]),
+    ).toMatchObject({
+      status: 'unmatched',
+      reason: 'no-exact-match',
+    })
+  })
+
   it('does not use inactive or ambiguous items as an automatic link', () => {
     expect(
       resolveExactItemName('Caesar Salad', [{ ...salad, isActive: false }]),

@@ -15,6 +15,17 @@ import { ManualEntryForm } from './manual-entry-form'
 const LOCATION_ID = 'location-1'
 const fetchMock = vi.fn()
 
+const ITEMS = [
+  {
+    id: 'item-salmon',
+    displayName: 'Salmon',
+    canonicalName: 'salmon',
+    category: 'Seafood',
+    unit: 'lb',
+    isActive: true,
+  },
+]
+
 function jsonResponse(
   body: unknown,
   init: { ok?: boolean; status?: number } = {},
@@ -43,11 +54,17 @@ async function chooseEntryType(label: string) {
   )
 }
 
+async function chooseItem(label = 'Salmon') {
+  await userEvent.click(screen.getByPlaceholderText('Search item names'))
+  await userEvent.click(screen.getByRole('option', { name: new RegExp(label) }))
+}
+
 describe('manual entry form', () => {
   beforeEach(() => {
     fetchMock.mockReset()
     fetchMock.mockImplementation(async (url: string, init?: RequestInit) => {
-      if ((init?.method ?? 'GET') === 'GET') return jsonResponse({ items: [] })
+      if ((init?.method ?? 'GET') === 'GET')
+        return jsonResponse({ items: ITEMS })
       return jsonResponse({ result: { rowsImported: 1 } }, { status: 201 })
     })
     vi.stubGlobal('fetch', fetchMock)
@@ -96,6 +113,97 @@ describe('manual entry form', () => {
         scheduledHours: '8',
       }),
     )
+  })
+
+  it('sends a transaction payload with an existing menu item', async () => {
+    render(<ManualEntryForm locationId={LOCATION_ID} />)
+    await screen.findByLabelText('Quantity on hand')
+
+    await chooseEntryType('Transaction')
+    await chooseItem()
+    await userEvent.type(screen.getByLabelText('Quantity sold'), '3')
+    await userEvent.type(screen.getByLabelText('Unit price'), '18.50')
+    await userEvent.type(screen.getByLabelText('Total revenue'), '55.50')
+    await userEvent.type(screen.getByLabelText('Total cost (optional)'), '21')
+    await userEvent.click(screen.getByRole('button', { name: /Save/ }))
+
+    await waitFor(() => {
+      expect(lastPostBody()).toMatchObject({
+        entryType: 'transaction',
+        item: { itemId: 'item-salmon' },
+        quantity: '3',
+        unitPrice: '18.50',
+        totalRevenue: '55.50',
+        totalCost: '21',
+      })
+    })
+  })
+
+  it('sends a purchase order with multiple item lines and removes a line', async () => {
+    render(<ManualEntryForm locationId={LOCATION_ID} />)
+    await screen.findByLabelText('Quantity on hand')
+
+    await chooseEntryType('Purchase order')
+    await chooseItem()
+    await userEvent.type(
+      screen.getByLabelText('Quantity', { selector: 'input' }),
+      '4',
+    )
+    await userEvent.type(screen.getByLabelText('Unit cost'), '9.50')
+    await userEvent.type(screen.getByLabelText('Total cost'), '38')
+    await userEvent.click(screen.getByRole('button', { name: 'Add line' }))
+    expect(screen.getByRole('group', { name: 'Line 2' })).toBeInTheDocument()
+    await userEvent.click(
+      screen.getAllByRole('button', { name: 'Remove line' }).at(-1)!,
+    )
+    await userEvent.click(screen.getByRole('button', { name: /Save/ }))
+
+    await waitFor(() => {
+      expect(lastPostBody()).toMatchObject({
+        entryType: 'purchase_order',
+        lines: [
+          {
+            item: { itemId: 'item-salmon' },
+            quantity: '4',
+            unitCost: '9.50',
+            totalCost: '38',
+          },
+        ],
+      })
+    })
+  })
+
+  it('captures a new item selection and its editable fields', async () => {
+    render(<ManualEntryForm locationId={LOCATION_ID} />)
+    await screen.findByLabelText('Quantity on hand')
+
+    await userEvent.click(screen.getByPlaceholderText('Search item names'))
+    await userEvent.click(
+      screen.getByRole('option', { name: 'Create a new item' }),
+    )
+    await userEvent.type(screen.getByLabelText('New item name'), 'Tomato Soup')
+    await userEvent.clear(screen.getByLabelText('Unit'))
+    await userEvent.type(screen.getByLabelText('Unit'), 'quart')
+    await userEvent.type(
+      screen.getByLabelText('Category (optional)'),
+      'Prepared',
+    )
+    await userEvent.type(screen.getByLabelText('Quantity on hand'), '2')
+    await userEvent.click(screen.getByRole('button', { name: /Save/ }))
+
+    await waitFor(() => {
+      expect(lastPostBody()).toMatchObject({
+        entryType: 'inventory',
+        item: {
+          newItem: {
+            canonicalName: 'Tomato Soup',
+            displayName: 'Tomato Soup',
+            category: 'Prepared',
+            unit: 'quart',
+          },
+        },
+      })
+    })
   })
 
   it('sends empty optional fields as null, never as an empty string', async () => {
@@ -153,6 +261,46 @@ describe('manual entry form', () => {
     ).toBeInTheDocument()
   })
 
+  it('uses the fallback when a successful response omits its result', async () => {
+    fetchMock.mockImplementation(async (_url: string, init?: RequestInit) => {
+      if ((init?.method ?? 'GET') === 'GET') return jsonResponse({ items: [] })
+      return jsonResponse({}, { ok: true, status: 200 })
+    })
+
+    render(<ManualEntryForm locationId={LOCATION_ID} />)
+    await userEvent.type(await screen.findByLabelText('Quantity on hand'), '12')
+    await userEvent.click(screen.getByRole('button', { name: /Save/ }))
+
+    expect(
+      await screen.findByText('The manual entry could not be saved.'),
+    ).toBeInTheDocument()
+  })
+
+  it('surfaces an item-loading error before the form can be used', async () => {
+    fetchMock.mockImplementation(async () =>
+      jsonResponse(
+        { error: 'Items are unavailable.' },
+        { ok: false, status: 503 },
+      ),
+    )
+
+    render(<ManualEntryForm locationId={LOCATION_ID} />)
+
+    expect(
+      await screen.findByText('Items are unavailable.'),
+    ).toBeInTheDocument()
+  })
+
+  it('uses the generic item error for an unexpected loading failure', async () => {
+    fetchMock.mockRejectedValue('items down')
+
+    render(<ManualEntryForm locationId={LOCATION_ID} />)
+
+    expect(
+      await screen.findByText('Items are unavailable.'),
+    ).toBeInTheDocument()
+  })
+
   it('promises nothing changed when the request itself fails', async () => {
     fetchMock.mockImplementation(async (_url: string, init?: RequestInit) => {
       if ((init?.method ?? 'GET') === 'GET') return jsonResponse({ items: [] })
@@ -166,6 +314,23 @@ describe('manual entry form', () => {
     expect(await screen.findByText(/network down/)).toBeInTheDocument()
     // The form must be usable again, not stuck mid-save.
     expect(screen.getByRole('button', { name: /Save/ })).toBeEnabled()
+  })
+
+  it('uses the generic save error for an unexpected request failure', async () => {
+    fetchMock.mockImplementation(async (url: string, init?: RequestInit) => {
+      if ((init?.method ?? 'GET') === 'GET') return jsonResponse({ items: [] })
+      return Promise.reject('save failed')
+    })
+
+    render(<ManualEntryForm locationId={LOCATION_ID} />)
+    await userEvent.type(await screen.findByLabelText('Quantity on hand'), '12')
+    await userEvent.click(screen.getByRole('button', { name: /Save/ }))
+
+    expect(
+      await screen.findByText(
+        'The manual entry could not be saved. Nothing was changed.',
+      ),
+    ).toBeInTheDocument()
   })
 
   it('clears the form after a successful save so nothing is entered twice', async () => {

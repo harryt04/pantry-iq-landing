@@ -70,4 +70,16 @@ describe('dashboard recommendations', () => {
       ]),
     ).toEqual([])
   })
+
+  it('drops otherwise valid records whose evidence trace has no key', () => {
+    const valid = recommendation(1)
+    const incomplete = {
+      ...valid,
+      evidenceTraceRef: { ...valid.evidenceTraceRef, key: null },
+    }
+
+    expect(
+      buildDashboardRecommendations([{ itemId: 'item-1', result: incomplete }]),
+    ).toEqual([])
+  })
 })

@@ -73,7 +73,7 @@ export function CsvMappingReview({
   const [answers, setAnswers] = React.useState<Answers>({})
   const [currentPosition, setCurrentPosition] = React.useState(0)
   const [isComplete, setIsComplete] = React.useState(false)
-  const didAutoAccept = React.useRef(false)
+  const autoAcceptedMapping = React.useRef<CsvMappingDetection | null>(null)
 
   const progress = mappingReviewProgress(reviewColumns, answers)
   const currentColumn = reviewColumns[currentPosition]
@@ -141,14 +141,14 @@ export function CsvMappingReview({
 
   React.useEffect(() => {
     if (
-      !mapping.reused &&
-      reviewColumns.length === 0 &&
-      !didAutoAccept.current
+      ((mapping.reused && !isEditing) ||
+        (!mapping.reused && reviewColumns.length === 0)) &&
+      autoAcceptedMapping.current !== mapping
     ) {
-      didAutoAccept.current = true
+      autoAcceptedMapping.current = mapping
       onMappingAccepted(acceptedMapping())
     }
-  }, [mapping, onMappingAccepted, reviewColumns.length])
+  }, [isEditing, mapping, onMappingAccepted, reviewColumns.length])
 
   if (mapping.reused && !isEditing) {
     return (

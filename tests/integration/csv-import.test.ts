@@ -7,20 +7,30 @@ import {
   it,
   vi,
 } from 'vitest'
+import { readFile } from 'node:fs/promises'
+import path from 'node:path'
+import { createElement } from 'react'
+import { renderToStaticMarkup } from 'react-dom/server'
 
 import {
   migrateDatabase,
   rollbackDatabase,
 } from '../../src/server/db/migrations'
+import { TrendSummaries } from '../../components/dashboard/trend-summaries'
 import {
   closeAppDatabaseClient,
   integrationDatabaseEnabled,
   openTestDatabase,
   type OpenTestDatabase,
 } from '../helpers/test-database'
-import type { ObjectStorage } from '../../src/server/storage/object-storage'
+import {
+  MemoryObjectStorage,
+  type ObjectStorage,
+} from '../../src/server/storage/object-storage'
 import { normalizeExactItemName } from '../../src/server/csv/item-resolution'
 import type { ImportItemResolution } from '../../src/server/csv/import-plan'
+import { buildPartialDataFindings } from '../../src/server/metrics/partial-data'
+import { partialDataLocationFixture } from '../fixtures/pantry'
 
 /**
  * `src/server/csv/imports.ts` was the largest untested module in the
@@ -61,6 +71,89 @@ const MAPPING = {
   Total: 'totalRevenue',
 }
 
+const FULL_YEAR_MAPPING = {
+  Date: 'transactedAt',
+  'Item Name': 'rawItemName',
+  Qty: 'qty',
+  'Unit Price': 'unitPrice',
+  'Total Revenue': 'totalRevenue',
+}
+
+const REFUNDS_MAPPING = {
+  Date: 'transactedAt',
+  'Item Name': 'rawItemName',
+  Qty: 'qty',
+  'Total Revenue': 'totalRevenue',
+}
+
+const BUSINESS_DAY_MAPPING = {
+  Date: 'transactedAt',
+  'Item Name': 'rawItemName',
+  Qty: 'qty',
+  'Total Revenue': 'totalRevenue',
+}
+
+const MONEY_PRECISION_MAPPING = {
+  Date: 'transactedAt',
+  Item: 'rawItemName',
+  Qty: 'qty',
+  'Unit Price': 'unitPrice',
+  'Total Revenue': 'totalRevenue',
+  'Total Cost': 'totalCost',
+}
+
+const PURCHASE_ORDER_MAPPING = {
+  'Order Date': 'orderedAt',
+  Supplier: 'supplierName',
+  'PO Number': 'externalId',
+  Item: 'rawItemName',
+  Qty: 'qty',
+  'Unit Cost': 'unitCost',
+  'Total Cost': 'totalCost',
+}
+
+const LABOR_MAPPING = {
+  'Clock In': 'shiftStart',
+  'Clock Out': 'shiftEnd',
+  'Staff ID': 'employeeReference',
+  'Job Title': 'role',
+  'Hours Worked': 'actualHours',
+  'Wage Cost': 'laborCost',
+}
+
+const STAFFING_SALES_MAPPING = {
+  Date: 'transactedAt',
+  Item: 'rawItemName',
+  Quantity: 'qty',
+  'Unit price': 'unitPrice',
+  'Total cost': 'totalCost',
+  Total: 'totalRevenue',
+}
+
+const STAFFING_SALES_CSV = [
+  'Date,Item,Quantity,Unit price,Total cost,Total',
+  '2026-08-01T10:00:00,House Salad,1,240.00,60.00,240.00',
+  '2026-08-01T17:00:00,House Salad,1,160.00,40.00,160.00',
+  '',
+].join('\n')
+
+const PARTIAL_MAPPING = {
+  Date: 'transactedAt',
+  Item: 'rawItemName',
+  Quantity: 'qty',
+  'Unit price': 'unitPrice',
+  Total: 'totalRevenue',
+}
+
+const PARTIAL_CSV = [
+  'Date,Item,Quantity,Unit price,Total',
+  ...partialDataLocationFixture.sales.map((sale) => {
+    const unitPrice = sale.itemName === 'Tomato Soup' ? '8.50' : '11.00'
+    return `${sale.transactedAt},${sale.itemName},${sale.qty},${unitPrice},${sale.totalRevenue}`
+  }),
+  '',
+].join('\n')
+
 /**
  * A CSV names items in the operator's own words. Anything the importer cannot
  * match to an existing item has to be resolved by the user before commit, so
@@ -83,6 +176,139 @@ const RESOLUTIONS: Record<string, ImportItemResolution> = {
   },
 }
 
+const FULL_YEAR_RESOLUTIONS: Record<string, ImportItemResolution> = {
+  [normalizeExactItemName('Salmon Fillet')]: {
+    canonicalName: 'salmon fillet',
+    displayName: 'Salmon Fillet',
+    category: 'seafood',
+    unit: 'each',
+    shelfLifeDays: null,
+  },
+  [normalizeExactItemName('House Salad')]: {
+    canonicalName: 'house salad',
+    displayName: 'House Salad',
+    category: 'produce',
+    unit: 'each',
+    shelfLifeDays: null,
+  },
+  [normalizeExactItemName('Tomato Soup')]: {
+    canonicalName: 'tomato soup',
+    displayName: 'Tomato Soup',
+    category: 'prepared food',
+    unit: 'each',
+    shelfLifeDays: null,
+  },
+  [normalizeExactItemName('Bubble Tea')]: {
+    canonicalName: 'bubble tea',
+    displayName: 'Bubble Tea',
+    category: 'beverage',
+    unit: 'each',
+    shelfLifeDays: null,
+  },
+  [normalizeExactItemName('Burger')]: {
+    canonicalName: 'burger',
+    displayName: 'Burger',
+    category: 'prepared food',
+    unit: 'each',
+    shelfLifeDays: null,
+  },
+}
+
+const REFUNDS_RESOLUTIONS: Record<string, ImportItemResolution> = {
+  [normalizeExactItemName('Salmon Fillet')]: {
+    canonicalName: 'salmon fillet',
+    displayName: 'Salmon Fillet',
+    category: 'seafood',
+    unit: 'each',
+    shelfLifeDays: null,
+  },
+  [normalizeExactItemName('House Salad')]: {
+    canonicalName: 'house salad',
+    displayName: 'House Salad',
+    category: 'produce',
+    unit: 'each',
+    shelfLifeDays: null,
+  },
+  [normalizeExactItemName('Tomato Soup')]: {
+    canonicalName: 'tomato soup',
+    displayName: 'Tomato Soup',
+    category: 'prepared food',
+    unit: 'each',
+    shelfLifeDays: null,
+  },
+}
+
+const BUSINESS_DAY_RESOLUTIONS: Record<string, ImportItemResolution> = {
+  [normalizeExactItemName('Salmon Fillet')]: {
+    canonicalName: 'salmon fillet',
+    displayName: 'Salmon Fillet',
+    category: 'seafood',
+    unit: 'each',
+    shelfLifeDays: null,
+  },
+}
+
+const MONEY_PRECISION_RESOLUTIONS: Record<string, ImportItemResolution> = {
+  [normalizeExactItemName('Tomato Soup')]: {
+    canonicalName: 'tomato soup',
+    displayName: 'Tomato Soup',
+    category: 'prepared food',
+    unit: 'each',
+    shelfLifeDays: null,
+  },
+}
+
+const PURCHASE_ORDER_RESOLUTIONS: Record<string, ImportItemResolution> = {
+  [normalizeExactItemName('Salmon Fillet')]: {
+    canonicalName: 'salmon fillet',
+    displayName: 'Salmon Fillet',
+    category: 'seafood',
+    unit: 'lb',
+    shelfLifeDays: null,
+  },
+  [normalizeExactItemName('Romaine Lettuce')]: {
+    canonicalName: 'romaine lettuce',
+    displayName: 'Romaine Lettuce',
+    category: 'produce',
+    unit: 'lb',
+    shelfLifeDays: null,
+  },
+  [normalizeExactItemName('Tomato')]: {
+    canonicalName: 'tomato',
+    displayName: 'Tomato',
+    category: 'produce',
+    unit: 'lb',
+    shelfLifeDays: null,
+  },
+}
+
+const STAFFING_SALES_RESOLUTIONS: Record<string, ImportItemResolution> = {
+  [normalizeExactItemName('House Salad')]: {
+    canonicalName: 'house salad',
+    displayName: 'House Salad',
+    category: 'produce',
+    unit: 'each',
+    shelfLifeDays: null,
+  },
+}
+
+const PARTIAL_RESOLUTIONS: Record<string, ImportItemResolution> = {
+  [normalizeExactItemName('Tomato Soup')]: {
+    canonicalName: 'tomato soup',
+    displayName: 'Tomato Soup',
+    category: 'prepared food',
+    unit: 'each',
+    shelfLifeDays: null,
+  },
+  [normalizeExactItemName('House Salad')]: {
+    canonicalName: 'house salad',
+    displayName: 'House Salad',
+    category: 'produce',
+    unit: 'each',
+    shelfLifeDays: null,
+  },
+}
+
 /** Serves the CSV from memory so the test needs no S3. */
 function memoryStorage(body = CSV): ObjectStorage {
   return {
@@ -99,6 +325,31 @@ function memoryStorage(body = CSV): ObjectStorage {
 let opened: OpenTestDatabase | undefined
 let previousDatabaseUrl: string | undefined
 let imports: typeof import('../../src/server/csv/imports')
+let uploads: typeof import('../../src/server/csv/uploads')
+let previews: typeof import('../../src/server/csv/previews')
+let mappings: typeof import('../../src/server/csv/mapping-persistence')
+let exportsService: typeof import('../../src/server/csv/exports')
+let usageVariance: typeof import('../../src/server/menu/usage-variance-query')
+let menuEngineering: typeof import('../../src/server/menu/menu-engineering-query')
+
+function csvBody(body: string): ReadableStream<Uint8Array> {
+  return new ReadableStream({
+    start(controller) {
+      controller.enqueue(new TextEncoder().encode(body))
+      controller.close()
+    },
+  })
+}
+
+function byteBody(body: Uint8Array): ReadableStream<Uint8Array> {
+  return new ReadableStream({
+    start(controller) {
+      controller.enqueue(body.subarray(0, 4))
+      controller.enqueue(body.subarray(4))
+      controller.close()
+    },
+  })
+}
 
 async function countTransactions(locationId = LOCATION_ID) {
   const { sql } = opened!.database
@@ -122,7 +373,14 @@ async function countItems(locationId = LOCATION_ID) {
  * upload gets its own.
  */
 let seededUploads = 0
-async function seedUpload(locationId = LOCATION_ID) {
+async function seedUpload(
+  locationId = LOCATION_ID,
+  options: {
+    filename?: string
+    mapping?: Record<string, string>
+    source?: string
+  } = {},
+) {
   const { sql } = opened!.database
   seededUploads += 1
   const storageKey = `${STORAGE_KEY}-${seededUploads}`
@@ -131,8 +389,8 @@ async function seedUpload(locationId = LOCATION_ID) {
       (location_id, filename, source, status, rows_imported, mapping_used,
        storage_key, uploaded_at)
     values
-      (${locationId}, 'sales.csv', 'transactions', 'uploaded', 0,
-       ${JSON.stringify(MAPPING)}::jsonb, ${storageKey}, now())
+      (${locationId}, ${options.filename ?? 'sales.csv'}, ${options.source ?? 'transactions'}, 'uploaded', 0,
+       ${JSON.stringify(options.mapping ?? MAPPING)}::jsonb, ${storageKey}, now())
     returning id
   `
   return row!.id
@@ -149,6 +407,13 @@ describe.skipIf(!integrationDatabaseEnabled())('CSV import', () => {
     previousDatabaseUrl = process.env.DATABASE_URL
     process.env.DATABASE_URL = url
     imports = await import('../../src/server/csv/imports')
+    uploads = await import('../../src/server/csv/uploads')
+    previews = await import('../../src/server/csv/previews')
+    mappings = await import('../../src/server/csv/mapping-persistence')
+    exportsService = await import('../../src/server/csv/exports')
+    usageVariance = await import('../../src/server/menu/usage-variance-query')
+    menuEngineering =
+      await import('../../src/server/menu/menu-engineering-query')
   }, SETUP_TIMEOUT_MS)
 
   afterAll(async () => {
@@ -162,6 +427,13 @@ describe.skipIf(!integrationDatabaseEnabled())('CSV import', () => {
     const { sql } = opened!.database
     await sql`delete from transactions`
     await sql`delete from csv_upload_history`
+    await sql`delete from purchase_order_items`
+    await sql`delete from purchase_orders`
+    await sql`delete from recipe_cost_history`
+    await sql`delete from recipe_ingredients`
+    await sql`delete from recipes`
+    await sql`delete from inventory_snapshots`
+    await sql`delete from item_unit_conversions`
     await sql`delete from inventory_items`
     await sql`delete from locations`
     await sql`delete from "user"`
@@ -182,7 +454,139 @@ describe.skipIf(!integrationDatabaseEnabled())('CSV import', () => {
     sessionState.current = { user: { id: OWNER_ID } }
   })
 
+  describe('upload security', () => {
+    it.each([
+      ['renamed-xlsx.csv', 'ZIP/XLSX signature'],
+      ['renamed-pdf.csv', 'PDF signature'],
+    ])('rejects %s before the %s reaches object storage', async (filename) => {
+      const body = await readFile(
+        path.resolve('tests/fixtures/csv/security', filename),
+      )
+      const received: Uint8Array[] = []
+      const storage: ObjectStorage = {
+        putObject: async ({ body: input }) => {
+          for await (const chunk of input) received.push(chunk)
+        },
+        deleteObject: async () => {},
+        getObject: async () => ({
+          async *[Symbol.asyncIterator]() {
+            yield body
+          },
+        }),
+      }
+
+      await expect(
+        uploads.uploadCsv({
+          headers: new Headers({
+            'content-length': String(body.byteLength),
+          }),
+          locationId: LOCATION_ID,
+          filename,
+          importType: 'transactions',
+          body: byteBody(body),
+          storage,
+        }),
+      ).rejects.toMatchObject({ code: 'NOT_CSV_CONTENT' })
+
+      expect(received).toHaveLength(0)
+
+      const { sql } = opened!.database
+      const [history] = await sql<{ count: string }[]>`
+        select count(*)::text as count
+        from csv_upload_history
+        where location_id = ${LOCATION_ID}
+      `
+      expect(Number(history?.count ?? 0)).toBe(0)
+    })
+
+    it('deletes a stored object when saving its history row fails', async () => {
+      const storedKeys: string[] = []
+      const deletedKeys: string[] = []
+      const storage: ObjectStorage = {
+        putObject: async ({ key, body }) => {
+          for await (const _chunk of body) {
+            // Consume the guarded stream before simulating a storage failure.
+          }
+          storedKeys.push(key)
+          throw new Error('object store unavailable')
+        },
+        deleteObject: async (key) => {
+          deletedKeys.push(key)
+        },
+        getObject: async () => memoryStorage().getObject('unused'),
+      }
+
+      await expect(
+        uploads.uploadCsv({
+          headers: new Headers({
+            'content-length': String(new TextEncoder().encode(CSV).byteLength),
+          }),
+          locationId: LOCATION_ID,
+          filename: 'sales.csv',
+          importType: 'transactions',
+          body: csvBody(CSV),
+          storage,
+        }),
+      ).rejects.toBeInstanceOf(uploads.CsvUploadStorageError)
+
+      expect(deletedKeys).toEqual(storedKeys)
+      const { sql } = opened!.database
+      const [history] = await sql<{ count: string }[]>`
+        select count(*)::text as count
+        from csv_upload_history
+        where location_id = ${LOCATION_ID}
+      `
+      expect(Number(history?.count ?? 0)).toBe(0)
+    })
+  })
+
   describe('preview', () => {
+    it('reads the stored CSV and reuses a prior mapping for the same shape', async () => {
+      await seedUpload()
+      const uploadId = await seedUpload()
+
+      const result = await previews.previewCsv(
+        new Headers(),
+        uploadId,
+        memoryStorage(),
+      )
+
+      expect(result.upload).toMatchObject({
+        id: uploadId,
+        filename: 'sales.csv',
+        source: 'transactions',
+      })
+      expect(result.preview).toMatchObject({
+        columns: ['Date', 'Item', 'Quantity', 'Unit price', 'Total'],
+        rowCount: 2,
+        mapping: {
+          reused: true,
+          mapping: MAPPING,
+        },
+      })
+    })
+
+    it('reports an unreadable stored object without changing the upload', async () => {
+      const uploadId = await seedUpload()
+      const storage: ObjectStorage = {
+        putObject: async () => {},
+        deleteObject: async () => {},
+        getObject: async () => {
+          throw new Error('object disappeared')
+        },
+      }
+
+      await expect(
+        previews.previewCsv(new Headers(), uploadId, storage),
+      ).rejects.toBeInstanceOf(previews.CsvPreviewReadError)
+
+      const { sql } = opened!.database
+      const [history] = await sql<{ status: string }[]>`
+        select status from csv_upload_history where id = ${uploadId}
+      `
+      expect(history?.status).toBe('uploaded')
+    })
+
     it('reports what would be imported without writing anything', async () => {
       const uploadId = await seedUpload()
 
@@ -267,6 +671,944 @@ describe.skipIf(!integrationDatabaseEnabled())('CSV import', () => {
       expect(await countTransactions()).toBe(2)
       expect(await countItems()).toBe(2)
     })
+
+    it('imports a full year, crosses the prediction gate, and readies the dashboard', async () => {
+      const csv = await readFile(
+        path.resolve(
+          'tests/fixtures/csv/transactions/sales-one-year-daily.csv',
+        ),
+        'utf8',
+      )
+      const uploadId = await seedUpload(LOCATION_ID, {
+        filename: 'sales-one-year-daily.csv',
+        mapping: FULL_YEAR_MAPPING,
+      })
+
+      const summary = await imports.commitCsvImport(
+        new Headers(),
+        uploadId,
+        FULL_YEAR_RESOLUTIONS,
+        memoryStorage(csv),
+      )
+
+      expect(summary.rowsImported).toBe(1_825)
+      expect(await countTransactions()).toBe(1_825)
+
+      const { runPrecomputeForLocation } =
+        await import('../../src/server/metrics/precompute')
+      const run = await runPrecomputeForLocation(LOCATION_ID, {
+        now: new Date('2026-01-01T12:00:00.000Z'),
+      })
+      expect(run?.status).toBe('succeeded')
+
+      const { sql } = opened!.database
+      const [sufficiency] = await sql<
+        {
+          status: string
+          value: string | null
+          result: {
+            components?: { history?: string }
+            predictionEligible?: boolean
+          }
+        }[]
+      >`
+        select status, value, result
+        from metric_rollups
+        where run_id = ${run!.id} and metric_key = 'dataSufficiency'
+      `
+      expect(sufficiency).toMatchObject({
+        status: 'calculated',
+        value: expect.any(String),
+        result: {
+          components: { history: '100' },
+          predictionEligible: true,
+        },
+      })
+
+      const { getDashboardDataState } =
+        await import('../../src/server/metrics/dashboard-state')
+      await expect(
+        getDashboardDataState(new Headers(), LOCATION_ID),
+      ).resolves.toEqual({
+        status: 'ready',
+        transactionDays: 365,
+        requiredDays: 7,
+        remainingDays: 0,
+      })
+    }, 120_000)
+
+    it('keeps short history observational and names the missing requirement', async () => {
+      const uploadId = await seedUpload(LOCATION_ID, {
+        filename: 'partial-history.csv',
+        mapping: PARTIAL_MAPPING,
+      })
+
+      const summary = await imports.commitCsvImport(
+        new Headers(),
+        uploadId,
+        PARTIAL_RESOLUTIONS,
+        memoryStorage(PARTIAL_CSV),
+      )
+
+      expect(summary.rowsImported).toBe(partialDataLocationFixture.sales.length)
+
+      const { runPrecomputeForLocation } =
+        await import('../../src/server/metrics/precompute')
+      const run = await runPrecomputeForLocation(LOCATION_ID, {
+        now: new Date('2025-01-15T12:00:00.000Z'),
+      })
+      expect(run?.status).toBe('succeeded')
+
+      const { sql } = opened!.database
+      const [sufficiency] = await sql<
+        {
+          result: {
+            inputs?: {
+              historyWeeks?: string
+              predictionHistoryWeeks?: string
+            }
+            predictionEligible?: boolean
+          }
+        }[]
+      >`
+        select result
+        from metric_rollups
+        where run_id = ${run!.id} and metric_key = 'dataSufficiency'
+      `
+      expect(sufficiency?.result).toMatchObject({
+        inputs: {
+          historyWeeks: '1',
+          predictionHistoryWeeks: '4',
+        },
+        predictionEligible: false,
+      })
+
+      const itemMetrics = await sql<
+        {
+          metricKey: string
+          status: 'calculated' | 'cannot-calculate'
+          value: string | null
+          result: Record<string, unknown>
+        }[]
+      >`
+        select metric_key as "metricKey", status, value, result
+        from metric_results
+        where run_id = ${run!.id}
+          and inventory_item_id is not null
+      `
+      const findings = buildPartialDataFindings({
+        metrics: itemMetrics,
+        unit: 'each',
+        currentDate: new Date('2025-01-15T12:00:00.000Z'),
+        sales: partialDataLocationFixture.sales.map((sale) => ({
+          qty: sale.qty,
+          transactedAt: new Date(sale.transactedAt),
+        })),
+        quantities: [],
+      })
+      expect(findings).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            code: 'insufficient-history',
+            message:
+              'There are 1 week of transaction history here, so this is an observation rather than a prediction.',
+            details: expect.objectContaining({
+              requiredHistoryWeeks: '4',
+              supply: 'Add 4 weeks of transactions to enable a prediction.',
+            }),
+          }),
+        ]),
+      )
+    }, 120_000)
+
+    it('carries imported purchase costs into exact recipe plate-cost history', async () => {
+      const csv = await readFile(
+        path.resolve(
+          'tests/fixtures/csv/purchase-orders/sysco-invoice-export.csv',
+        ),
+        'utf8',
+      )
+      const uploadId = await seedUpload(LOCATION_ID, {
+        filename: 'sysco-invoice-export.csv',
+        mapping: PURCHASE_ORDER_MAPPING,
+        source: 'purchase_orders',
+      })
+
+      const summary = await imports.commitCsvImport(
+        new Headers(),
+        uploadId,
+        PURCHASE_ORDER_RESOLUTIONS,
+        memoryStorage(csv),
+      )
+
+      expect(summary.rowsImported).toBe(4)
+
+      const { sql } = opened!.database
+      const purchaseLines = await sql<
+        { itemName: string; unitCost: string; totalCost: string }[]
+      >`
+        select
+          purchase_order_items.raw_item_name as "itemName",
+          purchase_order_items.unit_cost as "unitCost",
+          purchase_order_items.total_cost as "totalCost"
+        from purchase_order_items
+        inner join purchase_orders
+          on purchase_orders.id = purchase_order_items.purchase_order_id
+        where purchase_orders.location_id = ${LOCATION_ID}
+        order by purchase_orders.ordered_at, purchase_order_items.created_at
+      `
+      expect(purchaseLines).toEqual([
+        { itemName: 'Salmon Fillet', unitCost: '12', totalCost: '240' },
+        { itemName: 'Romaine Lettuce', unitCost: '3.5', totalCost: '35' },
+        { itemName: 'Salmon Fillet', unitCost: '12.25', totalCost: '183.75' },
+        { itemName: 'Tomato', unitCost: '1.8', totalCost: '45' },
+      ])
+
+      const importedItems = await sql<{ id: string; canonicalName: string }[]>`
+        select id, canonical_name as "canonicalName"
+        from inventory_items
+        where location_id = ${LOCATION_ID}
+          and canonical_name in ('salmon fillet', 'romaine lettuce')
+      `
+      const salmon = importedItems.find(
+        (item) => item.canonicalName === 'salmon fillet',
+      )
+      const romaine = importedItems.find(
+        (item) => item.canonicalName === 'romaine lettuce',
+      )
+      const [menuItem] = await sql<{ id: string }[]>`
+        insert into inventory_items
+          (location_id, canonical_name, display_name, unit, item_type, menu_price)
+        values
+          (${LOCATION_ID}, 'salmon plate', 'Salmon plate', 'each', 'menu_item', '20')
+        returning id
+      `
+      expect(salmon?.canonicalName).toBe('salmon fillet')
+      expect(romaine?.canonicalName).toBe('romaine lettuce')
+      if (!menuItem || !salmon || !romaine)
+        throw new Error('Recipe fixture items were not imported.')
+
+      const salmonItemId = salmon.id
+      const romaineItemId = romaine.id
+      await sql`
+        update inventory_items
+        set cost_per_unit = case id
+          when ${salmonItemId} then ${'12.00'}::numeric
+          when ${romaineItemId} then ${'3.50'}::numeric
+        end
+        where id in (${salmonItemId}, ${romaineItemId})
+      `
+
+      const { saveRecipe } =
+        await import('../../src/server/menu/recipe-builder')
+      const recipe = await saveRecipe(new Headers(), LOCATION_ID, {
+        menuItemId: menuItem.id,
+        name: 'Salmon plate',
+        outputQuantity: '4',
+        outputUnit: 'each',
+        ingredients: [
+          { ingredientItemId: salmonItemId, quantity: '1', unit: 'lb' },
+          { ingredientItemId: romaineItemId, quantity: '2', unit: 'lb' },
+        ],
+      })
+
+      await sql`
+        update inventory_items
+        set cost_per_unit = '12.25'
+        where id = ${salmonItemId}
+      `
+      await saveRecipe(
+        new Headers(),
+        LOCATION_ID,
+        {
+          menuItemId: menuItem.id,
+          name: 'Salmon plate',
+          outputQuantity: '4',
+          outputUnit: 'each',
+          ingredients: [
+            { ingredientItemId: salmonItemId, quantity: '1', unit: 'lb' },
+            { ingredientItemId: romaineItemId, quantity: '2', unit: 'lb' },
+          ],
+        },
+        recipe.id,
+      )
+
+      const history = await sql<
+        {
+          status: string
+          batchCost: string | null
+          costPerOutput: string | null
+          plateMargin: string | null
+          foodCostPercentage: string | null
+          evidence: {
+            batch: { lines: { cost: string | null }[] }
+            plate: { effectiveOutputQuantity: string | null }
+          }
+        }[]
+      >`
+        select
+          status,
+          batch_cost as "batchCost",
+          cost_per_output as "costPerOutput",
+          plate_margin as "plateMargin",
+          food_cost_percentage as "foodCostPercentage",
+          evidence
+        from recipe_cost_history
+        where recipe_id = ${recipe.id}
+        order by calculated_at, id
+      `
+
+      expect(history).toHaveLength(2)
+      expect(history).toMatchObject([
+        {
+          status: 'complete',
+          batchCost: '19',
+          costPerOutput: '4.75',
+          plateMargin: '15.25',
+          foodCostPercentage: '23.75',
+          evidence: {
+            batch: { lines: [{ cost: '12' }, { cost: '7' }] },
+            plate: { effectiveOutputQuantity: '4' },
+          },
+        },
+        {
+          status: 'complete',
+          batchCost: '19.25',
+          costPerOutput: '4.8125',
+          plateMargin: '15.1875',
+          foodCostPercentage: '24.0625',
+          evidence: {
+            batch: { lines: [{ cost: '12.25' }, { cost: '7' }] },
+            plate: { effectiveOutputQuantity: '4' },
+          },
+        },
+      ])
+    }, 120_000)
+
+    it('assembles owner-scoped usage variance inputs from persisted operations', async () => {
+      const { sql } = opened!.database
+      const menuItemId = '00000000-0000-4000-8000-00000000f001'
+      const ingredientItemId = '00000000-0000-4000-8000-00000000f002'
+      const recipeId = '00000000-0000-4000-8000-00000000f003'
+      const recipeIngredientId = '00000000-0000-4000-8000-00000000f004'
+      const conversionId = '00000000-0000-4000-8000-00000000f005'
+      const purchaseOrderId = '00000000-0000-4000-8000-00000000f006'
+      const purchaseLineId = '00000000-0000-4000-8000-00000000f007'
+      const transactionId = '00000000-0000-4000-8000-00000000f008'
+      const beginningSnapshotId = '00000000-0000-4000-8000-00000000f009'
+      const endingSnapshotId = '00000000-0000-4000-8000-00000000f010'
+      const otherMenuItemId = '00000000-0000-4000-8000-00000000f011'
+      const otherTransactionId = '00000000-0000-4000-8000-00000000f012'
+
+      await sql`
+        insert into inventory_items
+          (id, location_id, canonical_name, display_name, unit, item_type)
+        values
+          (${menuItemId}, ${LOCATION_ID}, 'salmon plate', 'Salmon plate', 'each', 'menu_item'),
+          (${ingredientItemId}, ${LOCATION_ID}, 'salmon', 'Salmon', 'lb', 'ingredient'),
+          (${otherMenuItemId}, ${OTHER_LOCATION_ID}, 'other plate', 'Other plate', 'each', 'menu_item')
+      `
+      await sql`
+        insert into recipes
+          (id, location_id, menu_item_id, name, output_quantity, output_unit,
+           yield_factor, waste_factor)
+        values
+          (${recipeId}, ${LOCATION_ID}, ${menuItemId}, 'Salmon plate', '10', 'each', '1', '0')
+      `
+      await sql`
+        insert into recipe_ingredients
+          (id, recipe_id, ingredient_item_id, quantity, unit)
+        values
+          (${recipeIngredientId}, ${recipeId}, ${ingredientItemId}, '4', 'lb')
+      `
+      await sql`
+        insert into item_unit_conversions
+          (id, location_id, inventory_item_id, from_unit, to_unit, factor)
+        values
+          (${conversionId}, ${LOCATION_ID}, ${ingredientItemId}, 'oz', 'lb', '0.0625')
+      `
+      await sql`
+        insert into purchase_orders
+          (id, location_id, ordered_at, external_id, source)
+        values
+          (${purchaseOrderId}, ${LOCATION_ID}, '2026-08-02T12:00:00Z', 'usage-po', 'test')
+      `
+      await sql`
+        insert into purchase_order_items
+          (id, purchase_order_id, location_id, inventory_item_id,
+           raw_item_name, qty, unit_cost, total_cost)
+        values
+          (${purchaseLineId}, ${purchaseOrderId}, ${LOCATION_ID}, ${ingredientItemId},
+           'Salmon', '2', '2', '4')
+      `
+      await sql`
+        insert into transactions
+          (id, location_id, transacted_at, external_id, source, menu_item_id,
+           raw_item_name, qty, unit_price, total_revenue)
+        values
+          (${transactionId}, ${LOCATION_ID}, '2026-08-03T18:00:00Z', 'usage-sale', 'test',
+           ${menuItemId}, 'Salmon plate', '5', '20', '100'),
+          (${otherTransactionId}, ${OTHER_LOCATION_ID}, '2026-08-03T18:00:00Z', 'other-sale', 'test',
+           ${otherMenuItemId}, 'Other plate', '99', '20', '1980')
+      `
+      await sql`
+        insert into inventory_snapshots
+          (id, location_id, inventory_item_id, counted_at, qty, source)
+        values
+          (${beginningSnapshotId}, ${LOCATION_ID}, ${ingredientItemId}, '2026-07-01T12:00:00Z', '10', 'test'),
+          (${endingSnapshotId}, ${LOCATION_ID}, ${ingredientItemId}, '2026-08-10T12:00:00Z', '6', 'test')
+      `
+
+      const result = await usageVariance.getUsageVariance(
+        new Headers(),
+        LOCATION_ID,
+      )
+
+      expect(result.rows).toEqual([
+        expect.objectContaining({
+          ingredientItemId,
+          ingredientName: 'Salmon',
+          unit: 'lb',
+          theoreticalUsage: '2',
+          actualUsage: '6',
+          variance: '4',
+          variancePercent: '200',
+          status: 'calculated',
+        }),
+      ])
+      expect(result.excluded).toEqual([])
+      expect(result.periodStart).not.toBeNull()
+      expect(result.periodEnd).not.toBeNull()
+
+      await expect(
+        usageVariance.getUsageVariance(new Headers(), OTHER_LOCATION_ID),
+      ).rejects.toMatchObject({
+        name: 'ForbiddenError',
+      })
+    }, 120_000)
+
+    it('nets refunds in revenue without turning them into negative waste', async () => {
+      const csv = await readFile(
+        path.resolve(
+          'tests/fixtures/csv/transactions/sales-with-refunds-negative.csv',
+        ),
+        'utf8',
+      )
+      const uploadId = await seedUpload(LOCATION_ID, {
+        filename: 'sales-with-refunds-negative.csv',
+        mapping: REFUNDS_MAPPING,
+      })
+
+      const summary = await imports.commitCsvImport(
+        new Headers(),
+        uploadId,
+        REFUNDS_RESOLUTIONS,
+        memoryStorage(csv),
+      )
+
+      expect(summary.rowsImported).toBe(5)
+
+      const { sql } = opened!.database
+      const totals = await sql<
+        { itemName: string; qty: string; revenue: string }[]
+      >`
+        select
+          raw_item_name as "itemName",
+          sum(qty)::text as qty,
+          sum(total_revenue)::text as revenue
+        from transactions
+        where location_id = ${LOCATION_ID}
+        group by raw_item_name
+        order by raw_item_name
+      `
+      expect(totals).toEqual([
+        { itemName: 'House Salad', qty: '4', revenue: '44' },
+        { itemName: 'Salmon Fillet', qty: '0', revenue: '0' },
+        { itemName: 'Tomato Soup', qty: '4', revenue: '34' },
+      ])
+
+      const { runPrecomputeForLocation } =
+        await import('../../src/server/metrics/precompute')
+      const run = await runPrecomputeForLocation(LOCATION_ID, {
+        now: new Date('2025-03-04T12:00:00.000Z'),
+      })
+      expect(run?.status).toBe('succeeded')
+
+      const metrics = await sql<
+        {
+          itemName: string
+          metricKey: string
+          value: string | null
+          result: {
+            inputs?: { qtySold?: string; revenue?: string }
+            resolution?: { figures?: { value: string }[] }
+          }
+        }[]
+      >`
+        select
+          inventory_items.display_name as "itemName",
+          metric_key as "metricKey",
+          value,
+          result
+        from metric_results
+        inner join inventory_items
+          on inventory_items.id = metric_results.inventory_item_id
+        where run_id = ${run!.id}
+          and metric_key in ('margin', 'spoilageEstimate')
+        order by inventory_items.display_name, metric_key
+      `
+
+      const marginByItem = new Map(
+        metrics
+          .filter((metric) => metric.metricKey === 'margin')
+          .map((metric) => [metric.itemName, metric.result.inputs]),
+      )
+      expect(marginByItem.get('House Salad')).toMatchObject({
+        qtySold: '4',
+        revenue: '44',
+      })
+      expect(marginByItem.get('Salmon Fillet')).toMatchObject({
+        qtySold: '0',
+        revenue: '0',
+      })
+
+      const spoilageMetrics = metrics.filter(
+        (metric) => metric.metricKey === 'spoilageEstimate',
+      )
+      expect(spoilageMetrics).toHaveLength(3)
+      expect(spoilageMetrics.every((metric) => metric.value === null)).toBe(
+        true,
+      )
+      const spoilageValues = spoilageMetrics.flatMap((metric) => [
+        ...(metric.value === null ? [] : [metric.value]),
+        ...(metric.result.resolution?.figures?.map((figure) => figure.value) ??
+          []),
+      ])
+      expect(spoilageValues.every((value) => !value.startsWith('-'))).toBe(true)
+    }, 120_000)
+
+    it('assigns a 01:30 sale to the prior business day after import and precompute', async () => {
+      const csv = await readFile(
+        path.resolve(
+          'tests/fixtures/csv/transactions/sales-business-day-boundary.csv',
+        ),
+        'utf8',
+      )
+      const uploadId = await seedUpload(LOCATION_ID, {
+        filename: 'sales-business-day-boundary.csv',
+        mapping: BUSINESS_DAY_MAPPING,
+      })
+
+      const summary = await imports.commitCsvImport(
+        new Headers(),
+        uploadId,
+        BUSINESS_DAY_RESOLUTIONS,
+        memoryStorage(csv),
+      )
+
+      expect(summary.rowsImported).toBe(2)
+
+      const { runPrecomputeForLocation } =
+        await import('../../src/server/metrics/precompute')
+      const run = await runPrecomputeForLocation(LOCATION_ID, {
+        now: new Date('2026-01-03T12:00:00.000Z'),
+      })
+      expect(run?.status).toBe('succeeded')
+
+      const { sql } = opened!.database
+      const [forecast] = await sql<
+        {
+          result: { forecast: { historyDays: number } }
+        }[]
+      >`
+        select result
+        from metric_rollups
+        where run_id = ${run!.id} and metric_key = 'demandForecast'
+      `
+      expect(forecast?.result.forecast.historyDays).toBe(2)
+
+      const { getDashboardDataState } =
+        await import('../../src/server/metrics/dashboard-state')
+      await expect(
+        getDashboardDataState(new Headers(), LOCATION_ID),
+      ).resolves.toMatchObject({
+        transactionDays: 2,
+        status: 'insufficient',
+      })
+    }, 120_000)
+
+    it('keeps money exact from imported rows through metrics to the rendered figure', async () => {
+      const csv = await readFile(
+        path.resolve(
+          'tests/fixtures/csv/transactions/sales-money-precision.csv',
+        ),
+        'utf8',
+      )
+      const uploadId = await seedUpload(LOCATION_ID, {
+        filename: 'sales-money-precision.csv',
+        mapping: MONEY_PRECISION_MAPPING,
+      })
+
+      const summary = await imports.commitCsvImport(
+        new Headers(),
+        uploadId,
+        MONEY_PRECISION_RESOLUTIONS,
+        memoryStorage(csv),
+      )
+
+      expect(summary.rowsImported).toBe(2)
+
+      const { sql } = opened!.database
+      const imported = await sql<
+        { unitPrice: string; totalRevenue: string; totalCost: string | null }[]
+      >`
+        select
+          unit_price as "unitPrice",
+          total_revenue as "totalRevenue",
+          total_cost as "totalCost"
+        from transactions
+        where location_id = ${LOCATION_ID}
+        order by transacted_at
+      `
+      expect(imported).toEqual([
+        { unitPrice: '0.1', totalRevenue: '0.1', totalCost: '0.01' },
+        { unitPrice: '0.2', totalRevenue: '0.2', totalCost: '0.02' },
+      ])
+
+      const [item] = await sql<{ id: string }[]>`
+        select id from inventory_items
+        where location_id = ${LOCATION_ID} and canonical_name = 'tomato soup'
+      `
+      await sql`
+        update inventory_items
+        set cost_per_unit = '0.03'
+        where id = ${item!.id}
+      `
+
+      const { runPrecomputeForLocation } =
+        await import('../../src/server/metrics/precompute')
+      const run = await runPrecomputeForLocation(LOCATION_ID, {
+        now: new Date('2026-08-10T12:00:00.000Z'),
+      })
+      expect(run?.status).toBe('succeeded')
+
+      const [margin] = await sql<
+        {
+          value: string | null
+          result: { inputs?: { revenue?: string } }
+        }[]
+      >`
+        select value, result
+        from metric_results
+        where run_id = ${run!.id}
+          and metric_key = 'margin'
+      `
+      expect(margin).toMatchObject({
+        value: '0.24',
+        result: { inputs: { revenue: '0.3' } },
+      })
+
+      const { buildTrendSummaries } =
+        await import('../../src/server/metrics/trends')
+      const summaries = buildTrendSummaries([
+        { label: 'Aug 3–Aug 9', margin: margin!.value!, unit: 'each' },
+      ])
+      const markup = renderToStaticMarkup(
+        createElement(TrendSummaries, { summaries }),
+      )
+      expect(markup).toContain('$0.24')
+    }, 120_000)
+
+    it('carries imported labor into exact STF-02 efficiency metrics', async () => {
+      const { sql } = opened!.database
+      await sql`
+        update locations
+        set timezone = 'UTC'
+        where id = ${LOCATION_ID}
+      `
+
+      const laborCsv = (
+        await readFile(
+          path.resolve('tests/fixtures/csv/labor/homebase-timesheet.csv'),
+          'utf8',
+        )
+      ).replaceAll('2025-03-', '2026-08-')
+      const laborUploadId = await seedUpload(LOCATION_ID, {
+        filename: 'homebase-timesheet.csv',
+        mapping: LABOR_MAPPING,
+        source: 'labor',
+      })
+      const laborSummary = await imports.commitCsvImport(
+        new Headers(),
+        laborUploadId,
+        undefined,
+        memoryStorage(laborCsv),
+      )
+      expect(laborSummary.rowsImported).toBe(3)
+
+      const salesUploadId = await seedUpload(LOCATION_ID, {
+        filename: 'staffing-sales.csv',
+        mapping: STAFFING_SALES_MAPPING,
+      })
+      const salesSummary = await imports.commitCsvImport(
+        new Headers(),
+        salesUploadId,
+        STAFFING_SALES_RESOLUTIONS,
+        memoryStorage(STAFFING_SALES_CSV),
+      )
+      expect(salesSummary.rowsImported).toBe(2)
+
+      const { getLaborEfficiency } =
+        await import('../../src/server/staffing/labor-efficiency-query')
+      const result = await getLaborEfficiency(new Headers(), LOCATION_ID)
+      const shifts = result.periods.filter(
+        (period) => period.dimension === 'shift',
+      )
+
+      expect(shifts).toHaveLength(2)
+      expect(shifts).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            label: expect.stringContaining('Dishwasher'),
+            sales: '240',
+            foodCost: '60',
+            actualHours: '8',
+            laborCost: '120',
+            scheduledActualVariance: null,
+            salesPerLaborHour: expect.objectContaining({
+              status: 'calculated',
+              value: '30',
+            }),
+            laborCostPercentage: expect.objectContaining({
+              status: 'calculated',
+              value: '50',
+            }),
+            primeCost: expect.objectContaining({
+              status: 'calculated',
+              value: '180',
+            }),
+            primeCostPercentage: expect.objectContaining({
+              status: 'calculated',
+              value: '75',
+            }),
+          }),
+          expect.objectContaining({
+            label: expect.stringContaining('Bartender'),
+            sales: '160',
+            foodCost: '40',
+            actualHours: '8',
+            laborCost: '160',
+            scheduledActualVariance: null,
+            salesPerLaborHour: expect.objectContaining({
+              status: 'calculated',
+              value: '20',
+            }),
+            laborCostPercentage: expect.objectContaining({
+              status: 'calculated',
+              value: '100',
+            }),
+            primeCost: expect.objectContaining({
+              status: 'calculated',
+              value: '200',
+            }),
+            primeCostPercentage: expect.objectContaining({
+              status: 'calculated',
+              value: '125',
+            }),
+          }),
+        ]),
+      )
+      expect(
+        result.exclusions.some(
+          (exclusion) =>
+            exclusion.dimension === 'shift' &&
+            exclusion.reason === 'No sales data for this period.',
+        ),
+      ).toBe(true)
+    }, 120_000)
+
+    it('keeps staffing reads owner-scoped and applies each source window', async () => {
+      const { sql } = opened!.database
+      await sql`
+          update locations
+          set timezone = 'UTC', business_day_boundary = '04:00:00'
+          where id in (${LOCATION_ID}, ${OTHER_LOCATION_ID})
+        `
+      await sql`
+          insert into transactions
+            (location_id, transacted_at, external_id, source, raw_item_name,
+             qty, unit_price, total_revenue, total_cost)
+          values
+            (${LOCATION_ID}, '2026-08-01T12:00:00Z', 'staffing-current-a', 'query-test', 'House Salad', '1', '100', '100', '30'),
+            (${LOCATION_ID}, '2025-07-01T12:00:00Z', 'staffing-old-a', 'query-test', 'House Salad', '1', '900', '900', '270'),
+            (${OTHER_LOCATION_ID}, '2026-08-01T12:00:00Z', 'staffing-current-b', 'query-test', 'Other Salad', '1', '999', '999', '999')
+      `
+      await sql`
+          insert into labor_shifts
+            (location_id, shift_start, shift_end, external_id, source, role,
+             scheduled_hours, actual_hours, labor_cost)
+          values
+            (${LOCATION_ID}, '2026-08-01T11:00:00Z', '2026-08-01T19:00:00Z', 'shift-current-a', 'query-test', 'line cook', '8', '8', '20'),
+            (${LOCATION_ID}, '2025-07-01T11:00:00Z', '2025-07-01T19:00:00Z', 'shift-old-a', 'query-test', 'line cook', '8', '8', '200'),
+            (${OTHER_LOCATION_ID}, '2026-08-01T11:00:00Z', '2026-08-01T19:00:00Z', 'shift-current-b', 'query-test', 'other role', '8', '8', '999')
+      `
+      await sql`
+          insert into external_signals
+            (location_id, kind, business_date, valid_from, valid_to, status,
+             source, external_id, feature, condition, value, raw_data, retrieved_at)
+          values
+            (${LOCATION_ID}, 'weather', '2026-08-01', '2026-08-01T00:00:00Z', '2026-08-02T00:00:00Z', 'observed', 'query-weather', 'signal-current-a', 'temperature', 'warm', '25', '{}', '2026-08-01T00:00:00Z'),
+            (${LOCATION_ID}, 'weather', '2025-07-01', '2025-07-01T00:00:00Z', '2025-07-02T00:00:00Z', 'observed', 'query-weather', 'signal-old-a', 'temperature', 'cool', '10', '{}', '2025-07-01T00:00:00Z'),
+            (${OTHER_LOCATION_ID}, 'weather', '2026-08-01', '2026-08-01T00:00:00Z', '2026-08-02T00:00:00Z', 'observed', 'query-weather', 'signal-current-b', 'temperature', 'hot', '40', '{}', '2026-08-01T00:00:00Z')
+      `
+
+      const { getLaborEfficiency } =
+        await import('../../src/server/staffing/labor-efficiency-query')
+      const result = await getLaborEfficiency(new Headers(), LOCATION_ID)
+      const shiftPeriods = result.periods.filter(
+        (period) => period.dimension === 'shift',
+      )
+
+      expect(shiftPeriods).toHaveLength(1)
+      expect(shiftPeriods[0]).toMatchObject({
+        label: 'line cook · 2026-08-01',
+        sales: '100',
+        laborCost: '20',
+      })
+      expect(result.forecast.externalSignals.sources).toEqual([
+        expect.objectContaining({ source: 'query-weather', rowCount: 1 }),
+      ])
+      await expect(
+        getLaborEfficiency(new Headers(), OTHER_LOCATION_ID),
+      ).rejects.toThrow()
+    }, 120_000)
+
+    it('assembles owner-scoped menu engineering inputs and keeps exclusions explainable', async () => {
+      const { sql } = opened!.database
+      const steakId = '00000000-0000-4000-8000-00000000f101'
+      const pastaId = '00000000-0000-4000-8000-00000000f102'
+      const noRecipeId = '00000000-0000-4000-8000-00000000f103'
+      const shortHistoryId = '00000000-0000-4000-8000-00000000f104'
+      const inactiveId = '00000000-0000-4000-8000-00000000f105'
+      const otherMenuId = '00000000-0000-4000-8000-00000000f110'
+      const steakRecipeId = '00000000-0000-4000-8000-00000000f106'
+      const pastaRecipeId = '00000000-0000-4000-8000-00000000f107'
+      const shortRecipeId = '00000000-0000-4000-8000-00000000f108'
+      const inactiveRecipeId = '00000000-0000-4000-8000-00000000f109'
+
+      await sql`
+        update locations
+        set timezone = 'UTC', business_day_boundary = '04:00:00'
+        where id = ${LOCATION_ID}
+      `
+      await sql`
+        insert into inventory_items
+          (id, location_id, canonical_name, display_name, unit, item_type, is_active)
+        values
+          (${steakId}, ${LOCATION_ID}, 'steak', 'Steak', 'each', 'menu_item', true),
+          (${pastaId}, ${LOCATION_ID}, 'pasta', 'Pasta', 'each', 'menu_item', true),
+          (${noRecipeId}, ${LOCATION_ID}, 'no recipe', 'No Recipe', 'each', 'menu_item', true),
+          (${shortHistoryId}, ${LOCATION_ID}, 'short history', 'Short History', 'each', 'menu_item', true),
+          (${inactiveId}, ${LOCATION_ID}, 'inactive', 'Inactive', 'each', 'menu_item', false),
+          (${otherMenuId}, ${OTHER_LOCATION_ID}, 'other menu', 'Other Menu', 'each', 'menu_item', true)
+      `
+      await sql`
+        insert into recipes
+          (id, location_id, menu_item_id, name, output_quantity, output_unit,
+           yield_factor, waste_factor, is_active)
+        values
+          (${steakRecipeId}, ${LOCATION_ID}, ${steakId}, 'Steak', '1', 'each', '1', '0', true),
+          (${pastaRecipeId}, ${LOCATION_ID}, ${pastaId}, 'Pasta', '1', 'each', '1', '0', true),
+          (${shortRecipeId}, ${LOCATION_ID}, ${shortHistoryId}, 'Short History', '1', 'each', '1', '0', true),
+          (${inactiveRecipeId}, ${LOCATION_ID}, ${inactiveId}, 'Inactive', '1', 'each', '1', '0', true)
+      `
+      await sql`
+        insert into recipe_cost_history
+          (location_id, recipe_id, calculated_at, status, plate_margin, evidence)
+        values
+          (${LOCATION_ID}, ${steakRecipeId}, '2026-07-01T12:00:00Z', 'complete', '2', '{}'),
+          (${LOCATION_ID}, ${steakRecipeId}, '2026-08-02T12:00:00Z', 'complete', '9.50', '{}'),
+          (${LOCATION_ID}, ${pastaRecipeId}, '2026-08-02T12:00:00Z', 'complete', '12.00', '{}'),
+          (${LOCATION_ID}, ${shortRecipeId}, '2026-08-02T12:00:00Z', 'complete', '5.00', '{}'),
+          (${LOCATION_ID}, ${inactiveRecipeId}, '2026-08-02T12:00:00Z', 'complete', '99.00', '{}')
+      `
+      await sql`
+        insert into transactions
+          (location_id, transacted_at, external_id, source, menu_item_id,
+           raw_item_name, qty, unit_price, total_revenue)
+        values
+          (${LOCATION_ID}, '2026-08-01T12:00:00Z', 'menu-steak-1', 'query-test', ${steakId}, 'Steak', '2.5', '20', '50'),
+          (${LOCATION_ID}, '2026-07-25T12:00:00Z', 'menu-steak-2', 'query-test', ${steakId}, 'Steak', '2.5', '20', '50'),
+          (${LOCATION_ID}, '2026-07-18T12:00:00Z', 'menu-steak-3', 'query-test', ${steakId}, 'Steak', '2.5', '20', '50'),
+          (${LOCATION_ID}, '2026-07-11T12:00:00Z', 'menu-steak-4', 'query-test', ${steakId}, 'Steak', '2.5', '20', '50'),
+          (${LOCATION_ID}, '2026-08-01T12:00:00Z', 'menu-pasta-1', 'query-test', ${pastaId}, 'Pasta', '1', '20', '20'),
+          (${LOCATION_ID}, '2026-07-25T12:00:00Z', 'menu-pasta-2', 'query-test', ${pastaId}, 'Pasta', '1', '20', '20'),
+          (${LOCATION_ID}, '2026-07-18T12:00:00Z', 'menu-pasta-3', 'query-test', ${pastaId}, 'Pasta', '1', '20', '20'),
+          (${LOCATION_ID}, '2026-07-11T12:00:00Z', 'menu-pasta-4', 'query-test', ${pastaId}, 'Pasta', '1', '20', '20'),
+          (${LOCATION_ID}, '2026-08-01T12:00:00Z', 'menu-no-recipe-1', 'query-test', ${noRecipeId}, 'No Recipe', '1', '20', '20'),
+          (${LOCATION_ID}, '2026-07-25T12:00:00Z', 'menu-no-recipe-2', 'query-test', ${noRecipeId}, 'No Recipe', '1', '20', '20'),
+          (${LOCATION_ID}, '2026-07-18T12:00:00Z', 'menu-no-recipe-3', 'query-test', ${noRecipeId}, 'No Recipe', '1', '20', '20'),
+          (${LOCATION_ID}, '2026-07-11T12:00:00Z', 'menu-no-recipe-4', 'query-test', ${noRecipeId}, 'No Recipe', '1', '20', '20'),
+          (${LOCATION_ID}, '2026-08-01T12:00:00Z', 'menu-short-1', 'query-test', ${shortHistoryId}, 'Short History', '4', '20', '80'),
+          (${LOCATION_ID}, '2026-08-01T12:00:00Z', 'menu-inactive-1', 'query-test', ${inactiveId}, 'Inactive', '100', '20', '2000'),
+          (${OTHER_LOCATION_ID}, '2026-08-01T12:00:00Z', 'menu-other-steak-1', 'query-test', ${steakId}, 'Steak', '999', '20', '19980'),
+          (${OTHER_LOCATION_ID}, '2026-08-01T12:00:00Z', 'menu-other-1', 'query-test', ${otherMenuId}, 'Other Menu', '999', '20', '19980')
+      `
+
+      const result = await menuEngineering.getMenuEngineering(
+        new Headers(),
+        LOCATION_ID,
+      )
+
+      expect(result).toMatchObject({
+        status: 'calculated',
+        minimumHistoryWeeks: 4,
+        observedWeeks: 4,
+        popularityThreshold: '7',
+        marginThreshold: '10.75',
+      })
+      expect(result.rows).toEqual([
+        expect.objectContaining({
+          menuItemId: steakId,
+          name: 'Steak',
+          unitsSold: '10',
+          marginPerItem: '9.5',
+          contributionMargin: '95',
+          popularity: 'high',
+          profitability: 'low',
+          quadrant: 'plowhorse',
+        }),
+        expect.objectContaining({
+          menuItemId: pastaId,
+          name: 'Pasta',
+          unitsSold: '4',
+          marginPerItem: '12',
+          contributionMargin: '48',
+          popularity: 'low',
+          profitability: 'high',
+          quadrant: 'puzzle',
+        }),
+      ])
+      expect(result.excluded).toEqual([
+        {
+          menuItemId: noRecipeId,
+          name: 'No Recipe',
+          reason: 'A complete recipe-derived plate margin is not available.',
+        },
+        {
+          menuItemId: shortHistoryId,
+          name: 'Short History',
+          reason:
+            'Only 1 complete business week of sales; at least 4 are needed.',
+        },
+      ])
+      expect(result.rows.some((row) => row.menuItemId === inactiveId)).toBe(
+        false,
+      )
+      await expect(
+        menuEngineering.getMenuEngineering(new Headers(), OTHER_LOCATION_ID),
+      ).rejects.toMatchObject({ name: 'ForbiddenError' })
+    }, 120_000)
 
     it('marks the upload imported so the history is honest', async () => {
       const uploadId = await seedUpload()
@@ -353,6 +1695,34 @@ describe.skipIf(!integrationDatabaseEnabled())('CSV import', () => {
       expect(second.alreadyImported).toBe(true)
     })
 
+    it('deduplicates the same file uploaded twice as separate imports', async () => {
+      const firstUploadId = await seedUpload(LOCATION_ID, {
+        filename: 'sales-retry.csv',
+      })
+      const secondUploadId = await seedUpload(LOCATION_ID, {
+        filename: 'sales-retry.csv',
+      })
+
+      const first = await imports.commitCsvImport(
+        new Headers(),
+        firstUploadId,
+        RESOLUTIONS,
+        memoryStorage(),
+      )
+      const second = await imports.commitCsvImport(
+        new Headers(),
+        secondUploadId,
+        RESOLUTIONS,
+        memoryStorage(),
+      )
+
+      expect(first.rowsImported).toBe(2)
+      expect(second.rowsImported).toBe(0)
+      expect(second.alreadyImported).toBe(false)
+      expect(await countTransactions()).toBe(2)
+      expect(await countItems()).toBe(2)
+    })
+
     it('refuses to commit into another account location', async () => {
       const uploadId = await seedUpload(OTHER_LOCATION_ID)
 
@@ -405,6 +1775,251 @@ describe.skipIf(!integrationDatabaseEnabled())('CSV import', () => {
       await expect(
         imports.listImportHistory(new Headers(), OTHER_LOCATION_ID),
       ).rejects.toThrow()
+    })
+  })
+
+  describe('account isolation', () => {
+    it('keeps an upload and every read surface private to its owner', async () => {
+      const storage = new MemoryObjectStorage()
+      const byteLength = new TextEncoder().encode(CSV).byteLength
+      const upload = await uploads.uploadCsv({
+        headers: new Headers({ 'content-length': String(byteLength) }),
+        locationId: LOCATION_ID,
+        filename: 'sales.csv',
+        importType: 'transactions',
+        body: csvBody(CSV),
+        storage,
+      })
+
+      await mappings.saveCsvMapping(new Headers(), upload.id, MAPPING)
+      await imports.commitCsvImport(
+        new Headers(),
+        upload.id,
+        RESOLUTIONS,
+        storage,
+      )
+      expect(await countTransactions(LOCATION_ID)).toBe(2)
+
+      sessionState.current = { user: { id: OTHER_OWNER_ID } }
+
+      await expect(
+        imports.listImportHistory(new Headers(), LOCATION_ID),
+      ).rejects.toThrow()
+      await expect(
+        imports.previewCsvImport(
+          new Headers(),
+          upload.id,
+          RESOLUTIONS,
+          storage,
+        ),
+      ).rejects.toThrow()
+      await expect(
+        previews.previewCsv(new Headers(), upload.id, storage),
+      ).rejects.toThrow()
+      await expect(
+        mappings.saveCsvMapping(new Headers(), upload.id, MAPPING),
+      ).rejects.toThrow()
+      await expect(
+        exportsService.exportLocationCsv(
+          new Headers(),
+          LOCATION_ID,
+          'transactions',
+        ),
+      ).rejects.toThrow()
+    })
+  })
+
+  describe('mapping persistence', () => {
+    it('rejects invalid mappings without overwriting the saved mapping', async () => {
+      const uploadId = await seedUpload()
+
+      await expect(
+        mappings.saveCsvMapping(new Headers(), uploadId, {
+          Date: 'not-a-canonical-field',
+        }),
+      ).rejects.toBeInstanceOf(mappings.CsvMappingValidationError)
+
+      const { sql } = opened!.database
+      const [upload] = await sql<{ mapping_used: Record<string, string> }[]>`
+        select mapping_used
+        from csv_upload_history
+        where id = ${uploadId}
+      `
+      expect(upload?.mapping_used).toEqual(MAPPING)
+    })
+  })
+
+  describe('export service', () => {
+    it('keeps the formula-injection fixture inert through import and export', async () => {
+      const csv = await readFile(
+        path.resolve('tests/fixtures/csv/security/formula-injection.csv'),
+        'utf8',
+      )
+      const itemNames = [
+        '=HYPERLINK("http://evil.example")',
+        '+1+1',
+        '@SUM(A1:A2)',
+        '-2+3',
+        'House Salad',
+      ]
+      const resolutions: Record<string, ImportItemResolution> =
+        Object.fromEntries(
+          itemNames.map((displayName) => [
+            normalizeExactItemName(displayName),
+            {
+              canonicalName: normalizeExactItemName(displayName),
+              displayName,
+              category: 'test',
+              unit: 'each',
+              shelfLifeDays: null,
+            },
+          ]),
+        )
+      const uploadId = await seedUpload(LOCATION_ID, {
+        filename: 'formula-injection.csv',
+        mapping: {
+          Date: 'transactedAt',
+          'Item Name': 'rawItemName',
+          Qty: 'qty',
+          'Total Revenue': 'totalRevenue',
+        },
+      })
+
+      const summary = await imports.commitCsvImport(
+        new Headers(),
+        uploadId,
+        resolutions,
+        memoryStorage(csv),
+      )
+
+      expect(summary.rowsImported).toBe(5)
+
+      const exported = await exportsService.exportLocationCsv(
+        new Headers(),
+        LOCATION_ID,
+        'transactions',
+      )
+      expect(exported).toContain('\'=HYPERLINK(""http://evil.example"")')
+      expect(exported).toContain("'+1+1")
+      expect(exported).toContain("'@SUM(A1:A2)")
+      expect(exported).toContain("'-2+3")
+      expect(exported).not.toContain(',=HYPERLINK(')
+      expect(exported).not.toContain(',+1+1,')
+      expect(exported).not.toContain(',@SUM(A1:A2),')
+      expect(exported).not.toContain(',-2+3,')
+    })
+
+    it('scopes every dataset to the owner and neutralizes formula-looking cells', async () => {
+      const { sql } = opened!.database
+      const itemId = '00000000-0000-4000-8000-00000000e001'
+      const orderId = '00000000-0000-4000-8000-00000000e002'
+      const orderItemId = '00000000-0000-4000-8000-00000000e003'
+      const snapshotId = '00000000-0000-4000-8000-00000000e004'
+
+      await sql`
+        insert into inventory_items
+          (id, location_id, canonical_name, display_name, category, unit,
+           shelf_life_days, cost_per_unit, menu_price, par_level)
+        values
+          (
+            ${itemId}, ${LOCATION_ID}, 'formula item',
+            '=HYPERLINK("http://evil.example")', '@SUM(A1:A2)', 'each',
+            3, '8.50', '18.00', '4.00'
+          )
+      `
+      await sql`
+        insert into transactions
+          (id, location_id, transacted_at, external_id, source,
+           menu_item_id, raw_item_name, category, qty, unit_price,
+           total_revenue, total_cost, gross_margin)
+        values
+          (
+            '00000000-0000-4000-8000-00000000e005', ${LOCATION_ID},
+            '2026-08-08T04:00:00Z', 'formula-sale', 'test', ${itemId},
+            '=HYPERLINK("http://evil.example")', '+1+1', '2', '24.00',
+            '48.00', '12.50', '35.50'
+          ),
+          (
+            '00000000-0000-4000-8000-00000000e006', ${OTHER_LOCATION_ID},
+            '2026-08-08T05:00:00Z', 'other-sale', 'test', null,
+            'Other location item', 'Other', '1', '9.00',
+            '9.00', '4.00', '5.00'
+          )
+      `
+      await sql`
+        insert into purchase_orders
+          (id, location_id, ordered_at, received_at, external_id, source,
+           supplier_name)
+        values
+          (
+            ${orderId}, ${LOCATION_ID}, '2026-08-07T04:00:00Z',
+            '2026-08-08T04:00:00Z', '+1+1', 'test', '@SUM(A1:A2)'
+          )
+      `
+      await sql`
+        insert into purchase_order_items
+          (id, purchase_order_id, location_id, inventory_item_id,
+           raw_item_name, qty, unit_cost, total_cost)
+        values
+          (
+            ${orderItemId}, ${orderId}, ${LOCATION_ID}, ${itemId},
+            '=HYPERLINK("http://evil.example")', '2', '8.50', '17.00'
+          )
+      `
+      await sql`
+        insert into inventory_snapshots
+          (id, location_id, inventory_item_id, counted_at, qty, source)
+        values
+          (
+            ${snapshotId}, ${LOCATION_ID}, ${itemId},
+            '2026-08-08T04:00:00Z', '2', 'test'
+          )
+      `
+
+      const headers = new Headers()
+      const transactions = await exportsService.exportLocationCsv(
+        headers,
+        LOCATION_ID,
+        'transactions',
+      )
+      expect(transactions).toContain('\'=HYPERLINK(""http://evil.example"")')
+      expect(transactions).toContain("'+1+1")
+      expect(transactions).not.toContain(',other-sale,')
+
+      const purchaseOrders = await exportsService.exportLocationCsv(
+        headers,
+        LOCATION_ID,
+        'purchase_orders',
+      )
+      expect(purchaseOrders).toContain(",'+1+1,")
+      expect(purchaseOrders).toContain("'@SUM(A1:A2)")
+
+      const inventoryItems = await exportsService.exportLocationCsv(
+        headers,
+        LOCATION_ID,
+        'inventory_items',
+      )
+      expect(inventoryItems).toContain('\'=HYPERLINK(""http://evil.example"")')
+      expect(inventoryItems).toContain("'@SUM(A1:A2)")
+
+      const inventorySnapshots = await exportsService.exportLocationCsv(
+        headers,
+        LOCATION_ID,
+        'inventory_snapshots',
+      )
+      expect(inventorySnapshots).toContain(snapshotId)
+      expect(inventorySnapshots).toContain(
+        '\'=HYPERLINK(""http://evil.example"")',
+      )
+
+      sessionState.current = { user: { id: OTHER_OWNER_ID } }
+      const otherTransactions = await exportsService.exportLocationCsv(
+        headers,
+        OTHER_LOCATION_ID,
+        'transactions',
+      )
+      expect(otherTransactions).toContain(',other-sale,')
+      expect(otherTransactions).not.toContain('formula-sale')
     })
   })
 })

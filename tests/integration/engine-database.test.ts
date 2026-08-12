@@ -85,6 +85,23 @@ describe.skipIf(!integrationDatabaseEnabled())(
                 'variance',
               ]),
             )
+
+            await sql`
+              insert into locations (id, user_id, name)
+              values (
+                '00000000-0000-4000-8000-000000000008',
+                '00000000-0000-4000-8000-000000000001',
+                'Empty location'
+              )
+            `
+            const emptyRun = await runPrecomputeForLocation(
+              '00000000-0000-4000-8000-000000000008',
+              { now: RUN_TIME },
+            )
+            expect(emptyRun).toMatchObject({
+              locationId: '00000000-0000-4000-8000-000000000008',
+              status: 'succeeded',
+            })
           } finally {
             if (previousDatabaseUrl === undefined)
               delete process.env.DATABASE_URL

@@ -154,6 +154,11 @@ export class Logger {
     this.sink =
       options.sink ??
       ((line, level) => {
+        // Application logs are useful when the app is running, but Vitest
+        // already reports test failures and successful cases should not dump
+        // operational JSON into the test transcript. Tests that need to
+        // inspect events provide an explicit sink.
+        if (process.env.NODE_ENV === 'test') return
         if (level === 'error') console.error(line)
         else if (level === 'warn') console.warn(line)
         else console.log(line)

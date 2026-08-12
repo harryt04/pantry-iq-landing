@@ -265,6 +265,7 @@ export function RankedBarChart({
           return (
             <g
               key={`${datum.label}-${rowIndex}`}
+              role="img"
               aria-label={`${datum.label}: ${valueLabel}${accessibleSeriesLabel}`}
             >
               <text
@@ -384,7 +385,7 @@ export function LineChart({
             .find((point): point is NonNullable<typeof point> => point !== null)
 
           return (
-            <g key={entry.id} aria-label={entry.label}>
+            <g key={entry.id} role="img" aria-label={entry.label}>
               {segments.map((segment, segmentIndex) => (
                 <polyline
                   key={`${entry.id}-segment-${segmentIndex}`}

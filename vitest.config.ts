@@ -13,15 +13,15 @@ const databaseAvailable =
   process.env.TESTCONTAINERS_ENABLED === '1'
 
 /**
- * Measured at 72.06% statements on 2026-08-10, held a few points below so
- * ordinary work does not trip it. Raise these as coverage rises; never lower
- * them to make a build pass.
+ * Measured at 78.44% statements, 78.19% branches, 85.04% functions, and
+ * 78.44% lines on 2026-08-11. Thresholds stay at least two points below the
+ * measured result. Never lower a threshold to make a build pass.
  */
 const thresholds = {
-  statements: 70,
-  lines: 70,
-  branches: 74,
-  functions: 79,
+  statements: 76.44,
+  lines: 76.44,
+  branches: 76.19,
+  functions: 83.04,
 }
 
 export default defineConfig({
@@ -35,7 +35,9 @@ export default defineConfig({
     include: ['**/*.test.ts', '**/*.test.tsx'],
     // TEST_DATABASE_URL points multiple integration files at one disposable
     // database, and migration tests intentionally reset it.
-    fileParallelism: process.env.TEST_DATABASE_URL === undefined,
+    fileParallelism:
+      process.env.TEST_DATABASE_URL === undefined &&
+      process.env.TESTCONTAINERS_ENABLED !== '1',
     // Only the interaction tests pay for a DOM. Everything else stays on node,
     // where the pure-logic suites run in milliseconds.
     environmentMatchGlobs: [['**/*.dom.test.tsx', 'jsdom']],

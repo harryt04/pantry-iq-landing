@@ -65,6 +65,29 @@ describe('precompute scheduler observability', () => {
     })
   })
 
+  it('uses the scheduler clock when a completed run has no completion time', async () => {
+    const telemetry = vi.fn(async () => undefined)
+    const { scheduler, getWorker } = schedulerWith(
+      async () => ({ id: 'run-without-time', completedAt: null }),
+      telemetry,
+    )
+
+    await scheduler.ensureReady()
+    await expect(
+      getWorker()?.([
+        { id: 'job-1', data: { scope: 'location', locationId: 'location-1' } },
+      ]),
+    ).resolves.toBeUndefined()
+
+    expect(telemetry).toHaveBeenCalledWith({
+      locationId: 'location-1',
+      referenceId: 'run-without-time',
+      status: 'succeeded',
+      occurredAt: new Date('2026-08-09T12:00:00.000Z'),
+      durationMs: 0,
+    })
+  })
+
   it('records a failed run and emits the alert log before retrying the job', async () => {
     const telemetry = vi.fn(async () => undefined)
     const { scheduler, getWorker, logger } = schedulerWith(async () => {

@@ -116,6 +116,67 @@ describe('cross-source reconciliation', () => {
     ).toBe(false)
   })
 
+  it('does not include a record while an overlap decision is unresolved', () => {
+    const record = {
+      kind: 'inventory' as const,
+      source: 'csv',
+      externalId: null,
+      occurredAt: at('2026-08-01'),
+    }
+    const conflict = {
+      recordKind: 'inventory' as const,
+      conflictType: 'period-overlap' as const,
+      identityKey: 'inventory|period-overlap|overlap-1',
+      externalId: null,
+      periodStart: at('2026-08-01'),
+      periodEnd: at('2026-08-01'),
+      sources: ['csv', 'square'],
+      status: 'unresolved' as const,
+      authoritySource: 'csv',
+      details: { message: 'Choose a source.' },
+    }
+
+    expect(shouldIncludeRecord(record, [conflict])).toBe(false)
+  })
+
+  it('records the intersecting period when two source files overlap', () => {
+    const conflicts = detectReconciliationConflicts([
+      {
+        kind: 'transaction',
+        source: 'csv',
+        externalId: null,
+        occurredAt: at('2026-08-01'),
+      },
+      {
+        kind: 'transaction',
+        source: 'csv',
+        externalId: null,
+        occurredAt: at('2026-08-03'),
+      },
+      {
+        kind: 'transaction',
+        source: 'square',
+        externalId: null,
+        occurredAt: at('2026-08-03'),
+      },
+      {
+        kind: 'transaction',
+        source: 'square',
+        externalId: null,
+        occurredAt: at('2026-08-05'),
+      },
+    ])
+
+    expect(conflicts).toHaveLength(1)
+    expect(conflicts[0]).toMatchObject({
+      conflictType: 'period-overlap',
+      periodStart: at('2026-08-03'),
+      periodEnd: at('2026-08-03'),
+      sources: ['square', 'csv'],
+      status: 'unresolved',
+    })
+  })
+
   it('does not compare records from different canonical tables', () => {
     expect(
       detectReconciliationConflicts([

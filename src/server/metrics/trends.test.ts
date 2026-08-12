@@ -44,6 +44,19 @@ describe('dashboard trend summaries', () => {
     ])
   })
 
+  it('reports flat when equal decimal values use different scales', () => {
+    const [margin] = buildTrendSummaries([
+      { label: 'Jul 6–Jul 12', margin: '90.00' },
+      { label: 'Jul 13–Jul 19', margin: '90' },
+    ])
+
+    expect(margin).toMatchObject({
+      currentValue: '90',
+      direction: 'flat',
+      directionLabel: 'Flat',
+    })
+  })
+
   it('preserves unsupported periods as chart gaps instead of interpolating', () => {
     const [margin] = buildTrendSummaries([
       { label: 'Jul 6–Jul 12', margin: '84' },

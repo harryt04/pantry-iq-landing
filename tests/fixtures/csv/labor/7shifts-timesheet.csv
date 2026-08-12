@@ -1,0 +1,4 @@
+Shift Start,Shift End,Employee Code,Role,Scheduled Hours,Actual Hours
+2025-03-01T08:00:00,2025-03-01T16:00:00,EMP-201,Line Cook,8,8.25
+2025-03-01T11:00:00,2025-03-01T19:00:00,EMP-202,Server,8,7.75
+2025-03-02T08:00:00,2025-03-02T16:00:00,EMP-201,Line Cook,8,8

@@ -3,6 +3,7 @@ import { and, desc, eq, ne } from 'drizzle-orm'
 import { requireSession } from '@/src/server/auth/authorization'
 import { db } from '@/src/server/db/client'
 import { csvUploadHistory, locations } from '@/src/server/db/schema'
+import { createLogger } from '@/src/server/observability/logger'
 import {
   createConfiguredObjectStorage,
   type ObjectStorage,
@@ -18,6 +19,8 @@ import { CSV_IMPORT_TYPES } from './upload-input'
 
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+
+const logger = createLogger({ service: 'pantryiq.csv.previews' })
 
 export class CsvPreviewNotFoundError extends Error {
   constructor() {
@@ -77,6 +80,11 @@ export async function previewCsv(
     }
   } catch (error) {
     if (error instanceof CsvPreviewNotFoundError) throw error
+    logger.error(
+      'CSV preview read failed',
+      error instanceof Error ? error : new Error(String(error)),
+      { locationId: upload.locationId, storageKey: upload.storageKey },
+    )
     throw new CsvPreviewReadError()
   }
 }

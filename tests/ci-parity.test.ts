@@ -8,7 +8,7 @@ import { describe, expect, it } from 'vitest'
  * documents agree with each other.
  *
  * Keep the local command and workflow honest: a green local run should cover
- * every test stage that the workflow runs, including coverage.
+ * every test stage that the workflow runs, including the coverage gate.
  */
 
 const packageJson = JSON.parse(
@@ -62,12 +62,13 @@ describe('CI parity', () => {
 
   it('keeps every suite reachable from the ci script', () => {
     const local = expandScript('ci')
-    expect(local).toContain('test')
-    expect(local).toContain('test:integration')
+    expect(local).toContain('test:coverage')
+    expect(local).not.toContain('test')
+    expect(local).not.toContain('test:integration')
     expect(local).toContain('test:a11y')
     expect(local).toContain('test:charts')
     expect(local).toContain('test:e2e')
-    expect(local).toContain('test:coverage')
+    expect(local).toContain('test:ui')
     expect(local).toContain('build')
   })
 

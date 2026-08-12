@@ -22,6 +22,15 @@ async function consume(
   return chunks
 }
 
+async function drain(
+  input: AsyncIterable<Uint8Array | string>,
+  options?: { maxBytes?: number },
+): Promise<void> {
+  for await (const chunk of guardedCsvStream(input, options)) {
+    void chunk
+  }
+}
+
 describe('CSV upload security', () => {
   it('accepts delimited text and rejects renamed binary files', () => {
     expect(() => assertCsvContent('item,qty\nSalmon,2\n')).not.toThrow()
@@ -56,6 +65,18 @@ describe('CSV upload security', () => {
     expect(new TextDecoder().decode(chunks[1])).toBe('Salmon,2\n')
   })
 
+  it('rejects forbidden control bytes after the bounded content sample', async () => {
+    const input = (async function* () {
+      yield 'item,qty\n'
+      yield 'Salmon,2\n'.repeat(8_000)
+      yield new Uint8Array([0x01])
+    })()
+
+    await expect(drain(input)).rejects.toMatchObject({
+      code: 'NOT_CSV_CONTENT',
+    })
+  })
+
   it('neutralizes spreadsheet formulas and escapes CSV syntax', () => {
     expect(neutralizeSpreadsheetFormula('=IMPORTDATA("url")')).toBe(
       '\'=IMPORTDATA("url")',
@@ -82,6 +103,22 @@ describe('CSV upload security', () => {
         locationId: '../../outside',
       }),
     ).toThrowError(CsvSecurityError)
+  })
+
+  it('accepts UTF-16LE CSV bytes but rejects mixed UTF-8 and CP1252 text', () => {
+    const utf16le = new Uint8Array([
+      0xff, 0xfe, 0x69, 0x00, 0x74, 0x00, 0x65, 0x00, 0x6d, 0x00, 0x2c, 0x00,
+      0x71, 0x00, 0x74, 0x00, 0x0a, 0x00, 0x53, 0x00, 0x61, 0x00, 0x6c, 0x00,
+      0x6d, 0x00, 0x6f, 0x00, 0x6e, 0x00, 0x2c, 0x00, 0x32, 0x00, 0x0a, 0x00,
+    ])
+    expect(() => assertCsvContent(utf16le)).not.toThrow()
+
+    const mixed = new Uint8Array([
+      0x69, 0x74, 0x65, 0x6d, 0x2c, 0x71, 0x74, 0x0a, 0x43, 0x61, 0x66, 0xc3,
+      0xa9, 0x2c, 0x32, 0x0a, 0x93, 0x43, 0x68, 0x65, 0x66, 0x94, 0x2c, 0x31,
+      0x0a,
+    ])
+    expect(() => assertCsvContent(mixed)).toThrowError(CsvSecurityError)
   })
 
   it('checks location ownership through one injected authorization boundary', async () => {

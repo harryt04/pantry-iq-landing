@@ -76,6 +76,15 @@ describe('recipe builder input contract', () => {
       validateRecipeBuilderInput({
         menuItemId,
         name: 'Bad recipe',
+        outputQuantity: '0',
+        outputUnit: 'each',
+        ingredients: [],
+      }),
+    ).toThrow('outputQuantity must be greater than 0.')
+    expect(() =>
+      validateRecipeBuilderInput({
+        menuItemId,
+        name: 'Bad recipe',
         outputUnit: 'each',
         wasteFactor: '1',
         ingredients: [],

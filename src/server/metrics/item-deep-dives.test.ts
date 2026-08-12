@@ -1,6 +1,43 @@
 import { describe, expect, it } from 'vitest'
 
 import { buildItemDeepDiveGroups, buildItemDeepDives } from './item-deep-dives'
+import type { RecommendationRecord } from './recommendations'
+
+function recommendation(itemId: string): RecommendationRecord {
+  return {
+    version: 1,
+    itemId,
+    itemName: itemId,
+    rank: 1,
+    score: '80',
+    observation: {
+      purchaseOrderCount: 1,
+      quantityOrdered: '2',
+      quantitySold: '1',
+      sellThroughRate: '50',
+      quantityOnHand: '1',
+      unit: 'each',
+      scores: { impact: '80', urgency: '80', dataSufficiency: '80' },
+    },
+    financialImpact: {
+      amount: '10',
+      currency: 'USD',
+      basis: 'currentSpoilage',
+    },
+    suggestedAction: {
+      framing: 'consider',
+      action: 'review-item',
+      timeHorizon: 'this week',
+    },
+    dataFindings: [],
+    evidenceTraceRef: {
+      key: `recommendation:${itemId}`,
+      itemId,
+      inputWindowStart: '2026-08-01T00:00:00.000Z',
+      inputWindowEnd: '2026-08-07T00:00:00.000Z',
+    },
+  }
+}
 
 describe('item deep dive data', () => {
   it('keeps exact item totals and resolves the sources shown in detail', () => {
@@ -164,6 +201,43 @@ describe('item deep dive data', () => {
     expect(groups.lowMargin.map((item) => item.displayName)).toEqual([
       'Item A',
       'Item B',
+    ])
+  })
+
+  it('keeps recommendations scoped to their item detail', () => {
+    const items = buildItemDeepDives({
+      items: [
+        {
+          id: 'salmon-id',
+          displayName: 'Wild Salmon',
+          category: null,
+          unit: 'lb',
+          costPerUnit: null,
+          shelfLifeDays: null,
+        },
+        {
+          id: 'capers-id',
+          displayName: 'Capers',
+          category: null,
+          unit: 'lb',
+          costPerUnit: null,
+          shelfLifeDays: null,
+        },
+      ],
+      sales: [],
+      orders: [],
+      snapshots: [],
+      recommendations: [
+        recommendation('salmon-id'),
+        recommendation('capers-id'),
+      ],
+    })
+
+    expect(items[0]?.recommendations.map(({ itemId }) => itemId)).toEqual([
+      'salmon-id',
+    ])
+    expect(items[1]?.recommendations.map(({ itemId }) => itemId)).toEqual([
+      'capers-id',
     ])
   })
 })

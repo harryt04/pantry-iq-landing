@@ -82,6 +82,19 @@ describe('portfolio rollup', () => {
     expect(result.moneyAtRisk.reason).toContain('1 location')
   })
 
+  it('marks the total uncalculable when no location provides a dollar value', () => {
+    const result = buildPortfolioRollup([
+      location('one', 'North', null),
+      location('two', 'South', null),
+    ])
+
+    expect(result.moneyAtRisk).toEqual({
+      status: 'cannot-calculate',
+      amount: null,
+      reason: 'No location has enough imported data for a dollar total yet.',
+    })
+  })
+
   it('ranks recommendations across locations by the shared score without floats', () => {
     const result = buildPortfolioRollup([
       location('one', 'North', '1', [recommendation('north-item', '70.1')]),

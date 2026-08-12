@@ -55,6 +55,7 @@ function ComboboxInput({
   disabled = false,
   showTrigger = true,
   showClear = false,
+  'aria-label': ariaLabel,
   ...props
 }: ComboboxPrimitive.Input.Props & {
   showTrigger?: boolean
@@ -76,7 +77,11 @@ function ComboboxInput({
             className="group-has-data-[slot=combobox-clear]/input-group:hidden data-pressed:bg-transparent"
             disabled={disabled}
           >
-            <ComboboxTrigger />
+            <ComboboxTrigger
+              aria-label={
+                ariaLabel ? `Open ${ariaLabel} options` : 'Open options'
+              }
+            />
           </InputGroupButton>
         )}
         {showClear && <ComboboxClear disabled={disabled} />}

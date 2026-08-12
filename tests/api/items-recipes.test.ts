@@ -261,6 +261,26 @@ describe('POST /api/recipes', () => {
     expect(body).toEqual({ recipe: { id: RECIPE_ID, name: 'Chowder' } })
   })
 
+  it('treats the form null recipeId as a new recipe', async () => {
+    saveRecipe.mockResolvedValue({ id: RECIPE_ID, name: 'Chowder' })
+
+    const { status } = await callRoute(
+      recipes.POST,
+      buildRequest('/api/recipes', {
+        method: 'POST',
+        body: { locationId: LOCATION_ID, recipeId: null, name: 'Chowder' },
+      }),
+    )
+
+    expect(status).toBe(201)
+    expect(saveRecipe).toHaveBeenCalledWith(
+      expect.any(Headers),
+      LOCATION_ID,
+      { name: 'Chowder' },
+      undefined,
+    )
+  })
+
   it('answers 200 when it updates an existing recipe', async () => {
     saveRecipe.mockResolvedValue({ id: RECIPE_ID, name: 'Chowder' })
 

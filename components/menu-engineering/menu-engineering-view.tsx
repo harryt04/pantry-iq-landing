@@ -171,7 +171,7 @@ export function MenuEngineeringView({
                         key={quadrant}
                         aria-label={`${quadrantTitle(quadrant)}: ${quadrantRows.length} items`}
                       >
-                        <h3>{quadrantTitle(quadrant)}</h3>
+                        <h2>{quadrantTitle(quadrant)}</h2>
                         <p>{quadrantRows[0]?.quadrantLabel ?? 'No items'}</p>
                         {quadrantRows.length > 0 && (
                           <ul>

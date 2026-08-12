@@ -240,6 +240,43 @@ describe('precompute results', () => {
     )
   })
 
+  it('keeps malformed numeric input explicitly uncalculable', () => {
+    const output = buildPrecomputeResults(
+      {
+        items: [{ id: 'item-1', unit: 'each', costPerUnit: null }],
+        sales: [
+          {
+            itemId: 'item-1',
+            qty: 'not-a-number',
+            revenue: '10',
+            transactedAt: new Date('2026-08-01T12:00:00.000Z'),
+          },
+        ],
+        orders: [],
+        snapshots: [],
+      },
+      now,
+    )
+
+    expect(output.itemResults[0]?.metrics).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          metricKey: 'sellThrough',
+          status: 'cannot-calculate',
+          value: null,
+          result: expect.objectContaining({
+            reason: 'cannot calculate, no quantity sold',
+          }),
+        }),
+      ]),
+    )
+    expect(output.rollups[0]).toMatchObject({
+      metricKey: 'sellThrough',
+      status: 'cannot-calculate',
+      value: null,
+    })
+  })
+
   it('computes ratio rollups from totals instead of adding percentages', () => {
     const output = buildPrecomputeResults(
       {

@@ -4,6 +4,17 @@
 
 @custom-variant dark (&:is(.dark *));
 
+@layer base {
+  button:not(:disabled),
+  [role='button']:not([aria-disabled='true']) {
+    cursor: pointer;
+  }
+  button:disabled,
+  [role='button'][aria-disabled='true'] {
+    cursor: not-allowed;
+  }
+}
+
 :root {
   /* ---- radius: split in two, unlike stock shadcn ---- */
   --radius-surface: 3px; /* cards, panels, tables, inputs, dialogs */
@@ -728,7 +739,7 @@ body {
   padding-bottom: 0;
 }
 
-.location-list-item h3 {
+.location-list-item h2 {
   font-size: var(--text-lg);
   margin: 0;
 }
@@ -1278,6 +1289,15 @@ body {
   }
 }
 
+@media (max-width: 760px) {
+  .portfolio-summary__heading,
+  .portfolio-section-heading {
+    align-items: start;
+    display: grid;
+    gap: var(--space-3);
+  }
+}
+
 .portfolio-summary__heading,
 .portfolio-section-heading {
   align-items: end;
@@ -1322,7 +1342,9 @@ body {
   border: 1px solid var(--border);
   border-radius: var(--radius-surface);
   max-width: 100%;
+  min-width: 0;
   overflow-x: auto;
+  width: 100%;
 }
 
 .portfolio-table {
@@ -2061,7 +2083,9 @@ body {
   border-radius: var(--radius-surface);
   font: inherit;
   min-height: 48px;
+  max-width: 100%;
   padding: var(--space-2);
+  width: 100%;
 }
 
 .app-page__help,
@@ -2418,6 +2442,7 @@ body {
   align-items: end;
   min-height: 76px;
   padding: var(--space-2);
+  opacity: 1;
 }
 
 .chat-composer__group textarea {
@@ -3297,6 +3322,15 @@ body {
   padding-top: var(--space-4);
 }
 
+/* Expands the tap target to 44px without shifting surrounding text: the
+   padding grows the hit area and the matching negative margin cancels its
+   effect on layout. */
+.work-receipt__foot a {
+  display: inline-block;
+  margin: -13px -4px;
+  padding: 13px 4px;
+}
+
 @media (min-width: 768px) {
   .surface-proof {
     gap: clamp(var(--space-7), 6vw, var(--space-9));
@@ -3854,7 +3888,7 @@ body {
   grid-row: 2;
 }
 
-.menu-matrix-cell h3 {
+.menu-matrix-cell h2 {
   font-size: var(--text-lg);
   margin: 0;
 }

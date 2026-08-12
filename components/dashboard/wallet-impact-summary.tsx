@@ -21,9 +21,19 @@ function computedLabel(computedAt: string | null) {
   }).format(date)} UTC.`
 }
 
-function ValueNote({ value }: { value: WalletValue }) {
+function ValueNote({
+  value,
+  asDefinition,
+}: {
+  value: WalletValue
+  asDefinition?: boolean
+}) {
   if (value.status === 'calculated') return null
-  return <p className="wallet-impact-card__note">{value.reason}</p>
+  return asDefinition ? (
+    <dd className="wallet-impact-card__note">{value.reason}</dd>
+  ) : (
+    <p className="wallet-impact-card__note">{value.reason}</p>
+  )
 }
 
 export function WalletImpactSummary({
@@ -58,13 +68,20 @@ export function WalletImpactSummary({
               <dd className="figure">
                 {money(summary.estimatedSpoilageThisWeek)}
               </dd>
-              <ValueNote value={summary.estimatedSpoilageThisWeek} />
+              <ValueNote
+                asDefinition
+                value={summary.estimatedSpoilageThisWeek}
+              />
             </div>
             <div>
               <dt>Margin this week</dt>
               <dd className="figure">{margin.currentValueLabel}</dd>
-              <p>{margin.directionLabel}</p>
-              <p>{margin.comparisonLabel}</p>
+              <dd className="wallet-impact-card__note">
+                {margin.directionLabel}
+              </dd>
+              <dd className="wallet-impact-card__note">
+                {margin.comparisonLabel}
+              </dd>
             </div>
           </dl>
           <p className="wallet-impact-card__computed">
