@@ -449,7 +449,11 @@ is visible at every stop, and copy follows
       overflow checks at 375px and 1280px in light and dark themes;
       `tests/accessibility/real-data.spec.ts` proves creation reaches the
       selected location's import route.
-- [ ] `/dashboard` — sufficient data
+- [x] `/dashboard` — sufficient data — Codex
+      Sufficient-data dashboard now has a real-data conformance contract at
+      375px and 1280px in both themes; `tests/accessibility/real-data.spec.ts`
+      proves axe, grayscale chart semantics, keyboard focus, 44px targets,
+      operator copy, and no page overflow.
 - [ ] `/dashboard` — insufficient data
 
 ---
