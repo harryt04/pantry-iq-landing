@@ -29,6 +29,7 @@ export default defineConfig({
   },
   webServer: {
     command: `env -u FORCE_COLOR -u NO_COLOR BETTER_AUTH_URL=http://localhost:${port} pnpm dev --hostname 127.0.0.1 --port ${port}`,
+    env: { CSV_UPLOAD_RATE_LIMIT: '1000' },
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
     url: `${baseURL}/api/health`,

@@ -36,7 +36,7 @@ export class CsvUploadStorageError extends Error {
 const logger = createLogger({ service: 'pantryiq.csv.uploads' })
 
 const uploadRateLimiter = new SlidingWindowUploadRateLimiter({
-  limit: 10,
+  limit: Number(process.env.CSV_UPLOAD_RATE_LIMIT ?? 10),
   windowMs: 60 * 60 * 1000,
 })
 
