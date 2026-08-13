@@ -42,6 +42,7 @@ describe('dashboard data state', () => {
     expect(markup).toContain('Nothing to show yet.')
     expect(markup).toContain('0 / 7 days')
     expect(markup).toContain('You have 0 days of transaction data')
+    expect(markup).toContain('Add 7 more days of transaction history')
   })
 
   it('counts down the remaining days while data is still arriving', () => {

@@ -17,8 +17,8 @@ export function DashboardDataState({
     ? 'Nothing to show yet.'
     : 'Your dashboard is taking shape.'
   const description = isEmpty
-    ? `You have ${state.transactionDays} days of transaction data. Upload a week of sales data and I'll show you where the money's going.`
-    : `I need about ${state.requiredDays} days of transactions before the numbers mean anything. You have ${state.transactionDays}. Add ${state.remainingDays} more days of history and the available trends will stay below.`
+    ? `You have ${state.transactionDays} days of transaction data. Add ${state.remainingDays} more days of transaction history and I'll show you where the money's going.`
+    : `I need about ${state.requiredDays} days of transactions before the numbers mean anything. You have ${state.transactionDays}. Add ${state.remainingDays} more days of transaction history and the available trends will stay below.`
 
   return (
     <section

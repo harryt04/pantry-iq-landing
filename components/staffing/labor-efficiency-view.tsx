@@ -18,7 +18,10 @@ import type {
   LaborEfficiencyPeriod,
   LaborEfficiencyResult,
 } from '@/src/server/staffing/labor-efficiency'
-import type { DemandForecastPeriod } from '@/src/server/staffing/demand-forecast'
+import {
+  MIN_HISTORY_DAYS,
+  type DemandForecastPeriod,
+} from '@/src/server/staffing/demand-forecast'
 import type { StaffingRecommendationRecord } from '@/src/server/metrics/recommendations'
 
 function figure(value: string | null, suffix = '') {
@@ -387,8 +390,10 @@ function DemandForecastView({
       <CardContent>
         {forecast.status === 'suppressed' ? (
           <p>
-            {forecast.reason} You have {forecast.historyDays} of the required{' '}
-            {forecast.historyRequirement.toLowerCase()}
+            {forecast.reason}. You have {forecast.historyDays} of the required{' '}
+            {forecast.historyRequirement.toLowerCase()}{' '}
+            {Math.max(0, MIN_HISTORY_DAYS - forecast.historyDays)} more business
+            days needed.
           </p>
         ) : (
           <>

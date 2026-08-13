@@ -27,6 +27,7 @@ export function TrendSummaries({
             .map((point) => point.label),
         ).size
       : Math.floor(transactionDays / 7)
+  const requiredWeeks = METRICS_CONFIG.sufficiency.predictionHistoryWeeks
 
   return (
     <section
@@ -55,9 +56,10 @@ export function TrendSummaries({
                     <CardTitle>{summary.title}</CardTitle>
                     <div className="trend-summary-card__missing-meta">
                       <p className="trend-summary-card__coverage figure">
-                        Needs{' '}
-                        {METRICS_CONFIG.sufficiency.predictionHistoryWeeks}{' '}
-                        weeks · has {availableWeeks(summary)}
+                        Needs {requiredWeeks} weeks · has{' '}
+                        {availableWeeks(summary)} ·{' '}
+                        {Math.max(0, requiredWeeks - availableWeeks(summary))}{' '}
+                        more weeks needed
                       </p>
                       <p
                         className="trend-summary-card__missing-detail"

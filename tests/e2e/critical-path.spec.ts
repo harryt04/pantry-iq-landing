@@ -648,6 +648,18 @@ test('location, CSV import, and dashboard', async ({ page }) => {
       }),
     ).toHaveCount(0)
     await expect(page.getByText('1 / 7 days')).toBeVisible()
+    await expect(
+      page.getByText(/Add 6 more days of transaction history/),
+    ).toBeVisible()
+
+    await page.setViewportSize({ width: 375, height: 812 })
+    await page.reload()
+    await expect(
+      page.getByText(/Add 6 more days of transaction history/),
+    ).toBeVisible()
+    expect(
+      await page.evaluate(() => document.body.scrollWidth),
+    ).toBeLessThanOrEqual(375)
   } finally {
     const response = await page.request.delete(`/api/locations/${locationId}`)
     expect(response.status()).toBe(204)

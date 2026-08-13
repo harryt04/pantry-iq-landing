@@ -386,12 +386,15 @@ after the adopted sections.
       dashboard with top-selling revenue; it also checks the 375px dashboard
       has no page overflow.
 
-- [ ] **Empty and insufficient states name the missing thing.** The four-week
+- [x] **Empty and insufficient states name the missing thing.** — Codex
+      The four-week
       sufficiency gate means an operator can import correctly and still see
       little. That is correct behaviour and a terrible silent experience.
       **Acceptance:** import a short-history fixture; every affected screen
       names what is missing and how much more is needed, rather than showing
       zeros or an empty frame.
+      Dashboard, trend, staffing, and menu states now print the remaining days
+      or weeks; seeded browser coverage proves the copy at 1280px and 375px.
 
 - [ ] **The account that signed up and never imported.** A returning operator
       with no data gets the same screens as one with a year of history.

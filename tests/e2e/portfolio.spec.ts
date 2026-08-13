@@ -209,7 +209,9 @@ test.describe('portfolio rollup', () => {
       const cards = page.locator('.trend-summary-grid__cards')
       await expect(cards).toBeVisible()
       await expect(
-        page.getByText('Needs 4 weeks · has 2', { exact: true }),
+        page.getByText('Needs 4 weeks · has 2 · 2 more weeks needed', {
+          exact: true,
+        }),
       ).toHaveCount(3)
       const missingDetails = cards.locator(
         '.trend-summary-card__missing-detail',

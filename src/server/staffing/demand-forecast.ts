@@ -10,7 +10,7 @@ import {
   type ExternalSignalInput,
 } from './external-signals'
 
-const MIN_HISTORY_DAYS = 28
+export const MIN_HISTORY_DAYS = 28
 const MIN_REFERENCE_PERIODS = 2
 const FORECAST_DAYS = 7
 const MAX_REFERENCE_PERIODS = 8

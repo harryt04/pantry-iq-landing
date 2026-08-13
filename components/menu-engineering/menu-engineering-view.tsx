@@ -77,6 +77,15 @@ export function MenuEngineeringView({
         </span>
         <span>{result.observedWeeks} business weeks observed</span>
         <span>Needs {result.minimumHistoryWeeks} weeks minimum</span>
+        {result.observedWeeks < result.minimumHistoryWeeks ? (
+          <span>
+            {result.minimumHistoryWeeks - result.observedWeeks} more{' '}
+            {result.minimumHistoryWeeks - result.observedWeeks === 1
+              ? 'week'
+              : 'weeks'}{' '}
+            needed
+          </span>
+        ) : null}
       </div>
 
       {result.status === 'insufficient-data' && (
