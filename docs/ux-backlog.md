@@ -426,7 +426,11 @@ is visible at every stop, and copy follows
       Real `sales-ambiguous-headers.csv` preview and mapping states now pass
       axe, grayscale, and keyboard-focus coverage at 375px and 1280px in both
       themes; `tests/accessibility/real-data.spec.ts` proves the surface.
-- [ ] `/import` — item resolution
+- [x] `/import` — item resolution — Codex
+      Existing-item choices now use valid labeled list semantics and render as
+      44px focusable controls; `tests/accessibility/real-data.spec.ts` proves
+      axe, grayscale, keyboard focus, mobile target size, and no overflow at
+      375px and 1280px in both themes with `inventory-new-items-only.csv`.
 - [ ] `/import` — confirmation and result
 - [ ] `/import` — rejected-file and error states
 - [ ] The first-run surface from Loop P

@@ -30,6 +30,9 @@ const importBatchFixtures = [
 const mappingFixture = path.resolve(
   'tests/fixtures/csv/transactions/sales-ambiguous-headers.csv',
 )
+const resolutionFixture = path.resolve(
+  'tests/fixtures/csv/inventory/inventory-new-items-only.csv',
+)
 
 type AccessibilityResult = {
   violations: Array<{
@@ -362,6 +365,93 @@ for (const colorScheme of themes) {
 
         await assertKeyboardFocus(page)
         await assertGrayscaleReadable(page, testInfo)
+      } finally {
+        await context.close()
+      }
+    })
+  }
+}
+
+for (const colorScheme of themes) {
+  for (const viewport of [
+    { label: 'mobile', height: 900, width: 375 },
+    { label: 'desktop', height: 900, width: 1280 },
+  ]) {
+    test(`/import item resolution remains accessible at ${viewport.label} in ${colorScheme} theme`, async ({
+      browser,
+    }, testInfo) => {
+      const context = await browser.newContext({
+        colorScheme,
+        viewport: { height: viewport.height, width: viewport.width },
+      })
+      const page = await context.newPage()
+
+      try {
+        await page.goto(`/import?locationId=${locationId}`)
+        await page.locator('#csv-file').setInputFiles(resolutionFixture)
+
+        const resolution = page.locator('.csv-item-resolution')
+        await expect(resolution).toBeVisible({ timeout: 120_000 })
+        await expect(
+          resolution.getByRole('heading', {
+            name: 'One item needs your call.',
+          }),
+        ).toBeVisible()
+        await expect(
+          resolution.getByRole('list', { name: 'Existing items' }),
+        ).toBeVisible()
+        await expect(resolution.getByLabel('Canonical name')).toBeVisible()
+        await expect(
+          resolution.getByRole('button', { name: 'Create and use this item' }),
+        ).toBeVisible()
+        if (viewport.width === 375) {
+          const undersizedCandidates = await resolution
+            .locator('.csv-item-resolution__candidate')
+            .evaluateAll((elements) =>
+              elements
+                .map((element) => {
+                  const rect = element.getBoundingClientRect()
+                  return {
+                    label: element.textContent?.trim(),
+                    width: Math.round(rect.width),
+                    height: Math.round(rect.height),
+                  }
+                })
+                .filter(({ width, height }) => width < 44 || height < 44),
+            )
+          expect(undersizedCandidates).toEqual([])
+        }
+
+        await loadAxe(page)
+        const results = await page.evaluate(async () => {
+          const axe = (
+            window as unknown as {
+              axe: {
+                run: (
+                  context?: unknown,
+                  options?: unknown,
+                ) => Promise<AccessibilityResult>
+              }
+            }
+          ).axe
+          return axe.run(document, {
+            rules: { 'target-size': { enabled: true } },
+          })
+        })
+        expect(
+          results.violations,
+          JSON.stringify(results.violations, null, 2),
+        ).toEqual([])
+
+        await assertKeyboardFocus(page)
+        await assertGrayscaleReadable(page, testInfo)
+        await expect
+          .poll(() =>
+            page.evaluate(
+              () => document.documentElement.scrollWidth <= window.innerWidth,
+            ),
+          )
+          .toBe(true)
       } finally {
         await context.close()
       }

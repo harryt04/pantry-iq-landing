@@ -583,6 +583,63 @@ body {
   padding-top: var(--space-4);
 }
 
+.csv-item-resolution {
+  display: grid;
+  gap: var(--space-5);
+}
+
+.csv-item-resolution h2,
+.csv-item-resolution p {
+  margin: 0;
+}
+
+.csv-item-resolution__context {
+  background: var(--muted);
+  border-radius: var(--radius-surface);
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-4);
+}
+
+.csv-item-resolution__context ul,
+.csv-item-resolution__candidates {
+  display: grid;
+  gap: var(--space-2);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.csv-item-resolution__context li {
+  overflow-wrap: anywhere;
+}
+
+.csv-item-resolution__candidate {
+  align-items: center;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-surface);
+  color: var(--foreground);
+  cursor: pointer;
+  display: flex;
+  font: inherit;
+  gap: var(--space-3);
+  justify-content: space-between;
+  min-height: 44px;
+  padding: var(--space-2) var(--space-3);
+  text-align: left;
+  width: 100%;
+}
+
+.csv-item-resolution__candidate:hover {
+  background: var(--muted);
+}
+
+.csv-item-resolution__candidate:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
 .auth-heading p:last-child,
 .account-card > p:not(.auth-eyebrow):not(.auth-wordmark):not(.account-email) {
   color: var(--muted-foreground);
