@@ -9,7 +9,7 @@ const routes = [
   { path: '/sign-in', heading: 'Sign in to PantryIQ' },
   {
     path: `/dashboard?locationId=${locationId}`,
-    heading: 'Start with the data',
+    heading: 'Full-year data kitchen: ready',
   },
   {
     path: `/chat?locationId=${locationId}`,

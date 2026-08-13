@@ -336,12 +336,16 @@ dashboard on 2026-08-12.
       desktop detail grid; `tests/e2e/portfolio.spec.ts` proves the hierarchy,
       1280px height reduction, 375px stacking, and preserved qualifier copy.
 
-- [ ] **The signed-in dashboard does not open with a marketing headline.**
+- [x] **The signed-in dashboard does not open with a marketing headline.** — Codex
       `/dashboard` currently leads with "Start with the data you already have."
       to an operator who has already signed in and imported.
       **Acceptance:** the heading states the location's current position, and
       the first-run framing appears only when there is genuinely nothing
       imported.
+      Dashboard headings now name the selected location's data position; the
+      empty-to-insufficient import path and populated dashboard assertions in
+      `tests/e2e/critical-path.spec.ts` and `tests/e2e/portfolio.spec.ts` prove
+      the first-run headline is limited to the empty state.
 
 ---
 

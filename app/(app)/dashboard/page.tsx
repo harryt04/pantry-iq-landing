@@ -24,11 +24,15 @@ export default async function DashboardPage({
   searchParams: Promise<{ locationId?: string }>
 }) {
   const params = await searchParams
-  const { initialLocationId } = await getAppShellData()
+  const shellData = await getAppShellData()
+  const { initialLocationId } = shellData
   const locationId =
     params.locationId ??
     (await cookies()).get('pantryiq-location-id')?.value ??
     initialLocationId
+  const locationName =
+    shellData.locations.find((location) => location.id === locationId)?.name ??
+    'This location'
   const requestHeaders = await headers()
   const [state, summaries, connections] = await Promise.all([
     getDashboardDataState(requestHeaders, locationId),
@@ -55,6 +59,18 @@ export default async function DashboardPage({
     state.status === 'ready'
       ? await getDashboardItemDeepDives(requestHeaders, locationId)
       : []
+  const dashboardHeading =
+    state.status === 'empty'
+      ? 'Start with the data you already have.'
+      : state.status === 'insufficient'
+        ? `${locationName}: more history needed.`
+        : `${locationName}: ready for a closer look.`
+  const dashboardLede =
+    state.status === 'empty'
+      ? 'Import a sales, purchasing, or inventory CSV for this location. The dashboard will show what the data can support once it has been checked.'
+      : state.status === 'insufficient'
+        ? `This location has ${state.transactionDays} days of transaction history. Add more history to strengthen the patterns.`
+        : 'The latest completed metric run is ready to review. Start with what is costing you money, then decide what to do next.'
 
   return (
     <main
@@ -62,11 +78,8 @@ export default async function DashboardPage({
       aria-labelledby="dashboard-title"
     >
       <p className="app-page__eyebrow">Dashboard</p>
-      <h1 id="dashboard-title">Start with the data you already have.</h1>
-      <p className="app-page__lede">
-        Import a sales, purchasing, or inventory CSV for this location. The
-        dashboard will show what the data can support once it has been checked.
-      </p>
+      <h1 id="dashboard-title">{dashboardHeading}</h1>
+      <p className="app-page__lede">{dashboardLede}</p>
       <ConnectionHealthNotice
         connections={connections}
         locationId={locationId}

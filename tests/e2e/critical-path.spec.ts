@@ -639,9 +639,14 @@ test('location, CSV import, and dashboard', async ({ page }) => {
     await expect(page).toHaveURL(/\/dashboard\?locationId=/)
     await expect(
       page.getByRole('heading', {
-        name: 'Start with the data you already have.',
+        name: /: more history needed\./,
       }),
     ).toBeVisible()
+    await expect(
+      page.getByRole('heading', {
+        name: 'Start with the data you already have.',
+      }),
+    ).toHaveCount(0)
     await expect(page.getByText('1 / 7 days')).toBeVisible()
   } finally {
     const response = await page.request.delete(`/api/locations/${locationId}`)

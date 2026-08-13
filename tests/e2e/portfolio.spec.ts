@@ -68,6 +68,16 @@ test.describe('portfolio rollup', () => {
     await expect(wallet.locator('.wallet-impact-card__lead')).toHaveText(
       /^\$\d/,
     )
+    await expect(
+      page.getByRole('heading', {
+        name: 'Full-year data kitchen: ready for a closer look.',
+      }),
+    ).toBeVisible()
+    await expect(
+      page.getByRole('heading', {
+        name: 'Start with the data you already have.',
+      }),
+    ).toHaveCount(0)
 
     const sizes = await page.evaluate(() => {
       const figure = document.querySelector('.wallet-impact-card__lead')
