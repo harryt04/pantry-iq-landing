@@ -242,12 +242,15 @@ overflow is found later, it goes under `Observed, not queued`.
       44×44px at 375px, asserted by the harness. Row actions become pills, not
       inline text.
 
-- [ ] **No iOS zoom on focus.** Form controls are set at 12–14px. iOS Safari
+- [x] **No iOS zoom on focus.** Form controls are set at 12–14px. iOS Safari
       zooms the viewport when a focused input is under 16px, which throws the
       operator out of the layout mid-form. Eight controls on `/settings`, six
       on `/recipes`, five on `/import`. Violates §6.
       **Acceptance:** every `input`, `select`, and `textarea` computes to at
       least 16px at 375px, asserted by the harness.
+      Added a shared 16px floor for visible form controls and a focused mobile
+      harness assertion; `tests/ui/mobile-measurement.spec.ts` proves all twelve
+      routes stay above the iOS zoom threshold at 375px.
 
 - [ ] **Room between a label and its control.** The gap is a uniform 8px in
       every form in the application. It is on the 4px scale but cramped under a

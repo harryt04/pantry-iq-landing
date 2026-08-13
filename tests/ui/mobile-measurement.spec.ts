@@ -132,6 +132,13 @@ function assertTappableReport(report: MobileReport) {
   ).toEqual([])
 }
 
+function assertControlTypographyReport(report: MobileReport) {
+  expect(
+    report.undersizedControls,
+    `${report.route}\n${formatMeasurements(report)}`,
+  ).toEqual([])
+}
+
 async function measurePage(page: Page, route: string): Promise<MobileReport> {
   return page.evaluate((currentRoute) => {
     const round = (value: number) => Math.round(value * 10) / 10
@@ -342,6 +349,7 @@ test.describe('mobile measurement harness', () => {
 
         expect(report.viewport).toEqual({ width: 375, height: 812 })
         assertTappableReport(report)
+        assertControlTypographyReport(report)
       })
     }
   })

@@ -4686,6 +4686,12 @@ body {
   min-width: 44px;
 }
 
+/* Keep every visible form control at the mobile reading floor. This also
+   overrides the desktop-first utility defaults that would trigger iOS zoom. */
+:is(input, select, textarea):not([type='hidden']) {
+  font-size: var(--text-md);
+}
+
 :where(
   button,
   [role='button'],
