@@ -176,12 +176,17 @@ reorder.
       missing and offers the action that fixes it; with one location it
       proceeds without asking.
 
-- [ ] **Say what a good file looks like, before the upload.** The only guidance
+- [x] **Say what a good file looks like, before the upload.** The only guidance
       is `CSV files up to 10 MB` at `csv-upload-form.tsx:290`. The operator
       exports from Toast or Square and guesses.
       **Acceptance:** each import type offers a downloadable sample file and
       names its required columns, reachable before choosing a file, and the
       sample imports cleanly end to end.
+      Added a pre-upload sample panel with required-column guidance and four
+      downloadable importer-compatible CSVs; `tests/ui/import.spec.ts` fetches
+      every sample and drives each through confirmation at 375px, while
+      `tests/e2e/critical-path.spec.ts` imports a sample through the real
+      database-backed flow.
 
 - [ ] **Finish the batch in one action.** With several files ready, the
       operator confirms each one separately.

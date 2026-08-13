@@ -37,6 +37,70 @@ test.describe('CSV import location state', () => {
 })
 
 test.describe('CSV batch upload', () => {
+  test('shows required columns, serves every sample, and imports each sample to confirmation', async ({
+    page,
+    mockApi,
+  }) => {
+    await mockApi()
+    await page.setViewportSize({ width: 375, height: 812 })
+    await page.goto(`/import?locationId=${fullYearLocationFixture.locationId}`)
+
+    const samples = [
+      {
+        label: 'transactions',
+        filename: 'pantryiq-transactions-sample.csv',
+        header: 'Date,Item Name,Qty,Total Revenue',
+      },
+      {
+        label: 'purchase orders',
+        filename: 'pantryiq-purchase-orders-sample.csv',
+        header: 'Order Date,Received Date,Supplier Name,Item,Qty,Unit Cost',
+      },
+      {
+        label: 'inventory snapshots',
+        filename: 'pantryiq-inventory-sample.csv',
+        header: 'Count Date,Item,Qty,Unit',
+      },
+      {
+        label: 'labor shifts',
+        filename: 'pantryiq-labor-sample.csv',
+        header:
+          'Shift Start,Shift End,Employee Code,Role,Scheduled Hours,Actual Hours',
+      },
+    ]
+
+    const sampleCards = page.locator('.csv-import-sample')
+    await expect(sampleCards).toHaveCount(samples.length)
+
+    for (const sample of samples) {
+      const card = sampleCards.filter({ hasText: sample.label })
+      const download = card.getByRole('link', {
+        name: `Download ${sample.label} sample CSV`,
+      })
+      await expect(download).toHaveAttribute('download', sample.filename)
+
+      const response = await page.request.get(
+        `/import-samples/${sample.filename}`,
+      )
+      expect(response.status()).toBe(200)
+      const contents = await response.text()
+      expect(contents.split('\n')[0]).toBe(sample.header)
+
+      await page.getByLabel('CSV file').setInputFiles({
+        name: sample.filename,
+        mimeType: 'text/csv',
+        buffer: Buffer.from(contents),
+      })
+      await expect(
+        page
+          .locator('.csv-upload-job')
+          .filter({ hasText: sample.filename })
+          .locator('.csv-import-confirmation')
+          .getByRole('heading', { name: /Ready to import/ }),
+      ).toBeVisible()
+    }
+  })
+
   test('detects transaction and labor fixtures independently', async ({
     page,
     mockApi,

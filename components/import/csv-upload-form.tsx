@@ -67,6 +67,38 @@ const importTypes = [
   ['labor', 'Labor shifts'],
 ] as const
 
+const sampleImports = [
+  {
+    importType: 'transactions',
+    label: 'Transactions',
+    filename: 'pantryiq-transactions-sample.csv',
+    requiredColumns: ['Date', 'Item Name', 'Qty', 'Total Revenue'],
+  },
+  {
+    importType: 'purchase_orders',
+    label: 'Purchase orders',
+    filename: 'pantryiq-purchase-orders-sample.csv',
+    requiredColumns: ['Order Date', 'Item', 'Qty', 'Unit Cost'],
+  },
+  {
+    importType: 'inventory',
+    label: 'Inventory snapshots',
+    filename: 'pantryiq-inventory-sample.csv',
+    requiredColumns: ['Count Date', 'Item', 'Qty', 'Unit'],
+  },
+  {
+    importType: 'labor',
+    label: 'Labor shifts',
+    filename: 'pantryiq-labor-sample.csv',
+    requiredColumns: [
+      'Shift Start',
+      'Shift End',
+      'Role',
+      'Scheduled Hours or Actual Hours',
+    ],
+  },
+] as const
+
 type ItemResolution = { itemId: string } | NewItemResolutionInput
 
 type UploadJob = {
@@ -794,6 +826,42 @@ export function CsvUploadForm({ locationId }: { locationId: string }) {
           })}
         </ol>
       </nav>
+      <section
+        className="csv-import-samples"
+        aria-labelledby="csv-import-samples-title"
+      >
+        <div>
+          <p className="app-page__eyebrow">Before you upload</p>
+          <h2 id="csv-import-samples-title">Start with a clean example.</h2>
+          <p className="app-page__help">
+            Download a sample for the kind of data you have. Your export can use
+            different column names; PantryIQ will show you the mapping before
+            anything is imported.
+          </p>
+        </div>
+        <div className="csv-import-samples__grid">
+          {sampleImports.map((sample) => (
+            <article className="csv-import-sample" key={sample.importType}>
+              <h3>{sample.label}</h3>
+              <p className="app-page__help">Required columns</p>
+              <ul>
+                {sample.requiredColumns.map((column) => (
+                  <li key={column}>{column}</li>
+                ))}
+              </ul>
+              <Button asChild variant="outline">
+                <a
+                  className="csv-import-sample__download"
+                  href={`/import-samples/${sample.filename}`}
+                  download={sample.filename}
+                >
+                  Download {sample.label.toLowerCase()} sample CSV
+                </a>
+              </Button>
+            </article>
+          ))}
+        </div>
+      </section>
       <form
         className={`csv-upload-dropzone${isDragging ? 'is-dragging' : ''}`}
         aria-label="CSV upload drop zone"

@@ -649,6 +649,44 @@ test('location, CSV import, and dashboard', async ({ page }) => {
   }
 })
 
+test('imports a public CSV sample through the real importer', async ({
+  page,
+}) => {
+  test.setTimeout(120_000)
+  await assertAuthenticated(page)
+  const locationId = await createTestLocation(page)
+
+  try {
+    await seedInventoryItems(page, locationId, ['Tomato Soup', 'House Salad'])
+    const sample = await page.request.get(
+      '/import-samples/pantryiq-transactions-sample.csv',
+    )
+    expect(sample.status()).toBe(200)
+
+    await page.goto(`/import?locationId=${locationId}`)
+    await page.locator('#csv-file').setInputFiles({
+      name: 'pantryiq-transactions-sample.csv',
+      mimeType: 'text/csv',
+      buffer: await sample.body(),
+    })
+    await expect(page.locator('#csv-preview-title')).toBeVisible()
+    await reviewMapping(page)
+    await resolveNewItems(page)
+    await expect(
+      page
+        .locator('.csv-import-confirmation')
+        .getByRole('heading', { name: /Ready to import/ }),
+    ).toBeVisible()
+    await page.getByRole('button', { name: 'Import now' }).click()
+    await expect(page.locator('.app-page__status')).toContainText(
+      '2 rows imported.',
+    )
+  } finally {
+    const response = await page.request.delete(`/api/locations/${locationId}`)
+    expect(response.status()).toBe(204)
+  }
+})
+
 test('imports the first transaction corpus batch through /import', async ({
   page,
 }) => {
