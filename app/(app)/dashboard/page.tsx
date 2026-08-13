@@ -57,7 +57,10 @@ export default async function DashboardPage({
       : []
 
   return (
-    <main className="app-page" aria-labelledby="dashboard-title">
+    <main
+      className="app-page app-page--dashboard"
+      aria-labelledby="dashboard-title"
+    >
       <p className="app-page__eyebrow">Dashboard</p>
       <h1 id="dashboard-title">Start with the data you already have.</h1>
       <p className="app-page__lede">

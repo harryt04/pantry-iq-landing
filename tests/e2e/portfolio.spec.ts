@@ -51,4 +51,40 @@ test.describe('portfolio rollup', () => {
       partialRow.getByText('Not available', { exact: true }),
     ).toBeVisible()
   })
+
+  test('makes the populated wallet impact amount the dominant dashboard figure', async ({
+    page,
+  }) => {
+    await page.goto(
+      `/dashboard?locationId=${fullYearLocationFixture.locationId}`,
+    )
+
+    const wallet = page.getByRole('region', {
+      name: 'What is costing you money?',
+    })
+    await expect(wallet.locator('.wallet-impact-card__lead')).toHaveText(
+      /^\$\d/,
+    )
+
+    const sizes = await page.evaluate(() => {
+      const figure = document.querySelector('.wallet-impact-card__lead')
+      const pageHeading = document.querySelector('.app-page--dashboard > h1')
+      const support = document.querySelector(
+        '.wallet-impact-card__details .figure',
+      )
+      return {
+        figure: figure ? getComputedStyle(figure).fontSize : null,
+        pageHeading: pageHeading
+          ? getComputedStyle(pageHeading).fontSize
+          : null,
+        support: support ? getComputedStyle(support).fontSize : null,
+      }
+    })
+
+    expect(sizes).toEqual({
+      figure: '44px',
+      pageHeading: '28px',
+      support: '22px',
+    })
+  })
 })

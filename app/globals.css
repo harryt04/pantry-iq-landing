@@ -1094,6 +1094,11 @@ body {
   max-width: 18ch;
 }
 
+.app-page--dashboard > h1 {
+  font-size: var(--text-2xl);
+  max-width: 32ch;
+}
+
 .app-page__lede {
   color: var(--muted-foreground);
   font-size: var(--text-md);
@@ -1221,7 +1226,7 @@ body {
 }
 
 .wallet-impact-card__lead {
-  font-size: var(--text-2xl);
+  font-size: var(--text-4xl);
   font-weight: 600;
   margin: 0;
 }

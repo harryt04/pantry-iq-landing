@@ -285,7 +285,8 @@ fourteen-day fixture (`…0001`) is the insufficient-data state and will mislead
 you about density. Every item below was re-verified against the populated
 dashboard on 2026-08-12.
 
-- [ ] **One dominant figure.** The answer to "what is costing you money" sits in
+- [x] **One dominant figure.** — Codex
+      The answer to "what is costing you money" sits in
       a card the same size as everything else, and the figure slot renders
       prose (`Not available`) in the mono figure typeface. Mono is for numbers;
       spending it on prose weakens the one signal that says "this is a figure".
@@ -295,6 +296,10 @@ dashboard on 2026-08-12.
       scale, is the largest text on the screen, and supporting figures sit at
       least two steps below it. When the value cannot be computed the slot does
       not render a mono non-number.
+      Implemented the wallet-impact amount as the 44px lead figure, with
+      22px supporting figures and explanatory notes for unavailable values;
+      `wallet-impact-summary.dom.test.tsx` and the seeded dashboard test in
+      `tests/e2e/portfolio.spec.ts` prove the hierarchy and fallback behavior.
 
 - [ ] **Stop spending 450px on "no data".** Three cards reserve full chart
       height to render one sentence each — roughly 1,350px of vertical space

@@ -7,7 +7,7 @@ import type {
 function money(value: WalletValue) {
   return value.status === 'calculated' && value.amount !== null
     ? `$${value.amount}`
-    : 'Not available'
+    : null
 }
 
 function computedLabel(computedAt: string | null) {
@@ -42,6 +42,8 @@ export function WalletImpactSummary({
   summary: WalletImpactSummary
 }) {
   const margin = summary.marginTrend
+  const moneyAtRisk = money(summary.moneyAtRisk)
+  const estimatedSpoilage = money(summary.estimatedSpoilageThisWeek)
   return (
     <section className="wallet-impact" aria-labelledby="wallet-impact-title">
       <div className="wallet-impact__heading">
@@ -58,16 +60,16 @@ export function WalletImpactSummary({
           <CardTitle>Money at risk if trends continue</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="wallet-impact-card__lead figure">
-            {money(summary.moneyAtRisk)}
-          </p>
+          {moneyAtRisk ? (
+            <p className="wallet-impact-card__lead figure">{moneyAtRisk}</p>
+          ) : null}
           <ValueNote value={summary.moneyAtRisk} />
           <dl className="wallet-impact-card__details">
             <div>
               <dt>Estimated spoilage this week</dt>
-              <dd className="figure">
-                {money(summary.estimatedSpoilageThisWeek)}
-              </dd>
+              {estimatedSpoilage ? (
+                <dd className="figure">{estimatedSpoilage}</dd>
+              ) : null}
               <ValueNote
                 asDefinition
                 value={summary.estimatedSpoilageThisWeek}
@@ -75,7 +77,9 @@ export function WalletImpactSummary({
             </div>
             <div>
               <dt>Margin this week</dt>
-              <dd className="figure">{margin.currentValueLabel}</dd>
+              {margin.currentValue !== null ? (
+                <dd className="figure">{margin.currentValueLabel}</dd>
+              ) : null}
               <dd className="wallet-impact-card__note">
                 {margin.directionLabel}
               </dd>
