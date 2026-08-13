@@ -367,6 +367,16 @@ test.describe('mobile measurement harness', () => {
             route.path,
           ).toBeVisible()
         }
+        if (route.path.startsWith('/import')) {
+          const supportingTools = page.locator(
+            'details.import-supporting-tools',
+          )
+          await supportingTools.locator('summary').click()
+          await expect(
+            page.getByRole('heading', { name: 'Record what happened today.' }),
+            route.path,
+          ).toBeVisible()
+        }
 
         const report = await measurePage(page, route.path)
         console.log(

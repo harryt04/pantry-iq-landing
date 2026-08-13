@@ -262,10 +262,13 @@ overflow is found later, it goes under `Observed, not queued`.
       for each form root, asserts both spacing contracts at 375px, and proves
       the failure with a seeded mutation.
 
-- [ ] **The short controls.** The manual-entry item combobox on `/import` is
+- [x] **The short controls.** The manual-entry item combobox on `/import` is
       32px tall. Violates §9.7.
       **Acceptance:** it clears 44px, and the harness finds no control under
       44px on `/import`.
+      The mobile harness now opens the supporting manual-entry form before
+      measuring `/import`, proving its 44px combobox target; mutation coverage
+      confirms a 32px regression fails.
 
 ---
 
