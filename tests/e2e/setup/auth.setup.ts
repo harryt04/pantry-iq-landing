@@ -22,6 +22,13 @@ setup('authenticate the shared owner account', async ({ page }) => {
     await page.getByRole('button', { name: 'Create account' }).click()
   }
 
+  if (!email || !password) {
+    await expect(page).toHaveURL(/\/welcome$/)
+    await expect(
+      page.getByRole('heading', { name: 'Start with one location.' }),
+    ).toBeVisible()
+    await page.getByRole('link', { name: 'Add your first location' }).click()
+  }
   await expect(page).toHaveURL(/\/account$/)
   await page.context().storageState({ path: authFile })
 })

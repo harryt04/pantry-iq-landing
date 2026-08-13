@@ -30,6 +30,33 @@ test.describe('explicit signup and returning-user journey', () => {
     await page.getByLabel('Password').fill(password)
     await page.getByRole('button', { name: 'Create account' }).click()
 
+    await expect(page).toHaveURL(/\/welcome$/)
+    await expect(
+      page.getByRole('heading', { name: 'Start with one location.' }),
+    ).toBeVisible()
+    const desktopAction = page.getByRole('link', {
+      name: 'Add your first location',
+    })
+    await expect(desktopAction).toBeVisible()
+    expect((await desktopAction.boundingBox())?.height).toBeGreaterThanOrEqual(
+      44,
+    )
+
+    await page.setViewportSize({ width: 375, height: 812 })
+    await page.goto('/welcome')
+    const mobileAction = page.getByRole('link', {
+      name: 'Add your first location',
+    })
+    await expect(mobileAction).toBeVisible()
+    const mobileActionBox = await mobileAction.boundingBox()
+    expect(mobileActionBox).not.toBeNull()
+    expect(mobileActionBox?.height).toBeGreaterThanOrEqual(44)
+    expect(
+      await page.evaluate(() => document.documentElement.scrollWidth),
+    ).toBeLessThanOrEqual(375)
+
+    await page.setViewportSize({ width: 1280, height: 720 })
+    await mobileAction.click()
     await expect(page).toHaveURL(/\/account$/)
 
     for (const [name, address] of [

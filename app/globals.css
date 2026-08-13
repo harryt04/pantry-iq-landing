@@ -173,6 +173,47 @@ body {
   width: 100%;
 }
 
+.first-session-card {
+  display: grid;
+  gap: var(--space-6);
+  max-width: 560px;
+}
+
+.first-session-card__header {
+  align-items: start;
+  display: flex;
+  gap: var(--space-4);
+  justify-content: space-between;
+}
+
+.first-session-card__header .auth-wordmark {
+  padding-inline: 0;
+}
+
+.first-session-card__copy {
+  display: grid;
+  gap: var(--space-3);
+  max-width: 42ch;
+}
+
+.first-session-card__copy h1,
+.first-session-card__copy p {
+  margin: 0;
+}
+
+.first-session-card__copy h1 {
+  letter-spacing: -0.025em;
+}
+
+.first-session-card__copy p {
+  color: var(--muted-foreground);
+  line-height: 1.6;
+}
+
+.first-session-card > [data-slot='button'] {
+  justify-self: start;
+}
+
 .auth-wordmark {
   align-items: center;
   color: var(--foreground);

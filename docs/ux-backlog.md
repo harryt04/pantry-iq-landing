@@ -359,8 +359,10 @@ Not part of the adopted design proposals — scoped from the code read on
 2026-08-12 and kept because it is the gap the import work lands into. Sequenced
 after the adopted sections.
 
-- [ ] **A first session that has a next step.** Define and build what happens
-      after sign-up, distinct from a returning sign-in.
+- [x] **A first session that has a next step.** — Codex
+      Sign-up now lands on an authenticated `/welcome` page with one clear
+      `Add your first location` action; `tests/e2e/returning-user.spec.ts`
+      proves the desktop and 375px handoff, target size, and no page overflow.
       **Acceptance:** a newly created account arrives somewhere that states the
       one next action, and that action is reachable in one click.
 

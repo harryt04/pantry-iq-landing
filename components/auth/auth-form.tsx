@@ -67,7 +67,7 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
           password,
         })
         if (result.error) throw new Error(result.error.message)
-        window.location.assign('/account')
+        window.location.assign('/welcome')
         return
       }
 
