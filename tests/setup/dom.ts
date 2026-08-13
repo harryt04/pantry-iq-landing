@@ -10,11 +10,15 @@ import { afterEach } from 'vitest'
 const hasDom = typeof document !== 'undefined'
 
 if (hasDom) {
-  const [{ cleanup }, matchersModule] = await Promise.all([
+  const [{ cleanup, configure }, matchersModule] = await Promise.all([
     import('@testing-library/react'),
     import('@testing-library/jest-dom/matchers'),
   ])
   const { expect } = await import('vitest')
+
+  // v8 coverage instrumentation slows rendering enough that the default
+  // 1000ms findBy*/waitFor timeout flakes under `vitest run --coverage`.
+  configure({ asyncUtilTimeout: 10000 })
   // The CJS/ESM interop wraps the matchers behind `default` in some resolvers;
   // unwrap it so `expect.extend` receives the flat matcher map either way.
   // The ambient types in tests/setup/jest-dom.d.ts (the package's own vitest

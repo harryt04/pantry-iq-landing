@@ -43,6 +43,9 @@ export default defineConfig({
     // where the pure-logic suites run in milliseconds.
     environmentMatchGlobs: [['**/*.dom.test.tsx', 'jsdom']],
     setupFiles: ['tests/setup/dom.ts'],
+    // v8 coverage instrumentation slows jsdom rendering enough that the
+    // 5000ms default flakes on CI; give async assertions real headroom.
+    testTimeout: 15_000,
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html', 'lcov'],

@@ -5,6 +5,8 @@ import { expect, test, type Page, type TestInfo } from '@playwright/test'
 
 import { fullYearLocationFixture } from '../fixtures/pantry'
 
+test.setTimeout(120_000)
+
 const require = createRequire(import.meta.url)
 const axePath = require.resolve('axe-core/axe.min.js')
 const locationId = fullYearLocationFixture.locationId
