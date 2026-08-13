@@ -1902,17 +1902,17 @@ body {
 }
 
 .item-deep-dives__item {
-  align-items: center;
   background: transparent;
   border: 1px solid var(--border);
   border-radius: var(--radius-surface);
   color: var(--foreground);
   cursor: pointer;
-  display: flex;
+  display: grid;
   font: inherit;
-  gap: var(--space-3);
+  gap: var(--space-2);
+  grid-template-columns: minmax(0, 1fr) auto;
   justify-content: space-between;
-  min-height: 52px;
+  min-height: 72px;
   min-width: 0;
   padding: var(--space-3) var(--space-4);
   text-align: left;
@@ -1930,27 +1930,72 @@ body {
   outline-offset: 2px;
 }
 
-.item-deep-dives__item > span:first-child {
+.item-deep-dives__item-heading {
+  align-items: center;
+  display: grid;
+  gap: var(--space-1);
+  grid-column: 1 / -1;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  min-width: 0;
+}
+
+.item-deep-dives__item-name {
   display: grid;
   gap: var(--space-1);
   min-width: 0;
 }
 
-.item-deep-dives__item strong,
-.item-deep-dives__item small {
+.item-deep-dives__item-name strong,
+.item-deep-dives__item-name small {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.item-deep-dives__item small {
+.item-deep-dives__item-name small {
   color: var(--muted-foreground);
   font-size: var(--text-xs);
 }
 
-.item-deep-dives__item-value {
-  flex-shrink: 0;
+.item-deep-dives__item-rank {
+  color: var(--muted-foreground);
   font-size: var(--text-sm);
+}
+
+.item-deep-dives__item-state {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  color: var(--muted-foreground);
+  font-size: var(--text-xs);
+  line-height: 1.2;
+  max-width: 10rem;
+  overflow: hidden;
+  padding: var(--space-1) var(--space-2);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.item-deep-dives__item-bar {
+  background: var(--muted);
+  border: 1px solid color-mix(in srgb, var(--foreground) 18%, transparent);
+  border-radius: var(--radius-pill);
+  display: block;
+  grid-column: 1 / -1;
+  height: 10px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.item-deep-dives__item-bar-fill {
+  background-color: var(--c);
+  display: block;
+  height: 100%;
+  width: var(--item-bar-width);
+}
+
+.item-deep-dives__item-value {
+  font-size: var(--text-sm);
+  white-space: nowrap;
 }
 
 .item-deep-dive__surface {

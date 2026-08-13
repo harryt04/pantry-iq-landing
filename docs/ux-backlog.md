@@ -314,13 +314,16 @@ dashboard on 2026-08-12.
       requirement and available history; `tests/e2e/portfolio.spec.ts` proves
       the preserved explanation and under-200px group at 1280px and 375px.
 
-- [ ] **Ranked horizontal bars.** [`brand/ui-implementation.md`](brand/ui-implementation.md)
+- [x] **Ranked horizontal bars.** — Codex [`brand/ui-implementation.md`](brand/ui-implementation.md)
       §5.6 names ranked horizontal bars the preferred shape — label, figure,
       and state chip on the row, nothing to decode. Nothing on the dashboard
       uses them; `Top selling` is a plain two-item list.
       **Acceptance:** the item lists render as ranked rows with an inline bar,
       a printed value on every row, and a pattern on every series per §5.2. The
       greyscale gate in §6 passes on a desaturated screenshot.
+      Added patterned ranked rows with state chips, printed values, and
+      exact-decimal bar sizing; component and seeded Playwright coverage prove
+      all four series patterns at 1280px and 375px without page overflow.
 
 - [ ] **Cut the repeated section triplet.** Every section on every page is mono
       eyebrow, heading, then a grey help paragraph — four times per page. It

@@ -91,6 +91,53 @@ test.describe('portfolio rollup', () => {
     })
   })
 
+  test('shows dashboard item groups as patterned ranked rows', async ({
+    page,
+  }) => {
+    for (const viewport of [
+      { width: 1280, height: 812 },
+      { width: 375, height: 812 },
+    ]) {
+      await page.setViewportSize(viewport)
+      await page.goto(
+        `/dashboard?locationId=${fullYearLocationFixture.locationId}`,
+      )
+
+      const rows = page.locator('.item-deep-dives__item')
+      await expect(rows.first()).toBeVisible()
+      await expect(
+        rows.first().locator('.item-deep-dives__item-bar-fill'),
+      ).toBeVisible()
+      await expect(
+        rows.first().locator('.item-deep-dives__item-state'),
+      ).toBeVisible()
+      await expect(
+        rows.first().locator('.item-deep-dives__item-value'),
+      ).toHaveText(/\S/)
+
+      const rowData = await rows.evaluateAll((elements) =>
+        elements.map((row) => ({
+          text: row.textContent?.replace(/\s+/g, ' ').trim(),
+          pattern:
+            row.querySelector('.item-deep-dives__item-bar-fill')?.className ??
+            '',
+        })),
+      )
+      expect(rowData.every(({ text }) => Boolean(text))).toBe(true)
+      expect(
+        rowData.every(({ pattern }) =>
+          /\bpat--(solid|hatch|cross|dots|vertical)\b/.test(pattern),
+        ),
+      ).toBe(true)
+
+      const pageWidths = await page.evaluate(() => ({
+        body: document.body.scrollWidth,
+        viewport: window.innerWidth,
+      }))
+      expect(pageWidths.body).toBeLessThanOrEqual(pageWidths.viewport)
+    }
+  })
+
   test('collapses unavailable trend cards into a compact data requirement', async ({
     page,
   }) => {
