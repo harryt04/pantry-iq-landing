@@ -139,6 +139,46 @@ test.describe('CSV batch upload', () => {
       )
       .toBe(true)
   })
+
+  test('resumes the active file, mapping, and item resolution after reload', async ({
+    page,
+    mockApi,
+  }) => {
+    await mockApi({ uploadCommit: 'conflict' })
+    await page.goto(`/import?locationId=${fullYearLocationFixture.locationId}`)
+
+    await page.getByLabel('CSV file').setInputFiles({
+      name: 'sales.csv',
+      mimeType: 'text/csv',
+      buffer: Buffer.from('date,item,quantity\n2026-08-01,salmon,2\n'),
+    })
+    await expect(
+      page.getByRole('heading', { name: 'One item needs your call.' }),
+    ).toBeVisible()
+
+    await page.getByRole('button', { name: /Unmatched item/ }).click()
+    await expect(
+      page.getByRole('heading', { name: 'Ready to import 1 rows.' }),
+    ).toBeVisible()
+
+    await page.reload()
+
+    await expect(page.getByRole('heading', { name: 'sales.csv' })).toBeVisible()
+    await expect(
+      page.getByRole('heading', { name: 'Ready to import 1 rows.' }),
+    ).toBeVisible()
+    await expect(
+      page.getByRole('heading', { name: 'One item needs your call.' }),
+    ).toHaveCount(0)
+    await expect(
+      page
+        .getByRole('navigation', { name: 'Import steps' })
+        .locator('li[aria-current="step"]'),
+    ).toContainText('Confirm import')
+    await expect(page.locator('.csv-import-confirmation')).toContainText(
+      '1 rows will link to existing items.',
+    )
+  })
 })
 
 test.describe('CSV upload failure paths', () => {

@@ -156,11 +156,14 @@ reorder.
       detail, and a closed supporting-tools disclosure; `tests/ui/import.spec.ts`
       and `csv-upload-form.dom.test.tsx` prove the flow at desktop and 375px.
 
-- [ ] **Survive a reload.** The upload exists server-side, but a refresh
+- [x] **Survive a reload.** The upload exists server-side, but a refresh
       mid-mapping loses everything held in component state and the operator
       starts over.
       **Acceptance:** reload the page between preview and commit, and the flow
       resumes at the same step with the same file, mapping, and resolutions.
+      Persisted unfinished jobs are revalidated from the server after reload;
+      `tests/ui/import.spec.ts` proves the active file returns to confirmation
+      with its mapping and item resolution intact.
 
 - [ ] **The blank page at `/import`.** `page.tsx:26` renders nothing at all
       when there is no `locationId` — no heading follow-through, no error, no

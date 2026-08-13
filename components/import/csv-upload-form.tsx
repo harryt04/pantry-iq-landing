@@ -70,7 +70,7 @@ const importTypes = [
 type ItemResolution = { itemId: string } | NewItemResolutionInput
 
 type UploadJob = {
-  file: File
+  file: File | null
   fileName: string
   importType: CsvImportType
   detectedImportType: CsvImportType | null
@@ -83,6 +83,7 @@ type UploadJob = {
   error: string
   isUploading: boolean
   isCommitting: boolean
+  isCommitted: boolean
 }
 
 type ImportStep =
@@ -95,6 +96,66 @@ const importSteps: Array<{ id: ImportStep; label: string }> = [
   { id: 'resolution', label: 'Match items' },
   { id: 'confirmation', label: 'Confirm import' },
 ]
+
+type PersistedUploadJob = Omit<UploadJob, 'file'>
+
+type PersistedImportState = {
+  activeJobId: string | null
+  jobs: Record<string, PersistedUploadJob>
+}
+
+function importStateStorageKey(locationId: string) {
+  return `pantryiq-import-jobs:${locationId}`
+}
+
+function persistedStateFor(
+  jobs: Record<string, UploadJob>,
+  activeJobId: string | null,
+): PersistedImportState {
+  return {
+    activeJobId,
+    jobs: Object.fromEntries(
+      Object.entries(jobs)
+        .filter(([, job]) => !job.isCommitted)
+        .map(([jobId, job]) => [
+          jobId,
+          {
+            fileName: job.fileName,
+            importType: job.importType,
+            detectedImportType: job.detectedImportType,
+            uploadId: job.uploadId,
+            preview: job.preview,
+            mapping: job.mapping,
+            resolutions: job.resolutions,
+            summary: job.summary,
+            status: job.status,
+            error: job.error,
+            isUploading: false,
+            isCommitting: false,
+            isCommitted: false,
+          } satisfies PersistedUploadJob,
+        ]),
+    ),
+  }
+}
+
+function readPersistedImportState(
+  locationId: string,
+): PersistedImportState | null {
+  try {
+    const raw = window.localStorage.getItem(importStateStorageKey(locationId))
+    if (!raw) return null
+    const parsed = JSON.parse(raw) as Partial<PersistedImportState>
+    if (!parsed.jobs || typeof parsed.jobs !== 'object') return null
+    return {
+      activeJobId:
+        typeof parsed.activeJobId === 'string' ? parsed.activeJobId : null,
+      jobs: parsed.jobs as Record<string, PersistedUploadJob>,
+    }
+  } catch {
+    return null
+  }
+}
 
 function importTypeLabel(importType: CsvImportType) {
   return importTypes.find(([value]) => value === importType)?.[1] ?? importType
@@ -183,8 +244,10 @@ export function CsvUploadForm({ locationId }: { locationId: string }) {
   const [jobs, setJobs] = React.useState<Record<string, UploadJob>>({})
   const [activeJobId, setActiveJobId] = React.useState<string | null>(null)
   const [isDragging, setIsDragging] = React.useState(false)
+  const [storageHydrated, setStorageHydrated] = React.useState(false)
   const nextJobId = React.useRef(0)
   const fileInputRef = React.useRef<HTMLInputElement>(null)
+  const resumedJobs = React.useRef(false)
 
   function updateJob(jobId: string, update: (job: UploadJob) => UploadJob) {
     setJobs((currentJobs) => {
@@ -193,6 +256,109 @@ export function CsvUploadForm({ locationId }: { locationId: string }) {
       return { ...currentJobs, [jobId]: update(job) }
     })
   }
+
+  React.useEffect(() => {
+    const persisted = readPersistedImportState(locationId)
+    if (persisted) {
+      setJobs(
+        Object.fromEntries(
+          Object.entries(persisted.jobs).map(([jobId, job]) => [
+            jobId,
+            { ...job, file: null, isCommitted: Boolean(job.isCommitted) },
+          ]),
+        ),
+      )
+      setActiveJobId(persisted.activeJobId)
+    }
+    setStorageHydrated(true)
+  }, [locationId])
+
+  React.useEffect(() => {
+    if (!storageHydrated) return
+    window.localStorage.setItem(
+      importStateStorageKey(locationId),
+      JSON.stringify(persistedStateFor(jobs, activeJobId)),
+    )
+  }, [activeJobId, jobs, locationId, storageHydrated])
+
+  React.useEffect(() => {
+    if (!storageHydrated || resumedJobs.current) return
+    resumedJobs.current = true
+
+    const savedJobs = Object.entries(jobs).filter(
+      ([, job]) => job.uploadId && !job.isUploading,
+    )
+    for (const [jobId, savedJob] of savedJobs) {
+      const uploadId = savedJob.uploadId
+      if (!uploadId) continue
+
+      void (async () => {
+        try {
+          const previewResponse = await fetch(
+            `/api/uploads/${encodeURIComponent(uploadId)}/preview`,
+          )
+          const previewResult = (await previewResponse.json()) as {
+            upload?: { source: CsvImportType; filename: string }
+            preview?: CsvPreview
+            error?: string
+          }
+          if (!previewResponse.ok || !previewResult.preview)
+            throw new Error(
+              previewResult.error ?? 'The saved file could not be resumed.',
+            )
+
+          updateJob(jobId, (job) => ({
+            ...job,
+            fileName: previewResult.upload?.filename ?? job.fileName,
+            importType: previewResult.upload?.source ?? job.importType,
+            detectedImportType:
+              previewResult.upload?.source ?? job.detectedImportType,
+            preview: previewResult.preview!,
+            mapping: previewResult.preview!.mapping,
+            status: `${job.fileName} resumed. Checking item names.`,
+            error: '',
+          }))
+
+          const summaryResponse = await fetch(
+            `/api/uploads/${encodeURIComponent(uploadId)}/commit`,
+            {
+              method: 'POST',
+              headers: { 'content-type': 'application/json' },
+              body: JSON.stringify({
+                dryRun: true,
+                resolutions: savedJob.resolutions,
+              }),
+            },
+          )
+          const summaryResult = (await summaryResponse.json()) as {
+            summary?: ImportSummary
+            error?: string
+          }
+          if (!summaryResponse.ok && !summaryResult.summary)
+            throw new Error(
+              summaryResult.error ?? 'The saved import could not be resumed.',
+            )
+          if (summaryResult.summary)
+            updateJob(jobId, (job) => ({
+              ...job,
+              summary: { ...summaryResult.summary!, uploadId },
+              resolutions: savedJob.resolutions,
+              status: job.summary?.ready
+                ? job.status
+                : `${job.fileName} is ready to continue.`,
+            }))
+        } catch (resumeError) {
+          updateJob(jobId, (job) => ({
+            ...job,
+            error:
+              resumeError instanceof Error
+                ? resumeError.message
+                : 'The saved import could not be resumed.',
+          }))
+        }
+      })()
+    }
+  }, [jobs, storageHydrated])
 
   async function uploadFile(
     jobId: string,
@@ -296,6 +462,14 @@ export function CsvUploadForm({ locationId }: { locationId: string }) {
   }
 
   function retryJob(jobId: string, job: UploadJob) {
+    if (!job.file) {
+      updateJob(jobId, (currentJob) => ({
+        ...currentJob,
+        error: 'Choose the file again to retry this upload.',
+      }))
+      fileInputRef.current?.click()
+      return
+    }
     setActiveJobId(jobId)
     updateJob(jobId, (currentJob) => ({
       ...currentJob,
@@ -308,6 +482,7 @@ export function CsvUploadForm({ locationId }: { locationId: string }) {
       error: '',
       isUploading: true,
       isCommitting: false,
+      isCommitted: false,
     }))
     void detectAndUpload(jobId, job.file)
   }
@@ -334,6 +509,7 @@ export function CsvUploadForm({ locationId }: { locationId: string }) {
           error: '',
           isUploading: true,
           isCommitting: false,
+          isCommitted: false,
         } satisfies UploadJob,
       }
     })
@@ -455,6 +631,7 @@ export function CsvUploadForm({ locationId }: { locationId: string }) {
     jobId: string,
     uploadId: string,
     mapping: Record<string, CanonicalField | null>,
+    resolutions: Record<string, ItemResolution>,
   ) {
     void (async () => {
       try {
@@ -477,7 +654,7 @@ export function CsvUploadForm({ locationId }: { locationId: string }) {
           ...job,
           status: 'Mapping saved. Checking item names',
         }))
-        await refreshSummary(jobId, uploadId, {})
+        await refreshSummary(jobId, uploadId, resolutions)
       } catch (mappingError) {
         updateJob(jobId, (job) => ({
           ...job,
@@ -559,6 +736,7 @@ export function CsvUploadForm({ locationId }: { locationId: string }) {
       updateJob(jobId, (currentJob) => ({
         ...currentJob,
         summary: { ...result.summary!, uploadId: job.uploadId! },
+        isCommitted: true,
         status: `${result.summary!.rowsImported.toLocaleString()} rows imported. ${result.summary!.newItems.toLocaleString()} new items created.`,
       }))
       const nextJob = jobEntries.find(
@@ -731,11 +909,18 @@ export function CsvUploadForm({ locationId }: { locationId: string }) {
             <CsvMappingReview
               mapping={job.mapping}
               preview={job.preview}
-              onMappingAccepted={(mapping) =>
-                job.uploadId
-                  ? saveMapping(jobId, job.uploadId, mapping)
-                  : undefined
-              }
+              onMappingAccepted={(mapping) => {
+                if (!job.uploadId) return
+                const mappingUnchanged = Object.entries(
+                  job.mapping?.mapping ?? {},
+                ).every(([column, field]) => mapping[column] === field)
+                saveMapping(
+                  jobId,
+                  job.uploadId,
+                  mapping,
+                  mappingUnchanged ? job.resolutions : {},
+                )
+              }}
             />
           ) : null}
           {jobId === activeJobId &&

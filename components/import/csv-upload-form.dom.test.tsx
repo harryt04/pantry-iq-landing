@@ -126,6 +126,7 @@ describe('CSV upload form', () => {
   })
 
   afterEach(() => {
+    window.localStorage.clear()
     vi.unstubAllGlobals()
   })
 
