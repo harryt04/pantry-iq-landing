@@ -402,6 +402,149 @@ for (const colorScheme of themes) {
       }
     })
 
+    test(`/welcome first location creation remains accessible at ${viewport.label} in ${colorScheme} theme`, async ({
+      browser,
+    }, testInfo) => {
+      const context = await browser.newContext({
+        colorScheme,
+        viewport: { height: viewport.height, width: viewport.width },
+      })
+      const page = await context.newPage()
+      let createdLocationId: string | undefined
+
+      try {
+        await page.goto('/welcome')
+        await expect(
+          page.getByRole('heading', { name: 'Start with one location.' }),
+        ).toBeVisible()
+
+        const name = `Conformance ${viewport.label} ${colorScheme} ${Date.now()}`
+        const nameInput = page.getByLabel('Location name')
+        const addressInput = page.getByLabel('Address')
+        const addLocation = page.getByRole('button', { name: 'Add location' })
+
+        await expect(addLocation).toBeEnabled()
+        await nameInput.fill(name)
+        await addressInput.fill('1 Conformance Street')
+
+        const formGeometry = await page
+          .locator('.first-session-location-form')
+          .evaluate((form) => {
+            const fields = [...form.querySelectorAll('.location-field')]
+            const fieldRects = fields.map((field) => {
+              const label = field.querySelector('label')
+              const input = field.querySelector('input')
+              if (!label || !input)
+                throw new Error('Location field is incomplete.')
+              const labelRect = label.getBoundingClientRect()
+              const inputRect = input.getBoundingClientRect()
+              return {
+                labelToControl: Math.round(inputRect.top - labelRect.bottom),
+                bottom: inputRect.bottom,
+                top: labelRect.top,
+              }
+            })
+            return {
+              fieldGap: Math.round(fieldRects[1]!.top - fieldRects[0]!.bottom),
+              labelToControl: fieldRects.map((field) => field.labelToControl),
+            }
+          })
+        expect(formGeometry.labelToControl).toEqual([12, 12])
+        expect(formGeometry.fieldGap).toBe(20)
+
+        const undersizedControls = await page
+          .locator('button:not([aria-label="Open Next.js Dev Tools"]), input')
+          .evaluateAll((elements) =>
+            elements
+              .filter((element) => {
+                const style = getComputedStyle(element)
+                return (
+                  style.display !== 'none' &&
+                  style.visibility !== 'hidden' &&
+                  element.getClientRects().length > 0
+                )
+              })
+              .map((element) => {
+                const box = element.getBoundingClientRect()
+                return {
+                  height: Math.round(box.height),
+                  label:
+                    element.getAttribute('aria-label') ??
+                    element.textContent?.trim() ??
+                    element.getAttribute('placeholder'),
+                  tag: element.tagName.toLowerCase(),
+                  width: Math.round(box.width),
+                }
+              })
+              .filter(({ height, width }) => height < 44 || width < 44),
+          )
+        expect(undersizedControls).toEqual([])
+
+        const undersizedFormText = await page
+          .locator('input')
+          .evaluateAll((elements) =>
+            elements
+              .map((element) => ({
+                fontSize: parseFloat(getComputedStyle(element).fontSize),
+                id: element.id,
+              }))
+              .filter(({ fontSize }) => fontSize < 16),
+          )
+        expect(undersizedFormText).toEqual([])
+
+        await loadAxe(page)
+        const results = await page.evaluate(async () => {
+          const axe = (
+            window as unknown as {
+              axe: {
+                run: (
+                  context?: unknown,
+                  options?: unknown,
+                ) => Promise<AccessibilityResult>
+              }
+            }
+          ).axe
+          return axe.run(document, {
+            rules: { 'target-size': { enabled: true } },
+          })
+        })
+        expect(
+          results.violations,
+          JSON.stringify(results.violations, null, 2),
+        ).toEqual([])
+
+        await assertKeyboardFocus(page, true)
+        await assertGrayscaleReadable(page, testInfo)
+        expect(
+          await page.evaluate(() => document.documentElement.scrollWidth),
+        ).toBeLessThanOrEqual(viewport.width)
+
+        const createResponse = page.waitForResponse(
+          (response) =>
+            response.url().endsWith('/api/locations') &&
+            response.request().method() === 'POST',
+        )
+        await addLocation.click()
+        const created = (await (await createResponse).json()) as {
+          location?: { id?: string }
+        }
+        createdLocationId = created.location?.id
+        expect(createdLocationId).toBeTruthy()
+        await expect(page).toHaveURL(/\/import\?locationId=/)
+        await expect(
+          page.getByRole('combobox', { name: 'Selected location' }),
+        ).toContainText(name)
+      } finally {
+        if (createdLocationId) {
+          const response = await page.request.delete(
+            `/api/locations/${createdLocationId}`,
+          )
+          expect([204, 404]).toContain(response.status())
+        }
+        await context.close()
+      }
+    })
+
     test(`/import file selection and batch list remain accessible at ${viewport.label} in ${colorScheme} theme`, async ({
       browser,
     }, testInfo) => {

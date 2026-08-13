@@ -443,7 +443,12 @@ is visible at every stop, and copy follows
       in both themes; `tests/accessibility/real-data.spec.ts` proves axe,
       grayscale, keyboard focus, 44px targets, 16px form type, copy, and no
       overflow.
-- [ ] First location creation
+- [x] First location creation — Codex
+      The welcome form's real location-creation handoff now passes axe,
+      grayscale, keyboard focus, 44px targets, 16px input type, spacing, and
+      overflow checks at 375px and 1280px in light and dark themes;
+      `tests/accessibility/real-data.spec.ts` proves creation reaches the
+      selected location's import route.
 - [ ] `/dashboard` — sufficient data
 - [ ] `/dashboard` — insufficient data
 
