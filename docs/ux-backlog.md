@@ -454,7 +454,11 @@ is visible at every stop, and copy follows
       375px and 1280px in both themes; `tests/accessibility/real-data.spec.ts`
       proves axe, grayscale chart semantics, keyboard focus, 44px targets,
       operator copy, and no page overflow.
-- [ ] `/dashboard` — insufficient data
+- [x] `/dashboard` — insufficient data — Codex
+      Fourteen-day dashboard data now has a real-data conformance contract at
+      375px and 1280px in both themes; `tests/accessibility/real-data.spec.ts`
+      proves unavailable wallet metrics, compact four-week history requirements,
+      axe, grayscale, keyboard focus, 44px targets, and no page overflow.
 
 ---
 

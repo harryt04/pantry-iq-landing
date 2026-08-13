@@ -411,6 +411,119 @@ for (const colorScheme of themes) {
 
 for (const colorScheme of themes) {
   for (const viewport of [
+    { label: 'mobile', height: 812, width: 375 },
+    { label: 'desktop', height: 900, width: 1280 },
+  ]) {
+    test(`/dashboard insufficient-data surface remains conformant at ${viewport.label} in ${colorScheme} theme`, async ({
+      browser,
+    }, testInfo) => {
+      const context = await browser.newContext({
+        colorScheme,
+        viewport: { height: viewport.height, width: viewport.width },
+      })
+      const page = await context.newPage()
+
+      try {
+        await page.goto(
+          `/dashboard?locationId=10000000-0000-4000-8000-000000000001`,
+        )
+        await expect(
+          page.getByRole('heading', {
+            name: 'Fourteen-day data kitchen: ready for a closer look.',
+          }),
+        ).toBeVisible()
+        await expect(
+          page.getByRole('heading', { name: 'What is costing you money?' }),
+        ).toBeVisible()
+        await expect(
+          page.getByText(
+            'I can’t calculate wallet impact until a metric run finishes.',
+          ),
+        ).toHaveCount(2)
+        await expect(page.getByText('Not computed yet.')).toBeVisible()
+        await expect(
+          page.getByRole('heading', { name: 'What has changed lately?' }),
+        ).toBeVisible()
+        await expect(
+          page.getByText('Needs 4 weeks · has 2 · 2 more weeks needed', {
+            exact: true,
+          }),
+        ).toHaveCount(3)
+        await expect(
+          page.locator('.trend-summary-card .chart-svg'),
+        ).toHaveCount(0)
+
+        const forbiddenCopy = await page.locator('main').innerText()
+        expect(forbiddenCopy).not.toMatch(
+          /\b(revolutionary|seamless|effortless|powerful|robust|unlock|leverage|supercharge|game-changing|best-in-class|cutting-edge|delight|magic|simply|just|obviously|AI-powered|intelligent|smart)\b/i,
+        )
+
+        await loadAxe(page)
+        const results = await page.evaluate(async () => {
+          const axe = (
+            window as unknown as {
+              axe: {
+                run: (
+                  context?: unknown,
+                  options?: unknown,
+                ) => Promise<AccessibilityResult>
+              }
+            }
+          ).axe
+          return axe.run(document, {
+            rules: { 'target-size': { enabled: true } },
+          })
+        })
+        expect(
+          results.violations,
+          JSON.stringify(results.violations, null, 2),
+        ).toEqual([])
+
+        const undersizedControls = await page
+          .locator(visibleInteractiveSelector)
+          .evaluateAll((elements) =>
+            elements
+              .filter((element) => {
+                const style = getComputedStyle(element)
+                return (
+                  style.display !== 'none' &&
+                  style.visibility !== 'hidden' &&
+                  style.opacity !== '0' &&
+                  element.getClientRects().length > 0 &&
+                  !element.closest('details:not([open])') &&
+                  !element.matches(':disabled')
+                )
+              })
+              .map((element) => {
+                const rect = element.getBoundingClientRect()
+                return {
+                  height: Math.round(rect.height),
+                  label:
+                    element.getAttribute('aria-label') ??
+                    element.textContent?.trim().slice(0, 60) ??
+                    element.tagName.toLowerCase(),
+                  tag: element.tagName.toLowerCase(),
+                  width: Math.round(rect.width),
+                }
+              })
+              .filter(({ height, width }) => height < 44 || width < 44),
+          )
+        expect(undersizedControls).toEqual([])
+
+        await assertKeyboardFocus(page, true)
+        await assertGrayscaleReadable(page, testInfo)
+        expect(
+          await page.evaluate(() => document.documentElement.scrollWidth),
+        ).toBeLessThanOrEqual(viewport.width)
+      } finally {
+        await context.close()
+      }
+    })
+  }
+}
+
+for (const colorScheme of themes) {
+  for (const viewport of [
     { label: 'mobile', height: 900, width: 375 },
     { label: 'desktop', height: 900, width: 1280 },
   ]) {
