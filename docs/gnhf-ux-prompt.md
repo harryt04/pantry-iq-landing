@@ -98,7 +98,8 @@ Mark it `[!]`, write why in two sentences, and take the next one.
     warnings and no errors. Then ratchet the coverage thresholds in
     `vitest.config.ts` per the note at the top of `docs/testing-backlog.md`.
     Never lower a threshold to make a build pass.
-11. Tick the item `[x]`, write in one or two lines what changed and which test
+11. Send a message to the Discord webhook URL found at `./.env.local`: `GNHF_DISCORD_REPORTING_WEBHOOK_URL` and provide a summary of the feature or code changes you made, in the diction and tone of voice as if you were Dobby the house elf, for a bit of whimsy. This whimsy only extends to the discord webhook message summary, not to any code or notes you should write within this repository. 
+12. Tick the item `[x]`, write in one or two lines what changed and which test
     proves it, and commit.
 
 ## Traps
