@@ -91,6 +91,52 @@ test.describe('portfolio rollup', () => {
     })
   })
 
+  test('compacts downstream dashboard section headers without hiding qualifiers', async ({
+    page,
+  }) => {
+    for (const viewport of [
+      { width: 1280, height: 812 },
+      { width: 375, height: 812 },
+    ]) {
+      await page.setViewportSize(viewport)
+      await page.goto(
+        `/dashboard?locationId=${fullYearLocationFixture.locationId}`,
+      )
+
+      await expect(
+        page.locator('.wallet-impact__heading .app-page__eyebrow'),
+      ).toHaveCount(1)
+      await expect(
+        page.locator(
+          '.recommendation-list__heading .app-page__eyebrow, .trend-summary-grid__heading .app-page__eyebrow, .item-deep-dives__heading .app-page__eyebrow',
+        ),
+      ).toHaveCount(0)
+      await expect(
+        page.locator('.dashboard-section-heading--compact'),
+      ).toHaveCount(3)
+      await expect(page.locator('.app-page__qualifier')).toHaveCount(3)
+
+      const measurements = await page.evaluate(() => ({
+        pageHeight: document.documentElement.scrollHeight,
+        qualifiers: Array.from(
+          document.querySelectorAll('.app-page__qualifier'),
+        ).map((element) => element.textContent?.trim()),
+      }))
+      if (viewport.width === 1280) {
+        expect(measurements.pageHeight).toBeLessThan(2694)
+      }
+      expect(measurements.pageHeight).toBeGreaterThan(0)
+      expect(
+        await page.evaluate(() => document.body.scrollWidth),
+      ).toBeLessThanOrEqual(viewport.width)
+      expect(measurements.qualifiers).toEqual([
+        'Latest completed metric run; you decide what happens next.',
+        'Weekly imported rows only; missing points mean the data could not support that calculation.',
+        'Choose revenue, spoilage risk, or margin to see imported facts for an item.',
+      ])
+    }
+  })
+
   test('shows dashboard item groups as patterned ranked rows', async ({
     page,
   }) => {

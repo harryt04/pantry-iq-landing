@@ -190,15 +190,13 @@ export function RecommendationCardList({
       aria-labelledby="recommendations-title"
       className="recommendation-list"
     >
-      <div className="recommendation-list__heading">
+      <div className="recommendation-list__heading dashboard-section-heading--compact">
         <div>
-          <p className="app-page__eyebrow">Ranked recommendations</p>
           <h2 id="recommendations-title">What needs attention first?</h2>
+          <p className="app-page__qualifier">
+            Latest completed metric run; you decide what happens next.
+          </p>
         </div>
-        <p className="app-page__help">
-          These are suggestions from the latest completed metric run. You stay
-          in control of what happens next.
-        </p>
       </div>
       <div className="recommendation-list__cards">
         {recommendations.map((recommendation) => (

@@ -1464,6 +1464,41 @@ body {
   padding-top: var(--space-3);
 }
 
+.dashboard-content-grid {
+  display: grid;
+  gap: var(--space-5) var(--space-6);
+  grid-template-areas:
+    'recommendations items'
+    'recommendations trends';
+  grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+  margin-top: var(--space-10);
+}
+
+.dashboard-content-grid__recommendations {
+  grid-area: recommendations;
+  min-width: 0;
+}
+
+.dashboard-content-grid__trends {
+  grid-area: trends;
+  min-width: 0;
+}
+
+.dashboard-content-grid__items {
+  grid-area: items;
+  min-width: 0;
+}
+
+.dashboard-content-grid--without-recommendations {
+  grid-template-areas: 'trends';
+}
+
+.dashboard-content-grid .recommendation-list,
+.dashboard-content-grid .trend-summary-grid,
+.dashboard-content-grid .item-deep-dives {
+  margin-top: 0;
+}
+
 .recommendation-list {
   display: grid;
   gap: var(--space-5);
@@ -1657,6 +1692,14 @@ body {
 }
 
 @media (max-width: 800px) {
+  .dashboard-content-grid {
+    grid-template-areas:
+      'recommendations'
+      'trends'
+      'items';
+    grid-template-columns: minmax(0, 1fr);
+  }
+
   .portfolio-summary__heading,
   .portfolio-section-heading {
     align-items: start;
@@ -1717,6 +1760,35 @@ body {
   line-height: 1.6;
   margin: 0;
   max-width: 40ch;
+}
+
+.app-page__qualifier {
+  color: var(--muted-foreground);
+  font-size: var(--text-sm);
+  line-height: 1.5;
+  margin: 0;
+  max-width: 62ch;
+}
+
+.dashboard-section-heading--compact {
+  display: block;
+}
+
+.dashboard-section-heading--compact > div {
+  align-items: baseline;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3) var(--space-4);
+}
+
+.dashboard-section-heading--compact h2 {
+  font-size: var(--text-xl);
+  letter-spacing: -0.025em;
+  margin: 0;
+}
+
+.dashboard-section-heading--compact .app-page__qualifier {
+  flex: 1 1 28ch;
 }
 
 .trend-summary-grid__cards {

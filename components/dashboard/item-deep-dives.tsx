@@ -344,15 +344,14 @@ export function ItemDeepDives({
       className="item-deep-dives"
       aria-labelledby="item-deep-dives-title"
     >
-      <div className="item-deep-dives__heading">
+      <div className="item-deep-dives__heading dashboard-section-heading--compact">
         <div>
-          <p className="app-page__eyebrow">Item view</p>
           <h2 id="item-deep-dives-title">Look closer at an item.</h2>
+          <p className="app-page__qualifier">
+            Choose revenue, spoilage risk, or margin to see imported facts for
+            an item.
+          </p>
         </div>
-        <p className="app-page__help">
-          Start with revenue, spoilage risk, or margin. Select an item to see
-          the imported facts behind the rollup.
-        </p>
       </div>
       <div className="item-deep-dives__groups">
         {groupItems({

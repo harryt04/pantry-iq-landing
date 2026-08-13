@@ -325,12 +325,16 @@ dashboard on 2026-08-12.
       exact-decimal bar sizing; component and seeded Playwright coverage prove
       all four series patterns at 1280px and 375px without page overflow.
 
-- [ ] **Cut the repeated section triplet.** Every section on every page is mono
+- [x] **Cut the repeated section triplet.** — Codex
+      Every section on every page is mono
       eyebrow, heading, then a grey help paragraph — four times per page. It
       reads as a brochure and pushes real content below the fold.
       **Acceptance:** the first section of a page keeps the full treatment;
       later sections carry a heading plus a short qualifier. Total page height
       on `/dashboard` drops by at least 25% with no loss of stated information.
+      Implemented compact qualifiers for downstream sections and a responsive
+      desktop detail grid; `tests/e2e/portfolio.spec.ts` proves the hierarchy,
+      1280px height reduction, 375px stacking, and preserved qualifier copy.
 
 - [ ] **The signed-in dashboard does not open with a marketing headline.**
       `/dashboard` currently leads with "Start with the data you already have."

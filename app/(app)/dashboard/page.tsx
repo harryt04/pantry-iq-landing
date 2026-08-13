@@ -84,22 +84,36 @@ export default async function DashboardPage({
       ) : (
         <DashboardDataState locationId={locationId} state={state} />
       )}
-      {state.status === 'ready' ? (
-        <RecommendationCardList
-          locationId={locationId}
-          recommendations={recommendations}
-        />
-      ) : null}
-      <TrendSummaries
-        summaries={summaries}
-        transactionDays={state.transactionDays}
-      />
-      {state.status === 'ready' && itemDeepDives.length > 0 ? (
-        <ItemDeepDives
-          locationId={locationId}
-          groups={buildItemDeepDiveGroups(itemDeepDives)}
-        />
-      ) : null}
+      <div
+        className={`dashboard-content-grid ${
+          state.status === 'ready'
+            ? ''
+            : 'dashboard-content-grid--without-recommendations'
+        }`}
+      >
+        {state.status === 'ready' ? (
+          <div className="dashboard-content-grid__recommendations">
+            <RecommendationCardList
+              locationId={locationId}
+              recommendations={recommendations}
+            />
+          </div>
+        ) : null}
+        <div className="dashboard-content-grid__trends">
+          <TrendSummaries
+            summaries={summaries}
+            transactionDays={state.transactionDays}
+          />
+        </div>
+        {state.status === 'ready' && itemDeepDives.length > 0 ? (
+          <div className="dashboard-content-grid__items">
+            <ItemDeepDives
+              locationId={locationId}
+              groups={buildItemDeepDiveGroups(itemDeepDives)}
+            />
+          </div>
+        ) : null}
+      </div>
     </main>
   )
 }

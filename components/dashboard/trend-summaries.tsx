@@ -33,15 +33,14 @@ export function TrendSummaries({
       className="trend-summary-grid"
       aria-labelledby="trend-summary-title"
     >
-      <div className="trend-summary-grid__heading">
+      <div className="trend-summary-grid__heading dashboard-section-heading--compact">
         <div>
-          <p className="app-page__eyebrow">Over time</p>
           <h2 id="trend-summary-title">What has changed lately?</h2>
+          <p className="app-page__qualifier">
+            Weekly imported rows only; missing points mean the data could not
+            support that calculation.
+          </p>
         </div>
-        <p className="app-page__help">
-          Weekly views use imported rows only. A missing point means the data
-          could not support that calculation.
-        </p>
       </div>
       <div className="trend-summary-grid__cards">
         {summaries.map((summary) => {
