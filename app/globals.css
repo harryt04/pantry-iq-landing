@@ -2559,6 +2559,21 @@ body {
   padding-left: var(--space-5);
 }
 
+.csv-import-confirmation,
+.csv-import-result {
+  border-left: 3px solid var(--foreground);
+  display: grid;
+  gap: var(--space-4);
+  padding-left: var(--space-4);
+}
+
+.csv-import-confirmation h2,
+.csv-import-confirmation p,
+.csv-import-result h2,
+.csv-import-result p {
+  margin: 0;
+}
+
 @media (min-width: 640px) {
   .csv-batch-action {
     align-items: center;

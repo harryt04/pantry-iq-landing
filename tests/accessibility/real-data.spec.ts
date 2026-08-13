@@ -33,6 +33,9 @@ const mappingFixture = path.resolve(
 const resolutionFixture = path.resolve(
   'tests/fixtures/csv/inventory/inventory-new-items-only.csv',
 )
+const confirmationFixture = path.resolve(
+  'tests/fixtures/csv/transactions/sales-with-refunds-negative.csv',
+)
 
 type AccessibilityResult = {
   violations: Array<{
@@ -365,6 +368,145 @@ for (const colorScheme of themes) {
 
         await assertKeyboardFocus(page)
         await assertGrayscaleReadable(page, testInfo)
+      } finally {
+        await context.close()
+      }
+    })
+  }
+}
+
+for (const colorScheme of themes) {
+  for (const viewport of [
+    { label: 'mobile', height: 900, width: 375 },
+    { label: 'desktop', height: 900, width: 1280 },
+  ]) {
+    test(`/import confirmation and result remain accessible at ${viewport.label} in ${colorScheme} theme`, async ({
+      browser,
+    }, testInfo) => {
+      const context = await browser.newContext({
+        colorScheme,
+        viewport: { height: viewport.height, width: viewport.width },
+      })
+      const page = await context.newPage()
+
+      try {
+        await page.goto(`/import?locationId=${locationId}`)
+        await expect(
+          page.getByRole('heading', { name: "Bring in one location's data." }),
+        ).toBeVisible()
+
+        await page.route('**/api/uploads/*/commit', async (route) => {
+          await route.fulfill({
+            contentType: 'application/json',
+            body: JSON.stringify({
+              summary: {
+                alreadyImported: false,
+                filename: path.basename(confirmationFixture),
+                importType: 'transactions',
+                items: [],
+                linkedItems: 1,
+                newItems: 1,
+                ready: true,
+                rowsImported: 2,
+                rowsToImport: 2,
+                unmatchedItems: [],
+              },
+            }),
+            status: 200,
+          })
+        })
+
+        await page.locator('#csv-file').setInputFiles(confirmationFixture)
+        const job = page
+          .locator('.csv-upload-job')
+          .filter({ hasText: path.basename(confirmationFixture) })
+        await expect(
+          job.getByRole('heading', { name: 'Ready to import 2 rows.' }),
+        ).toBeVisible({ timeout: 120_000 })
+
+        await loadAxe(page)
+        const confirmationResults = await page.evaluate(async () => {
+          const axe = (
+            window as unknown as {
+              axe: {
+                run: (
+                  context?: unknown,
+                  options?: unknown,
+                ) => Promise<AccessibilityResult>
+              }
+            }
+          ).axe
+          return axe.run(document, {
+            rules: { 'target-size': { enabled: true } },
+          })
+        })
+        expect(
+          confirmationResults.violations,
+          JSON.stringify(confirmationResults.violations, null, 2),
+        ).toEqual([])
+        await assertKeyboardFocus(page)
+        await assertGrayscaleReadable(page, testInfo)
+
+        await job.getByRole('button', { name: 'Import now' }).click()
+        await expect(
+          job.getByRole('heading', { name: 'Imported 2 rows.' }),
+        ).toBeVisible()
+        await expect(
+          job.getByText(
+            '1 new items created. 1 rows linked to existing items.',
+          ),
+        ).toBeVisible()
+        await expect(
+          job.getByRole('link', { name: 'Continue to dashboard' }),
+        ).toBeVisible()
+        await expect(
+          job.getByRole('heading', { name: 'Ready to import 2 rows.' }),
+        ).toHaveCount(0)
+
+        const resultResults = await page.evaluate(async () => {
+          const axe = (
+            window as unknown as {
+              axe: {
+                run: (
+                  context?: unknown,
+                  options?: unknown,
+                ) => Promise<AccessibilityResult>
+              }
+            }
+          ).axe
+          return axe.run(document, {
+            rules: { 'target-size': { enabled: true } },
+          })
+        })
+        expect(
+          resultResults.violations,
+          JSON.stringify(resultResults.violations, null, 2),
+        ).toEqual([])
+        const resultLink = job.getByRole('link', {
+          name: 'Continue to dashboard',
+        })
+        await resultLink.focus()
+        await expect
+          .poll(() =>
+            resultLink.evaluate((element) => {
+              const style = getComputedStyle(element)
+              return (
+                (style.outlineStyle !== 'none' &&
+                  parseFloat(style.outlineWidth) >= 2 &&
+                  parseFloat(style.outlineOffset) >= 2) ||
+                style.boxShadow !== 'none'
+              )
+            }),
+          )
+          .toBe(true)
+        await assertGrayscaleReadable(page, testInfo)
+        await expect
+          .poll(() =>
+            page.evaluate(
+              () => document.documentElement.scrollWidth <= window.innerWidth,
+            ),
+          )
+          .toBe(true)
       } finally {
         await context.close()
       }

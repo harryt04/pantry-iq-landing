@@ -1154,7 +1154,31 @@ export function CsvUploadForm({ locationId }: { locationId: string }) {
               }
             />
           ) : null}
-          {jobId === activeJobId && job.summary?.ready ? (
+          {jobId === activeJobId && job.summary?.ready && job.isCommitted ? (
+            <section
+              className="csv-import-result"
+              aria-labelledby={`${jobId}-result-title`}
+              aria-live="polite"
+            >
+              <p className="app-page__eyebrow">Import complete</p>
+              <h2 id={`${jobId}-result-title`}>
+                Imported {job.summary.rowsImported.toLocaleString()} rows.
+              </h2>
+              <p className="app-page__help">
+                {job.summary.newItems.toLocaleString()} new items created.{' '}
+                {job.summary.linkedItems.toLocaleString()} rows linked to
+                existing items.
+              </p>
+              <Button asChild type="button" variant="outline">
+                <Link
+                  href={`/dashboard?locationId=${encodeURIComponent(locationId)}`}
+                >
+                  Continue to dashboard
+                </Link>
+              </Button>
+            </section>
+          ) : null}
+          {jobId === activeJobId && job.summary?.ready && !job.isCommitted ? (
             <section
               className="csv-import-confirmation"
               aria-labelledby={`${jobId}-confirm-title`}
@@ -1181,15 +1205,6 @@ export function CsvUploadForm({ locationId }: { locationId: string }) {
                     ? 'Already imported'
                     : 'Import now'}
               </Button>
-              {job.summary.rowsImported > 0 || job.summary.alreadyImported ? (
-                <Button asChild type="button" variant="outline">
-                  <Link
-                    href={`/dashboard?locationId=${encodeURIComponent(locationId)}`}
-                  >
-                    Continue to dashboard
-                  </Link>
-                </Button>
-              ) : null}
             </section>
           ) : null}
           {job.error ? (

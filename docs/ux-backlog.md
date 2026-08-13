@@ -431,7 +431,8 @@ is visible at every stop, and copy follows
       44px focusable controls; `tests/accessibility/real-data.spec.ts` proves
       axe, grayscale, keyboard focus, mobile target size, and no overflow at
       375px and 1280px in both themes with `inventory-new-items-only.csv`.
-- [ ] `/import` — confirmation and result
+- [x] `/import` — confirmation and result — Codex
+      Confirmation and committed result now use distinct accessible panels; `tests/accessibility/real-data.spec.ts` proves axe, grayscale, focus, target-size, and overflow conformance at 375px and 1280px in both themes with a real CSV fixture.
 - [ ] `/import` — rejected-file and error states
 - [ ] The first-run surface from Loop P
 - [ ] First location creation
