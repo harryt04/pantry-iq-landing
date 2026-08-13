@@ -125,7 +125,15 @@ describe('CSV upload form', () => {
     vi.stubGlobal('fetch', fetchMock)
   })
 
-  afterEach(() => {
+  afterEach(async () => {
+    // A test can end while an upload's later fetch calls (e.g. the preview
+    // request after the initial upload) are still in flight. Give those a
+    // few ticks to settle against this test's own mock before the next
+    // test's beforeEach resets it — otherwise the straggler call fires
+    // during the next test and silently consumes its queued response.
+    for (let tick = 0; tick < 10; tick++) {
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    }
     window.localStorage.clear()
     vi.unstubAllGlobals()
   })
@@ -308,7 +316,10 @@ describe('CSV upload form', () => {
     render(<CsvUploadForm locationId={LOCATION_ID} />)
     await userEvent.upload(screen.getByLabelText('CSV file'), csvFile())
 
-    await waitFor(() => expect(fetchMock).toHaveBeenCalled())
+    // Wait for the whole upload chain to settle, not just the first fetch:
+    // an unawaited second call would otherwise still be in flight when this
+    // test ends and could consume a later test's queued mock response.
+    await screen.findByText('sales.csv is ready to map.')
 
     const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit]
     expect(url).toBe(`/api/uploads?locationId=${LOCATION_ID}`)

@@ -45,7 +45,7 @@ export default defineConfig({
     setupFiles: ['tests/setup/dom.ts'],
     // v8 coverage instrumentation slows jsdom rendering enough that the
     // 5000ms default flakes on CI; give async assertions real headroom.
-    testTimeout: 30_000,
+    testTimeout: 10_000,
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html', 'lcov'],
