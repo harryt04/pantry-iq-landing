@@ -58,7 +58,7 @@ async function loadAxe(page: Page) {
 const visibleInteractiveSelector =
   'a[href]:not([aria-label="Open Next.js Dev Tools"]), button:not([aria-label="Open Next.js Dev Tools"]), input, select, textarea, summary, [tabindex="0"]'
 
-async function assertKeyboardFocus(page: Page) {
+async function assertKeyboardFocus(page: Page, startWithFirstTarget = false) {
   const focusTargetDetails = await page
     .locator(visibleInteractiveSelector)
     .evaluateAll((elements) =>
@@ -102,6 +102,20 @@ async function assertKeyboardFocus(page: Page) {
 
   let focusedTargets = 0
   let tabPresses = 0
+  if (startWithFirstTarget) {
+    await page.locator(visibleInteractiveSelector).first().focus()
+    const initialFocusRing = await page.evaluate(() => {
+      const style = getComputedStyle(document.activeElement as Element)
+      return (
+        (style.outlineStyle !== 'none' &&
+          parseFloat(style.outlineWidth) >= 2 &&
+          parseFloat(style.outlineOffset) >= 2) ||
+        style.boxShadow !== 'none'
+      )
+    })
+    expect(initialFocusRing).toBe(true)
+    focusedTargets = 1
+  }
   while (focusedTargets < expectedFocusTargets) {
     tabPresses += 1
     if (tabPresses > expectedFocusTargets + 3)
@@ -292,6 +306,102 @@ for (const colorScheme of themes) {
     { label: 'mobile', height: 900, width: 375 },
     { label: 'desktop', height: 900, width: 1280 },
   ]) {
+    test(`/welcome first-run surface remains accessible at ${viewport.label} in ${colorScheme} theme`, async ({
+      browser,
+    }, testInfo) => {
+      const context = await browser.newContext({
+        colorScheme,
+        viewport: { height: viewport.height, width: viewport.width },
+      })
+      const page = await context.newPage()
+
+      try {
+        await page.goto('/welcome')
+        await expect(
+          page.getByRole('heading', { name: 'Start with one location.' }),
+        ).toBeVisible()
+        await expect(
+          page.getByText(
+            'Name the location whose data you want to understand first. You can add more locations later.',
+          ),
+        ).toBeVisible()
+        await expect(page.getByLabel('Location name')).toBeVisible()
+        await expect(page.getByLabel('Address')).toBeVisible()
+        await expect(
+          page.getByRole('button', { name: 'Add location' }),
+        ).toBeVisible()
+
+        await loadAxe(page)
+        const results = await page.evaluate(async () => {
+          const axe = (
+            window as unknown as {
+              axe: {
+                run: (
+                  context?: unknown,
+                  options?: unknown,
+                ) => Promise<AccessibilityResult>
+              }
+            }
+          ).axe
+          return axe.run(document, {
+            rules: { 'target-size': { enabled: true } },
+          })
+        })
+        expect(
+          results.violations,
+          JSON.stringify(results.violations, null, 2),
+        ).toEqual([])
+
+        const undersizedControls = await page
+          .locator('button:not([aria-label="Open Next.js Dev Tools"]), input')
+          .evaluateAll((elements) =>
+            elements
+              .filter((element) => {
+                const style = getComputedStyle(element)
+                return (
+                  style.display !== 'none' &&
+                  style.visibility !== 'hidden' &&
+                  element.getClientRects().length > 0
+                )
+              })
+              .map((element) => {
+                const box = element.getBoundingClientRect()
+                return {
+                  height: box.height,
+                  label:
+                    element.getAttribute('aria-label') ??
+                    element.textContent?.trim() ??
+                    element.getAttribute('placeholder'),
+                  tag: element.tagName.toLowerCase(),
+                  width: box.width,
+                }
+              })
+              .filter(({ height, width }) => height < 44 || width < 44),
+          )
+        expect(undersizedControls).toEqual([])
+
+        const undersizedFormText = await page
+          .locator('input')
+          .evaluateAll((elements) =>
+            elements
+              .map((element) => ({
+                fontSize: parseFloat(getComputedStyle(element).fontSize),
+                id: element.id,
+              }))
+              .filter(({ fontSize }) => fontSize < 16),
+          )
+        expect(undersizedFormText).toEqual([])
+
+        await assertKeyboardFocus(page, true)
+        await assertGrayscaleReadable(page, testInfo)
+        expect(
+          await page.evaluate(() => document.documentElement.scrollWidth),
+        ).toBeLessThanOrEqual(viewport.width)
+      } finally {
+        await context.close()
+      }
+    })
+
     test(`/import file selection and batch list remain accessible at ${viewport.label} in ${colorScheme} theme`, async ({
       browser,
     }, testInfo) => {

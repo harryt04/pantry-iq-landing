@@ -438,7 +438,11 @@ is visible at every stop, and copy follows
       conformance coverage; `tests/accessibility/real-data.spec.ts` proves
       axe, grayscale, keyboard focus, 44px targets, and no overflow at 375px
       and 1280px in both themes using real fixtures.
-- [ ] The first-run surface from Loop P
+- [x] The first-run surface from Loop P — Codex
+      `/welcome` now has real-data conformance coverage at 375px and 1280px
+      in both themes; `tests/accessibility/real-data.spec.ts` proves axe,
+      grayscale, keyboard focus, 44px targets, 16px form type, copy, and no
+      overflow.
 - [ ] First location creation
 - [ ] `/dashboard` — sufficient data
 - [ ] `/dashboard` — insufficient data
