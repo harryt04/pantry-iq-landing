@@ -165,10 +165,13 @@ reorder.
       `tests/ui/import.spec.ts` proves the active file returns to confirmation
       with its mapping and item resolution intact.
 
-- [ ] **The blank page at `/import`.** `page.tsx:26` renders nothing at all
+- [x] **The blank page at `/import`.** `page.tsx:26` renders nothing at all
       when there is no `locationId` — no heading follow-through, no error, no
       way forward. A new operator arriving without a location cookie sees a
       dead page.
+      Added a location-required state with an account action, while a single
+      active location continues automatically; `tests/ui/import.spec.ts`
+      proves the no-selection state at 375px.
       **Acceptance:** with no location selected, `/import` names what is
       missing and offers the action that fixes it; with one location it
       proceeds without asking.

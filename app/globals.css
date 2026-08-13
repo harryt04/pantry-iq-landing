@@ -1088,6 +1088,32 @@ body {
   max-width: 62ch;
 }
 
+.import-location-state {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--signal-watch);
+  border-radius: var(--radius-surface);
+  display: grid;
+  gap: var(--space-4);
+  margin-top: var(--space-8);
+  max-width: 680px;
+  padding: var(--space-6);
+}
+
+.import-location-state h2,
+.import-location-state p {
+  margin: 0;
+}
+
+.import-location-state h2 {
+  font-size: var(--text-xl);
+  letter-spacing: -0.025em;
+}
+
+.import-location-state p:not(.app-page__eyebrow) {
+  line-height: 1.6;
+}
+
 .dashboard-data-state {
   margin-top: var(--space-8);
   max-width: 680px;

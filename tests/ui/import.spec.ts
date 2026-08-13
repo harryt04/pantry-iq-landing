@@ -4,6 +4,38 @@ import { MOCK_UPLOAD_ID, expect, test } from './fixtures/mock-api'
 
 import { fullYearLocationFixture } from '../fixtures/pantry'
 
+test.describe('CSV import location state', () => {
+  test('explains the missing location and links to location management', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 375, height: 812 })
+    await page.context().clearCookies({ name: 'pantryiq-location-id' })
+    await page.goto('/import')
+
+    await expect(
+      page.getByRole('heading', {
+        name: 'Choose a location before importing.',
+      }),
+    ).toBeVisible()
+    await expect(
+      page.getByText(
+        'Imported rows belong to one location so the dashboard and audit trail stay clear.',
+      ),
+    ).toBeVisible()
+    await expect(
+      page.getByRole('link', { name: 'Choose or add a location' }),
+    ).toHaveAttribute('href', '/account')
+    await expect(page.getByLabel('CSV file')).toHaveCount(0)
+    await expect
+      .poll(() =>
+        page.evaluate(
+          () => document.documentElement.scrollWidth <= window.innerWidth,
+        ),
+      )
+      .toBe(true)
+  })
+})
+
 test.describe('CSV batch upload', () => {
   test('detects transaction and labor fixtures independently', async ({
     page,
