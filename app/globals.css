@@ -174,11 +174,14 @@ body {
 }
 
 .auth-wordmark {
+  align-items: center;
   color: var(--foreground);
-  display: inline-block;
+  display: inline-flex;
   font-size: var(--text-lg);
   font-weight: 600;
   letter-spacing: -0.035em;
+  min-height: 44px;
+  padding: 0 var(--space-2);
   text-decoration: none;
 }
 
@@ -596,8 +599,12 @@ body {
 }
 
 .auth-links a {
+  align-items: center;
   color: var(--primary);
+  display: inline-flex;
   font-weight: 500;
+  min-height: 44px;
+  padding: 0 var(--space-2);
 }
 
 .auth-error,
@@ -764,10 +771,17 @@ body {
 }
 
 .location-view-links a {
+  align-items: center;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
   color: var(--primary);
+  display: inline-flex;
   font-size: var(--text-sm);
   font-weight: 500;
   text-underline-offset: 3px;
+  min-height: 44px;
+  padding: var(--space-2) var(--space-3);
+  text-decoration: none;
 }
 
 .location-actions {
@@ -1408,9 +1422,15 @@ body {
 }
 
 .portfolio-table__link {
+  align-items: center;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
   color: var(--foreground);
+  display: inline-flex;
   font-weight: 600;
-  text-underline-offset: 0.2em;
+  min-height: 44px;
+  padding: var(--space-2) var(--space-3);
+  text-decoration: none;
   white-space: nowrap;
 }
 
@@ -2104,6 +2124,18 @@ body {
   gap: var(--space-2);
 }
 
+.manual-entry [data-slot='input-group'] {
+  height: 44px;
+}
+
+.manual-entry [data-slot='input-group-control'] {
+  height: 44px;
+}
+
+.manual-entry [data-slot='input-group-button'] {
+  min-width: 44px;
+}
+
 .app-page__form-row input[type='file'] {
   border: 1px solid var(--input);
   border-radius: var(--radius-surface);
@@ -2541,7 +2573,7 @@ body {
   font: inherit;
   font-size: var(--text-sm);
   font-weight: 600;
-  min-height: 40px;
+  min-height: 44px;
   padding: var(--space-2) var(--space-3);
 }
 
@@ -2723,6 +2755,7 @@ body {
 }
 
 .chat-composer__send {
+  min-width: 44px;
   margin: 0 var(--space-1) var(--space-1) 0;
 }
 
@@ -3785,8 +3818,13 @@ body {
 }
 
 .recipe-back-link {
+  align-items: center;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  display: inline-flex;
   letter-spacing: 0;
-  padding-top: var(--space-2);
+  min-height: 44px;
+  padding: var(--space-2) var(--space-3);
   text-transform: none;
 }
 
@@ -4035,8 +4073,13 @@ body {
 }
 
 .menu-engineering-back-link {
+  align-items: center;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  display: inline-flex;
   letter-spacing: 0;
-  padding-top: var(--space-2);
+  min-height: 44px;
+  padding: var(--space-2) var(--space-3);
   text-transform: none;
 }
 
@@ -4818,9 +4861,15 @@ body {
 }
 
 .usage-variance-back-link {
+  align-items: center;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
   color: var(--primary);
+  display: inline-flex;
   flex: 0 0 auto;
   font-weight: 600;
+  min-height: 44px;
+  padding: var(--space-2) var(--space-3);
   text-decoration: none;
 }
 
@@ -4839,9 +4888,15 @@ body {
 }
 
 .usage-variance-details summary {
+  align-items: center;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
   color: var(--primary);
   cursor: pointer;
+  display: inline-flex;
   font-weight: 600;
+  min-height: 44px;
+  padding: var(--space-2) var(--space-3);
 }
 
 .usage-variance-details ul,

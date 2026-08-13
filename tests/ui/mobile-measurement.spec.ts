@@ -62,6 +62,7 @@ type MobileReport = {
   undersizedControls: Measurement[]
   labelGaps: Measurement[]
   fieldGaps: Measurement[]
+  nonPillRowActions: Measurement[]
 }
 
 function formatMeasurements(report: MobileReport) {
@@ -80,6 +81,9 @@ function formatMeasurements(report: MobileReport) {
     ),
     ...report.fieldGaps.map(
       (entry) => `field gap ${entry.selector}: ${entry.value}`,
+    ),
+    ...report.nonPillRowActions.map(
+      (entry) => `row action ${entry.selector}: ${entry.value}`,
     ),
   ]
 
@@ -105,6 +109,25 @@ function assertMobileReport(report: MobileReport) {
   ).toEqual([])
   expect(
     report.fieldGaps,
+    `${report.route}\n${formatMeasurements(report)}`,
+  ).toEqual([])
+  expect(
+    report.nonPillRowActions,
+    `${report.route}\n${formatMeasurements(report)}`,
+  ).toEqual([])
+}
+
+function assertTappableReport(report: MobileReport) {
+  expect(
+    report.pageOverflow,
+    `${report.route}\n${formatMeasurements(report)}`,
+  ).toEqual([])
+  expect(
+    report.undersizedInteractive,
+    `${report.route}\n${formatMeasurements(report)}`,
+  ).toEqual([])
+  expect(
+    report.nonPillRowActions,
     `${report.route}\n${formatMeasurements(report)}`,
   ).toEqual([])
 }
@@ -161,6 +184,11 @@ async function measurePage(page: Page, route: string): Promise<MobileReport> {
     const labels = Array.from(document.querySelectorAll('label')).filter(
       isVisible,
     )
+    const rowActions = Array.from(
+      document.querySelectorAll(
+        '.location-view-links a, .portfolio-table__link, .recipe-back-link, .menu-engineering-back-link, .usage-variance-back-link',
+      ),
+    ).filter(isVisible)
 
     const labelledControls = labels.flatMap((label) => {
       const htmlLabel = label as HTMLLabelElement
@@ -254,6 +282,20 @@ async function measurePage(page: Page, route: string): Promise<MobileReport> {
             ]
       })
 
+    const nonPillRowActions = rowActions.flatMap((element) => {
+      const styles = getComputedStyle(element)
+      const rect = element.getBoundingClientRect()
+      const radius = Number.parseFloat(styles.borderTopLeftRadius)
+      return radius >= rect.height / 2 && styles.display.includes('flex')
+        ? []
+        : [
+            measurement(
+              element,
+              `${round(rect.width)}×${round(rect.height)}, radius=${styles.borderTopLeftRadius} (pill required)`,
+            ),
+          ]
+    })
+
     const initialScrollX = window.scrollX
     window.scrollTo({ left: 2000, top: 0 })
     const scrollXAfterProbe = window.scrollX
@@ -273,6 +315,7 @@ async function measurePage(page: Page, route: string): Promise<MobileReport> {
       undersizedControls,
       labelGaps,
       fieldGaps,
+      nonPillRowActions,
     }
   }, route)
 }
@@ -298,7 +341,7 @@ test.describe('mobile measurement harness', () => {
         )
 
         expect(report.viewport).toEqual({ width: 375, height: 812 })
-        expect(report.pageOverflow, route.path).toEqual([])
+        assertTappableReport(report)
       })
     }
   })

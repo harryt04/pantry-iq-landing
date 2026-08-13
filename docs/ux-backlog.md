@@ -231,7 +231,10 @@ overflow is found later, it goes under `Observed, not queued`.
       at 375×812, prints selector/value findings, and behaviorally proves the
       seeded-violation failure path.
 
-- [ ] **Tappable row actions.** Inline text links act as primary actions and
+- [x] **Tappable row actions.**
+      Inline actions now render as 44px pill targets across the operator
+      routes; `tests/ui/mobile-measurement.spec.ts` asserts every interactive
+      element and the row-action pill contract at 375px.
       measure 17–25px tall: `View dashboard` at 93×17, `Open dashboard` at
       126×18, `Back to account` at 335×25. Roughly twenty per page on
       `/account`, `/settings`, and `/portfolio`. Violates §9.7.
