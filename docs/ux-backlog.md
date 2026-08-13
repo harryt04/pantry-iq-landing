@@ -376,11 +376,15 @@ after the adopted sections.
       selects it, and routes to location-scoped import. DOM and serial E2E
       coverage prove creation and selected-location handoff.
 
-- [ ] **First location to first import to first insight, with no dead end.**
+- [x] **First location to first import to first insight, with no dead end.** — Codex
       Walk the whole path as a new account with a real fixture file.
       **Acceptance:** an end-to-end test signs up, creates a location, imports
       `transactions/sales-one-year-daily.csv`, and reaches a dashboard showing
       real figures — with no step where the screen states nothing to do next.
+      `tests/e2e/critical-path.spec.ts` now proves the fresh-account journey
+      through first location, full-year import, item resolution, and a ready
+      dashboard with top-selling revenue; it also checks the 375px dashboard
+      has no page overflow.
 
 - [ ] **Empty and insufficient states name the missing thing.** The four-week
       sufficiency gate means an operator can import correctly and still see

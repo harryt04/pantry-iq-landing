@@ -654,6 +654,114 @@ test('location, CSV import, and dashboard', async ({ page }) => {
   }
 })
 
+test.describe('first-session value path', () => {
+  test.use({ storageState: undefined })
+
+  test('signs up, imports a full year, and reaches the first insight', async ({
+    page,
+  }) => {
+    test.setTimeout(300_000)
+    const email = `first-insight-${Date.now()}@example.test`
+    const password = 'pantryiq-first-insight-2026'
+    const locationName = 'First insight kitchen'
+    let locationId: string | null = null
+
+    try {
+      await page.goto('/sign-up')
+      await page.getByLabel('Name').fill('First insight operator')
+      await page.getByLabel('Email').fill(email)
+      await page.getByLabel('Password').fill(password)
+      await page.getByRole('button', { name: 'Create account' }).click()
+
+      await expect(page).toHaveURL(/\/welcome$/)
+      const firstLocationAction = page.getByRole('button', {
+        name: 'Add location',
+      })
+      await expect(
+        page.getByRole('heading', { name: 'Start with one location.' }),
+      ).toBeVisible()
+      await expect(firstLocationAction).toBeEnabled()
+      await page.getByLabel('Location name').fill(locationName)
+      await page.getByLabel('Address').fill('100 First Insight Street')
+      const locationResponse = page.waitForResponse(
+        (response) =>
+          response.url().endsWith('/api/locations') &&
+          response.request().method() === 'POST',
+      )
+      await firstLocationAction.click()
+      expect((await locationResponse).status()).toBe(201)
+
+      await expect(page).toHaveURL(/\/import\?locationId=/)
+      locationId = new URL(page.url()).searchParams.get('locationId')
+      expect(locationId).toBeTruthy()
+      await expect(
+        page.getByRole('combobox', { name: 'Selected location' }),
+      ).toContainText(locationName)
+
+      await page
+        .locator('#csv-file')
+        .setInputFiles(
+          path.resolve(
+            'tests/fixtures/csv/transactions/sales-one-year-daily.csv',
+          ),
+        )
+      await expect(page.locator('#csv-preview-title')).toBeVisible({
+        timeout: 120_000,
+      })
+      await expect(page.locator('.csv-preview .app-page__help')).toContainText(
+        '1,825 rows',
+      )
+
+      await reviewMapping(page)
+      await resolveNewItems(page)
+      await expect(
+        page
+          .locator('.csv-import-confirmation')
+          .getByRole('heading', { name: 'Ready to import 1,825 rows.' }),
+      ).toBeVisible()
+
+      await page.getByRole('button', { name: 'Import now' }).click()
+      await expect(page.locator('.app-page__status')).toContainText(
+        '1,825 rows imported.',
+        { timeout: 120_000 },
+      )
+      await page.getByRole('link', { name: 'Continue to dashboard' }).click()
+
+      await expect(page).toHaveURL(/\/dashboard\?locationId=/)
+      await expect(
+        page.getByRole('heading', {
+          name: `${locationName}: ready for a closer look.`,
+        }),
+      ).toBeVisible()
+
+      const itemDeepDives = page.getByRole('region', {
+        name: 'Look closer at an item.',
+      })
+      await expect(itemDeepDives).toContainText('Top selling')
+      await expect(itemDeepDives).toContainText('Salmon Fillet')
+      await expect(itemDeepDives).toContainText(/\$[\d,]+/)
+
+      await page.setViewportSize({ width: 375, height: 812 })
+      await page.reload()
+      await expect(
+        page.getByRole('heading', {
+          name: `${locationName}: ready for a closer look.`,
+        }),
+      ).toBeVisible()
+      expect(
+        await page.evaluate(() => document.documentElement.scrollWidth),
+      ).toBeLessThanOrEqual(375)
+    } finally {
+      if (locationId) {
+        const response = await page.request.delete(
+          `/api/locations/${locationId}`,
+        )
+        expect([204, 404]).toContain(response.status())
+      }
+    }
+  })
+})
+
 test('imports a public CSV sample through the real importer', async ({
   page,
 }) => {
