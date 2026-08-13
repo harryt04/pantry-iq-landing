@@ -10,12 +10,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
  */
 
 const refresh = vi.fn()
+const push = vi.fn()
 vi.mock('next/navigation', () => ({
-  useRouter: () => ({ push: vi.fn(), replace: vi.fn(), refresh }),
+  useRouter: () => ({ push, replace: vi.fn(), refresh }),
   usePathname: () => '/account',
 }))
 
 const { LocationManager } = await import('./location-manager')
+const { FirstLocationForm } = await import('./first-location-form')
 
 const LOCATION = {
   id: 'loc-1',
@@ -76,6 +78,7 @@ describe('location manager', () => {
   beforeEach(() => {
     fetchMock.mockReset()
     refresh.mockReset()
+    push.mockReset()
     routeFetch()
     vi.stubGlobal('fetch', fetchMock)
   })
@@ -88,6 +91,31 @@ describe('location manager', () => {
     render(<LocationManager />)
 
     expect(await screen.findByText('North')).toBeInTheDocument()
+  })
+
+  it('creates the first location and carries it into the import flow', async () => {
+    render(<FirstLocationForm />)
+
+    await userEvent.type(
+      screen.getByLabelText('Location name'),
+      'First Kitchen',
+    )
+    await userEvent.type(screen.getByLabelText(/Address/), '1 Main Street')
+    await userEvent.click(screen.getByRole('button', { name: 'Add location' }))
+
+    await waitFor(() =>
+      expect(fetchMock).toHaveBeenCalledWith(
+        '/api/locations',
+        expect.objectContaining({
+          method: 'POST',
+          body: JSON.stringify({
+            name: 'First Kitchen',
+            address: '1 Main Street',
+          }),
+        }),
+      ),
+    )
+    expect(push).toHaveBeenCalledWith('/import?locationId=loc-1')
   })
 
   /**

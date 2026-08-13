@@ -34,19 +34,32 @@ test.describe('explicit signup and returning-user journey', () => {
     await expect(
       page.getByRole('heading', { name: 'Start with one location.' }),
     ).toBeVisible()
-    const desktopAction = page.getByRole('link', {
-      name: 'Add your first location',
-    })
+    const firstLocationName = 'First session kitchen'
+    const desktopAction = page.getByRole('button', { name: 'Add location' })
+    await expect(desktopAction).toBeEnabled()
+    await page.getByLabel('Location name').fill(firstLocationName)
+    await page.getByLabel('Address').fill('1 First Street')
     await expect(desktopAction).toBeVisible()
     expect((await desktopAction.boundingBox())?.height).toBeGreaterThanOrEqual(
       44,
     )
+    await expect(desktopAction).toBeEnabled()
+    await expect(page.getByLabel('Location name')).toHaveValue(
+      firstLocationName,
+    )
+    await desktopAction.click()
+    await expect(page).toHaveURL(/\/import\?locationId=/)
+    const createdFirstLocationId = new URL(page.url()).searchParams.get(
+      'locationId',
+    )
+    expect(createdFirstLocationId).toBeTruthy()
+    await expect(
+      page.getByRole('combobox', { name: 'Selected location' }),
+    ).toContainText(firstLocationName)
 
     await page.setViewportSize({ width: 375, height: 812 })
     await page.goto('/welcome')
-    const mobileAction = page.getByRole('link', {
-      name: 'Add your first location',
-    })
+    const mobileAction = page.getByRole('button', { name: 'Add location' })
     await expect(mobileAction).toBeVisible()
     const mobileActionBox = await mobileAction.boundingBox()
     expect(mobileActionBox).not.toBeNull()
@@ -56,8 +69,7 @@ test.describe('explicit signup and returning-user journey', () => {
     ).toBeLessThanOrEqual(375)
 
     await page.setViewportSize({ width: 1280, height: 720 })
-    await mobileAction.click()
-    await expect(page).toHaveURL(/\/account$/)
+    await page.goto('/account')
 
     for (const [name, address] of [
       ['North Kitchen', '1 North Street'],

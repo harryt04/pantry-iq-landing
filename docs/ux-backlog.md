@@ -366,11 +366,15 @@ after the adopted sections.
       **Acceptance:** a newly created account arrives somewhere that states the
       one next action, and that action is reachable in one click.
 
-- [ ] **The first location, in the first session.** Every downstream screen
+- [x] **The first location, in the first session.** — Codex
+      Every downstream screen
       needs a `locationId`. Creating one is currently an errand the operator
       has to discover.
       **Acceptance:** a new account can name its first location without
       navigating to find the form, and lands with that location selected.
+      Added the form directly to `/welcome`; it persists the new location,
+      selects it, and routes to location-scoped import. DOM and serial E2E
+      coverage prove creation and selected-location handoff.
 
 - [ ] **First location to first import to first insight, with no dead end.**
       Walk the whole path as a new account with a real fixture file.

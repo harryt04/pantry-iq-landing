@@ -27,7 +27,22 @@ setup('authenticate the shared owner account', async ({ page }) => {
     await expect(
       page.getByRole('heading', { name: 'Start with one location.' }),
     ).toBeVisible()
-    await page.getByRole('link', { name: 'Add your first location' }).click()
+    await expect(
+      page.getByRole('button', { name: 'Add location' }),
+    ).toBeEnabled()
+    await page.getByLabel('Location name').fill('E2E setup kitchen')
+    await page.getByRole('button', { name: 'Add location' }).click()
+    await expect(page).toHaveURL(/\/import\?locationId=/)
+
+    // The setup location only unlocks the first-session route. Seed setup
+    // creates the stable full-year and partial-history locations next.
+    const setupLocationId = new URL(page.url()).searchParams.get('locationId')
+    if (!setupLocationId) throw new Error('The setup location was not created.')
+    const deletion = await page.request.delete(
+      `/api/locations/${setupLocationId}`,
+    )
+    expect(deletion.status()).toBe(204)
+    await page.goto('/account')
   }
   await expect(page).toHaveURL(/\/account$/)
   await page.context().storageState({ path: authFile })

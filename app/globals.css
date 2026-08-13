@@ -210,6 +210,15 @@ body {
   line-height: 1.6;
 }
 
+.first-session-location-form {
+  display: grid;
+  gap: var(--space-5);
+}
+
+.first-session-location-form > [data-slot='button'] {
+  justify-self: start;
+}
+
 .first-session-card > [data-slot='button'] {
   justify-self: start;
 }
@@ -852,6 +861,11 @@ body {
   line-height: 1.6;
   margin: 0;
   padding: var(--space-3);
+}
+
+.locations-message--error {
+  background: var(--signal-risk-soft);
+  border-color: var(--signal-risk);
 }
 
 .item-master-card {

@@ -1,9 +1,8 @@
-import Link from 'next/link'
 import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 
 import { SignOutButton } from '@/components/auth/sign-out-button'
-import { Button } from '@/components/ui/button'
+import { FirstLocationForm } from '@/components/locations/first-location-form'
 import { auth } from '@/src/server/auth/auth'
 
 export default async function WelcomePage() {
@@ -30,9 +29,7 @@ export default async function WelcomePage() {
             add more locations later.
           </p>
         </div>
-        <Button asChild>
-          <Link href="/account">Add your first location</Link>
-        </Button>
+        <FirstLocationForm />
       </section>
     </main>
   )
