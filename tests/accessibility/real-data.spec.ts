@@ -1,4 +1,5 @@
 import { createRequire } from 'node:module'
+import path from 'node:path'
 
 import { expect, test, type Page, type TestInfo } from '@playwright/test'
 
@@ -20,6 +21,12 @@ const routes = [
   `/menu-engineering?locationId=${locationId}`,
 ]
 const themes = ['light', 'dark'] as const
+const importBatchFixtures = [
+  path.resolve(
+    'tests/fixtures/csv/transactions/sales-with-refunds-negative.csv',
+  ),
+  path.resolve('tests/fixtures/csv/labor/7shifts-timesheet.csv'),
+]
 
 type AccessibilityResult = {
   violations: Array<{
@@ -31,6 +38,123 @@ type AccessibilityResult = {
 
 async function loadAxe(page: Page) {
   await page.addScriptTag({ path: axePath })
+}
+
+const visibleInteractiveSelector =
+  'a[href]:not([aria-label="Open Next.js Dev Tools"]), button:not([aria-label="Open Next.js Dev Tools"]), input, select, textarea, summary, [tabindex="0"]'
+
+async function assertKeyboardFocus(page: Page) {
+  const focusTargetDetails = await page
+    .locator(visibleInteractiveSelector)
+    .evaluateAll((elements) =>
+      elements
+        .filter((element) => {
+          const style = getComputedStyle(element)
+          return (
+            style.display !== 'none' &&
+            style.visibility !== 'hidden' &&
+            style.opacity !== '0' &&
+            element.getClientRects().length > 0 &&
+            !element.closest('details:not([open])') &&
+            !element.matches(':disabled') &&
+            (element as HTMLElement).tabIndex >= 0
+          )
+        })
+        .map((element) => ({
+          id: element.id,
+          label: element.getAttribute('aria-label'),
+          text: element.textContent?.trim().slice(0, 40),
+          tag: element.tagName.toLowerCase(),
+        })),
+    )
+  const expectedFocusTargets = await page
+    .locator(visibleInteractiveSelector)
+    .evaluateAll(
+      (elements) =>
+        elements.filter((element) => {
+          const style = getComputedStyle(element)
+          return (
+            style.display !== 'none' &&
+            style.visibility !== 'hidden' &&
+            style.opacity !== '0' &&
+            element.getClientRects().length > 0 &&
+            !element.closest('details:not([open])') &&
+            !element.matches(':disabled') &&
+            (element as HTMLElement).tabIndex >= 0
+          )
+        }).length,
+    )
+
+  let focusedTargets = 0
+  let tabPresses = 0
+  while (focusedTargets < expectedFocusTargets) {
+    tabPresses += 1
+    if (tabPresses > expectedFocusTargets + 3)
+      throw new Error(
+        `Keyboard focus did not reach every import control. Targets: ${JSON.stringify(focusTargetDetails)}`,
+      )
+    await page.keyboard.press('Tab')
+    const focus = await page.evaluate((selector) => {
+      const element = document.activeElement
+      if (!element)
+        return {
+          matches: false,
+          skip: false,
+          active: null,
+          boxShadow: 'none',
+          outlineOffset: '0px',
+          outlineStyle: 'none',
+          outlineWidth: '0px',
+        }
+      if (element.tagName.toLowerCase() === 'nextjs-portal')
+        return {
+          matches: false,
+          skip: true,
+          active: 'nextjs-portal',
+          boxShadow: 'none',
+          outlineOffset: '0px',
+          outlineStyle: 'none',
+          outlineWidth: '0px',
+        }
+      if (!element.matches(selector))
+        return {
+          matches: false,
+          skip: false,
+          active: `${element.tagName.toLowerCase()}#${element.id}.${element.className}`,
+          boxShadow: 'none',
+          outlineOffset: '0px',
+          outlineStyle: 'none',
+          outlineWidth: '0px',
+        }
+      const style = getComputedStyle(element)
+      return {
+        matches: true,
+        skip: false,
+        active: `${element.tagName.toLowerCase()}#${element.id}.${element.className}`,
+        outlineOffset: style.outlineOffset,
+        outlineStyle: style.outlineStyle,
+        outlineWidth: style.outlineWidth,
+        boxShadow: style.boxShadow,
+      }
+    }, visibleInteractiveSelector)
+
+    if (focus.skip) continue
+    expect(
+      focus.matches,
+      `Unexpected active element: ${focus.active}; targets: ${JSON.stringify(focusTargetDetails)}`,
+    ).toBe(true)
+    if (!focus.matches) continue
+
+    focusedTargets += 1
+    const hasVisibleRing =
+      (focus.outlineStyle !== 'none' &&
+        parseFloat(focus.outlineWidth) >= 2 &&
+        parseFloat(focus.outlineOffset) >= 2) ||
+      focus.boxShadow !== 'none'
+    expect(hasVisibleRing).toBe(true)
+  }
+
+  expect(focusedTargets).toBe(expectedFocusTargets)
 }
 
 type ChartContract = {
@@ -144,6 +268,100 @@ for (const route of routes) {
         JSON.stringify(results.violations, null, 2),
       ).toEqual([])
       await context.close()
+    })
+  }
+}
+
+for (const colorScheme of themes) {
+  for (const viewport of [
+    { label: 'mobile', height: 900, width: 375 },
+    { label: 'desktop', height: 900, width: 1280 },
+  ]) {
+    test(`/import file selection and batch list remain accessible at ${viewport.label} in ${colorScheme} theme`, async ({
+      browser,
+    }, testInfo) => {
+      const context = await browser.newContext({
+        colorScheme,
+        viewport: { height: viewport.height, width: viewport.width },
+      })
+      const page = await context.newPage()
+
+      try {
+        await page.goto(`/import?locationId=${locationId}`)
+        await expect(
+          page.getByRole('heading', { name: "Bring in one location's data." }),
+        ).toBeVisible()
+
+        await page.route('**/api/uploads/*/commit', async (route) => {
+          await route.fulfill({
+            contentType: 'application/json',
+            body: JSON.stringify({
+              summary: {
+                alreadyImported: false,
+                filename: 'batch-preview.csv',
+                importType: 'transactions',
+                items: [],
+                linkedItems: 1,
+                newItems: 0,
+                ready: true,
+                rowsImported: 0,
+                rowsToImport: 1,
+                unmatchedItems: [],
+              },
+            }),
+            status: 200,
+          })
+        })
+
+        await page.locator('#csv-file').setInputFiles(importBatchFixtures)
+        await expect(page.locator('.csv-upload-job')).toHaveCount(2)
+        for (const filename of [
+          'sales-with-refunds-negative.csv',
+          '7shifts-timesheet.csv',
+        ]) {
+          const job = page
+            .locator('.csv-upload-job')
+            .filter({ hasText: filename })
+          await expect(
+            job.getByRole('heading', { name: filename }),
+          ).toBeVisible({
+            timeout: 120_000,
+          })
+          await expect(job.locator('.csv-preview')).toBeVisible({
+            timeout: 120_000,
+          })
+          await expect(job.locator('[role="alert"]')).toHaveCount(0)
+        }
+        await expect(
+          page.getByRole('heading', { name: '2 files are ready.' }),
+        ).toBeVisible({ timeout: 120_000 })
+
+        await loadAxe(page)
+        const results = await page.evaluate(async () => {
+          const axe = (
+            window as unknown as {
+              axe: {
+                run: (
+                  context?: unknown,
+                  options?: unknown,
+                ) => Promise<AccessibilityResult>
+              }
+            }
+          ).axe
+          return axe.run(document, {
+            rules: { 'target-size': { enabled: true } },
+          })
+        })
+        expect(
+          results.violations,
+          JSON.stringify(results.violations, null, 2),
+        ).toEqual([])
+
+        await assertKeyboardFocus(page)
+        await assertGrayscaleReadable(page, testInfo)
+      } finally {
+        await context.close()
+      }
     })
   }
 }

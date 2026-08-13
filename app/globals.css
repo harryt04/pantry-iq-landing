@@ -273,6 +273,11 @@ body {
   overflow-x: auto;
 }
 
+.csv-preview__table-wrap:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
 .csv-preview table {
   border-collapse: collapse;
   font-size: var(--text-sm);

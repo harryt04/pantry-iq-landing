@@ -1102,6 +1102,7 @@ export function CsvUploadForm({ locationId }: { locationId: string }) {
           {job.preview ? (
             <CsvPreviewTable
               preview={job.preview}
+              filename={job.fileName}
               titleId={
                 jobId === 'upload-job-0'
                   ? 'csv-preview-title'
@@ -1223,14 +1224,16 @@ export function CsvUploadForm({ locationId }: { locationId: string }) {
 
 function CsvPreviewTable({
   preview,
+  filename,
   titleId,
 }: {
   preview: CsvPreview
+  filename: string
   titleId: string
 }) {
   const delimiterName = preview.delimiter === '\t' ? 'tab' : preview.delimiter
   return (
-    <section className="csv-preview" aria-labelledby={titleId}>
+    <section className="csv-preview" aria-label={`Preview of ${filename}`}>
       <div>
         <p className="app-page__eyebrow">Preview</p>
         <h2 id={titleId}>A look at the first rows.</h2>
@@ -1246,7 +1249,11 @@ function CsvPreviewTable({
           <code>{problem.example}</code>
         </p>
       ))}
-      <div className="csv-preview__table-wrap">
+      <div
+        className="csv-preview__table-wrap"
+        tabIndex={0}
+        aria-label="Scroll to see all imported columns"
+      >
         <table>
           <caption className="sr-only">Preview of imported CSV rows</caption>
           <thead>

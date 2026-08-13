@@ -418,7 +418,10 @@ screen, at both 1280px and 375px: axe passes, the greyscale check passes, focus
 is visible at every stop, and copy follows
 [`brand/voice-and-tone.md`](brand/voice-and-tone.md).
 
-- [ ] `/import` — file selection and batch list
+- [x] `/import` — file selection and batch list — Codex
+      Real fixture upload/preview is covered at 375px and 1280px in both
+      themes; `tests/accessibility/real-data.spec.ts` proves axe, grayscale,
+      and keyboard focus-ring conformance for the batch list.
 - [ ] `/import` — preview and column mapping
 - [ ] `/import` — item resolution
 - [ ] `/import` — confirmation and result
