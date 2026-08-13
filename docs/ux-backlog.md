@@ -188,11 +188,15 @@ reorder.
       `tests/e2e/critical-path.spec.ts` imports a sample through the real
       database-backed flow.
 
-- [ ] **Finish the batch in one action.** With several files ready, the
+- [x] **Finish the batch in one action.** — Codex
+      With several files ready, the
       operator confirms each one separately.
       **Acceptance:** a batch where every file is ready commits in one action
       and reports one combined summary — rows imported, new items, files
       skipped and why.
+      Added one-action sequential commits for ready files, with a combined
+      result and explicit already-imported skip reasons; `tests/ui/import.spec.ts`
+      proves the successful and skipped-file paths at 375px.
 
 ---
 

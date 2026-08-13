@@ -42,7 +42,6 @@ test.describe('CSV batch upload', () => {
     mockApi,
   }) => {
     await mockApi()
-    await page.setViewportSize({ width: 375, height: 812 })
     await page.goto(`/import?locationId=${fullYearLocationFixture.locationId}`)
 
     const samples = [
@@ -183,6 +182,116 @@ test.describe('CSV batch upload', () => {
     await expect.poll(() => uploadRequests.length).toBe(3)
     await expect(page.locator('input[type="file"]')).toBeHidden()
     await expect(page.locator('.csv-upload-job')).toHaveCount(3)
+  })
+
+  test('commits every ready file from one action and shows one combined summary', async ({
+    page,
+    mockApi,
+  }) => {
+    await mockApi()
+    await page.setViewportSize({ width: 375, height: 812 })
+    await page.goto(`/import?locationId=${fullYearLocationFixture.locationId}`)
+
+    const committedUploads: string[] = []
+    page.on('request', (request) => {
+      if (
+        request.method() === 'POST' &&
+        new URL(request.url()).pathname.match(
+          /^\/api\/uploads\/[^/]+\/commit$/,
+        ) &&
+        request.postDataJSON()?.dryRun !== true
+      ) {
+        committedUploads.push(request.url())
+      }
+    })
+
+    await page.getByLabel('CSV file').setInputFiles([
+      {
+        name: 'sales.csv',
+        mimeType: 'text/csv',
+        buffer: Buffer.from('date,item,quantity\n2026-08-01,salmon,2\n'),
+      },
+      {
+        name: 'labor.csv',
+        mimeType: 'text/csv',
+        buffer: Buffer.from('date,item,quantity\n2026-08-01,salmon,2\n'),
+      },
+    ])
+
+    await expect(
+      page.getByRole('button', { name: 'Import 2 ready files' }),
+    ).toBeVisible()
+    await expect
+      .poll(() =>
+        page
+          .getByRole('button', { name: 'Import 2 ready files' })
+          .evaluate((element) => element.getBoundingClientRect().height),
+      )
+      .toBeGreaterThanOrEqual(44)
+    await page.getByRole('button', { name: 'Import 2 ready files' }).click()
+
+    await expect.poll(() => committedUploads.length).toBe(2)
+    await expect(
+      page.getByRole('heading', { name: 'Batch import complete.' }),
+    ).toBeVisible()
+    await expect(page.getByText('2 rows imported')).toBeVisible()
+    await expect(page.getByText('2 new items created')).toBeVisible()
+    await expect(page.getByText('Files skipped: None')).toBeVisible()
+    await expect
+      .poll(() =>
+        page.evaluate(
+          () => document.documentElement.scrollWidth <= window.innerWidth,
+        ),
+      )
+      .toBe(true)
+
+    await page.setViewportSize({ width: 1280, height: 900 })
+    await expect(
+      page.getByRole('heading', { name: 'Batch import complete.' }),
+    ).toBeVisible()
+  })
+
+  test('explains a file skipped from the batch because it was already imported', async ({
+    page,
+    mockApi,
+  }) => {
+    await mockApi({ alreadyImportedFilename: 'already.csv' })
+    await page.setViewportSize({ width: 375, height: 812 })
+    await page.goto(`/import?locationId=${fullYearLocationFixture.locationId}`)
+
+    const committedUploads: string[] = []
+    page.on('request', (request) => {
+      if (
+        request.method() === 'POST' &&
+        new URL(request.url()).pathname.match(
+          /^\/api\/uploads\/[^/]+\/commit$/,
+        ) &&
+        request.postDataJSON()?.dryRun !== true
+      ) {
+        committedUploads.push(request.url())
+      }
+    })
+
+    await page.getByLabel('CSV file').setInputFiles([
+      {
+        name: 'already.csv',
+        mimeType: 'text/csv',
+        buffer: Buffer.from('date,item,quantity\n2026-08-01,salmon,2\n'),
+      },
+      {
+        name: 'new.csv',
+        mimeType: 'text/csv',
+        buffer: Buffer.from('date,item,quantity\n2026-08-01,salmon,2\n'),
+      },
+    ])
+
+    await page.getByRole('button', { name: 'Import 2 ready files' }).click()
+
+    await expect.poll(() => committedUploads.length).toBe(1)
+    await expect(
+      page.getByRole('heading', { name: 'Batch import complete.' }),
+    ).toBeVisible()
+    await expect(page.getByText('already.csv: Already imported')).toBeVisible()
   })
 
   test('keeps the five steps visible and puts other import tools behind a disclosure', async ({

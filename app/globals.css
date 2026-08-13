@@ -2208,6 +2208,34 @@ body {
   padding: 0;
 }
 
+.csv-batch-action,
+.csv-batch-summary {
+  border-left: 3px solid var(--signal-good);
+  display: grid;
+  gap: var(--space-4);
+  padding-left: var(--space-4);
+}
+
+.csv-batch-action h2,
+.csv-batch-summary h2,
+.csv-batch-summary p {
+  margin: 0;
+}
+
+.csv-batch-summary ul {
+  display: grid;
+  gap: var(--space-2);
+  margin: var(--space-2) 0 0;
+  padding-left: var(--space-5);
+}
+
+@media (min-width: 640px) {
+  .csv-batch-action {
+    align-items: center;
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+}
+
 .csv-import-step {
   align-content: start;
   border-top: 3px solid var(--border);

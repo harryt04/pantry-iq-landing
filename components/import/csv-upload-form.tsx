@@ -60,6 +60,13 @@ type ImportSummary = {
   }>
 }
 
+type BatchImportSummary = {
+  filesImported: number
+  rowsImported: number
+  newItems: number
+  filesSkipped: Array<{ filename: string; reason: string }>
+}
+
 const importTypes = [
   ['transactions', 'Transactions'],
   ['purchase_orders', 'Purchase orders'],
@@ -275,6 +282,9 @@ async function detectImportType(file: File): Promise<CsvImportType> {
 export function CsvUploadForm({ locationId }: { locationId: string }) {
   const [jobs, setJobs] = React.useState<Record<string, UploadJob>>({})
   const [activeJobId, setActiveJobId] = React.useState<string | null>(null)
+  const [batchSummary, setBatchSummary] =
+    React.useState<BatchImportSummary | null>(null)
+  const [isBatchCommitting, setIsBatchCommitting] = React.useState(false)
   const [isDragging, setIsDragging] = React.useState(false)
   const [storageHydrated, setStorageHydrated] = React.useState(false)
   const nextJobId = React.useRef(0)
@@ -396,6 +406,7 @@ export function CsvUploadForm({ locationId }: { locationId: string }) {
     jobId: string,
     selectedFile: File,
     selectedImportType: string,
+    prepareAutomatically = false,
   ) {
     try {
       const response = await fetch(
@@ -440,6 +451,14 @@ export function CsvUploadForm({ locationId }: { locationId: string }) {
         status: `${selectedFile.name} is ready to map.`,
         isUploading: false,
       }))
+      if (
+        prepareAutomatically &&
+        previewResult.preview!.mapping.columns.every(
+          (column) => column.band === 'auto',
+        )
+      ) {
+        await refreshSummary(jobId, result.upload.id, {})
+      }
     } catch (uploadError) {
       updateJob(jobId, (job) => ({
         ...job,
@@ -455,7 +474,11 @@ export function CsvUploadForm({ locationId }: { locationId: string }) {
     }
   }
 
-  async function detectAndUpload(jobId: string, selectedFile: File) {
+  async function detectAndUpload(
+    jobId: string,
+    selectedFile: File,
+    prepareAutomatically = false,
+  ) {
     try {
       const detectedImportType = await detectImportType(selectedFile)
       updateJob(jobId, (job) => ({
@@ -464,7 +487,12 @@ export function CsvUploadForm({ locationId }: { locationId: string }) {
         detectedImportType,
         status: `${selectedFile.name} detected as ${importTypeLabel(detectedImportType)}. Checking the file`,
       }))
-      await uploadFile(jobId, selectedFile, detectedImportType)
+      await uploadFile(
+        jobId,
+        selectedFile,
+        detectedImportType,
+        prepareAutomatically,
+      )
     } catch (detectionError) {
       updateJob(jobId, (job) => ({
         ...job,
@@ -479,6 +507,7 @@ export function CsvUploadForm({ locationId }: { locationId: string }) {
   }
 
   function removeJob(jobId: string) {
+    setBatchSummary(null)
     setJobs((currentJobs) => {
       const nextJobs = { ...currentJobs }
       delete nextJobs[jobId]
@@ -522,6 +551,8 @@ export function CsvUploadForm({ locationId }: { locationId: string }) {
   function startUploads(files: File[]) {
     if (!files.length) return
 
+    setBatchSummary(null)
+
     const entries = files.map((selectedFile) => {
       const jobId = `upload-job-${nextJobId.current++}`
       return {
@@ -552,8 +583,8 @@ export function CsvUploadForm({ locationId }: { locationId: string }) {
     }))
     setActiveJobId(entries[0]?.jobId ?? null)
 
-    for (const { jobId, selectedFile } of entries) {
-      void detectAndUpload(jobId, selectedFile)
+    for (const [index, { jobId, selectedFile }] of entries.entries()) {
+      void detectAndUpload(jobId, selectedFile, index > 0)
     }
   }
 
@@ -743,7 +774,7 @@ export function CsvUploadForm({ locationId }: { locationId: string }) {
     )
   }
 
-  async function commit(jobId: string, job: UploadJob) {
+  async function commitUpload(jobId: string, job: UploadJob) {
     if (!job.uploadId || !job.summary?.ready) return
     updateJob(jobId, (currentJob) => ({
       ...currentJob,
@@ -771,13 +802,7 @@ export function CsvUploadForm({ locationId }: { locationId: string }) {
         isCommitted: true,
         status: `${result.summary!.rowsImported.toLocaleString()} rows imported. ${result.summary!.newItems.toLocaleString()} new items created.`,
       }))
-      const nextJob = jobEntries.find(
-        ([nextJobId, nextJob]) =>
-          nextJobId !== jobId &&
-          !(nextJob.summary?.rowsImported || nextJob.summary?.alreadyImported),
-      )
-      if (nextJob) setActiveJobId(nextJob[0])
-      window.dispatchEvent(new Event('pantryiq-import-complete'))
+      return { ...result.summary, uploadId: job.uploadId }
     } catch (commitError) {
       updateJob(jobId, (currentJob) => ({
         ...currentJob,
@@ -794,7 +819,68 @@ export function CsvUploadForm({ locationId }: { locationId: string }) {
     }
   }
 
+  async function commit(jobId: string, job: UploadJob) {
+    const summary = await commitUpload(jobId, job)
+    if (!summary) return
+    const nextJob = jobEntries.find(
+      ([nextJobId, nextJob]) =>
+        nextJobId !== jobId && !nextJob.isCommitted && nextJob.summary?.ready,
+    )
+    if (nextJob) setActiveJobId(nextJob[0])
+    window.dispatchEvent(new Event('pantryiq-import-complete'))
+  }
+
+  async function commitReadyBatch() {
+    if (isBatchCommitting || readyJobEntries.length < 2) return
+
+    setIsBatchCommitting(true)
+    const results: Array<{ job: UploadJob; summary: ImportSummary }> = []
+    try {
+      for (const [jobId, job] of readyJobEntries) {
+        if (!job.summary?.ready) continue
+        if (job.summary.alreadyImported) {
+          updateJob(jobId, (currentJob) => ({
+            ...currentJob,
+            isCommitted: true,
+            status: `${currentJob.fileName} was already imported.`,
+          }))
+          results.push({ job, summary: job.summary })
+          continue
+        }
+
+        const summary = await commitUpload(jobId, job)
+        if (!summary) return
+        results.push({ job, summary })
+      }
+
+      setBatchSummary({
+        filesImported: results.filter(({ summary }) => !summary.alreadyImported)
+          .length,
+        rowsImported: results.reduce(
+          (total, { summary }) => total + summary.rowsImported,
+          0,
+        ),
+        newItems: results.reduce(
+          (total, { summary }) => total + summary.newItems,
+          0,
+        ),
+        filesSkipped: results
+          .filter(({ summary }) => summary.alreadyImported)
+          .map(({ job }) => ({
+            filename: job.fileName,
+            reason: 'Already imported',
+          })),
+      })
+      window.dispatchEvent(new Event('pantryiq-import-complete'))
+    } finally {
+      setIsBatchCommitting(false)
+    }
+  }
+
   const jobEntries = Object.entries(jobs)
+  const readyJobEntries = jobEntries.filter(
+    ([, job]) => job.summary?.ready && !job.isCommitted,
+  )
   const activeJob = activeJobId ? jobs[activeJobId] : undefined
   const currentStep = currentStepFor(activeJob)
   return (
@@ -826,6 +912,56 @@ export function CsvUploadForm({ locationId }: { locationId: string }) {
           })}
         </ol>
       </nav>
+      {batchSummary ? (
+        <section
+          className="csv-batch-summary"
+          aria-labelledby="csv-batch-summary-title"
+        >
+          <p className="app-page__eyebrow">Batch import</p>
+          <h2 id="csv-batch-summary-title">Batch import complete.</h2>
+          <p className="app-page__help">
+            {batchSummary.filesImported.toLocaleString()} files imported ·{' '}
+            {batchSummary.rowsImported.toLocaleString()} rows imported ·{' '}
+            {batchSummary.newItems.toLocaleString()} new items created.
+          </p>
+          {batchSummary.filesSkipped.length > 0 ? (
+            <div>
+              <p className="app-page__help">Files skipped:</p>
+              <ul>
+                {batchSummary.filesSkipped.map(({ filename, reason }) => (
+                  <li key={filename}>
+                    {filename}: {reason}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : (
+            <p className="app-page__help">Files skipped: None</p>
+          )}
+        </section>
+      ) : null}
+      {readyJobEntries.length > 1 && !batchSummary ? (
+        <section className="csv-batch-action" aria-labelledby="csv-batch-title">
+          <div>
+            <p className="app-page__eyebrow">Ready together</p>
+            <h2 id="csv-batch-title">
+              {readyJobEntries.length.toLocaleString()} files are ready.
+            </h2>
+            <p className="app-page__help">
+              Import the ready files together and review one combined summary.
+            </p>
+          </div>
+          <Button
+            type="button"
+            onClick={() => void commitReadyBatch()}
+            disabled={isBatchCommitting}
+          >
+            {isBatchCommitting
+              ? 'Importing batch'
+              : `Import ${readyJobEntries.length.toLocaleString()} ready files`}
+          </Button>
+        </section>
+      ) : null}
       <section
         className="csv-import-samples"
         aria-labelledby="csv-import-samples-title"
