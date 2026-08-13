@@ -1,6 +1,9 @@
 import { expect, test } from '@playwright/test'
 
-import { fullYearLocationFixture } from '../fixtures/pantry'
+import {
+  fullYearLocationFixture,
+  partialDataLocationFixture,
+} from '../fixtures/pantry'
 
 test.describe('portfolio rollup', () => {
   test('rolls up both owned locations while preserving each location status', async ({
@@ -86,5 +89,41 @@ test.describe('portfolio rollup', () => {
       pageHeading: '28px',
       support: '22px',
     })
+  })
+
+  test('collapses unavailable trend cards into a compact data requirement', async ({
+    page,
+  }) => {
+    for (const viewport of [
+      { width: 1280, height: 900 },
+      { width: 375, height: 812 },
+    ]) {
+      await page.setViewportSize(viewport)
+      await page.goto(
+        `/dashboard?locationId=${partialDataLocationFixture.locationId}`,
+      )
+
+      const cards = page.locator('.trend-summary-grid__cards')
+      await expect(cards).toBeVisible()
+      await expect(
+        page.getByText('Needs 4 weeks · has 2', { exact: true }),
+      ).toHaveCount(3)
+      const missingDetails = cards.locator(
+        '.trend-summary-card__missing-detail',
+      )
+      await expect(missingDetails).toHaveCount(3)
+      for (let index = 0; index < 3; index += 1) {
+        await expect(missingDetails.nth(index)).toHaveText(
+          /No comparison.*prior week unavailable/,
+        )
+        await expect(missingDetails.nth(index)).toHaveAttribute(
+          'aria-label',
+          /Not enough data.*No comparison.*previous week/,
+        )
+      }
+      const box = await cards.boundingBox()
+      expect(box?.height ?? Infinity).toBeLessThan(200)
+      await expect(cards.locator('.chart-svg')).toHaveCount(0)
+    }
   })
 })

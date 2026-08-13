@@ -301,7 +301,8 @@ dashboard on 2026-08-12.
       `wallet-impact-summary.dom.test.tsx` and the seeded dashboard test in
       `tests/e2e/portfolio.spec.ts` prove the hierarchy and fallback behavior.
 
-- [ ] **Stop spending 450px on "no data".** Three cards reserve full chart
+- [x] **Stop spending 450px on "no data".** — Codex
+      Three cards reserve full chart
       height to render one sentence each — roughly 1,350px of vertical space
       that says nothing. This is the single largest cause of the empty feeling.
       **Acceptance:** when a metric cannot compute, its card collapses to one
@@ -309,6 +310,9 @@ dashboard on 2026-08-12.
       2`), the group of them occupies under 200px, and nothing that was stated
       before is now hidden — per [`brand/voice-and-tone.md`](brand/voice-and-tone.md)
       §6, say what you cannot calculate and why.
+      Unavailable trend cards now collapse to compact rows with the 4-week
+      requirement and available history; `tests/e2e/portfolio.spec.ts` proves
+      the preserved explanation and under-200px group at 1280px and 375px.
 
 - [ ] **Ranked horizontal bars.** [`brand/ui-implementation.md`](brand/ui-implementation.md)
       §5.6 names ranked horizontal bars the preferred shape — label, figure,

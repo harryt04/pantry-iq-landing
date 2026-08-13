@@ -90,7 +90,10 @@ export default async function DashboardPage({
           recommendations={recommendations}
         />
       ) : null}
-      <TrendSummaries summaries={summaries} />
+      <TrendSummaries
+        summaries={summaries}
+        transactionDays={state.transactionDays}
+      />
       {state.status === 'ready' && itemDeepDives.length > 0 ? (
         <ItemDeepDives
           locationId={locationId}
