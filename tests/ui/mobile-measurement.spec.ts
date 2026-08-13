@@ -43,6 +43,14 @@ const routes = [
   },
 ] as const
 
+const spacingRoutes = ['/import', '/settings', '/recipes', '/account']
+const spacingReadySelectors = [
+  { prefix: '/import', selector: '.csv-upload-dropzone' },
+  { prefix: '/settings', selector: '.settings-field' },
+  { prefix: '/recipes', selector: '.recipe-field' },
+  { prefix: '/account', selector: '.location-field' },
+]
+
 type Measurement = {
   selector: string
   value: string
@@ -135,6 +143,17 @@ function assertTappableReport(report: MobileReport) {
 function assertControlTypographyReport(report: MobileReport) {
   expect(
     report.undersizedControls,
+    `${report.route}\n${formatMeasurements(report)}`,
+  ).toEqual([])
+}
+
+function assertFormSpacingReport(report: MobileReport) {
+  expect(
+    report.labelGaps,
+    `${report.route}\n${formatMeasurements(report)}`,
+  ).toEqual([])
+  expect(
+    report.fieldGaps,
     `${report.route}\n${formatMeasurements(report)}`,
   ).toEqual([])
 }
@@ -339,6 +358,15 @@ test.describe('mobile measurement harness', () => {
         await expect(page.locator('h1'), route.path).toContainText(
           route.heading,
         )
+        const spacingReady = spacingReadySelectors.find(({ prefix }) =>
+          route.path.startsWith(prefix),
+        )
+        if (spacingReady) {
+          await expect(
+            page.locator(spacingReady.selector).first(),
+            route.path,
+          ).toBeVisible()
+        }
 
         const report = await measurePage(page, route.path)
         console.log(
@@ -350,6 +378,9 @@ test.describe('mobile measurement harness', () => {
         expect(report.viewport).toEqual({ width: 375, height: 812 })
         assertTappableReport(report)
         assertControlTypographyReport(report)
+        if (spacingRoutes.some((prefix) => route.path.startsWith(prefix))) {
+          assertFormSpacingReport(report)
+        }
       })
     }
   })

@@ -252,12 +252,15 @@ overflow is found later, it goes under `Observed, not queued`.
       harness assertion; `tests/ui/mobile-measurement.spec.ts` proves all twelve
       routes stay above the iOS zoom threshold at 375px.
 
-- [ ] **Room between a label and its control.** The gap is a uniform 8px in
-      every form in the application. It is on the 4px scale but cramped under a
-      14px label, and it makes dense forms read as a single block.
+- [x] **Room between a label and its control.** The gap is now 12px from each
+      label to its control and 20px between fields across the import, settings,
+      recipes, and account forms. It is on the 4px scale and gives dense forms
+      room to scan.
       **Acceptance:** label-to-control gap is 12px and field-to-field gap is
       20px, both on the spacing scale, across `/import`, `/settings`,
-      `/recipes`, and `/account`.
+      `/recipes`, and `/account`. `tests/ui/mobile-measurement.spec.ts` waits
+      for each form root, asserts both spacing contracts at 375px, and proves
+      the failure with a seeded mutation.
 
 - [ ] **The short controls.** The manual-entry item combobox on `/import` is
       32px tall. Violates §9.7.
