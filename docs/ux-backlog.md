@@ -219,7 +219,7 @@ only because the item-master table is 1277px wide inside its own working
 `overflow-x: auto` box. **Do not "fix" that table.** If a real page-level
 overflow is found later, it goes under `Observed, not queued`.
 
-- [ ] **A mobile measurement harness.** Build the spec the rest of this section
+- [x] **A mobile measurement harness.** Build the spec the rest of this section
       asserts against: for each route, at 375px, report page-level horizontal
       scrollability, every interactive element under 44px in either dimension,
       every form control whose font-size is under 16px, and every
@@ -227,6 +227,9 @@ overflow is found later, it goes under `Observed, not queued`.
       **Acceptance:** one `tests/ui/` spec covers all twelve routes, fails
       loudly on a seeded violation, and prints the offending selector and
       measured value.
+      Implemented `tests/ui/mobile-measurement.spec.ts`; it walks twelve routes
+      at 375×812, prints selector/value findings, and behaviorally proves the
+      seeded-violation failure path.
 
 - [ ] **Tappable row actions.** Inline text links act as primary actions and
       measure 17–25px tall: `View dashboard` at 93×17, `Open dashboard` at
