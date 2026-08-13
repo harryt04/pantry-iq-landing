@@ -36,6 +36,12 @@ const resolutionFixture = path.resolve(
 const confirmationFixture = path.resolve(
   'tests/fixtures/csv/transactions/sales-with-refunds-negative.csv',
 )
+const rejectedFixture = path.resolve(
+  'tests/fixtures/csv/security/renamed-xlsx.csv',
+)
+const parserErrorFixture = path.resolve(
+  'tests/fixtures/csv/malformed/ragged-column-counts.csv',
+)
 
 type AccessibilityResult = {
   violations: Array<{
@@ -380,6 +386,86 @@ for (const colorScheme of themes) {
     { label: 'mobile', height: 900, width: 375 },
     { label: 'desktop', height: 900, width: 1280 },
   ]) {
+    test(`/import rejected-file and error states remain accessible at ${viewport.label} in ${colorScheme} theme`, async ({
+      browser,
+    }, testInfo) => {
+      const context = await browser.newContext({
+        colorScheme,
+        viewport: { height: viewport.height, width: viewport.width },
+      })
+      const page = await context.newPage()
+
+      try {
+        await page.goto(`/import?locationId=${locationId}`)
+        await expect(
+          page.getByRole('heading', { name: "Bring in one location's data." }),
+        ).toBeVisible()
+
+        await page.locator('#csv-file').setInputFiles(rejectedFixture)
+        const rejectedJob = page
+          .locator('.csv-upload-job')
+          .filter({ hasText: path.basename(rejectedFixture) })
+        await expect(rejectedJob.getByRole('alert')).toContainText(
+          'This file could not be processed.',
+          { timeout: 120_000 },
+        )
+        await expect(
+          rejectedJob.getByRole('button', {
+            name: `Try again with ${path.basename(rejectedFixture)}`,
+          }),
+        ).toBeVisible()
+        await expect(
+          rejectedJob.getByRole('button', {
+            name: `Remove ${path.basename(rejectedFixture)}`,
+          }),
+        ).toBeVisible()
+
+        await page.locator('#csv-file').setInputFiles(parserErrorFixture)
+        const parserErrorJob = page
+          .locator('.csv-upload-job')
+          .filter({ hasText: path.basename(parserErrorFixture) })
+        await expect(parserErrorJob.locator('.csv-preview')).toBeVisible({
+          timeout: 120_000,
+        })
+        await expect(parserErrorJob.locator('.app-page__error')).toContainText(
+          'had a different number of columns than the header',
+        )
+
+        await loadAxe(page)
+        const results = await page.evaluate(async () => {
+          const axe = (
+            window as unknown as {
+              axe: {
+                run: (
+                  context?: unknown,
+                  options?: unknown,
+                ) => Promise<AccessibilityResult>
+              }
+            }
+          ).axe
+          return axe.run(document, {
+            rules: { 'target-size': { enabled: true } },
+          })
+        })
+        expect(
+          results.violations,
+          JSON.stringify(results.violations, null, 2),
+        ).toEqual([])
+
+        await assertKeyboardFocus(page)
+        await assertGrayscaleReadable(page, testInfo)
+        await expect
+          .poll(() =>
+            page.evaluate(
+              () => document.documentElement.scrollWidth <= window.innerWidth,
+            ),
+          )
+          .toBe(true)
+      } finally {
+        await context.close()
+      }
+    })
+
     test(`/import confirmation and result remain accessible at ${viewport.label} in ${colorScheme} theme`, async ({
       browser,
     }, testInfo) => {
