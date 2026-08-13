@@ -396,10 +396,14 @@ after the adopted sections.
       Dashboard, trend, staffing, and menu states now print the remaining days
       or weeks; seeded browser coverage proves the copy at 1280px and 375px.
 
-- [ ] **The account that signed up and never imported.** A returning operator
-      with no data gets the same screens as one with a year of history.
+- [x] **The account that signed up and never imported.** — Codex
+      A returning operator with no data now resumes at the selected
+      location's import flow after sign-in, while an account with no location
+      returns to `/welcome`; ordinary `/account` navigation is unchanged.
       **Acceptance:** signing back in with no imports leads to the same one
       next action as the first session, without repeating steps already done.
+      `tests/e2e/returning-user.spec.ts` proves the no-import sign-in path
+      reaches import without repeating the location form.
 
 ---
 

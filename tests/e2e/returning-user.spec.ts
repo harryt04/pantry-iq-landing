@@ -90,7 +90,15 @@ test.describe('explicit signup and returning-user journey', () => {
     await page.getByLabel('Password').fill(password)
     await page.getByRole('button', { name: /Sign in/ }).click()
 
-    await expect(page).toHaveURL(/\/(dashboard|account)/)
+    await expect(page).toHaveURL(
+      new RegExp(`/import\\?locationId=${createdFirstLocationId}`),
+    )
+    await expect(
+      page.getByRole('heading', { name: "Bring in one location's data." }),
+    ).toBeVisible()
+    await expect(
+      page.getByRole('heading', { name: 'Start with one location.' }),
+    ).toHaveCount(0)
 
     // The location switcher must actually change the scope in the URL. Navigate
     // through the shell rather than typing /dashboard, because the shell is what

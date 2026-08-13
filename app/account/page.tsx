@@ -1,13 +1,34 @@
-import { headers } from 'next/headers'
+import { cookies, headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 
 import { auth } from '@/src/server/auth/auth'
+import { getAccountResumeState } from '@/src/server/locations/locations'
 import { SignOutButton } from '@/components/auth/sign-out-button'
 import { LocationManager } from '@/components/locations/location-manager'
 
-export default async function AccountPage() {
-  const session = await auth.api.getSession({ headers: await headers() })
+export default async function AccountPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ entry?: string }>
+}) {
+  const requestHeaders = await headers()
+  const session = await auth.api.getSession({ headers: requestHeaders })
   if (!session) redirect('/sign-in')
+
+  const params = await searchParams
+  if (params.entry === 'sign-in') {
+    const preferredLocationId = (await cookies()).get(
+      'pantryiq-location-id',
+    )?.value
+    const resume = await getAccountResumeState(
+      requestHeaders,
+      preferredLocationId,
+    )
+    if (resume.status === 'no-location') redirect('/welcome')
+    if (resume.status === 'needs-import') {
+      redirect(`/import?locationId=${encodeURIComponent(resume.locationId)}`)
+    }
+  }
 
   return (
     <main className="account-page account-page--locations">

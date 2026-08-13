@@ -44,6 +44,55 @@ export async function listLocations(headers: Headers) {
     .orderBy(desc(locations.isActive), asc(locations.name), asc(locations.id))
 }
 
+export type AccountResumeState =
+  | { status: 'no-location' }
+  | { status: 'has-data' }
+  | { status: 'needs-import'; locationId: string }
+
+/**
+ * Decide where a signed-in operator should resume before the account page
+ * renders. This keeps the first-session path for accounts that have created a
+ * location but have not imported anything, without hiding the account page
+ * during ordinary navigation.
+ */
+export async function getAccountResumeState(
+  headers: Headers,
+  preferredLocationId?: string,
+): Promise<AccountResumeState> {
+  const session = await requireSession(headers)
+  const activeLocations = await db
+    .select({ id: locations.id })
+    .from(locations)
+    .where(
+      and(eq(locations.userId, session.user.id), eq(locations.isActive, true)),
+    )
+    .orderBy(asc(locations.name), asc(locations.id))
+
+  if (activeLocations.length === 0) return { status: 'no-location' }
+
+  const [importedUpload] = await db
+    .select({ id: csvUploadHistory.id })
+    .from(csvUploadHistory)
+    .innerJoin(locations, eq(locations.id, csvUploadHistory.locationId))
+    .where(
+      and(
+        eq(locations.userId, session.user.id),
+        eq(csvUploadHistory.status, 'imported'),
+      ),
+    )
+    .limit(1)
+
+  if (importedUpload) return { status: 'has-data' }
+
+  const preferredLocation = activeLocations.find(
+    (location) => location.id === preferredLocationId,
+  )
+  return {
+    status: 'needs-import',
+    locationId: preferredLocation?.id ?? activeLocations[0]!.id,
+  }
+}
+
 export async function createLocation(headers: Headers, input: unknown) {
   const session = await requireSession(headers)
   const values = validateLocationCreateInput(input)

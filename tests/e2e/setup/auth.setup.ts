@@ -44,6 +44,6 @@ setup('authenticate the shared owner account', async ({ page }) => {
     expect(deletion.status()).toBe(204)
     await page.goto('/account')
   }
-  await expect(page).toHaveURL(/\/account$/)
+  await expect(page).not.toHaveURL(/\/sign-in/)
   await page.context().storageState({ path: authFile })
 })
