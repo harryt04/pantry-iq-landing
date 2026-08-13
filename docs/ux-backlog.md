@@ -422,7 +422,10 @@ is visible at every stop, and copy follows
       Real fixture upload/preview is covered at 375px and 1280px in both
       themes; `tests/accessibility/real-data.spec.ts` proves axe, grayscale,
       and keyboard focus-ring conformance for the batch list.
-- [ ] `/import` — preview and column mapping
+- [x] `/import` — preview and column mapping — Codex
+      Real `sales-ambiguous-headers.csv` preview and mapping states now pass
+      axe, grayscale, and keyboard-focus coverage at 375px and 1280px in both
+      themes; `tests/accessibility/real-data.spec.ts` proves the surface.
 - [ ] `/import` — item resolution
 - [ ] `/import` — confirmation and result
 - [ ] `/import` — rejected-file and error states

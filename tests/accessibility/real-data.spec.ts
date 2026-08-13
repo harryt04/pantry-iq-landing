@@ -27,6 +27,9 @@ const importBatchFixtures = [
   ),
   path.resolve('tests/fixtures/csv/labor/7shifts-timesheet.csv'),
 ]
+const mappingFixture = path.resolve(
+  'tests/fixtures/csv/transactions/sales-ambiguous-headers.csv',
+)
 
 type AccessibilityResult = {
   violations: Array<{
@@ -335,6 +338,71 @@ for (const colorScheme of themes) {
         await expect(
           page.getByRole('heading', { name: '2 files are ready.' }),
         ).toBeVisible({ timeout: 120_000 })
+
+        await loadAxe(page)
+        const results = await page.evaluate(async () => {
+          const axe = (
+            window as unknown as {
+              axe: {
+                run: (
+                  context?: unknown,
+                  options?: unknown,
+                ) => Promise<AccessibilityResult>
+              }
+            }
+          ).axe
+          return axe.run(document, {
+            rules: { 'target-size': { enabled: true } },
+          })
+        })
+        expect(
+          results.violations,
+          JSON.stringify(results.violations, null, 2),
+        ).toEqual([])
+
+        await assertKeyboardFocus(page)
+        await assertGrayscaleReadable(page, testInfo)
+      } finally {
+        await context.close()
+      }
+    })
+  }
+}
+
+for (const colorScheme of themes) {
+  for (const viewport of [
+    { label: 'mobile', height: 900, width: 375 },
+    { label: 'desktop', height: 900, width: 1280 },
+  ]) {
+    test(`/import preview and column mapping remain accessible at ${viewport.label} in ${colorScheme} theme`, async ({
+      browser,
+    }, testInfo) => {
+      const context = await browser.newContext({
+        colorScheme,
+        viewport: { height: viewport.height, width: viewport.width },
+      })
+      const page = await context.newPage()
+
+      try {
+        await page.goto(`/import?locationId=${locationId}`)
+        await page.locator('#csv-file').setInputFiles(mappingFixture)
+
+        await expect(page.locator('#csv-preview-title')).toBeVisible({
+          timeout: 120_000,
+        })
+        const preview = page.getByRole('region', {
+          name: `Preview of ${path.basename(mappingFixture)}`,
+        })
+        await expect(
+          preview.locator('.csv-preview__table-wrap'),
+        ).toHaveAttribute('tabindex', '0')
+        await expect(
+          page.locator('section.csv-mapping').filter({
+            hasText: 'Column mapping',
+          }),
+        ).toContainText(
+          /All columns matched|Let.s place the uncertain columns|reused your last mapping/,
+        )
 
         await loadAxe(page)
         const results = await page.evaluate(async () => {
