@@ -57,6 +57,11 @@ async function loadAxe(page: Page) {
   await page.addScriptTag({ path: axePath })
 }
 
+async function openImportFlow(page: Page) {
+  await page.getByRole('button', { name: 'Import data' }).click()
+  await expect(page.locator('#csv-file')).toBeAttached()
+}
+
 const visibleInteractiveSelector =
   'a[href]:not([aria-label="Open Next.js Dev Tools"]), button:not([aria-label="Open Next.js Dev Tools"]), input, select, textarea, summary, [tabindex="0"]'
 
@@ -783,6 +788,7 @@ for (const colorScheme of themes) {
           page.getByRole('heading', { name: "Bring in one location's data." }),
         ).toBeVisible()
 
+        await openImportFlow(page)
         await page.route('**/api/uploads/*/commit', async (route) => {
           await route.fulfill({
             contentType: 'application/json',
@@ -877,6 +883,7 @@ for (const colorScheme of themes) {
           page.getByRole('heading', { name: "Bring in one location's data." }),
         ).toBeVisible()
 
+        await openImportFlow(page)
         await page.locator('#csv-file').setInputFiles(rejectedFixture)
         const rejectedJob = page
           .locator('.csv-upload-job')
@@ -957,6 +964,7 @@ for (const colorScheme of themes) {
           page.getByRole('heading', { name: "Bring in one location's data." }),
         ).toBeVisible()
 
+        await openImportFlow(page)
         await page.route('**/api/uploads/*/commit', async (route) => {
           await route.fulfill({
             contentType: 'application/json',
@@ -1092,6 +1100,7 @@ for (const colorScheme of themes) {
 
       try {
         await page.goto(`/import?locationId=${locationId}`)
+        await openImportFlow(page)
         await page.locator('#csv-file').setInputFiles(resolutionFixture)
 
         const resolution = page.locator('.csv-item-resolution')
@@ -1179,6 +1188,7 @@ for (const colorScheme of themes) {
 
       try {
         await page.goto(`/import?locationId=${locationId}`)
+        await openImportFlow(page)
         await page.locator('#csv-file').setInputFiles(mappingFixture)
 
         await expect(page.locator('#csv-preview-title')).toBeVisible({
