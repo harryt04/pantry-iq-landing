@@ -117,6 +117,7 @@ Summary:
 | `S3_ENDPOINT` / `S3_ACCESS_KEY_ID` / `S3_SECRET_ACCESS_KEY` / `S3_BUCKET` | yes (except local dev) | S3-compatible object storage for raw CSV uploads — see [Object storage](#object-storage-csv-uploads) |
 | `S3_REGION` / `S3_FORCE_PATH_STYLE` | optional; `S3_FORCE_PATH_STYLE=1` required for MinIO | S3-compatible client settings; defaults to `auto` region and virtual-hosted style |
 | `PANTRYIQ_E2E` / `PANTRYIQ_E2E_STORAGE_DIR` | yes (local dev) | Enables the disk-backed storage fallback instead of S3; see [Object storage](#object-storage-csv-uploads) |
+| `NEXT_PUBLIC_POSTHOG_KEY` / `NEXT_PUBLIC_POSTHOG_HOST` | optional | PostHog analytics; only initializes in production, so unset is safe locally |
 | `RESEND_API_KEY` | later | Transactional email — auth flows only, never notifications |
 | `ANTHROPIC_API_KEY` | later (`CHT-02`) | LLM narration via the Vercel AI SDK |
 
