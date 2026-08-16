@@ -1021,7 +1021,7 @@ for (const colorScheme of themes) {
         await assertKeyboardFocus(page)
         await assertGrayscaleReadable(page, testInfo)
 
-        await job.getByRole('button', { name: 'Import now' }).click()
+        await page.getByRole('button', { name: 'Import now' }).click()
         await expect(
           job.getByRole('heading', { name: 'Imported 2 rows.' }),
         ).toBeVisible()
