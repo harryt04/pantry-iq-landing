@@ -811,14 +811,18 @@ for (const colorScheme of themes) {
         })
 
         await page.locator('#csv-file').setInputFiles(importBatchFixtures)
-        await expect(page.locator('.csv-upload-job')).toHaveCount(2)
+        const importQueue = page.getByRole('navigation', {
+          name: 'Files in this import',
+        })
+        await expect(importQueue.getByRole('button')).toHaveCount(2)
         for (const filename of [
           'sales-with-refunds-negative.csv',
           '7shifts-timesheet.csv',
         ]) {
-          const job = page
-            .locator('.csv-upload-job')
-            .filter({ hasText: filename })
+          await importQueue
+            .getByRole('button', { name: new RegExp(filename) })
+            .click()
+          const job = page.locator('.csv-upload-job')
           await expect(
             job.getByRole('heading', { name: filename }),
           ).toBeVisible({
