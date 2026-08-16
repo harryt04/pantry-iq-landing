@@ -19,7 +19,11 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   reporter: process.env.CI ? 'github' : 'list',
-  retries: process.env.CI ? 2 : 0,
+  // Browser tests share one dev server and several projects depend on setup.
+  // One retry handles a transient browser failure; maxFailures prevents a
+  // setup failure from multiplying across every dependent test.
+  retries: process.env.CI ? 1 : 0,
+  maxFailures: process.env.CI ? 1 : 0,
   use: {
     baseURL,
     trace: 'on-first-retry',

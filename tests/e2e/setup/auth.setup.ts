@@ -5,6 +5,10 @@ const authFile = path.resolve('tests/.auth/owner.json')
 const fallbackPassword = 'pantryiq-shared-owner-2026'
 
 setup('authenticate the shared owner account', async ({ page }) => {
+  // A first CI request can include the initial Next.js page compilation.
+  setup.setTimeout(120_000)
+  page.setDefaultNavigationTimeout(60_000)
+
   const email = process.env.TEST_USER_EMAIL
   const password = process.env.TEST_USER_PASSWORD
 
@@ -42,7 +46,6 @@ setup('authenticate the shared owner account', async ({ page }) => {
       `/api/locations/${setupLocationId}`,
     )
     expect(deletion.status()).toBe(204)
-    await page.goto('/account')
   }
   await expect(page).not.toHaveURL(/\/sign-in/)
   await page.context().storageState({ path: authFile })
