@@ -98,7 +98,7 @@ export function CsvItemResolution({
           <p className="app-page__eyebrow">Item names</p>
           <h2 id="csv-item-resolution-title">One item needs your call.</h2>
         </div>
-        <p className="csv-mapping__progress" aria-live="polite">
+        <p className="csv-mapping__progress">
           {unmatchedItems.length} unresolved item
           {unmatchedItems.length === 1 ? '' : 's'} remaining
         </p>

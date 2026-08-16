@@ -358,6 +358,9 @@ test.describe('mobile measurement harness', () => {
         await expect(page.locator('h1'), route.path).toContainText(
           route.heading,
         )
+        if (route.path.startsWith('/import')) {
+          await page.getByRole('button', { name: 'Import data' }).click()
+        }
         const spacingReady = spacingReadySelectors.find(({ prefix }) =>
           route.path.startsWith(prefix),
         )
@@ -371,11 +374,13 @@ test.describe('mobile measurement harness', () => {
           const supportingTools = page.locator(
             'details.import-supporting-tools',
           )
+          await page.keyboard.press('Escape')
           await supportingTools.locator('summary').click()
           await expect(
             page.getByRole('heading', { name: 'Record what happened today.' }),
             route.path,
           ).toBeVisible()
+          await page.getByRole('button', { name: 'Import data' }).click()
         }
 
         const report = await measurePage(page, route.path)

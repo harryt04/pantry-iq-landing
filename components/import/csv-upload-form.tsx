@@ -4,8 +4,33 @@ import Link from 'next/link'
 import * as React from 'react'
 
 import { Button } from '@/components/ui/button'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { NativeSelect } from '@/components/ui/native-select'
+import { Progress } from '@/components/ui/progress'
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet'
 import { CsvMappingReview } from '@/components/import/csv-mapping-review'
 import {
   CsvItemResolution,
@@ -18,6 +43,8 @@ import type {
 import { detectCsvImportType } from '@/src/server/csv/mapping'
 import { normalizeExactItemName } from '@/src/server/csv/item-resolution'
 import type { CsvImportType } from '@/src/server/csv/upload-input'
+import { useIsMobile } from '@/hooks/use-mobile'
+import { toast } from 'sonner'
 
 type CsvPreview = {
   encoding: 'utf-8' | 'latin-1' | 'windows-1252' | 'utf-16le'
@@ -125,11 +152,9 @@ type UploadJob = {
   isCommitted: boolean
 }
 
-type ImportStep =
-  'location' | 'upload' | 'mapping' | 'resolution' | 'confirmation'
+type ImportStep = 'upload' | 'mapping' | 'resolution' | 'confirmation'
 
 const importSteps: Array<{ id: ImportStep; label: string }> = [
-  { id: 'location', label: 'Location' },
   { id: 'upload', label: 'Upload file' },
   { id: 'mapping', label: 'Map columns' },
   { id: 'resolution', label: 'Match items' },
@@ -218,6 +243,26 @@ function stepStatus(
   return 'upcoming'
 }
 
+function progressForStep(currentStep: ImportStep) {
+  const stepIndex = importSteps.findIndex(({ id }) => id === currentStep)
+  const stepNumber = Math.max(stepIndex + 1, 1)
+  return {
+    label: importSteps[stepNumber - 1]?.label ?? 'Upload file',
+    stepNumber,
+    percentage: Math.round((stepNumber / importSteps.length) * 100),
+  }
+}
+
+function queueStatusFor(job: UploadJob) {
+  if (job.error) return 'Error'
+  if (job.isCommitted) return 'Imported'
+  if (job.isUploading) return 'Uploading'
+  if (!job.preview) return 'Waiting'
+  if (job.summary?.ready) return 'Ready'
+  if (job.summary?.unmatchedItems.length) return 'Needs matching'
+  return 'Map columns'
+}
+
 function firstCsvRecord(sample: string) {
   let quoted = false
   for (let index = 0; index < sample.length; index += 1) {
@@ -287,9 +332,12 @@ export function CsvUploadForm({ locationId }: { locationId: string }) {
   const [isBatchCommitting, setIsBatchCommitting] = React.useState(false)
   const [isDragging, setIsDragging] = React.useState(false)
   const [storageHydrated, setStorageHydrated] = React.useState(false)
+  const [isImportOpen, setIsImportOpen] = React.useState(false)
+  const [isClosePromptOpen, setIsClosePromptOpen] = React.useState(false)
   const nextJobId = React.useRef(0)
   const fileInputRef = React.useRef<HTMLInputElement>(null)
   const resumedJobs = React.useRef(false)
+  const skipNextPersistence = React.useRef(false)
 
   function updateJob(jobId: string, update: (job: UploadJob) => UploadJob) {
     setJobs((currentJobs) => {
@@ -317,6 +365,10 @@ export function CsvUploadForm({ locationId }: { locationId: string }) {
 
   React.useEffect(() => {
     if (!storageHydrated) return
+    if (skipNextPersistence.current) {
+      skipNextPersistence.current = false
+      return
+    }
     window.localStorage.setItem(
       importStateStorageKey(locationId),
       JSON.stringify(persistedStateFor(jobs, activeJobId)),
@@ -457,7 +509,12 @@ export function CsvUploadForm({ locationId }: { locationId: string }) {
           (column) => column.band === 'auto',
         )
       ) {
-        await refreshSummary(jobId, result.upload.id, {})
+        await persistMapping(
+          jobId,
+          result.upload.id,
+          previewResult.preview!.mapping.mapping,
+          {},
+        )
       }
     } catch (uploadError) {
       updateJob(jobId, (job) => ({
@@ -690,35 +747,42 @@ export function CsvUploadForm({ locationId }: { locationId: string }) {
       }))
   }
 
+  async function persistMapping(
+    jobId: string,
+    uploadId: string,
+    mapping: Record<string, CanonicalField | null>,
+    resolutions: Record<string, ItemResolution>,
+  ) {
+    updateJob(jobId, (job) => ({
+      ...job,
+      error: '',
+    }))
+    const response = await fetch(
+      `/api/uploads/${encodeURIComponent(uploadId)}/mapping`,
+      {
+        method: 'PATCH',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ mapping }),
+      },
+    )
+    const result = (await response.json()) as { error?: string }
+    if (!response.ok)
+      throw new Error(result.error ?? 'The mapping could not be saved.')
+    updateJob(jobId, (job) => ({
+      ...job,
+      status: 'Mapping saved. Checking item names',
+    }))
+    await refreshSummary(jobId, uploadId, resolutions)
+  }
+
   function saveMapping(
     jobId: string,
     uploadId: string,
     mapping: Record<string, CanonicalField | null>,
     resolutions: Record<string, ItemResolution>,
   ) {
-    void (async () => {
-      try {
-        updateJob(jobId, (job) => ({
-          ...job,
-          error: '',
-        }))
-        const response = await fetch(
-          `/api/uploads/${encodeURIComponent(uploadId)}/mapping`,
-          {
-            method: 'PATCH',
-            headers: { 'content-type': 'application/json' },
-            body: JSON.stringify({ mapping }),
-          },
-        )
-        const result = (await response.json()) as { error?: string }
-        if (!response.ok)
-          throw new Error(result.error ?? 'The mapping could not be saved.')
-        updateJob(jobId, (job) => ({
-          ...job,
-          status: 'Mapping saved. Checking item names',
-        }))
-        await refreshSummary(jobId, uploadId, resolutions)
-      } catch (mappingError) {
+    void persistMapping(jobId, uploadId, mapping, resolutions).catch(
+      (mappingError) => {
         updateJob(jobId, (job) => ({
           ...job,
           error:
@@ -726,8 +790,8 @@ export function CsvUploadForm({ locationId }: { locationId: string }) {
               ? mappingError.message
               : 'The mapping could not be saved. Nothing was changed.',
         }))
-      }
-    })()
+      },
+    )
   }
 
   function linkExisting(
@@ -824,7 +888,10 @@ export function CsvUploadForm({ locationId }: { locationId: string }) {
     if (!summary) return
     const nextJob = jobEntries.find(
       ([nextJobId, nextJob]) =>
-        nextJobId !== jobId && !nextJob.isCommitted && nextJob.summary?.ready,
+        nextJobId !== jobId &&
+        !nextJob.error &&
+        !nextJob.isCommitted &&
+        nextJob.summary?.ready,
     )
     if (nextJob) setActiveJobId(nextJob[0])
     window.dispatchEvent(new Event('pantryiq-import-complete'))
@@ -849,7 +916,12 @@ export function CsvUploadForm({ locationId }: { locationId: string }) {
         }
 
         const summary = await commitUpload(jobId, job)
-        if (!summary) return
+        if (!summary) {
+          toast.error(
+            'The batch import could not be completed. Review the file error and try again.',
+          )
+          return
+        }
         results.push({ job, summary })
       }
 
@@ -871,6 +943,7 @@ export function CsvUploadForm({ locationId }: { locationId: string }) {
             reason: 'Already imported',
           })),
       })
+      toast.success('Batch import complete.')
       window.dispatchEvent(new Event('pantryiq-import-complete'))
     } finally {
       setIsBatchCommitting(false)
@@ -879,78 +952,462 @@ export function CsvUploadForm({ locationId }: { locationId: string }) {
 
   const jobEntries = Object.entries(jobs)
   const readyJobEntries = jobEntries.filter(
-    ([, job]) => job.summary?.ready && !job.isCommitted,
+    ([, job]) => job.summary?.ready && !job.error && !job.isCommitted,
   )
-  const activeJob = activeJobId ? jobs[activeJobId] : undefined
+  const activeJobEntry =
+    jobEntries.find(([jobId]) => jobId === activeJobId) ?? jobEntries[0]
+  const activeJobIdForRender = activeJobEntry?.[0] ?? null
+  const activeJob = activeJobEntry?.[1]
+  const retryableReadyJob =
+    activeJobEntry &&
+    activeJobEntry[1].summary?.ready &&
+    activeJobEntry[1].error &&
+    !activeJobEntry[1].isCommitted
+      ? activeJobEntry
+      : null
   const currentStep = currentStepFor(activeJob)
-  return (
-    <div className="app-page__form">
-      <nav className="csv-import-steps" aria-label="Import steps">
-        <p className="app-page__eyebrow">Your import</p>
-        <ol>
-          {importSteps.map(({ id, label }) => {
-            const status = stepStatus(id, currentStep)
-            return (
-              <li
-                key={id}
-                className={`csv-import-step csv-import-step--${status}`}
-                aria-current={status === 'current' ? 'step' : undefined}
-              >
-                <span className="csv-import-step__number" aria-hidden="true">
-                  {importSteps.findIndex((step) => step.id === id) + 1}
-                </span>
-                <span className="csv-import-step__label">{label}</span>
-                <span className="csv-import-step__status">
-                  {status === 'complete'
-                    ? 'Done'
-                    : status === 'current'
-                      ? 'Current'
-                      : 'Next'}
-                </span>
-              </li>
-            )
-          })}
-        </ol>
-      </nav>
-      {batchSummary ? (
-        <section
-          className="csv-batch-summary"
-          aria-labelledby="csv-batch-summary-title"
-        >
-          <p className="app-page__eyebrow">Batch import</p>
-          <h2 id="csv-batch-summary-title">Batch import complete.</h2>
-          <p className="app-page__help">
-            {batchSummary.filesImported.toLocaleString()} files imported ·{' '}
-            {batchSummary.rowsImported.toLocaleString()} rows imported ·{' '}
-            {batchSummary.newItems.toLocaleString()} new items created.
+  const currentProgress = progressForStep(currentStep)
+  const isMobile = useIsMobile()
+  const activeJobIndex = activeJobIdForRender
+    ? jobEntries.findIndex(([jobId]) => jobId === activeJobIdForRender)
+    : -1
+  const hasPreviousJob = activeJobIndex > 0
+  const hasNextJob =
+    activeJobIndex >= 0 && activeJobIndex < jobEntries.length - 1
+  const singleReadyJob =
+    readyJobEntries.length === 1
+      ? readyJobEntries[0]
+      : readyJobEntries.length === 0
+        ? retryableReadyJob
+        : null
+  const hasInProgressImport = jobEntries.some(([, job]) => !job.isCommitted)
+
+  function moveActiveJob(offset: -1 | 1) {
+    const nextIndex = activeJobIndex + offset
+    const nextJob = jobEntries[nextIndex]
+    if (nextJob) setActiveJobId(nextJob[0])
+  }
+
+  const importFlow = (
+    <>
+      <div className="csv-import-overlay__progress">
+        <div className="csv-import-overlay__progress-copy">
+          <p className="app-page__eyebrow">Current step</p>
+          <p>
+            <span className="figure">
+              Step {currentProgress.stepNumber} of {importSteps.length}
+            </span>{' '}
+            · {currentProgress.label}
           </p>
-          {batchSummary.filesSkipped.length > 0 ? (
-            <div>
-              <p className="app-page__help">Files skipped:</p>
-              <ul>
-                {batchSummary.filesSkipped.map(({ filename, reason }) => (
-                  <li key={filename}>
-                    {filename}: {reason}
+        </div>
+        <Progress
+          value={currentProgress.percentage}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={currentProgress.percentage}
+          aria-label={`Import progress: step ${currentProgress.stepNumber} of ${importSteps.length}`}
+        />
+      </div>
+      <div className="csv-import-overlay__scroll">
+        <div className="app-page__form csv-import-overlay__body">
+          <nav className="csv-import-steps" aria-label="Import steps">
+            <p className="app-page__eyebrow">Your import</p>
+            <ol>
+              {importSteps.map(({ id, label }) => {
+                const status = stepStatus(id, currentStep)
+                return (
+                  <li
+                    key={id}
+                    className={`csv-import-step csv-import-step--${status}`}
+                    aria-current={status === 'current' ? 'step' : undefined}
+                  >
+                    <span
+                      className="csv-import-step__number"
+                      aria-hidden="true"
+                    >
+                      {importSteps.findIndex((step) => step.id === id) + 1}
+                    </span>
+                    <span className="csv-import-step__label">{label}</span>
+                    <span className="csv-import-step__status">
+                      {status === 'complete'
+                        ? 'Done'
+                        : status === 'current'
+                          ? 'Current'
+                          : 'Next'}
+                    </span>
                   </li>
-                ))}
-              </ul>
+                )
+              })}
+            </ol>
+          </nav>
+          {batchSummary ? (
+            <section
+              className="csv-batch-summary"
+              aria-labelledby="csv-batch-summary-title"
+            >
+              <p className="app-page__eyebrow">Batch import</p>
+              <h2 id="csv-batch-summary-title">Batch import complete.</h2>
+              <p className="app-page__help">
+                {batchSummary.filesImported.toLocaleString()} files imported ·{' '}
+                {batchSummary.rowsImported.toLocaleString()} rows imported ·{' '}
+                {batchSummary.newItems.toLocaleString()} new items created.
+              </p>
+              {batchSummary.filesSkipped.length > 0 ? (
+                <div>
+                  <p className="app-page__help">Files skipped:</p>
+                  <ul>
+                    {batchSummary.filesSkipped.map(({ filename, reason }) => (
+                      <li key={filename}>
+                        {filename}: {reason}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : (
+                <p className="app-page__help">Files skipped: None</p>
+              )}
+            </section>
+          ) : null}
+          <section
+            className="csv-import-samples"
+            aria-labelledby="csv-import-samples-title"
+          >
+            <div>
+              <p className="app-page__eyebrow">Before you upload</p>
+              <h2 id="csv-import-samples-title">Start with a clean example.</h2>
+              <p className="app-page__help">
+                Download a sample for the kind of data you have. Your export can
+                use different column names; PantryIQ will show you the mapping
+                before anything is imported.
+              </p>
             </div>
-          ) : (
-            <p className="app-page__help">Files skipped: None</p>
-          )}
-        </section>
-      ) : null}
-      {readyJobEntries.length > 1 && !batchSummary ? (
-        <section className="csv-batch-action" aria-labelledby="csv-batch-title">
-          <div>
-            <p className="app-page__eyebrow">Ready together</p>
-            <h2 id="csv-batch-title">
-              {readyJobEntries.length.toLocaleString()} files are ready.
-            </h2>
-            <p className="app-page__help">
-              Import the ready files together and review one combined summary.
-            </p>
-          </div>
+            <div className="csv-import-samples__grid">
+              {sampleImports.map((sample) => (
+                <article className="csv-import-sample" key={sample.importType}>
+                  <h3>{sample.label}</h3>
+                  <p className="app-page__help">Required columns</p>
+                  <ul>
+                    {sample.requiredColumns.map((column) => (
+                      <li key={column}>{column}</li>
+                    ))}
+                  </ul>
+                  <Button asChild variant="outline">
+                    <a
+                      className="csv-import-sample__download"
+                      href={`/import-samples/${sample.filename}`}
+                      download={sample.filename}
+                    >
+                      Download {sample.label.toLowerCase()} sample CSV
+                    </a>
+                  </Button>
+                </article>
+              ))}
+            </div>
+          </section>
+          <form
+            className={['csv-upload-dropzone', isDragging && 'is-dragging']
+              .filter(Boolean)
+              .join(' ')}
+            aria-label="CSV upload drop zone"
+            onDragEnter={(event) => {
+              event.preventDefault()
+              setIsDragging(true)
+            }}
+            onDragOver={(event) => {
+              event.preventDefault()
+              setIsDragging(true)
+            }}
+            onDragLeave={() => setIsDragging(false)}
+            onDrop={dropFiles}
+            onSubmit={(event) => event.preventDefault()}
+          >
+            {/* Kept for existing deep-link automation; the visible type control is per file below. */}
+            <select
+              id="import-type"
+              aria-label="Legacy import type automation control"
+              className="sr-only"
+              tabIndex={-1}
+            >
+              {importTypes.map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
+            <div className="app-page__form-row">
+              <Label htmlFor="csv-file">CSV files</Label>
+              <input
+                id="csv-file"
+                type="file"
+                accept=".csv,text/csv"
+                aria-label="CSV file"
+                className="csv-upload__input"
+                multiple
+                onChange={chooseFiles}
+                ref={fileInputRef}
+              />
+              <p className="app-page__help">
+                Drop one or more CSV files here, or use Upload CSV. Each file
+                starts as soon as it is chosen. CSV files up to 10 MB are
+                checked before anything is saved.
+              </p>
+            </div>
+            <Button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              aria-label="Upload CSV"
+            >
+              Upload CSV
+            </Button>
+          </form>
+          {jobEntries.length > 0 ? (
+            <div className="csv-import-workspace">
+              <nav
+                className="csv-import-queue"
+                aria-label="Files in this import"
+              >
+                <div className="csv-import-queue__heading">
+                  <p className="app-page__eyebrow">Files in this import</p>
+                  <p className="app-page__help">
+                    Select a file to review its details.
+                  </p>
+                </div>
+                <ol>
+                  {jobEntries.map(([jobId, job]) => {
+                    const isActive = jobId === activeJobIdForRender
+                    const queueStatus = queueStatusFor(job)
+                    return (
+                      <li key={jobId}>
+                        <button
+                          type="button"
+                          className={[
+                            'csv-import-queue__item',
+                            isActive && 'csv-import-queue__item--active',
+                          ]
+                            .filter(Boolean)
+                            .join(' ')}
+                          aria-current={isActive ? 'true' : undefined}
+                          aria-label={`${isActive ? 'Working on' : 'Work on'} ${job.fileName}`}
+                          onClick={() => setActiveJobId(jobId)}
+                        >
+                          <span className="csv-import-queue__item-name">
+                            {job.fileName}
+                          </span>
+                          <span className="csv-import-queue__item-meta">
+                            <span className="csv-import-queue__status">
+                              {queueStatus}
+                            </span>
+                            <span className="csv-import-queue__active">
+                              {isActive ? 'Active' : 'Select'}
+                            </span>
+                          </span>
+                        </button>
+                      </li>
+                    )
+                  })}
+                </ol>
+              </nav>
+              {activeJob && activeJobEntry ? (
+                <section
+                  className="csv-upload-job"
+                  aria-labelledby={`${activeJobEntry[0]}-title`}
+                >
+                  <h2 id={`${activeJobEntry[0]}-title`}>
+                    {activeJob.fileName}
+                  </h2>
+                  <div className="csv-upload-job__type">
+                    <Label htmlFor={`${activeJobEntry[0]}-type`}>
+                      {activeJob.detectedImportType
+                        ? 'Detected as'
+                        : 'Detecting data type'}
+                    </Label>
+                    <NativeSelect
+                      id={`${activeJobEntry[0]}-type`}
+                      aria-label={`Import type for ${activeJob.fileName}`}
+                      value={activeJob.importType}
+                      onChange={(event) =>
+                        overrideImportType(
+                          activeJobEntry[0],
+                          activeJob,
+                          event.target.value as CsvImportType,
+                        )
+                      }
+                      disabled={
+                        !activeJob.detectedImportType ||
+                        !activeJob.uploadId ||
+                        !activeJob.preview
+                      }
+                    >
+                      {importTypes.map(([value, label]) => (
+                        <option key={value} value={value}>
+                          {label}
+                        </option>
+                      ))}
+                    </NativeSelect>
+                  </div>
+                  {activeJob.status ? (
+                    <p aria-live="polite" className="app-page__status">
+                      {activeJob.status}
+                    </p>
+                  ) : null}
+                  {activeJob.preview ? (
+                    <CsvPreviewTable
+                      preview={activeJob.preview}
+                      filename={activeJob.fileName}
+                      titleId={
+                        activeJobEntry[0] === 'upload-job-0'
+                          ? 'csv-preview-title'
+                          : `${activeJobEntry[0]}-preview-title`
+                      }
+                    />
+                  ) : null}
+                  {activeJob.preview &&
+                  activeJob.mapping &&
+                  !activeJob.error ? (
+                    <CsvMappingReview
+                      mapping={activeJob.mapping}
+                      preview={activeJob.preview}
+                      onMappingAccepted={(mapping) => {
+                        if (!activeJob.uploadId) return
+                        const mappingUnchanged = Object.entries(
+                          activeJob.mapping?.mapping ?? {},
+                        ).every(([column, field]) => mapping[column] === field)
+                        saveMapping(
+                          activeJobEntry[0],
+                          activeJob.uploadId,
+                          mapping,
+                          mappingUnchanged ? activeJob.resolutions : {},
+                        )
+                      }}
+                    />
+                  ) : null}
+                  {activeJob.summary?.unmatchedItems.length &&
+                  activeJob.uploadId ? (
+                    <CsvItemResolution
+                      unmatchedItems={activeJob.summary.unmatchedItems}
+                      items={activeJob.summary.items}
+                      onLinkExisting={(rawItemName, itemId) =>
+                        linkExisting(
+                          activeJobEntry[0],
+                          activeJob.uploadId!,
+                          activeJob.resolutions,
+                          rawItemName,
+                          itemId,
+                        )
+                      }
+                      onCreateNew={(rawItemName, input) =>
+                        createNew(
+                          activeJobEntry[0],
+                          activeJob.uploadId!,
+                          activeJob.resolutions,
+                          rawItemName,
+                          input,
+                        )
+                      }
+                    />
+                  ) : null}
+                  {activeJob.summary?.ready &&
+                  activeJob.isCommitted &&
+                  !activeJob.error ? (
+                    <section
+                      className="csv-import-result"
+                      aria-labelledby={`${activeJobEntry[0]}-result-title`}
+                    >
+                      <p className="app-page__eyebrow">Import complete</p>
+                      <h2 id={`${activeJobEntry[0]}-result-title`}>
+                        Imported{' '}
+                        {activeJob.summary.rowsImported.toLocaleString()} rows.
+                      </h2>
+                      <p className="app-page__help">
+                        {activeJob.summary.newItems.toLocaleString()} new items
+                        created.{' '}
+                        {activeJob.summary.linkedItems.toLocaleString()} rows
+                        linked to existing items.
+                      </p>
+                      <Button asChild type="button" variant="outline">
+                        <Link
+                          href={`/dashboard?locationId=${encodeURIComponent(locationId)}`}
+                        >
+                          Continue to dashboard
+                        </Link>
+                      </Button>
+                    </section>
+                  ) : null}
+                  {activeJob.summary?.ready &&
+                  !activeJob.isCommitted &&
+                  !activeJob.error ? (
+                    <section
+                      className="csv-import-confirmation"
+                      aria-labelledby={`${activeJobEntry[0]}-confirm-title`}
+                    >
+                      <p className="app-page__eyebrow">Import confirmation</p>
+                      <h2 id={`${activeJobEntry[0]}-confirm-title`}>
+                        Ready to import{' '}
+                        {activeJob.summary.rowsToImport.toLocaleString()} rows.
+                      </h2>
+                      <p className="app-page__help">
+                        {activeJob.summary.newItems.toLocaleString()} new items
+                        will be created.{' '}
+                        {activeJob.summary.linkedItems.toLocaleString()} rows
+                        will link to existing items. Re-importing this file will
+                        not duplicate rows. Choose the import action below when
+                        you are ready.
+                      </p>
+                    </section>
+                  ) : null}
+                  {activeJob.error ? (
+                    <>
+                      <p role="alert" className="app-page__error">
+                        {activeJob.error}
+                      </p>
+                      <div className="csv-upload-job__actions">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => retryJob(activeJobEntry[0], activeJob)}
+                          disabled={activeJob.isUploading}
+                        >
+                          Try again with {activeJob.fileName}
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          onClick={() => removeJob(activeJobEntry[0])}
+                        >
+                          Remove {activeJob.fileName}
+                        </Button>
+                      </div>
+                    </>
+                  ) : null}
+                </section>
+              ) : null}
+            </div>
+          ) : null}
+        </div>
+      </div>
+      <footer
+        className="csv-import-overlay__footer"
+        aria-label="Import actions"
+      >
+        <div className="csv-import-overlay__footer-nav">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => moveActiveJob(-1)}
+            disabled={!hasPreviousJob}
+          >
+            Back
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => moveActiveJob(1)}
+            disabled={!hasNextJob}
+          >
+            Next file
+          </Button>
+        </div>
+        {batchSummary ? null : readyJobEntries.length > 1 ? (
           <Button
             type="button"
             onClick={() => void commitReadyBatch()}
@@ -960,279 +1417,117 @@ export function CsvUploadForm({ locationId }: { locationId: string }) {
               ? 'Importing batch'
               : `Import ${readyJobEntries.length.toLocaleString()} ready files`}
           </Button>
-        </section>
-      ) : null}
-      <section
-        className="csv-import-samples"
-        aria-labelledby="csv-import-samples-title"
-      >
-        <div>
-          <p className="app-page__eyebrow">Before you upload</p>
-          <h2 id="csv-import-samples-title">Start with a clean example.</h2>
-          <p className="app-page__help">
-            Download a sample for the kind of data you have. Your export can use
-            different column names; PantryIQ will show you the mapping before
-            anything is imported.
-          </p>
-        </div>
-        <div className="csv-import-samples__grid">
-          {sampleImports.map((sample) => (
-            <article className="csv-import-sample" key={sample.importType}>
-              <h3>{sample.label}</h3>
-              <p className="app-page__help">Required columns</p>
-              <ul>
-                {sample.requiredColumns.map((column) => (
-                  <li key={column}>{column}</li>
-                ))}
-              </ul>
-              <Button asChild variant="outline">
-                <a
-                  className="csv-import-sample__download"
-                  href={`/import-samples/${sample.filename}`}
-                  download={sample.filename}
-                >
-                  Download {sample.label.toLowerCase()} sample CSV
-                </a>
-              </Button>
-            </article>
-          ))}
-        </div>
-      </section>
-      <form
-        className={`csv-upload-dropzone${isDragging ? 'is-dragging' : ''}`}
-        aria-label="CSV upload drop zone"
-        onDragEnter={(event) => {
-          event.preventDefault()
-          setIsDragging(true)
-        }}
-        onDragOver={(event) => {
-          event.preventDefault()
-          setIsDragging(true)
-        }}
-        onDragLeave={() => setIsDragging(false)}
-        onDrop={dropFiles}
-        onSubmit={(event) => event.preventDefault()}
-      >
-        {/* Kept for existing deep-link automation; the visible type control is per file below. */}
-        <select
-          id="import-type"
-          aria-label="Legacy import type automation control"
-          className="sr-only"
-          tabIndex={-1}
-        >
-          {importTypes.map(([value, label]) => (
-            <option key={value} value={value}>
-              {label}
-            </option>
-          ))}
-        </select>
-        <div className="app-page__form-row">
-          <Label htmlFor="csv-file">CSV files</Label>
-          <input
-            id="csv-file"
-            type="file"
-            accept=".csv,text/csv"
-            aria-label="CSV file"
-            className="csv-upload__input"
-            multiple
-            onChange={chooseFiles}
-            ref={fileInputRef}
-          />
-          <p className="app-page__help">
-            Drop one or more CSV files here, or use Upload CSV. Each file starts
-            as soon as it is chosen. CSV files up to 10 MB are checked before
-            anything is saved.
-          </p>
-        </div>
-        <Button
-          type="button"
-          onClick={() => fileInputRef.current?.click()}
-          aria-label="Upload CSV"
-        >
-          Upload CSV
-        </Button>
-      </form>
-      {jobEntries.map(([jobId, job]) => (
-        <section
-          key={jobId}
-          className="csv-upload-job"
-          aria-labelledby={`${jobId}-title`}
-        >
-          <h2 id={`${jobId}-title`}>{job.fileName}</h2>
-          <div className="csv-upload-job__type">
-            <Label htmlFor={`${jobId}-type`}>
-              {job.detectedImportType ? 'Detected as' : 'Detecting data type'}
-            </Label>
-            <NativeSelect
-              id={`${jobId}-type`}
-              aria-label={`Import type for ${job.fileName}`}
-              value={job.importType}
-              onChange={(event) =>
-                overrideImportType(
-                  jobId,
-                  job,
-                  event.target.value as CsvImportType,
-                )
-              }
-              disabled={
-                !job.detectedImportType || !job.uploadId || !job.preview
-              }
+        ) : singleReadyJob ? (
+          <Button
+            type="button"
+            onClick={() => void commit(singleReadyJob[0], singleReadyJob[1])}
+            disabled={
+              singleReadyJob[1].isCommitting ||
+              singleReadyJob[1].summary?.alreadyImported === true
+            }
+          >
+            {singleReadyJob[1].isCommitting
+              ? 'Importing'
+              : singleReadyJob[1].summary?.alreadyImported
+                ? 'Already imported'
+                : singleReadyJob[0] === activeJobIdForRender
+                  ? 'Import now'
+                  : 'Import ready file'}
+          </Button>
+        ) : null}
+      </footer>
+    </>
+  )
+
+  function handleImportOpenChange(nextOpen: boolean) {
+    if (nextOpen) {
+      setIsImportOpen(true)
+      return
+    }
+    if (hasInProgressImport) {
+      setIsClosePromptOpen(true)
+      return
+    }
+    setIsImportOpen(false)
+  }
+
+  function keepImportForLater() {
+    setIsClosePromptOpen(false)
+    setIsImportOpen(false)
+  }
+
+  function discardImportProgress() {
+    setIsClosePromptOpen(false)
+    setIsImportOpen(false)
+    setBatchSummary(null)
+    skipNextPersistence.current = true
+    setJobs({})
+    setActiveJobId(null)
+    window.localStorage.removeItem(importStateStorageKey(locationId))
+  }
+
+  return (
+    <div className="csv-import-overlay">
+      <Button type="button" onClick={() => setIsImportOpen(true)}>
+        {hasInProgressImport ? 'Resume import' : 'Import data'}
+      </Button>
+      {isMobile ? (
+        <Sheet open={isImportOpen} onOpenChange={handleImportOpenChange}>
+          <SheetContent
+            data-testid="csv-import-sheet"
+            className="csv-import-overlay__surface"
+            side="bottom"
+          >
+            <SheetHeader className="csv-import-overlay__header">
+              <SheetTitle>Import data</SheetTitle>
+              <SheetDescription>
+                Upload CSV files for this location. Nothing is imported until
+                you confirm it.
+              </SheetDescription>
+            </SheetHeader>
+            {importFlow}
+          </SheetContent>
+        </Sheet>
+      ) : (
+        <Dialog open={isImportOpen} onOpenChange={handleImportOpenChange}>
+          <DialogContent
+            data-testid="csv-import-dialog"
+            className="csv-import-overlay__surface"
+          >
+            <DialogHeader className="csv-import-overlay__header">
+              <DialogTitle>Import data</DialogTitle>
+              <DialogDescription>
+                Upload CSV files for this location. Nothing is imported until
+                you confirm it.
+              </DialogDescription>
+            </DialogHeader>
+            {importFlow}
+          </DialogContent>
+        </Dialog>
+      )}
+      <AlertDialog open={isClosePromptOpen} onOpenChange={setIsClosePromptOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Close this import?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Your in-progress files are saved in this browser and will resume
+              when you reopen Import data. Keep them for later, or discard this
+              saved progress. Nothing is imported until you confirm it.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={keepImportForLater}>
+              Keep files for later
+            </AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              onClick={discardImportProgress}
             >
-              {importTypes.map(([value, label]) => (
-                <option key={value} value={value}>
-                  {label}
-                </option>
-              ))}
-            </NativeSelect>
-          </div>
-          <p aria-live="polite" className="app-page__status">
-            {job.status}
-          </p>
-          {jobId !== activeJobId && job.preview ? (
-            <div className="csv-upload-job__waiting">
-              <p>
-                This file is ready. Finish the active file first, or switch here
-                when you are ready.
-              </p>
-              <Button type="button" onClick={() => setActiveJobId(jobId)}>
-                Work on {job.fileName}
-              </Button>
-            </div>
-          ) : null}
-          {job.preview ? (
-            <CsvPreviewTable
-              preview={job.preview}
-              filename={job.fileName}
-              titleId={
-                jobId === 'upload-job-0'
-                  ? 'csv-preview-title'
-                  : `${jobId}-preview-title`
-              }
-            />
-          ) : null}
-          {jobId === activeJobId && job.preview && job.mapping ? (
-            <CsvMappingReview
-              mapping={job.mapping}
-              preview={job.preview}
-              onMappingAccepted={(mapping) => {
-                if (!job.uploadId) return
-                const mappingUnchanged = Object.entries(
-                  job.mapping?.mapping ?? {},
-                ).every(([column, field]) => mapping[column] === field)
-                saveMapping(
-                  jobId,
-                  job.uploadId,
-                  mapping,
-                  mappingUnchanged ? job.resolutions : {},
-                )
-              }}
-            />
-          ) : null}
-          {jobId === activeJobId &&
-          job.summary?.unmatchedItems.length &&
-          job.uploadId ? (
-            <CsvItemResolution
-              unmatchedItems={job.summary.unmatchedItems}
-              items={job.summary.items}
-              onLinkExisting={(rawItemName, itemId) =>
-                linkExisting(
-                  jobId,
-                  job.uploadId!,
-                  job.resolutions,
-                  rawItemName,
-                  itemId,
-                )
-              }
-              onCreateNew={(rawItemName, input) =>
-                createNew(
-                  jobId,
-                  job.uploadId!,
-                  job.resolutions,
-                  rawItemName,
-                  input,
-                )
-              }
-            />
-          ) : null}
-          {jobId === activeJobId && job.summary?.ready && job.isCommitted ? (
-            <section
-              className="csv-import-result"
-              aria-labelledby={`${jobId}-result-title`}
-              aria-live="polite"
-            >
-              <p className="app-page__eyebrow">Import complete</p>
-              <h2 id={`${jobId}-result-title`}>
-                Imported {job.summary.rowsImported.toLocaleString()} rows.
-              </h2>
-              <p className="app-page__help">
-                {job.summary.newItems.toLocaleString()} new items created.{' '}
-                {job.summary.linkedItems.toLocaleString()} rows linked to
-                existing items.
-              </p>
-              <Button asChild type="button" variant="outline">
-                <Link
-                  href={`/dashboard?locationId=${encodeURIComponent(locationId)}`}
-                >
-                  Continue to dashboard
-                </Link>
-              </Button>
-            </section>
-          ) : null}
-          {jobId === activeJobId && job.summary?.ready && !job.isCommitted ? (
-            <section
-              className="csv-import-confirmation"
-              aria-labelledby={`${jobId}-confirm-title`}
-            >
-              <p className="app-page__eyebrow">Import confirmation</p>
-              <h2 id={`${jobId}-confirm-title`}>
-                Ready to import {job.summary.rowsToImport.toLocaleString()}{' '}
-                rows.
-              </h2>
-              <p className="app-page__help">
-                {job.summary.newItems.toLocaleString()} new items will be
-                created. {job.summary.linkedItems.toLocaleString()} rows will
-                link to existing items. Re-importing this file will not
-                duplicate rows.
-              </p>
-              <Button
-                type="button"
-                onClick={() => void commit(jobId, job)}
-                disabled={job.isCommitting || job.summary.alreadyImported}
-              >
-                {job.isCommitting
-                  ? 'Importing'
-                  : job.summary.alreadyImported
-                    ? 'Already imported'
-                    : 'Import now'}
-              </Button>
-            </section>
-          ) : null}
-          {job.error ? (
-            <>
-              <p role="alert" className="app-page__error">
-                {job.error}
-              </p>
-              <div className="csv-upload-job__actions">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => retryJob(jobId, job)}
-                  disabled={job.isUploading}
-                >
-                  Try again with {job.fileName}
-                </Button>
-                <Button
-                  type="button"
-                  variant="destructive"
-                  onClick={() => removeJob(jobId)}
-                >
-                  Remove {job.fileName}
-                </Button>
-              </div>
-            </>
-          ) : null}
-        </section>
-      ))}
+              Discard saved progress
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
@@ -1251,7 +1546,7 @@ function CsvPreviewTable({
     <section className="csv-preview" aria-label={`Preview of ${filename}`}>
       <div>
         <p className="app-page__eyebrow">Preview</p>
-        <h2 id={titleId}>A look at the first rows.</h2>
+        <h3 id={titleId}>A look at the first rows.</h3>
         <p className="app-page__help">
           {preview.rowCount.toLocaleString()} rows · {preview.columnCount}{' '}
           columns · {delimiterName} delimited · {preview.encoding}

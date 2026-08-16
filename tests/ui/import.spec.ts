@@ -37,12 +37,75 @@ test.describe('CSV import location state', () => {
 })
 
 test.describe('CSV batch upload', () => {
+  test('keeps the import route light until the user opens the flow', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 375, height: 812 })
+    await page.goto(`/import?locationId=${fullYearLocationFixture.locationId}`)
+
+    await expect(
+      page.getByRole('heading', { name: "Bring in one location's data." }),
+    ).toBeVisible()
+    await expect(
+      page.getByRole('button', { name: 'Import data' }),
+    ).toBeVisible()
+    await expect(
+      page.getByRole('form', { name: 'CSV upload drop zone' }),
+    ).toHaveCount(0)
+    await expect(page.getByTestId('csv-import-sheet')).toHaveCount(0)
+
+    await page.getByRole('button', { name: 'Import data' }).click()
+    await expect(page.getByTestId('csv-import-sheet')).toBeVisible()
+    await expect(
+      page.getByRole('form', { name: 'CSV upload drop zone' }),
+    ).toBeVisible()
+    const mobileSteps = page.getByRole('navigation', {
+      name: 'Import steps',
+    })
+    await expect(mobileSteps.locator('li')).toHaveCount(4)
+    await expect(mobileSteps).not.toContainText('Location')
+    await expect(
+      page.getByRole('progressbar', {
+        name: 'Import progress: step 1 of 4',
+      }),
+    ).toHaveAttribute('aria-valuenow', '25')
+
+    await page.getByRole('button', { name: 'Close' }).click()
+    await expect(page.getByTestId('csv-import-sheet')).toHaveCount(0)
+
+    await page.setViewportSize({ width: 1280, height: 900 })
+    await page.reload()
+    await expect(
+      page.getByRole('button', { name: 'Import data' }),
+    ).toBeVisible()
+    await expect(
+      page.getByRole('form', { name: 'CSV upload drop zone' }),
+    ).toHaveCount(0)
+
+    await page.getByRole('button', { name: 'Import data' }).click()
+    await expect(page.getByTestId('csv-import-dialog')).toBeVisible()
+    await expect(
+      page.getByRole('form', { name: 'CSV upload drop zone' }),
+    ).toBeVisible()
+    const desktopSteps = page.getByRole('navigation', {
+      name: 'Import steps',
+    })
+    await expect(desktopSteps.locator('li')).toHaveCount(4)
+    await expect(desktopSteps).not.toContainText('Location')
+    await expect(
+      page.getByRole('progressbar', {
+        name: 'Import progress: step 1 of 4',
+      }),
+    ).toHaveAttribute('aria-valuenow', '25')
+  })
+
   test('shows required columns, serves every sample, and imports each sample to confirmation', async ({
     page,
     mockApi,
   }) => {
     await mockApi()
     await page.goto(`/import?locationId=${fullYearLocationFixture.locationId}`)
+    await page.getByRole('button', { name: 'Import data' }).click()
 
     const samples = [
       {
@@ -92,8 +155,7 @@ test.describe('CSV batch upload', () => {
       })
       await expect(
         page
-          .locator('.csv-upload-job')
-          .filter({ hasText: sample.filename })
+          .getByRole('region', { name: sample.filename })
           .locator('.csv-import-confirmation')
           .getByRole('heading', { name: /Ready to import/ }),
       ).toBeVisible()
@@ -106,6 +168,7 @@ test.describe('CSV batch upload', () => {
   }) => {
     await mockApi()
     await page.goto(`/import?locationId=${fullYearLocationFixture.locationId}`)
+    await page.getByRole('button', { name: 'Import data' }).click()
 
     const uploadedTypes: string[] = []
     page.on('request', (request) => {
@@ -129,10 +192,16 @@ test.describe('CSV batch upload', () => {
     await expect(
       page.getByLabel('Import type for sales-one-year-daily.csv'),
     ).toHaveValue('transactions')
+    await page
+      .getByRole('button', { name: 'Work on 7shifts-timesheet.csv' })
+      .click()
     await expect(
       page.getByLabel('Import type for 7shifts-timesheet.csv'),
     ).toHaveValue('labor')
-    await expect.poll(() => uploadedTypes).toEqual(['transactions', 'labor'])
+    await expect
+      .poll(() => uploadedTypes)
+      .toEqual(expect.arrayContaining(['transactions', 'labor']))
+    expect(uploadedTypes).toHaveLength(2)
   })
 
   test('drops three CSVs, starts each upload immediately, and hides the native input', async ({
@@ -141,6 +210,13 @@ test.describe('CSV batch upload', () => {
   }) => {
     await mockApi()
     await page.goto(`/import?locationId=${fullYearLocationFixture.locationId}`)
+    await page.getByRole('button', { name: 'Import data' }).click()
+
+    const dropZone = page.getByRole('form', { name: 'CSV upload drop zone' })
+    await dropZone.dispatchEvent('dragenter')
+    await expect(dropZone).toHaveClass(/\bis-dragging\b/)
+    await dropZone.dispatchEvent('dragleave')
+    await expect(dropZone).not.toHaveClass(/\bis-dragging\b/)
 
     const uploadRequests: string[] = []
     page.on('request', (request) => {
@@ -174,14 +250,43 @@ test.describe('CSV batch upload', () => {
         )
     })
 
-    await expect(page.getByRole('heading', { name: 'sales.csv' })).toBeVisible()
-    await expect(page.getByRole('heading', { name: 'labor.csv' })).toBeVisible()
     await expect(
-      page.getByRole('heading', { name: 'inventory.csv' }),
+      page.getByRole('button', { name: 'Working on sales.csv' }),
+    ).toBeVisible()
+    await expect(
+      page.getByRole('button', { name: 'Work on labor.csv' }),
+    ).toBeVisible()
+    await expect(
+      page.getByRole('button', { name: 'Work on inventory.csv' }),
     ).toBeVisible()
     await expect.poll(() => uploadRequests.length).toBe(3)
     await expect(page.locator('input[type="file"]')).toBeHidden()
-    await expect(page.locator('.csv-upload-job')).toHaveCount(3)
+    await expect(page.locator('.csv-import-queue__item')).toHaveCount(3)
+    await expect(page.getByRole('heading', { name: 'sales.csv' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'labor.csv' })).toHaveCount(
+      0,
+    )
+    const actionFooter = page.getByRole('contentinfo', {
+      name: 'Import actions',
+    })
+    await expect(actionFooter).toBeVisible()
+    await expect(
+      actionFooter.getByRole('button', { name: 'Next file' }),
+    ).toBeVisible()
+
+    await page.setViewportSize({ width: 1280, height: 900 })
+    await dropZone.dispatchEvent('dragenter')
+    await expect(dropZone).toHaveClass(/\bis-dragging\b/)
+    await dropZone.dispatchEvent('dragleave')
+    await expect(page.locator('.csv-import-queue__item')).toHaveCount(3)
+    await expect(actionFooter).toBeVisible()
+    await expect
+      .poll(() =>
+        page.evaluate(
+          () => document.documentElement.scrollWidth <= window.innerWidth,
+        ),
+      )
+      .toBe(true)
   })
 
   test('commits every ready file from one action and shows one combined summary', async ({
@@ -191,6 +296,7 @@ test.describe('CSV batch upload', () => {
     await mockApi()
     await page.setViewportSize({ width: 375, height: 812 })
     await page.goto(`/import?locationId=${fullYearLocationFixture.locationId}`)
+    await page.getByRole('button', { name: 'Import data' }).click()
 
     const committedUploads: string[] = []
     page.on('request', (request) => {
@@ -219,16 +325,22 @@ test.describe('CSV batch upload', () => {
     ])
 
     await expect(
-      page.getByRole('button', { name: 'Import 2 ready files' }),
+      page
+        .getByRole('contentinfo', { name: 'Import actions' })
+        .getByRole('button', { name: 'Import 2 ready files' }),
     ).toBeVisible()
     await expect
       .poll(() =>
         page
+          .getByRole('contentinfo', { name: 'Import actions' })
           .getByRole('button', { name: 'Import 2 ready files' })
           .evaluate((element) => element.getBoundingClientRect().height),
       )
       .toBeGreaterThanOrEqual(44)
-    await page.getByRole('button', { name: 'Import 2 ready files' }).click()
+    await page
+      .getByRole('contentinfo', { name: 'Import actions' })
+      .getByRole('button', { name: 'Import 2 ready files' })
+      .click()
 
     await expect.poll(() => committedUploads.length).toBe(2)
     await expect(
@@ -258,6 +370,7 @@ test.describe('CSV batch upload', () => {
     await mockApi({ alreadyImportedFilename: 'already.csv' })
     await page.setViewportSize({ width: 375, height: 812 })
     await page.goto(`/import?locationId=${fullYearLocationFixture.locationId}`)
+    await page.getByRole('button', { name: 'Import data' }).click()
 
     const committedUploads: string[] = []
     page.on('request', (request) => {
@@ -294,23 +407,30 @@ test.describe('CSV batch upload', () => {
     await expect(page.getByText('already.csv: Already imported')).toBeVisible()
   })
 
-  test('keeps the five steps visible and puts other import tools behind a disclosure', async ({
+  test('keeps the four steps visible and puts other import tools behind a disclosure', async ({
     page,
     mockApi,
   }) => {
     await mockApi({ mappingReview: true })
     await page.setViewportSize({ width: 375, height: 812 })
     await page.goto(`/import?locationId=${fullYearLocationFixture.locationId}`)
+    await page.getByRole('button', { name: 'Import data' }).click()
 
     const steps = page.getByRole('navigation', { name: 'Import steps' })
-    await expect(steps).toContainText('Location')
     await expect(steps).toContainText('Upload file')
     await expect(steps).toContainText('Map columns')
     await expect(steps).toContainText('Match items')
     await expect(steps).toContainText('Confirm import')
+    await expect(steps.locator('li')).toHaveCount(4)
+    await expect(steps).not.toContainText('Location')
     await expect(
       steps.locator('li').filter({ hasText: 'Upload file' }),
     ).toHaveAttribute('aria-current', 'step')
+    const progress = page.getByRole('progressbar', {
+      name: 'Import progress: step 1 of 4',
+    })
+    await expect(progress).toHaveAttribute('aria-valuenow', '25')
+    await expect(page.getByText('Step 1 of 4')).toBeVisible()
 
     const supportingTools = page.locator('details.import-supporting-tools')
     await expect(supportingTools).not.toHaveAttribute('open', '')
@@ -327,7 +447,16 @@ test.describe('CSV batch upload', () => {
       steps.locator('li').filter({ hasText: 'Map columns' }),
     ).toHaveAttribute('aria-current', 'step')
     await expect(
-      page.getByRole('heading', { name: 'A look at the first rows.' }),
+      page.getByRole('progressbar', {
+        name: 'Import progress: step 2 of 4',
+      }),
+    ).toHaveAttribute('aria-valuenow', '50')
+    await expect(page.getByText('Step 2 of 4')).toBeVisible()
+    await expect(
+      page.getByRole('heading', {
+        name: 'A look at the first rows.',
+        level: 3,
+      }),
     ).toBeVisible()
     await expect
       .poll(() =>
@@ -351,6 +480,7 @@ test.describe('CSV batch upload', () => {
   }) => {
     await mockApi({ uploadCommit: 'conflict' })
     await page.goto(`/import?locationId=${fullYearLocationFixture.locationId}`)
+    await page.getByRole('button', { name: 'Import data' }).click()
 
     await page.getByLabel('CSV file').setInputFiles({
       name: 'sales.csv',
@@ -367,6 +497,7 @@ test.describe('CSV batch upload', () => {
     ).toBeVisible()
 
     await page.reload()
+    await page.getByRole('button', { name: 'Import data' }).click()
 
     await expect(page.getByRole('heading', { name: 'sales.csv' })).toBeVisible()
     await expect(
@@ -399,6 +530,7 @@ test.describe('CSV upload failure paths', () => {
     })
 
     await page.goto(`/import?locationId=${fullYearLocationFixture.locationId}`)
+    await page.getByRole('button', { name: 'Import data' }).click()
     await page
       .getByLabel('CSV file')
       .setInputFiles([
@@ -409,9 +541,11 @@ test.describe('CSV upload failure paths', () => {
         path.resolve('tests/fixtures/csv/security/renamed-xlsx.csv'),
       ])
 
-    const rejectedJob = page
-      .locator('.csv-upload-job')
-      .filter({ hasText: 'renamed-xlsx.csv' })
+    const rejectedQueueItem = page.getByRole('button', {
+      name: 'Work on renamed-xlsx.csv',
+    })
+    await rejectedQueueItem.click()
+    const rejectedJob = page.getByRole('region', { name: 'renamed-xlsx.csv' })
     await expect(rejectedJob.getByRole('alert')).toContainText(
       'That file is not a CSV.',
     )
@@ -423,26 +557,28 @@ test.describe('CSV upload failure paths', () => {
     await expect(
       rejectedJob.getByRole('button', { name: 'Remove renamed-xlsx.csv' }),
     ).toBeVisible()
-    await expect(
-      page
-        .locator('.csv-upload-job')
-        .filter({ hasText: 'sales-one-year-daily.csv' }),
-    ).toContainText('Ready to import 1 rows.')
     await page
-      .locator('.csv-upload-job')
-      .filter({ hasText: '7shifts-timesheet.csv' })
-      .getByRole('button', { name: 'Work on 7shifts-timesheet.csv' })
+      .getByRole('button', { name: 'Work on sales-one-year-daily.csv' })
       .click()
     await expect(
-      page
-        .locator('.csv-upload-job')
-        .filter({ hasText: '7shifts-timesheet.csv' }),
+      page.getByRole('region', {
+        name: 'sales-one-year-daily.csv',
+        exact: true,
+      }),
     ).toContainText('Ready to import 1 rows.')
 
-    await rejectedJob
+    await page.getByRole('button', { name: 'Work on renamed-xlsx.csv' }).click()
+    const activeRejectedJob = page.getByRole('region', {
+      name: 'renamed-xlsx.csv',
+    })
+    await activeRejectedJob
       .getByRole('button', { name: 'Try again with renamed-xlsx.csv' })
       .click()
-    await expect(rejectedJob).toContainText('A look at the first rows.')
+    await expect(
+      activeRejectedJob.getByRole('region', {
+        name: 'Preview of renamed-xlsx.csv',
+      }),
+    ).toBeVisible()
   })
 
   test('surfaces a storage outage and leaves upload available to retry', async ({
@@ -451,6 +587,7 @@ test.describe('CSV upload failure paths', () => {
   }) => {
     await mockApi({ uploads: 'unavailable' })
     await page.goto(`/import?locationId=${fullYearLocationFixture.locationId}`)
+    await page.getByRole('button', { name: 'Import data' }).click()
 
     await page.getByLabel('CSV file').setInputFiles({
       name: 'sales.csv',
@@ -471,6 +608,7 @@ test.describe('CSV upload failure paths', () => {
   }) => {
     await mockApi({ uploadCommit: 'conflict' })
     await page.goto(`/import?locationId=${fullYearLocationFixture.locationId}`)
+    await page.getByRole('button', { name: 'Import data' }).click()
 
     await page.getByLabel('CSV file').setInputFiles({
       name: 'sales.csv',
@@ -503,6 +641,7 @@ test.describe('CSV mapping review', () => {
   }) => {
     await mockApi({ mappingReview: true })
     await page.goto(`/import?locationId=${fullYearLocationFixture.locationId}`)
+    await page.getByRole('button', { name: 'Import data' }).click()
 
     const csv = {
       name: 'sales.csv',
@@ -548,6 +687,7 @@ test.describe('CSV item resolution', () => {
   }) => {
     await mockApi({ uploadCommit: 'conflict' })
     await page.goto(`/import?locationId=${fullYearLocationFixture.locationId}`)
+    await page.getByRole('button', { name: 'Import data' }).click()
 
     await page.getByLabel('CSV file').setInputFiles({
       name: 'sales.csv',
@@ -601,6 +741,7 @@ test.describe('CSV item resolution', () => {
   }) => {
     await mockApi({ uploadCommit: 'conflict' })
     await page.goto(`/import?locationId=${fullYearLocationFixture.locationId}`)
+    await page.getByRole('button', { name: 'Import data' }).click()
 
     await page.getByLabel('CSV file').setInputFiles({
       name: 'sales.csv',

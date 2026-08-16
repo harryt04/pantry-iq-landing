@@ -166,7 +166,7 @@ export function CsvMappingReview({
             Change mapping
           </Button>
         </div>
-        <p className="app-page__help" role="status">
+        <p className="app-page__help">
           The file has the same column shape as an earlier {mapping.importType}{' '}
           import. Nothing needs reviewing unless you want to change it.
         </p>
@@ -192,7 +192,7 @@ export function CsvMappingReview({
       <section className="csv-mapping" aria-labelledby="csv-mapping-title">
         <p className="app-page__eyebrow">Column mapping</p>
         <h2 id="csv-mapping-title">Mapping reviewed.</h2>
-        <p className="app-page__help" role="status">
+        <p className="app-page__help">
           {progress.completed} columns reviewed. Skipped columns stay out of the
           import.
         </p>
