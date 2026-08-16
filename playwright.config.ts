@@ -22,6 +22,7 @@ export default defineConfig({
   // Browser tests share one dev server and several projects depend on setup.
   // One retry handles a transient browser failure; maxFailures prevents a
   // setup failure from multiplying across every dependent test.
+  ...(process.env.CI ? { workers: 1 } : {}),
   retries: process.env.CI ? 1 : 0,
   maxFailures: process.env.CI ? 1 : 0,
   use: {
