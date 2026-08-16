@@ -834,7 +834,7 @@ for (const colorScheme of themes) {
           await expect(job.locator('[role="alert"]')).toHaveCount(0)
         }
         await expect(
-          page.getByRole('heading', { name: '2 files are ready.' }),
+          page.getByRole('button', { name: 'Import 2 ready files' }),
         ).toBeVisible({ timeout: 120_000 })
 
         await loadAxe(page)
