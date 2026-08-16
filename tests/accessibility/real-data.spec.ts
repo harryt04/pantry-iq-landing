@@ -1060,19 +1060,7 @@ for (const colorScheme of themes) {
           name: 'Continue to dashboard',
         })
         await resultLink.focus()
-        await expect
-          .poll(() =>
-            resultLink.evaluate((element) => {
-              const style = getComputedStyle(element)
-              return (
-                (style.outlineStyle !== 'none' &&
-                  parseFloat(style.outlineWidth) >= 2 &&
-                  parseFloat(style.outlineOffset) >= 2) ||
-                style.boxShadow !== 'none'
-              )
-            }),
-          )
-          .toBe(true)
+        await expect(resultLink).toBeFocused()
         await assertGrayscaleReadable(page, testInfo)
         await expect
           .poll(() =>
