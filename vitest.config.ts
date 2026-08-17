@@ -13,15 +13,16 @@ const databaseAvailable =
   process.env.TESTCONTAINERS_ENABLED === '1'
 
 /**
- * Measured at 78.44% statements, 78.19% branches, 85.04% functions, and
- * 78.44% lines on 2026-08-11. Thresholds stay at least two points below the
- * measured result. Never lower a threshold to make a build pass.
+ * Measured at 78.57% statements, 78.33% branches, 85.15% functions, and
+ * 78.57% lines on 2026-08-12. Thresholds stay at least two points below the
+ * measured result where that raises the existing gate. Never lower a
+ * threshold to make a build pass.
  */
 const thresholds = {
-  statements: 76.44,
-  lines: 76.44,
-  branches: 76.19,
-  functions: 83.04,
+  statements: 76.69,
+  lines: 76.69,
+  branches: 76.33,
+  functions: 83.15,
 }
 
 export default defineConfig({
@@ -42,6 +43,9 @@ export default defineConfig({
     // where the pure-logic suites run in milliseconds.
     environmentMatchGlobs: [['**/*.dom.test.tsx', 'jsdom']],
     setupFiles: ['tests/setup/dom.ts'],
+    // v8 coverage instrumentation slows jsdom rendering enough that the
+    // 5000ms default flakes on CI; give async assertions real headroom.
+    testTimeout: 10_000,
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html', 'lcov'],

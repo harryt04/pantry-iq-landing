@@ -60,6 +60,19 @@ export type CsvMappingDetection = {
   reused: boolean
 }
 
+export type CsvImportTypeDetection = {
+  importType: CsvImportType
+  matchedFields: CanonicalField[]
+  score: number
+}
+
+const csvImportTypes: CsvImportType[] = [
+  'transactions',
+  'purchase_orders',
+  'inventory',
+  'labor',
+]
+
 export type StoredCsvMapping = Record<string, CanonicalField | null>
 
 export const canonicalFieldLabels: Record<CanonicalField, string> = {
@@ -665,6 +678,41 @@ export function detectColumnMappings(
     ) as Record<string, CanonicalField | null>,
     reused: false,
   }
+}
+
+/**
+ * Guess the source type from a CSV header before the upload is stored.
+ *
+ * This deliberately reuses the same column detector as mapping review. The
+ * header is the only reliable signal available before the server has parsed
+ * the file, so callers should keep the result editable for ambiguous exports.
+ */
+export function detectCsvImportType(
+  columns: readonly string[],
+): CsvImportTypeDetection {
+  const candidates = csvImportTypes.map((importType) => {
+    const detection = detectColumnMappings(
+      { columns: [...columns], previewRows: [] },
+      importType,
+    )
+    const matchedColumns = detection.columns.filter(
+      (column) => column.targetField !== null,
+    )
+    const matchedFields = matchedColumns.flatMap((column) =>
+      column.targetField ? [column.targetField] : [],
+    )
+    const headerMatches = matchedColumns.filter((column) =>
+      column.evidence.some((evidence) => evidence.startsWith('Header matches')),
+    ).length
+
+    return {
+      importType,
+      matchedFields,
+      score: matchedColumns.length * 100 + headerMatches * 10,
+    }
+  })
+
+  return candidates.sort((left, right) => right.score - left.score)[0]!
 }
 
 export function isKnownCanonicalField(value: string): value is CanonicalField {

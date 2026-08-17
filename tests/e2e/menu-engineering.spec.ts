@@ -58,26 +58,38 @@ test.describe('menu engineering', () => {
   test('names the missing sales history for a short-history location', async ({
     page,
   }) => {
-    await page.goto(
-      `/menu-engineering?locationId=${partialDataLocationFixture.locationId}`,
-    )
+    for (const viewport of [
+      { width: 1280, height: 812 },
+      { width: 375, height: 812 },
+    ]) {
+      await page.setViewportSize(viewport)
+      await page.goto(
+        `/menu-engineering?locationId=${partialDataLocationFixture.locationId}`,
+      )
 
-    await expect(
-      page.getByText('See what earns its place.', { exact: true }),
-    ).toBeVisible()
-    await expect(page.getByText(/0 items in the matrix/)).toBeVisible()
-    await expect(
-      page.getByText('Not enough comparable data yet', { exact: true }),
-    ).toBeVisible()
-    await expect(
-      page
-        .getByText(
-          /Only \d+ complete business weeks? of sales; at least 4 are needed\./,
-        )
-        .first(),
-    ).toBeVisible()
-    await expect(
-      page.getByText('Ranked menu items', { exact: true }),
-    ).toHaveCount(0)
+      await expect(
+        page.getByText('See what earns its place.', { exact: true }),
+      ).toBeVisible()
+      await expect(page.getByText(/0 items in the matrix/)).toBeVisible()
+      await expect(
+        page.getByText('Not enough comparable data yet', { exact: true }),
+      ).toBeVisible()
+      await expect(
+        page
+          .getByText(
+            /Only \d+ complete business weeks? of sales; at least 4 are needed\./,
+          )
+          .first(),
+      ).toBeVisible()
+      await expect(
+        page.getByRole('status').getByText(/\d+ more weeks? needed/),
+      ).toBeVisible()
+      await expect(
+        page.getByText('Ranked menu items', { exact: true }),
+      ).toHaveCount(0)
+      expect(
+        await page.evaluate(() => document.body.scrollWidth),
+      ).toBeLessThanOrEqual(viewport.width)
+    }
   })
 })

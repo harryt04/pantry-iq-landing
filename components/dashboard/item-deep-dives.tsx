@@ -17,6 +17,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet'
+import { getChartEncoding } from '@/components/charts/chart-primitives'
 import type {
   ItemDeepDive,
   ItemDeepDiveGroups,
@@ -34,38 +35,117 @@ function itemKey(item: ItemDeepDive) {
   return item.itemId
 }
 
-function groupItems(
-  label: string,
-  description: string,
-  items: readonly ItemDeepDive[],
-  value: (item: ItemDeepDive) => string,
-  onSelect: (item: ItemDeepDive) => void,
-) {
-  if (items.length === 0) return null
+type ItemGroup = {
+  label: string
+  description: string
+  items: readonly ItemDeepDive[]
+  value: (item: ItemDeepDive) => string
+  numericValue: (item: ItemDeepDive) => string | null
+  onSelect: (item: ItemDeepDive) => void
+  seriesIndex: number
+}
+
+type ItemBarStyle = React.CSSProperties & {
+  '--c': string
+  '--item-bar-width': string
+}
+
+type Magnitude = {
+  coefficient: bigint
+  scale: number
+}
+
+function magnitude(value: string | null): Magnitude | null {
+  if (value === null || !/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)$/.test(value)) {
+    return null
+  }
+
+  const unsigned = value.replace(/^[+-]/, '')
+  const [integer = '0', fraction = ''] = unsigned.split('.')
+  return {
+    coefficient: BigInt(`${integer}${fraction}` || '0'),
+    scale: fraction.length,
+  }
+}
+
+function scaledCoefficient(value: Magnitude, scale: number) {
+  return value.coefficient * 10n ** BigInt(scale - value.scale)
+}
+
+function groupItems(group: ItemGroup) {
+  if (group.items.length === 0) return null
+
+  const encoding = getChartEncoding(group.seriesIndex)
+  const values = group.items.flatMap((item) => {
+    const value = magnitude(group.numericValue(item))
+    return value ? [value] : []
+  })
+  const scale = Math.max(...values.map((value) => value.scale), 0)
+  const maximum = values.reduce(
+    (largest, value) =>
+      scaledCoefficient(value, scale) > largest
+        ? scaledCoefficient(value, scale)
+        : largest,
+    0n,
+  )
 
   return (
     <div className="item-deep-dives__group">
       <div>
-        <h3>{label}</h3>
-        <p>{description}</p>
+        <h3>{group.label}</h3>
+        <p>{group.description}</p>
       </div>
       <div className="item-deep-dives__items">
-        {items.map((item) => (
-          <button
-            className="item-deep-dives__item"
-            key={itemKey(item)}
-            onClick={() => onSelect(item)}
-            type="button"
-          >
-            <span>
-              <strong>{item.displayName}</strong>
-              <small>{item.category ?? item.unit}</small>
-            </span>
-            <span className="item-deep-dives__item-value figure">
-              {value(item)}
-            </span>
-          </button>
-        ))}
+        {group.items.map((item, index) => {
+          const numeric = magnitude(group.numericValue(item))
+          const width =
+            numeric === null || maximum === 0n
+              ? null
+              : (() => {
+                  const basisPoints =
+                    (scaledCoefficient(numeric, scale) * 10000n) / maximum
+                  const clamped = basisPoints < 300n ? 300n : basisPoints
+                  return `${clamped / 100n}.${(clamped % 100n)
+                    .toString()
+                    .padStart(2, '0')}%`
+                })()
+
+          return (
+            <button
+              className="item-deep-dives__item"
+              key={itemKey(item)}
+              onClick={() => group.onSelect(item)}
+              type="button"
+            >
+              <span className="item-deep-dives__item-heading">
+                <span className="item-deep-dives__item-rank figure">
+                  #{index + 1}
+                </span>
+                <span className="item-deep-dives__item-name">
+                  <strong>{item.displayName}</strong>
+                  <small>{item.category ?? item.unit}</small>
+                </span>
+                <span className="item-deep-dives__item-state">
+                  {group.label}
+                </span>
+              </span>
+              <span className="item-deep-dives__item-bar" aria-hidden="true">
+                <span
+                  className={`item-deep-dives__item-bar-fill pat pat--${encoding.pattern}`}
+                  style={
+                    {
+                      '--c': encoding.color,
+                      '--item-bar-width': `${width ?? 100}%`,
+                    } as ItemBarStyle
+                  }
+                />
+              </span>
+              <span className="item-deep-dives__item-value figure">
+                {group.value(item)}
+              </span>
+            </button>
+          )
+        })}
       </div>
     </div>
   )
@@ -264,45 +344,55 @@ export function ItemDeepDives({
       className="item-deep-dives"
       aria-labelledby="item-deep-dives-title"
     >
-      <div className="item-deep-dives__heading">
+      <div className="item-deep-dives__heading dashboard-section-heading--compact">
         <div>
-          <p className="app-page__eyebrow">Item view</p>
           <h2 id="item-deep-dives-title">Look closer at an item.</h2>
+          <p className="app-page__qualifier">
+            Choose revenue, spoilage risk, or margin to see imported facts for
+            an item.
+          </p>
         </div>
-        <p className="app-page__help">
-          Start with revenue, spoilage risk, or margin. Select an item to see
-          the imported facts behind the rollup.
-        </p>
       </div>
       <div className="item-deep-dives__groups">
-        {groupItems(
-          'Top selling',
-          'Highest imported revenue in the available history.',
-          groups.topSelling,
-          (item) => dollarValue(item.totalRevenue),
-          setSelectedItem,
-        )}
-        {groupItems(
-          'Spoilage risk',
-          'Items with the largest calculated value currently on hand.',
-          groups.spoilageRisk,
-          (item) => dollarValue(item.spoilageRisk),
-          setSelectedItem,
-        )}
-        {groupItems(
-          'Low margin',
-          'Lowest calculated margin among items with enough inputs.',
-          groups.lowMargin,
-          (item) => dollarValue(item.margin),
-          setSelectedItem,
-        )}
-        {groupItems(
-          'Needs more data',
-          'Items remain visible even when a rollup cannot be calculated.',
-          groups.needsData,
-          () => 'Open detail',
-          setSelectedItem,
-        )}
+        {groupItems({
+          label: 'Top selling',
+          description: 'Highest imported revenue in the available history.',
+          items: groups.topSelling,
+          value: (item) => dollarValue(item.totalRevenue),
+          numericValue: (item) => item.totalRevenue,
+          onSelect: setSelectedItem,
+          seriesIndex: 0,
+        })}
+        {groupItems({
+          label: 'Spoilage risk',
+          description:
+            'Items with the largest calculated value currently on hand.',
+          items: groups.spoilageRisk,
+          value: (item) => dollarValue(item.spoilageRisk),
+          numericValue: (item) => item.spoilageRisk,
+          onSelect: setSelectedItem,
+          seriesIndex: 1,
+        })}
+        {groupItems({
+          label: 'Low margin',
+          description:
+            'Lowest calculated margin among items with enough inputs.',
+          items: groups.lowMargin,
+          value: (item) => dollarValue(item.margin),
+          numericValue: (item) => item.margin,
+          onSelect: setSelectedItem,
+          seriesIndex: 2,
+        })}
+        {groupItems({
+          label: 'Needs more data',
+          description:
+            'Items remain visible even when a rollup cannot be calculated.',
+          items: groups.needsData,
+          value: () => 'Open detail',
+          numericValue: () => null,
+          onSelect: setSelectedItem,
+          seriesIndex: 3,
+        })}
       </div>
 
       {isMobile ? (

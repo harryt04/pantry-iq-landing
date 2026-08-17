@@ -19,7 +19,12 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   reporter: process.env.CI ? 'github' : 'list',
-  retries: process.env.CI ? 2 : 0,
+  // Browser tests share one dev server and several projects depend on setup.
+  // One retry handles a transient browser failure; maxFailures prevents a
+  // setup failure from multiplying across every dependent test.
+  ...(process.env.CI ? { workers: 1 } : {}),
+  retries: process.env.CI ? 1 : 0,
+  maxFailures: process.env.CI ? 1 : 0,
   use: {
     baseURL,
     trace: 'on-first-retry',
@@ -29,6 +34,7 @@ export default defineConfig({
   },
   webServer: {
     command: `env -u FORCE_COLOR -u NO_COLOR BETTER_AUTH_URL=http://localhost:${port} pnpm dev --hostname 127.0.0.1 --port ${port}`,
+    env: { CSV_UPLOAD_RATE_LIMIT: '1000' },
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
     url: `${baseURL}/api/health`,

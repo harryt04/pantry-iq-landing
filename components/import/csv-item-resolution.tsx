@@ -98,7 +98,7 @@ export function CsvItemResolution({
           <p className="app-page__eyebrow">Item names</p>
           <h2 id="csv-item-resolution-title">One item needs your call.</h2>
         </div>
-        <p className="csv-mapping__progress" aria-live="polite">
+        <p className="csv-mapping__progress">
           {unmatchedItems.length} unresolved item
           {unmatchedItems.length === 1 ? '' : 's'} remaining
         </p>
@@ -134,24 +134,28 @@ export function CsvItemResolution({
           placeholder="Search item names"
           autoComplete="off"
         />
-        <div role="listbox" aria-label="Existing items">
+        <ul
+          className="csv-item-resolution__candidates"
+          aria-label="Existing items"
+        >
           {candidates.map((item) => (
-            <button
-              className="csv-item-resolution__candidate"
-              key={item.id}
-              type="button"
-              onClick={() => onLinkExisting(current.rawItemName, item.id)}
-            >
-              <span>{item.displayName}</span>
-              <span>{item.unit}</span>
-            </button>
+            <li key={item.id}>
+              <button
+                className="csv-item-resolution__candidate"
+                type="button"
+                onClick={() => onLinkExisting(current.rawItemName, item.id)}
+              >
+                <span>{item.displayName}</span>
+                <span>{item.unit}</span>
+              </button>
+            </li>
           ))}
           {candidates.length === 0 ? (
-            <p className="app-page__help">
+            <li className="app-page__help">
               No existing item matches that search.
-            </p>
+            </li>
           ) : null}
-        </div>
+        </ul>
       </div>
 
       <form className="app-page__form-row" onSubmit={createNewItem}>

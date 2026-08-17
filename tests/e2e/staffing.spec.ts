@@ -45,21 +45,35 @@ test.describe('staffing analysis', () => {
   test('names the missing history for a short-history location', async ({
     page,
   }) => {
-    await page.goto(
-      `/staffing?locationId=${partialDataLocationFixture.locationId}`,
-    )
+    for (const viewport of [
+      { width: 1280, height: 812 },
+      { width: 375, height: 812 },
+    ]) {
+      await page.setViewportSize(viewport)
+      await page.goto(
+        `/staffing?locationId=${partialDataLocationFixture.locationId}`,
+      )
 
-    await expect(
-      page.getByText('There is not a comparable period yet.', { exact: true }),
-    ).toBeVisible()
-    await expect(
-      page.getByText('Demand forecast', { exact: true }),
-    ).toBeVisible()
-    await expect(
-      page.getByText(
-        /14 of the required at least 28 distinct business days of transaction history/i,
-      ),
-    ).toBeVisible()
-    await expect(page.getByText(/0 of the required/i)).toHaveCount(0)
+      await expect(
+        page.getByText('There is not a comparable period yet.', {
+          exact: true,
+        }),
+      ).toBeVisible()
+      await expect(
+        page.getByText('Demand forecast', { exact: true }),
+      ).toBeVisible()
+      await expect(
+        page.getByText(
+          /14 of the required at least 28 distinct business days of transaction history/i,
+        ),
+      ).toBeVisible()
+      await expect(
+        page.getByText(/14 more business days needed\./),
+      ).toBeVisible()
+      await expect(page.getByText(/0 of the required/i)).toHaveCount(0)
+      expect(
+        await page.evaluate(() => document.body.scrollWidth),
+      ).toBeLessThanOrEqual(viewport.width)
+    }
   })
 })

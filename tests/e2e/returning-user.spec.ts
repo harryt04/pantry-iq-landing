@@ -30,7 +30,46 @@ test.describe('explicit signup and returning-user journey', () => {
     await page.getByLabel('Password').fill(password)
     await page.getByRole('button', { name: 'Create account' }).click()
 
-    await expect(page).toHaveURL(/\/account$/)
+    await expect(page).toHaveURL(/\/welcome$/)
+    await expect(
+      page.getByRole('heading', { name: 'Start with one location.' }),
+    ).toBeVisible()
+    const firstLocationName = 'First session kitchen'
+    const desktopAction = page.getByRole('button', { name: 'Add location' })
+    await expect(desktopAction).toBeEnabled()
+    await page.getByLabel('Location name').fill(firstLocationName)
+    await page.getByLabel('Address').fill('1 First Street')
+    await expect(desktopAction).toBeVisible()
+    expect((await desktopAction.boundingBox())?.height).toBeGreaterThanOrEqual(
+      44,
+    )
+    await expect(desktopAction).toBeEnabled()
+    await expect(page.getByLabel('Location name')).toHaveValue(
+      firstLocationName,
+    )
+    await desktopAction.click()
+    await expect(page).toHaveURL(/\/import\?locationId=/)
+    const createdFirstLocationId = new URL(page.url()).searchParams.get(
+      'locationId',
+    )
+    expect(createdFirstLocationId).toBeTruthy()
+    await expect(
+      page.getByRole('combobox', { name: 'Selected location' }),
+    ).toContainText(firstLocationName)
+
+    await page.setViewportSize({ width: 375, height: 812 })
+    await page.goto('/welcome')
+    const mobileAction = page.getByRole('button', { name: 'Add location' })
+    await expect(mobileAction).toBeVisible()
+    const mobileActionBox = await mobileAction.boundingBox()
+    expect(mobileActionBox).not.toBeNull()
+    expect(mobileActionBox?.height).toBeGreaterThanOrEqual(44)
+    expect(
+      await page.evaluate(() => document.documentElement.scrollWidth),
+    ).toBeLessThanOrEqual(375)
+
+    await page.setViewportSize({ width: 1280, height: 720 })
+    await page.goto('/account')
 
     for (const [name, address] of [
       ['North Kitchen', '1 North Street'],
@@ -51,7 +90,15 @@ test.describe('explicit signup and returning-user journey', () => {
     await page.getByLabel('Password').fill(password)
     await page.getByRole('button', { name: /Sign in/ }).click()
 
-    await expect(page).toHaveURL(/\/(dashboard|account)/)
+    await expect(page).toHaveURL(
+      new RegExp(`/import\\?locationId=${createdFirstLocationId}`),
+    )
+    await expect(
+      page.getByRole('heading', { name: "Bring in one location's data." }),
+    ).toBeVisible()
+    await expect(
+      page.getByRole('heading', { name: 'Start with one location.' }),
+    ).toHaveCount(0)
 
     // The location switcher must actually change the scope in the URL. Navigate
     // through the shell rather than typing /dashboard, because the shell is what

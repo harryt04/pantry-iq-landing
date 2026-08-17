@@ -89,6 +89,51 @@ describe('item deep dives', () => {
     expect(document.body.textContent).not.toContain('0%')
   })
 
+  it('renders ranked rows with printed values, state chips, and series patterns', () => {
+    renderGroups(
+      groups({
+        spoilageRisk: [
+          deepDive({
+            itemId: 'item-2',
+            displayName: 'Tomatoes',
+            spoilageRisk: '120.00',
+          }),
+        ],
+        lowMargin: [
+          deepDive({ itemId: 'item-3', displayName: 'Bread', margin: '-4.00' }),
+        ],
+        needsData: [
+          deepDive({ itemId: 'item-4', displayName: 'Capers', margin: null }),
+        ],
+      }),
+    )
+
+    const rows = screen.getAllByRole('button')
+    expect(rows).toHaveLength(4)
+    expect(rows[0]).toHaveTextContent('#1')
+    expect(rows[0]).toHaveTextContent('$960.00')
+    expect(rows[0]).toHaveTextContent('Top selling')
+    expect(rows[1]).toHaveTextContent('$120.00')
+    expect(rows[1]).toHaveTextContent('Spoilage risk')
+    expect(rows[2]).toHaveTextContent('$-4.00')
+    expect(rows[2]).toHaveTextContent('Low margin')
+    expect(rows[3]).toHaveTextContent('Open detail')
+    expect(rows[3]).toHaveTextContent('Needs more data')
+
+    expect(
+      rows[0]?.querySelector('.item-deep-dives__item-bar-fill'),
+    ).toHaveClass('pat--solid')
+    expect(
+      rows[1]?.querySelector('.item-deep-dives__item-bar-fill'),
+    ).toHaveClass('pat--hatch')
+    expect(
+      rows[2]?.querySelector('.item-deep-dives__item-bar-fill'),
+    ).toHaveClass('pat--cross')
+    expect(
+      rows[3]?.querySelector('.item-deep-dives__item-bar-fill'),
+    ).toHaveClass('pat--dots')
+  })
+
   it('opens a detail surface naming the item that was chosen', async () => {
     renderGroups(groups())
 

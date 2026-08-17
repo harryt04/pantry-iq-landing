@@ -67,14 +67,14 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
           password,
         })
         if (result.error) throw new Error(result.error.message)
-        window.location.assign('/account')
+        window.location.assign('/welcome')
         return
       }
 
       if (mode === 'sign-in') {
         const result = await authClient.signIn.email({ email, password })
         if (result.error) throw new Error(result.error.message)
-        window.location.assign('/account')
+        window.location.assign('/account?entry=sign-in')
         return
       }
 

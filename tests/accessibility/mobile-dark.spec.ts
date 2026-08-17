@@ -13,7 +13,7 @@ const screens = [
   { path: '/reset-password', heading: 'Choose a new password' },
   {
     path: '/dashboard?locationId=' + locationId,
-    heading: 'Start with the data',
+    heading: 'Full-year data kitchen: ready',
   },
   {
     path: '/chat?locationId=' + locationId,

@@ -10,12 +10,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
  */
 
 const refresh = vi.fn()
+const push = vi.fn()
 vi.mock('next/navigation', () => ({
-  useRouter: () => ({ push: vi.fn(), replace: vi.fn(), refresh }),
+  useRouter: () => ({ push, replace: vi.fn(), refresh }),
   usePathname: () => '/account',
 }))
 
 const { LocationManager } = await import('./location-manager')
+const { FirstLocationForm } = await import('./first-location-form')
 
 const LOCATION = {
   id: 'loc-1',
@@ -76,6 +78,7 @@ describe('location manager', () => {
   beforeEach(() => {
     fetchMock.mockReset()
     refresh.mockReset()
+    push.mockReset()
     routeFetch()
     vi.stubGlobal('fetch', fetchMock)
   })
@@ -88,6 +91,54 @@ describe('location manager', () => {
     render(<LocationManager />)
 
     expect(await screen.findByText('North')).toBeInTheDocument()
+  })
+
+  it('creates the first location and carries it into the import flow', async () => {
+    render(<FirstLocationForm />)
+
+    await userEvent.type(
+      screen.getByLabelText('Location name'),
+      'First Kitchen',
+    )
+    await userEvent.type(screen.getByLabelText(/Address/), '1 Main Street')
+    await userEvent.click(screen.getByRole('button', { name: 'Add location' }))
+
+    await waitFor(() =>
+      expect(fetchMock).toHaveBeenCalledWith(
+        '/api/locations',
+        expect.objectContaining({
+          method: 'POST',
+          body: JSON.stringify({
+            name: 'First Kitchen',
+            address: '1 Main Street',
+          }),
+        }),
+      ),
+    )
+    expect(push).toHaveBeenCalledWith('/import?locationId=loc-1')
+  })
+
+  /**
+   * Oxide is reserved for "act now" (brand-foundations.md §8). One filled
+   * destructive control per row meant an account with 20 locations rendered 20
+   * Oxide pills, and the colour stopped carrying urgency. The row control stays
+   * quiet; the confirmation dialog is where Oxide belongs.
+   */
+  it('keeps Oxide out of the location rows and on the deletion confirmation', async () => {
+    render(<LocationManager />)
+    await screen.findByText('North')
+
+    const rowRemove = screen.getByRole('button', { name: 'Remove location' })
+    expect(rowRemove).not.toHaveAttribute('data-variant', 'destructive')
+
+    await userEvent.click(rowRemove)
+
+    const confirm = await screen.findByRole('button', {
+      name: 'Remove location',
+    })
+    await waitFor(() =>
+      expect(confirm).toHaveAttribute('data-variant', 'destructive'),
+    )
   })
 
   it('surfaces a duplicate-name conflict without pretending the location was added', async () => {

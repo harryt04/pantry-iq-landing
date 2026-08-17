@@ -443,6 +443,11 @@ async function assertAuthenticated(page: Page) {
   await expect(page).toHaveURL(/\/account$/)
 }
 
+async function openImportFlow(page: Page) {
+  await page.getByRole('button', { name: 'Import data' }).click()
+  await expect(page.locator('#csv-file')).toBeAttached()
+}
+
 async function createTestLocation(page: Page) {
   const response = await page.request.post('/api/locations', {
     data: {
@@ -553,6 +558,13 @@ async function seedInventoryImportItems(page: Page, locationId: string) {
   }
 }
 
+function previewHeading(page: Page) {
+  return page.getByRole('heading', {
+    name: 'A look at the first rows.',
+    level: 3,
+  })
+}
+
 async function reviewMapping(page: Page) {
   const question = page.locator('.csv-mapping__question')
   for (let attempt = 0; attempt < 12; attempt += 1) {
@@ -585,16 +597,21 @@ async function resolveNewItems(page: Page) {
   await expect(
     page.locator('.csv-item-resolution, .csv-import-confirmation'),
   ).toBeVisible()
-  const resolution = page.locator('.csv-item-resolution')
+  const createButton = page.getByRole('button', {
+    name: 'Create and use this item',
+  })
   for (let attempt = 0; attempt < 12; attempt += 1) {
-    if (!(await resolution.isVisible())) return
+    if (!(await createButton.isVisible())) return
     const commitResponse = page.waitForResponse(
       (response) =>
         response.url().includes('/commit') &&
         response.request().method() === 'POST',
     )
-    await page.getByRole('button', { name: 'Create and use this item' }).click()
-    await commitResponse
+    await createButton.click()
+    const result = (await (await commitResponse).json()) as {
+      summary?: { unmatchedItems?: unknown[] }
+    }
+    if ((result.summary?.unmatchedItems?.length ?? 0) === 0) return
   }
   throw new Error(
     'CSV item resolution did not finish within the expected items.',
@@ -613,6 +630,7 @@ test('location, CSV import, and dashboard', async ({ page }) => {
     await page.getByRole('link', { name: 'Import a CSV' }).click()
 
     await expect(page).toHaveURL(/\/import\?locationId=/)
+    await openImportFlow(page)
     await page.getByLabel('CSV file').setInputFiles({
       name: 'critical-path-sales.csv',
       mimeType: 'text/csv',
@@ -639,10 +657,175 @@ test('location, CSV import, and dashboard', async ({ page }) => {
     await expect(page).toHaveURL(/\/dashboard\?locationId=/)
     await expect(
       page.getByRole('heading', {
-        name: 'Start with the data you already have.',
+        name: /: more history needed\./,
       }),
     ).toBeVisible()
+    await expect(
+      page.getByRole('heading', {
+        name: 'Start with the data you already have.',
+      }),
+    ).toHaveCount(0)
     await expect(page.getByText('1 / 7 days')).toBeVisible()
+    await expect(
+      page.getByText(/Add 6 more days of transaction history/),
+    ).toBeVisible()
+
+    await page.setViewportSize({ width: 375, height: 812 })
+    await page.reload()
+    await expect(
+      page.getByText(/Add 6 more days of transaction history/),
+    ).toBeVisible()
+    expect(
+      await page.evaluate(() => document.body.scrollWidth),
+    ).toBeLessThanOrEqual(375)
+  } finally {
+    const response = await page.request.delete(`/api/locations/${locationId}`)
+    expect(response.status()).toBe(204)
+  }
+})
+
+test.describe('first-session value path', () => {
+  test.use({ storageState: undefined })
+
+  test('signs up, imports a full year, and reaches the first insight', async ({
+    page,
+  }) => {
+    test.setTimeout(300_000)
+    const email = `first-insight-${Date.now()}@example.test`
+    const password = 'pantryiq-first-insight-2026'
+    const locationName = 'First insight kitchen'
+    let locationId: string | null = null
+
+    try {
+      await page.goto('/sign-up')
+      await page.getByLabel('Name').fill('First insight operator')
+      await page.getByLabel('Email').fill(email)
+      await page.getByLabel('Password').fill(password)
+      await page.getByRole('button', { name: 'Create account' }).click()
+
+      await expect(page).toHaveURL(/\/welcome$/)
+      const firstLocationAction = page.getByRole('button', {
+        name: 'Add location',
+      })
+      await expect(
+        page.getByRole('heading', { name: 'Start with one location.' }),
+      ).toBeVisible()
+      await expect(firstLocationAction).toBeEnabled()
+      await page.getByLabel('Location name').fill(locationName)
+      await page.getByLabel('Address').fill('100 First Insight Street')
+      const locationResponse = page.waitForResponse(
+        (response) =>
+          response.url().endsWith('/api/locations') &&
+          response.request().method() === 'POST',
+      )
+      await firstLocationAction.click()
+      expect((await locationResponse).status()).toBe(201)
+
+      await expect(page).toHaveURL(/\/import\?locationId=/)
+      locationId = new URL(page.url()).searchParams.get('locationId')
+      expect(locationId).toBeTruthy()
+      await expect(
+        page.getByRole('combobox', { name: 'Selected location' }),
+      ).toContainText(locationName)
+
+      await openImportFlow(page)
+      await page
+        .locator('#csv-file')
+        .setInputFiles(
+          path.resolve(
+            'tests/fixtures/csv/transactions/sales-one-year-daily.csv',
+          ),
+        )
+      await expect(previewHeading(page)).toBeVisible({
+        timeout: 120_000,
+      })
+      await expect(page.locator('.csv-preview .app-page__help')).toContainText(
+        '1,825 rows',
+      )
+
+      await reviewMapping(page)
+      await resolveNewItems(page)
+      await expect(
+        page
+          .locator('.csv-import-confirmation')
+          .getByRole('heading', { name: 'Ready to import 1,825 rows.' }),
+      ).toBeVisible()
+
+      await page.getByRole('button', { name: 'Import now' }).click()
+      await expect(page.locator('.app-page__status')).toContainText(
+        '1,825 rows imported.',
+        { timeout: 120_000 },
+      )
+      await page.getByRole('link', { name: 'Continue to dashboard' }).click()
+
+      await expect(page).toHaveURL(/\/dashboard\?locationId=/)
+      await expect(
+        page.getByRole('heading', {
+          name: `${locationName}: ready for a closer look.`,
+        }),
+      ).toBeVisible()
+
+      const itemDeepDives = page.getByRole('region', {
+        name: 'Look closer at an item.',
+      })
+      await expect(itemDeepDives).toContainText('Top selling')
+      await expect(itemDeepDives).toContainText('Salmon Fillet')
+      await expect(itemDeepDives).toContainText(/\$[\d,]+/)
+
+      await page.setViewportSize({ width: 375, height: 812 })
+      await page.reload()
+      await expect(
+        page.getByRole('heading', {
+          name: `${locationName}: ready for a closer look.`,
+        }),
+      ).toBeVisible()
+      expect(
+        await page.evaluate(() => document.documentElement.scrollWidth),
+      ).toBeLessThanOrEqual(375)
+    } finally {
+      if (locationId) {
+        const response = await page.request.delete(
+          `/api/locations/${locationId}`,
+        )
+        expect([204, 404]).toContain(response.status())
+      }
+    }
+  })
+})
+
+test('imports a public CSV sample through the real importer', async ({
+  page,
+}) => {
+  test.setTimeout(120_000)
+  await assertAuthenticated(page)
+  const locationId = await createTestLocation(page)
+
+  try {
+    await seedInventoryItems(page, locationId, ['Tomato Soup', 'House Salad'])
+    const sample = await page.request.get(
+      '/import-samples/pantryiq-transactions-sample.csv',
+    )
+    expect(sample.status()).toBe(200)
+
+    await page.goto(`/import?locationId=${locationId}`)
+    await openImportFlow(page)
+    await page.locator('#csv-file').setInputFiles({
+      name: 'pantryiq-transactions-sample.csv',
+      mimeType: 'text/csv',
+      buffer: await sample.body(),
+    })
+    await expect(previewHeading(page)).toBeVisible()
+    await reviewMapping(page)
+    await resolveNewItems(page)
+    await expect(
+      page
+        .locator('.csv-import-confirmation')
+        .getByRole('heading', { name: /Ready to import/ }),
+    ).toBeVisible()
+    await page.getByRole('button', { name: 'Import now' }).click()
+    await expect(page.locator('.app-page__status')).toContainText(
+      '2 rows imported.',
+    )
   } finally {
     const response = await page.request.delete(`/api/locations/${locationId}`)
     expect(response.status()).toBe(204)
@@ -660,6 +843,7 @@ test('imports the first transaction corpus batch through /import', async ({
     for (const fixture of transactionFixtures) {
       await test.step(`imports ${fixture.filename}`, async () => {
         await page.goto(`/import?locationId=${locationId}`)
+        await openImportFlow(page)
         await page.locator('#import-type').selectOption('transactions')
         await page
           .locator('#csv-file')
@@ -668,7 +852,7 @@ test('imports the first transaction corpus batch through /import', async ({
           )
         await page.getByRole('button', { name: 'Upload CSV' }).click()
 
-        await expect(page.locator('#csv-preview-title')).toBeVisible()
+        await expect(previewHeading(page)).toBeVisible()
         await expect(
           page.locator('.csv-preview .app-page__help'),
         ).toContainText(
@@ -705,6 +889,7 @@ test('imports the second transaction corpus batch through /import', async ({
     for (const fixture of transactionBatchTwoFixtures) {
       await test.step(`imports ${fixture.filename}`, async () => {
         await page.goto(`/import?locationId=${locationId}`)
+        await openImportFlow(page)
         await page.locator('#import-type').selectOption('transactions')
         await page
           .locator('#csv-file')
@@ -713,7 +898,7 @@ test('imports the second transaction corpus batch through /import', async ({
           )
         await page.getByRole('button', { name: 'Upload CSV' }).click()
 
-        await expect(page.locator('#csv-preview-title')).toBeVisible()
+        await expect(previewHeading(page)).toBeVisible()
         await expect(
           page.locator('.csv-preview .app-page__help'),
         ).toContainText(
@@ -768,6 +953,7 @@ test('imports the third transaction corpus batch through /import', async ({
         )
           await seedInventoryItems(page, locationId)
         await page.goto(`/import?locationId=${locationId}`)
+        await openImportFlow(page)
         await page.locator('#import-type').selectOption('transactions')
         await page
           .locator('#csv-file')
@@ -776,7 +962,7 @@ test('imports the third transaction corpus batch through /import', async ({
           )
         await page.getByRole('button', { name: 'Upload CSV' }).click()
 
-        await expect(page.locator('#csv-preview-title')).toBeVisible()
+        await expect(previewHeading(page)).toBeVisible()
         await expect(
           page.locator('.csv-preview .app-page__help'),
         ).toContainText(
@@ -836,6 +1022,7 @@ test('imports the first purchase-order corpus batch through /import', async ({
     for (const fixture of purchaseOrderBatchOneFixtures) {
       await test.step(`imports ${fixture.filename}`, async () => {
         await page.goto(`/import?locationId=${locationId}`)
+        await openImportFlow(page)
         await page.locator('#import-type').selectOption('purchase_orders')
         await page
           .locator('#csv-file')
@@ -847,7 +1034,7 @@ test('imports the first purchase-order corpus batch through /import', async ({
           )
         await page.getByRole('button', { name: 'Upload CSV' }).click()
 
-        await expect(page.locator('#csv-preview-title')).toBeVisible()
+        await expect(previewHeading(page)).toBeVisible()
         await expect(
           page.locator('.csv-preview .app-page__help'),
         ).toContainText(
@@ -891,6 +1078,7 @@ test('imports the second purchase-order corpus batch through /import', async ({
     for (const fixture of purchaseOrderBatchTwoFixtures) {
       await test.step(`imports ${fixture.filename}`, async () => {
         await page.goto(`/import?locationId=${locationId}`)
+        await openImportFlow(page)
         await page.locator('#import-type').selectOption('purchase_orders')
         await page
           .locator('#csv-file')
@@ -902,7 +1090,7 @@ test('imports the second purchase-order corpus batch through /import', async ({
           )
         await page.getByRole('button', { name: 'Upload CSV' }).click()
 
-        await expect(page.locator('#csv-preview-title')).toBeVisible()
+        await expect(previewHeading(page)).toBeVisible()
         await expect(
           page.locator('.csv-preview .app-page__help'),
         ).toContainText(
@@ -951,6 +1139,7 @@ test('imports the inventory corpus batch through /import', async ({ page }) => {
       await test.step(`imports ${fixture.filename}`, async () => {
         await seedInventoryImportItems(page, locationId)
         await page.goto(`/import?locationId=${locationId}`)
+        await openImportFlow(page)
         await page.locator('#import-type').selectOption('inventory')
         await page
           .locator('#csv-file')
@@ -959,7 +1148,7 @@ test('imports the inventory corpus batch through /import', async ({ page }) => {
           )
         await page.getByRole('button', { name: 'Upload CSV' }).click()
 
-        await expect(page.locator('#csv-preview-title')).toBeVisible()
+        await expect(previewHeading(page)).toBeVisible()
         await expect(
           page.locator('.csv-preview .app-page__help'),
         ).toContainText(
@@ -1013,6 +1202,7 @@ test('imports the labor corpus batch through /import', async ({ page }) => {
     try {
       await test.step(`imports ${fixture.filename}`, async () => {
         await page.goto(`/import?locationId=${locationId}`)
+        await openImportFlow(page)
         await page.locator('#import-type').selectOption('labor')
         await page
           .locator('#csv-file')
@@ -1021,7 +1211,7 @@ test('imports the labor corpus batch through /import', async ({ page }) => {
           )
         await page.getByRole('button', { name: 'Upload CSV' }).click()
 
-        await expect(page.locator('#csv-preview-title')).toBeVisible()
+        await expect(previewHeading(page)).toBeVisible()
         await expect(
           page.locator('.csv-preview .app-page__help'),
         ).toContainText(
@@ -1088,6 +1278,7 @@ test('imports the malformed CSV corpus batch through /import', async ({
             'House Salad',
           ])
         await page.goto(`/import?locationId=${locationId}`)
+        await openImportFlow(page)
         await page.locator('#import-type').selectOption('transactions')
         await page
           .locator('#csv-file')
@@ -1100,11 +1291,11 @@ test('imports the malformed CSV corpus batch through /import', async ({
           await expect(page.locator('p[role="alert"]')).toContainText(
             fixture.error,
           )
-          await expect(page.locator('#csv-preview-title')).toHaveCount(0)
+          await expect(previewHeading(page)).toHaveCount(0)
           return
         }
 
-        await expect(page.locator('#csv-preview-title')).toBeVisible()
+        await expect(previewHeading(page)).toBeVisible()
         await expect(
           page.locator('.csv-preview .app-page__help').first(),
         ).toContainText(
@@ -1169,6 +1360,7 @@ test('checks the security CSV corpus batch through /import', async ({
           await seedInventoryItems(page, locationId)
 
         await page.goto(`/import?locationId=${locationId}`)
+        await openImportFlow(page)
         await page.locator('#import-type').selectOption('transactions')
         await page
           .locator('#csv-file')
@@ -1190,11 +1382,11 @@ test('checks the security CSV corpus batch through /import', async ({
           await expect(page.locator('p[role="alert"]')).toContainText(
             fixture.error,
           )
-          await expect(page.locator('#csv-preview-title')).toHaveCount(0)
+          await expect(previewHeading(page)).toHaveCount(0)
           return
         }
 
-        await expect(page.locator('#csv-preview-title')).toBeVisible()
+        await expect(previewHeading(page)).toBeVisible()
         await expect(
           page.locator('.csv-preview .app-page__help').first(),
         ).toContainText(

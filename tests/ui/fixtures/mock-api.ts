@@ -57,6 +57,8 @@ type MockApiScenarioOptions = Partial<
 > & {
   mappingReview?: boolean
   reconciliationSave?: MockApiOutcome
+  uploadFailure?: { filename: string; message: string }
+  alreadyImportedFilename?: string
 }
 
 export type MockApiScenario = MockApiOutcome | MockApiScenarioOptions
@@ -186,6 +188,8 @@ type MockApiInstaller = (scenario?: MockApiScenario) => Promise<void>
 type MockApiState = {
   savedMapping: Record<string, CanonicalField | null> | null
   resolvedReconciliationIds: Set<string>
+  failedUploadFilenames: Set<string>
+  uploadFilenames: Map<string, string>
 }
 
 const responseStatuses: Record<
@@ -544,6 +548,20 @@ async function handleMockRequest(
     endpoint === 'reconciliation' && request.method() === 'POST'
       ? reconciliationSaveOutcome(scenario)
       : outcomeFor(scenario, endpoint)
+  const uploadFailure =
+    endpoint === 'uploads' && typeof scenario === 'object'
+      ? scenario.uploadFailure
+      : undefined
+  const uploadFilename = request.headers()['x-pantryiq-filename']
+  if (
+    uploadFailure &&
+    uploadFilename === uploadFailure.filename &&
+    !state.failedUploadFilenames.has(uploadFilename)
+  ) {
+    state.failedUploadFilenames.add(uploadFilename)
+    await fulfill(page, route, 'invalid', { error: uploadFailure.message }, 400)
+    return
+  }
   if (endpoint === 'uploadCommit' && outcome === 'conflict') {
     const requestBody = request.postDataJSON() as {
       dryRun?: boolean
@@ -710,8 +728,15 @@ async function handleMockRequest(
   }
 
   if (endpoint === 'uploads') {
+    const filename = request.headers()['x-pantryiq-filename'] ?? 'selected.csv'
+    const uploadId =
+      typeof scenario === 'object' &&
+      scenario.alreadyImportedFilename === filename
+        ? 'mock-upload-already'
+        : MOCK_UPLOAD_ID
+    state.uploadFilenames.set(uploadId, filename)
     await fulfill(page, route, outcome, {
-      upload: { id: MOCK_UPLOAD_ID, filename: 'sales.csv' },
+      upload: { id: uploadId, filename },
     })
     return
   }
@@ -755,7 +780,19 @@ async function handleMockRequest(
   }
 
   if (endpoint === 'uploadCommit') {
-    await fulfill(page, route, outcome, { summary: readyUploadSummary })
+    const uploadId = pathname.split('/')[3]
+    const uploadFilename = state.uploadFilenames.get(uploadId ?? '')
+    const alreadyImported =
+      typeof scenario === 'object' &&
+      scenario.alreadyImportedFilename === uploadFilename
+    const requestBody = request.postDataJSON() as { dryRun?: boolean }
+    await fulfill(page, route, outcome, {
+      summary: requestBody.dryRun
+        ? alreadyImported
+          ? { ...readyUploadSummary, alreadyImported: true }
+          : readyUploadSummary
+        : { ...readyUploadSummary, rowsImported: 1, newItems: 1 },
+    })
     return
   }
 
@@ -788,6 +825,8 @@ export const test = base.extend<{ mockApi: MockApiInstaller }>({
     const state: MockApiState = {
       savedMapping: null,
       resolvedReconciliationIds: new Set(),
+      failedUploadFilenames: new Set(),
+      uploadFilenames: new Map(),
     }
     await page.route('**/api/**', (route) =>
       handleMockRequest(page, route, undefined, state),
@@ -795,6 +834,8 @@ export const test = base.extend<{ mockApi: MockApiInstaller }>({
     await use(async (scenario) => {
       state.savedMapping = null
       state.resolvedReconciliationIds.clear()
+      state.failedUploadFilenames.clear()
+      state.uploadFilenames.clear()
       await page.unroute('**/api/**')
       await page.route('**/api/**', (route) =>
         handleMockRequest(page, route, scenario, state),

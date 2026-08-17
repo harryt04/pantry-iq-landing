@@ -351,7 +351,9 @@ export function LocationManager() {
                       <>
                         <Button
                           type="button"
-                          variant="destructive"
+                          variant={
+                            location.isActive ? 'destructive' : 'default'
+                          }
                           onClick={() => void archiveLocation(location)}
                           disabled={saving}
                         >
@@ -380,9 +382,14 @@ export function LocationManager() {
                           : 'Restore location'}
                       </Button>
                     )}
+                    {/* Ghost, not Oxide: one filled destructive control per
+                        location would paint the whole page Oxide and stop it
+                        meaning "act now". A rare irreversible action stays
+                        quiet here; the confirmation dialog below carries the
+                        consequence and keeps the Oxide. */}
                     <Button
                       type="button"
-                      variant="destructive"
+                      variant="ghost"
                       onClick={() => void prepareDeletion(location)}
                       disabled={saving}
                     >

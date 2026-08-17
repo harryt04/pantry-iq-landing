@@ -41,6 +41,7 @@ const ownerScopedRoutes = [
   'uploads/[uploadId]/commit/route.ts',
   'uploads/[uploadId]/mapping/route.ts',
   'uploads/[uploadId]/preview/route.ts',
+  'uploads/[uploadId]/type/route.ts',
   'uploads/history/route.ts',
   'uploads/route.ts',
 ] as const
