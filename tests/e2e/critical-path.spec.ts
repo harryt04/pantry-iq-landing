@@ -443,6 +443,11 @@ async function assertAuthenticated(page: Page) {
   await expect(page).toHaveURL(/\/account$/)
 }
 
+async function openImportFlow(page: Page) {
+  await page.getByRole('button', { name: 'Import data' }).click()
+  await expect(page.locator('#csv-file')).toBeAttached()
+}
+
 async function createTestLocation(page: Page) {
   const response = await page.request.post('/api/locations', {
     data: {
@@ -613,6 +618,7 @@ test('location, CSV import, and dashboard', async ({ page }) => {
     await page.getByRole('link', { name: 'Import a CSV' }).click()
 
     await expect(page).toHaveURL(/\/import\?locationId=/)
+    await openImportFlow(page)
     await page.getByLabel('CSV file').setInputFiles({
       name: 'critical-path-sales.csv',
       mimeType: 'text/csv',
@@ -710,6 +716,7 @@ test.describe('first-session value path', () => {
         page.getByRole('combobox', { name: 'Selected location' }),
       ).toContainText(locationName)
 
+      await openImportFlow(page)
       await page
         .locator('#csv-file')
         .setInputFiles(
@@ -789,6 +796,7 @@ test('imports a public CSV sample through the real importer', async ({
     expect(sample.status()).toBe(200)
 
     await page.goto(`/import?locationId=${locationId}`)
+    await openImportFlow(page)
     await page.locator('#csv-file').setInputFiles({
       name: 'pantryiq-transactions-sample.csv',
       mimeType: 'text/csv',
@@ -823,6 +831,7 @@ test('imports the first transaction corpus batch through /import', async ({
     for (const fixture of transactionFixtures) {
       await test.step(`imports ${fixture.filename}`, async () => {
         await page.goto(`/import?locationId=${locationId}`)
+        await openImportFlow(page)
         await page.locator('#import-type').selectOption('transactions')
         await page
           .locator('#csv-file')
@@ -868,6 +877,7 @@ test('imports the second transaction corpus batch through /import', async ({
     for (const fixture of transactionBatchTwoFixtures) {
       await test.step(`imports ${fixture.filename}`, async () => {
         await page.goto(`/import?locationId=${locationId}`)
+        await openImportFlow(page)
         await page.locator('#import-type').selectOption('transactions')
         await page
           .locator('#csv-file')
@@ -931,6 +941,7 @@ test('imports the third transaction corpus batch through /import', async ({
         )
           await seedInventoryItems(page, locationId)
         await page.goto(`/import?locationId=${locationId}`)
+        await openImportFlow(page)
         await page.locator('#import-type').selectOption('transactions')
         await page
           .locator('#csv-file')
@@ -999,6 +1010,7 @@ test('imports the first purchase-order corpus batch through /import', async ({
     for (const fixture of purchaseOrderBatchOneFixtures) {
       await test.step(`imports ${fixture.filename}`, async () => {
         await page.goto(`/import?locationId=${locationId}`)
+        await openImportFlow(page)
         await page.locator('#import-type').selectOption('purchase_orders')
         await page
           .locator('#csv-file')
@@ -1054,6 +1066,7 @@ test('imports the second purchase-order corpus batch through /import', async ({
     for (const fixture of purchaseOrderBatchTwoFixtures) {
       await test.step(`imports ${fixture.filename}`, async () => {
         await page.goto(`/import?locationId=${locationId}`)
+        await openImportFlow(page)
         await page.locator('#import-type').selectOption('purchase_orders')
         await page
           .locator('#csv-file')
@@ -1114,6 +1127,7 @@ test('imports the inventory corpus batch through /import', async ({ page }) => {
       await test.step(`imports ${fixture.filename}`, async () => {
         await seedInventoryImportItems(page, locationId)
         await page.goto(`/import?locationId=${locationId}`)
+        await openImportFlow(page)
         await page.locator('#import-type').selectOption('inventory')
         await page
           .locator('#csv-file')
@@ -1176,6 +1190,7 @@ test('imports the labor corpus batch through /import', async ({ page }) => {
     try {
       await test.step(`imports ${fixture.filename}`, async () => {
         await page.goto(`/import?locationId=${locationId}`)
+        await openImportFlow(page)
         await page.locator('#import-type').selectOption('labor')
         await page
           .locator('#csv-file')
@@ -1251,6 +1266,7 @@ test('imports the malformed CSV corpus batch through /import', async ({
             'House Salad',
           ])
         await page.goto(`/import?locationId=${locationId}`)
+        await openImportFlow(page)
         await page.locator('#import-type').selectOption('transactions')
         await page
           .locator('#csv-file')
@@ -1332,6 +1348,7 @@ test('checks the security CSV corpus batch through /import', async ({
           await seedInventoryItems(page, locationId)
 
         await page.goto(`/import?locationId=${locationId}`)
+        await openImportFlow(page)
         await page.locator('#import-type').selectOption('transactions')
         await page
           .locator('#csv-file')
