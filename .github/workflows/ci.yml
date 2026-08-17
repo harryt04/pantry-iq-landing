@@ -8,29 +8,16 @@ concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  DATABASE_URL: postgresql://pantryiq:pantryiq@localhost:5432/pantryiq
+  BETTER_AUTH_SECRET: ci-placeholder-secret-not-for-real-use
+  BETTER_AUTH_URL: http://localhost:3000
+  PANTRYIQ_E2E: '1'
+
 jobs:
-  ci:
-    name: CI
+  static:
+    name: Static checks
     runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:16-alpine
-        env:
-          POSTGRES_USER: pantryiq
-          POSTGRES_PASSWORD: pantryiq
-          POSTGRES_DB: pantryiq
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U pantryiq -d pantryiq"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-    env:
-      DATABASE_URL: postgresql://pantryiq:pantryiq@localhost:5432/pantryiq
-      BETTER_AUTH_SECRET: ci-placeholder-secret-not-for-real-use
-      BETTER_AUTH_URL: http://localhost:3000
-      PANTRYIQ_E2E: '1'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -47,16 +34,44 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      # Every stage below runs one of the ci:* scripts from package.json, so
-      # `pnpm ci` locally covers the same ground as this workflow. The split
-      # into separate steps is only for readable logs and per-step env.
-      # tests/ci-parity.test.ts fails the build if the two ever drift.
-
+      # This is the gate for the more expensive jobs. Once it passes, the
+      # database, browser, and build work can run on separate runners.
       - name: Static checks (format, typecheck)
         run: pnpm ci:static
 
-      - name: Install Playwright browser
-        run: pnpm exec playwright install --with-deps chromium
+  tests:
+    name: Tests and coverage
+    needs: static
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: pantryiq
+          POSTGRES_PASSWORD: pantryiq
+          POSTGRES_DB: pantryiq
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U pantryiq -d pantryiq"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
 
       - name: Tests and coverage
         run: pnpm ci:tests
@@ -64,22 +79,126 @@ jobs:
           TEST_DATABASE_URL: postgresql://pantryiq:pantryiq@localhost:5432/pantryiq
           REQUIRE_INTEGRATION_DB: '1'
 
-      - name: Prepare browser test database
-        run: pnpm db:migrate
-
-      - name: Browser gates (accessibility, charts, end-to-end, UI)
-        run: pnpm ci:browser
-
-      - name: Build
-        run: pnpm build
-
       - name: Publish test report
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: test-report
+          name: test-report-tests
           path: |
             coverage/
+            test-results/
+          if-no-files-found: ignore
+
+  browser:
+    name: Browser (${{ matrix.suite }})
+    needs: static
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - suite: accessibility
+            command: test:a11y
+          - suite: charts
+            command: test:charts
+          - suite: end-to-end
+            command: test:e2e
+          - suite: ui
+            command: test:ui
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: pantryiq
+          POSTGRES_PASSWORD: pantryiq
+          POSTGRES_DB: pantryiq
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U pantryiq -d pantryiq"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright browser
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Prepare browser test database
+        run: pnpm db:migrate
+
+      - name: Run ${{ matrix.suite }} browser gates
+        run: pnpm ${{ matrix.command }}
+
+      - name: Publish browser report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-report-${{ matrix.suite }}
+          path: |
             playwright-report/
             test-results/
           if-no-files-found: ignore
+
+  build:
+    name: Build
+    needs: static
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm build
+
+  # Keep one stable required check for branch protection while the expensive
+  # work above runs in parallel. A skipped or cancelled shard is a CI failure.
+  ci:
+    name: CI
+    if: always()
+    needs: [static, tests, browser, build]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify all CI jobs passed
+        if: >-
+          ${{
+            needs.static.result != 'success' ||
+            needs.tests.result != 'success' ||
+            needs.browser.result != 'success' ||
+            needs.build.result != 'success'
+          }}
+        run: |
+          echo "Static: ${{ needs.static.result }}"
+          echo "Tests: ${{ needs.tests.result }}"
+          echo "Browser: ${{ needs.browser.result }}"
+          echo "Build: ${{ needs.build.result }}"
+          exit 1
+
+      - name: All CI jobs passed
+        run: echo "Static checks, tests, browser gates, and build passed."

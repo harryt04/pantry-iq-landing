@@ -243,6 +243,46 @@ describe('CSV upload form', () => {
     ).toBeInTheDocument()
   })
 
+  it('does not reuse a persisted queue id for a new upload', async () => {
+    window.localStorage.setItem(
+      `pantryiq-import-jobs:${LOCATION_ID}`,
+      JSON.stringify({
+        activeJobId: 'upload-job-0',
+        jobs: {
+          'upload-job-0': {
+            fileName: 'old.csv',
+            importType: 'transactions',
+            detectedImportType: 'transactions',
+            uploadId: 'old-upload',
+            preview: null,
+            mapping: null,
+            resolutions: {},
+            summary: null,
+            status: 'old.csv is ready to continue.',
+            error: '',
+            isUploading: false,
+            isCommitting: false,
+            isCommitted: false,
+          },
+        },
+      }),
+    )
+    mockSuccessfulBatch()
+
+    render(<CsvUploadForm locationId={LOCATION_ID} />)
+    await userEvent.click(screen.getByRole('button', { name: 'Resume import' }))
+    await userEvent.upload(screen.getByLabelText('CSV file'), csvFile())
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole('button', { name: 'Work on old.csv' }),
+      ).toBeInTheDocument()
+      expect(
+        screen.getByRole('button', { name: 'Working on sales.csv' }),
+      ).toBeInTheDocument()
+    })
+  })
+
   it('starts uploading as soon as a file is chosen', async () => {
     await renderOpenImport()
 

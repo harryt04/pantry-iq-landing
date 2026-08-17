@@ -221,6 +221,18 @@ function readPersistedImportState(
   }
 }
 
+function nextUploadJobNumber(jobs: Record<string, PersistedUploadJob>) {
+  return (
+    Math.max(
+      -1,
+      ...Object.keys(jobs).flatMap((jobId) => {
+        const match = /^upload-job-(\d+)$/.exec(jobId)
+        return match?.[1] ? [Number(match[1])] : []
+      }),
+    ) + 1
+  )
+}
+
 function importTypeLabel(importType: CsvImportType) {
   return importTypes.find(([value]) => value === importType)?.[1] ?? importType
 }
@@ -350,6 +362,13 @@ export function CsvUploadForm({ locationId }: { locationId: string }) {
   React.useEffect(() => {
     const persisted = readPersistedImportState(locationId)
     if (persisted) {
+      // Job ids are persisted with the resumable queue. Start new uploads
+      // after the persisted ids so a late resume request cannot update a new
+      // file that reused the same key after a page reload.
+      nextJobId.current = Math.max(
+        nextJobId.current,
+        nextUploadJobNumber(persisted.jobs),
+      )
       setJobs(
         Object.fromEntries(
           Object.entries(persisted.jobs).map(([jobId, job]) => [
