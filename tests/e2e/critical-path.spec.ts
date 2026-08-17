@@ -558,6 +558,13 @@ async function seedInventoryImportItems(page: Page, locationId: string) {
   }
 }
 
+function previewHeading(page: Page) {
+  return page.getByRole('heading', {
+    name: 'A look at the first rows.',
+    level: 3,
+  })
+}
+
 async function reviewMapping(page: Page) {
   const question = page.locator('.csv-mapping__question')
   for (let attempt = 0; attempt < 12; attempt += 1) {
@@ -729,7 +736,7 @@ test.describe('first-session value path', () => {
             'tests/fixtures/csv/transactions/sales-one-year-daily.csv',
           ),
         )
-      await expect(page.locator('#csv-preview-title')).toBeVisible({
+      await expect(previewHeading(page)).toBeVisible({
         timeout: 120_000,
       })
       await expect(page.locator('.csv-preview .app-page__help')).toContainText(
@@ -807,7 +814,7 @@ test('imports a public CSV sample through the real importer', async ({
       mimeType: 'text/csv',
       buffer: await sample.body(),
     })
-    await expect(page.locator('#csv-preview-title')).toBeVisible()
+    await expect(previewHeading(page)).toBeVisible()
     await reviewMapping(page)
     await resolveNewItems(page)
     await expect(
@@ -845,7 +852,7 @@ test('imports the first transaction corpus batch through /import', async ({
           )
         await page.getByRole('button', { name: 'Upload CSV' }).click()
 
-        await expect(page.locator('#csv-preview-title')).toBeVisible()
+        await expect(previewHeading(page)).toBeVisible()
         await expect(
           page.locator('.csv-preview .app-page__help'),
         ).toContainText(
@@ -891,7 +898,7 @@ test('imports the second transaction corpus batch through /import', async ({
           )
         await page.getByRole('button', { name: 'Upload CSV' }).click()
 
-        await expect(page.locator('#csv-preview-title')).toBeVisible()
+        await expect(previewHeading(page)).toBeVisible()
         await expect(
           page.locator('.csv-preview .app-page__help'),
         ).toContainText(
@@ -955,7 +962,7 @@ test('imports the third transaction corpus batch through /import', async ({
           )
         await page.getByRole('button', { name: 'Upload CSV' }).click()
 
-        await expect(page.locator('#csv-preview-title')).toBeVisible()
+        await expect(previewHeading(page)).toBeVisible()
         await expect(
           page.locator('.csv-preview .app-page__help'),
         ).toContainText(
@@ -1027,7 +1034,7 @@ test('imports the first purchase-order corpus batch through /import', async ({
           )
         await page.getByRole('button', { name: 'Upload CSV' }).click()
 
-        await expect(page.locator('#csv-preview-title')).toBeVisible()
+        await expect(previewHeading(page)).toBeVisible()
         await expect(
           page.locator('.csv-preview .app-page__help'),
         ).toContainText(
@@ -1083,7 +1090,7 @@ test('imports the second purchase-order corpus batch through /import', async ({
           )
         await page.getByRole('button', { name: 'Upload CSV' }).click()
 
-        await expect(page.locator('#csv-preview-title')).toBeVisible()
+        await expect(previewHeading(page)).toBeVisible()
         await expect(
           page.locator('.csv-preview .app-page__help'),
         ).toContainText(
@@ -1141,7 +1148,7 @@ test('imports the inventory corpus batch through /import', async ({ page }) => {
           )
         await page.getByRole('button', { name: 'Upload CSV' }).click()
 
-        await expect(page.locator('#csv-preview-title')).toBeVisible()
+        await expect(previewHeading(page)).toBeVisible()
         await expect(
           page.locator('.csv-preview .app-page__help'),
         ).toContainText(
@@ -1204,7 +1211,7 @@ test('imports the labor corpus batch through /import', async ({ page }) => {
           )
         await page.getByRole('button', { name: 'Upload CSV' }).click()
 
-        await expect(page.locator('#csv-preview-title')).toBeVisible()
+        await expect(previewHeading(page)).toBeVisible()
         await expect(
           page.locator('.csv-preview .app-page__help'),
         ).toContainText(
@@ -1284,11 +1291,11 @@ test('imports the malformed CSV corpus batch through /import', async ({
           await expect(page.locator('p[role="alert"]')).toContainText(
             fixture.error,
           )
-          await expect(page.locator('#csv-preview-title')).toHaveCount(0)
+          await expect(previewHeading(page)).toHaveCount(0)
           return
         }
 
-        await expect(page.locator('#csv-preview-title')).toBeVisible()
+        await expect(previewHeading(page)).toBeVisible()
         await expect(
           page.locator('.csv-preview .app-page__help').first(),
         ).toContainText(
@@ -1375,11 +1382,11 @@ test('checks the security CSV corpus batch through /import', async ({
           await expect(page.locator('p[role="alert"]')).toContainText(
             fixture.error,
           )
-          await expect(page.locator('#csv-preview-title')).toHaveCount(0)
+          await expect(previewHeading(page)).toHaveCount(0)
           return
         }
 
-        await expect(page.locator('#csv-preview-title')).toBeVisible()
+        await expect(previewHeading(page)).toBeVisible()
         await expect(
           page.locator('.csv-preview .app-page__help').first(),
         ).toContainText(
