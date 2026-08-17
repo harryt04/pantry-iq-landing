@@ -590,16 +590,21 @@ async function resolveNewItems(page: Page) {
   await expect(
     page.locator('.csv-item-resolution, .csv-import-confirmation'),
   ).toBeVisible()
-  const resolution = page.locator('.csv-item-resolution')
+  const createButton = page.getByRole('button', {
+    name: 'Create and use this item',
+  })
   for (let attempt = 0; attempt < 12; attempt += 1) {
-    if (!(await resolution.isVisible())) return
+    if (!(await createButton.isVisible())) return
     const commitResponse = page.waitForResponse(
       (response) =>
         response.url().includes('/commit') &&
         response.request().method() === 'POST',
     )
-    await page.getByRole('button', { name: 'Create and use this item' }).click()
-    await commitResponse
+    await createButton.click()
+    const result = (await (await commitResponse).json()) as {
+      summary?: { unmatchedItems?: unknown[] }
+    }
+    if ((result.summary?.unmatchedItems?.length ?? 0) === 0) return
   }
   throw new Error(
     'CSV item resolution did not finish within the expected items.',
